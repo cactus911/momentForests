@@ -1,1 +1,1 @@
-This folder contains two subdirectories: core and examples. The core subdirectory contains the Java core source code for creating the moment forest. The examples directory contains worked applications using the baseline core code in specific settings.
+This folder contains two subdirectories: *core* and *examples*. The *core* subdirectory contains the Java core source code for creating the moment forest. The *examples* directory contains worked applications using the baseline core code in specific settings.
