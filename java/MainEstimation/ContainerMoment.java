@@ -21,40 +21,18 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package core;
+package MainEstimation;
 
-import optimization.Fmin_methods;
+import Jama.Matrix;
 
 /**
  *
- * @author Stephen P. Ryan
+ * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public abstract class MomentContinuousSplitObj implements Fmin_methods {
+public abstract class ContainerMoment {
 
-    public int indexSplitVariable;
-    
-    public boolean verbose = false;
-    public double leftMSE;
-    public double rightMSE;
-    public int numObsLeft;
-    public int numObsRight;
-
+    public abstract Matrix getBeta();
     public abstract double getMSE();
-
-    public double getRightMSE() {
-        return rightMSE;
-    }
-
-    public double getLeftMSE() {
-        return leftMSE;
-    }
-
-    public int getNumObsLeft() {
-        return numObsLeft;
-    }
-
-    public int getNumObsRight() {
-        return numObsRight;
-    }
-
+    public abstract Jama.Matrix getVariance();
+    
 }

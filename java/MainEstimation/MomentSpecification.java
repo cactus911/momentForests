@@ -21,7 +21,8 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package core;
+package MainEstimation;
+
 
 import Jama.Matrix;
 import java.util.Random;
@@ -30,7 +31,7 @@ import java.util.Random;
  *
  * @author Stephen P. Ryan
  */
-public interface MomentSpecification {
+    public interface MomentSpecification {
 
     public Double getPredictedY(Matrix xi, Jama.Matrix beta);
     
@@ -42,11 +43,15 @@ public interface MomentSpecification {
 
     public ContainerMoment computeOptimalBeta(Matrix nodeY, Matrix nodeX);
 
-    public void generateData(int numObs, Random rng, boolean addNoise);
+   //  public void generateData(int numObs, Random rng, boolean addNoise);
 
-    public Matrix getY();
+   public Jama.Matrix getY();
 
-    public Matrix getX();
+   public Jama.Matrix getX();
+   
+   public Jama.Matrix cvparameters();
+   
+   public int numberoftrees();
 
     public Boolean[] getDiscreteVector();
 
@@ -63,5 +68,6 @@ public interface MomentSpecification {
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex);
 
     public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance);
+    
 
 }

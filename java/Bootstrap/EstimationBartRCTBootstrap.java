@@ -21,10 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.RCT;
+package Bootstrap;
 
+import com.stata.sfi.*;
 import JSci.maths.statistics.NormalDistribution;
-import core.TreeMoment;
+import Bootstrap.TreeMoment;
 import java.io.BufferedWriter;
 import java.io.FileWriter;
 import java.util.ArrayList;
@@ -36,16 +37,32 @@ import utility.pmUtility;
  *
  * @author stephen.p.ryan
  */
-public class EstimationBartRCT {
-
-    public static void main(String[] args) {
-        EstimationBartRCT go = new EstimationBartRCT();
-    }
-
-    public EstimationBartRCT() {
-        MomentSpecificationBartRCT bart = new MomentSpecificationBartRCT();
-        bart.loadData();
-
+public class EstimationBartRCTBootstrap {
+	
+	 public static int Momentforests(String[] args) {  
+     // public static void main(String[] args) { 
+		 double resvv;
+		 
+		 long bootsobs = Data.getObsParsedIn2();
+		 resvv = Data.getNum(1, bootsobs); // Data.getParsedVarCount(); // Data.getVarIndex(args[0]); 
+		 int resv = (int) resvv ;
+			
+		SFIToolkit.displayln("resv: " + resv + " " + " Bootsobs: " + bootsobs);  // + " " + " Bootsobs_Next: " + bootsobs+1 + " " + " Bootsobs_before: " + bootsobs-1);
+        int rc = 0;
+		EstimationBartRCTBootstrap go = new EstimationBartRCTBootstrap(resv);
+		
+		return(rc);
+     }
+    
+	
+	// public static int loadData(String[] args) { 
+       @SuppressWarnings("deprecation")
+	public EstimationBartRCTBootstrap(int resv) {
+   		MomentSpecificationBartRCT bart = new MomentSpecificationBartRCT();
+	    bart.loadData();		 
+        
+       // int rc = 0 ;
+       
         int bestK = 0;
         double bestAlpha = 0;
         double bestMSEBar = 0;
@@ -53,16 +70,17 @@ public class EstimationBartRCT {
         boolean first = true;
         double bestMSPE = 0;
         double bestProportion = 0;
-
+                
         int numObs = bart.getX().getRowDimension();
         Jama.Matrix allX = bart.getX().copy();
+        Jama.Matrix allXoriginal = bart.getXoriginal().copy();
 
         // try implementing a true OOS prediction error here?
-        for (double proportion = 0.5; proportion <= 0.5; proportion += 0.05) {
+        for (double proportion = 0.3; proportion <= 0.3; proportion += 0.05) {
             int numObsEstimateLeafValues = (int) Math.floor(numObs * proportion);
-            int numPredictObs = 10;
+            int numPredictObs = (int) Math.floor(numObs * 0.1); // it was originally 10
             int numObsGrowTreeStructure = numObs - numObsEstimateLeafValues - numPredictObs; // halfObs / 2;
-            System.out.println("numObs: " + numObs + " halfObs: " + numObsEstimateLeafValues + " predictObs: " + numPredictObs);
+            SFIToolkit.displayln("numObs: " + numObs + " halfObs: " + numObsEstimateLeafValues + " predictObs: " + numPredictObs);
 
             Jama.Matrix treeX = new Jama.Matrix(numObsGrowTreeStructure, bart.getX().getColumnDimension());
             Jama.Matrix treeY = new Jama.Matrix(numObsGrowTreeStructure, 1);
@@ -93,8 +111,8 @@ public class EstimationBartRCT {
                     }
                 }
             }
-            System.out.println("honestX row: " + honestX.getRowDimension() + " col: " + honestX.getColumnDimension());
-            System.out.println("treeSet.size(): " + growTreeSet.size());
+            SFIToolkit.displayln("honestX row: " + honestX.getRowDimension() + " col: " + honestX.getColumnDimension());
+            SFIToolkit.displayln("treeSet.size(): " + growTreeSet.size());
 
             int countTree = 0;
             int countPredict = 0;
@@ -104,7 +122,7 @@ public class EstimationBartRCT {
                     for (int j = 0; j < bart.getX().getColumnDimension(); j++) {
                         treeX.set(countTree, j, bart.getX().get(i, j));
                     }
-                    treeY.set(countTree, 0, bart.getY().get(i, 0));
+                    treeY.set(countTree, 0, bart.getY().get(i, 0));  
                     countTree++;
                 } else if (predictSet.contains(i)) {
                     for (int j = 0; j < bart.getX().getColumnDimension(); j++) {
@@ -122,16 +140,19 @@ public class EstimationBartRCT {
                 // System.out.println(i+" "+treeSet.contains(i)+" "+countTree+" "+countHonest);
             }
 
-            double minProportionEachPartition = 0.01;
-            int minCountEachPartition = 25;
-            double improvementThreshold = 1E-3;
+            double minProportionEachPartition = 0.001;
+            int minCountEachPartition = 10;
+            double improvementThreshold = 0.01;
             int maxDepth = 100;
-            boolean verbose = true;
+            boolean verbose = false;
+            
+            Jama.Matrix CVParameters = bart.cvparameters();
+               
 
             // for (maxDepth = 1; maxDepth <= 20; maxDepth++) {
-            for (improvementThreshold = 1E-7; improvementThreshold <= 1E-7; improvementThreshold *= 10) {
-                for (minCountEachPartition = 25; minCountEachPartition <= 25; minCountEachPartition += 5) {
-                    System.out.println("MSE_bar: " + improvementThreshold + " k: " + minCountEachPartition);
+            for (improvementThreshold = CVParameters.get(0, 1); improvementThreshold <= CVParameters.get(0, 1); improvementThreshold *= 100) {
+                for (minCountEachPartition = (int) CVParameters.get(0, 0); minCountEachPartition <= (int) CVParameters.get(0, 0); minCountEachPartition += 50) {
+                	SFIToolkit.displayln("MSE_bar: " + improvementThreshold + " k: " + minCountEachPartition);
                     TreeMoment momentTree = new TreeMoment(null, bart, treeX, treeY, bart.getDiscreteVector(), verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold, true, maxDepth);
                     momentTree.determineSplit();
                     momentTree.printTree();
@@ -154,7 +175,7 @@ public class EstimationBartRCT {
 
                     boolean computeHonestTree = true;
                     if (computeHonestTree) {
-                        boolean TIMING_DEBUG = true;
+                        boolean TIMING_DEBUG = false;
 
                         long t1 = System.currentTimeMillis();
                         for (int i = 0; i < honestX.getRowDimension(); i++) {
@@ -165,14 +186,14 @@ public class EstimationBartRCT {
                         momentTree.consolidateHonestData();
                         long t2 = System.currentTimeMillis();
                         if (TIMING_DEBUG) {
-                            System.out.println("Sorted observations into tree in " + (t2 - t1) + " ms.");
+                        	SFIToolkit.displayln("Sorted observations into tree in " + (t2 - t1) + " ms.");
                         }
 
                         t1 = System.currentTimeMillis();
                         momentTree.estimateHonestTree();
                         t2 = System.currentTimeMillis();
                         if (TIMING_DEBUG) {
-                            System.out.println("Recomputed estimates in " + (t2 - t1) + " ms.");
+                        	SFIToolkit.displayln("Recomputed estimates in " + (t2 - t1) + " ms.");
                         }
                     }
 
@@ -190,11 +211,11 @@ public class EstimationBartRCT {
                     }
                     MSPE /= counter;
 
-                    System.out.print("maxDepth: " + maxDepth + " " + " k: " + minCountEachPartition + " " + " alpha: " + minProportionEachPartition + " " + " mse_bar: " + improvementThreshold + " ");
-                    System.out.print("MSE: " + MSE + " MSPE: " + MSPE + " nulls: " + nullCounter + " ");
+                    SFIToolkit.displayln("maxDepth: " + maxDepth + " " + " k: " + minCountEachPartition + " " + " alpha: " + minProportionEachPartition + " " + " mse_bar: " + improvementThreshold + " ");
+                    SFIToolkit.displayln("MSE: " + MSE + " MSPE: " + MSPE + " nulls: " + nullCounter + " ");
                     // System.out.println("MSPE: " + MSPE + " nulls: " + nullCounterMSPE);
                     if (MSPE < bestMSPE || first) {
-                        System.out.println(" * ");
+                    	SFIToolkit.displayln(" * ");
                         bestK = minCountEachPartition;
                         bestAlpha = minProportionEachPartition;
                         bestMSEBar = improvementThreshold;
@@ -203,21 +224,21 @@ public class EstimationBartRCT {
                         bestProportion = proportion;
                         first = false;
                     } else {
-                        System.out.println();
+                    	SFIToolkit.displayln(" ");
                     }
                 }
             }
         }
-        System.out.println("CV parameters:");
-        System.out.println("\t k = " + bestK);
-        System.out.println("\t alpha = " + bestAlpha);
-        System.out.println("\t mse_bar = " + bestMSEBar);
-        System.out.println("\t depth = " + bestDepth);
-        System.out.println("\t proportion used to estimate tree = " + bestProportion);
-        System.out.println("Best MSPE: " + bestMSPE);
+        SFIToolkit.displayln("CV parameters:");
+        SFIToolkit.displayln("\t k = " + bestK);
+        SFIToolkit.displayln("\t alpha = " + bestAlpha);
+        SFIToolkit.displayln("\t mse_bar = " + bestMSEBar);
+        SFIToolkit.displayln("\t depth = " + bestDepth);
+        SFIToolkit.displayln("\t proportion used to estimate tree = " + 0.35);
+        SFIToolkit.displayln("Best MSPE: " + bestMSPE);
 
-        int numObsToEstimateTreeStructure = (int) Math.floor(numObs * bestProportion);
-        System.out.println("numObs: " + numObs + " halfObs: " + numObsToEstimateTreeStructure);
+        int numObsToEstimateTreeStructure = (int) Math.floor(numObs * 0.35); // bestProportion);
+        SFIToolkit.displayln("numObs: " + numObs + " halfObs: " + numObsToEstimateTreeStructure);
         Jama.Matrix treeX = new Jama.Matrix(numObsToEstimateTreeStructure, bart.getX().getColumnDimension());
         Jama.Matrix treeY = new Jama.Matrix(numObsToEstimateTreeStructure, 1);
         Jama.Matrix honestX = new Jama.Matrix(numObs - numObsToEstimateTreeStructure, bart.getX().getColumnDimension());
@@ -236,8 +257,8 @@ public class EstimationBartRCT {
                 }
             }
         }
-        System.out.println("honestX row: " + honestX.getRowDimension() + " col: " + honestX.getColumnDimension());
-        System.out.println("treeSet.size(): " + treeSet.size());
+        SFIToolkit.displayln("honestX row: " + honestX.getRowDimension() + " col: " + honestX.getColumnDimension());
+        SFIToolkit.displayln("treeSet.size(): " + treeSet.size());
 
         int countTree = 0;
         int countHonest = 0;
@@ -266,7 +287,9 @@ public class EstimationBartRCT {
 //        pmUtility.prettyPrint(honestX);
         // this would be the place to introduce resampling of the treeX/Y and the honestX/Y to produce forest estimates
         ArrayList<TreeMoment> forest = new ArrayList<>();
-        int numTrees = 500;
+        
+        int numTrees = bart.numberoftrees();
+        // int numTrees = 1; // 500; if this is too big, it doesn't run on Stata
 
         boolean verbose = false;
         boolean printTrees= false;
@@ -276,7 +299,7 @@ public class EstimationBartRCT {
             long seed = rng.nextLong();
             TreeMoment momentTree = new TreeMoment(null, bart, resample(treeX, seed), resample(treeY, seed), bart.getDiscreteVector(), verbose, bestAlpha, bestK, bestMSEBar, true, bestDepth);
             if (verbose) {
-                System.out.println("----------------------- mi: " + fi + " -----------------------");
+            	SFIToolkit.displayln("----------------------- mi: " + fi + " -----------------------");
             }
             momentTree.determineSplit();
 
@@ -295,21 +318,24 @@ public class EstimationBartRCT {
             momentTree.consolidateHonestData();
             momentTree.estimateHonestTree();
             if (verbose || printTrees) {
-                System.out.println("********* tree "+fi+" *********");
+            	SFIToolkit.displayln("********* tree "+fi+" *********");
                 momentTree.printTree();
             }
             forest.add(momentTree);
         }
 
         boolean writeOutput = true;
+
         if (writeOutput) {
             try {
-                BufferedWriter bartOut = new BufferedWriter(new FileWriter("bartTau.csv"));
+                // BufferedWriter bartOut = new BufferedWriter(new FileWriter("bartTau.csv"));
                 TreeSet<Double> uniqueTau = new TreeSet<>();
                 TreeSet<Double> significantUniqueTau = new TreeSet<>();
-                for (int i = 0; i < allX.getRowDimension(); i++) {
+                // Jama.Matrix beta_backto_Stata = new Jama.Matrix(allX.getRowDimension(),forest.size());
+                int rcc;
+                for (int i = 0; i < allXoriginal.getRowDimension(); i++) {
                     // for (int i = 0; i < 25; i++) {
-                    Jama.Matrix xi = allX.getMatrix(i, i, 0, allX.getColumnDimension() - 1);
+                    Jama.Matrix xi = allXoriginal.getMatrix(i, i, 0, allXoriginal.getColumnDimension() - 1);              
                     xi.set(0, 0, 1); // set the treatment to one to see what the treatment effect is
                     Jama.Matrix tau = new Jama.Matrix(forest.size(), 1);
                     for (int mi = 0; mi < forest.size(); mi++) {
@@ -317,14 +343,22 @@ public class EstimationBartRCT {
                         Jama.Matrix beta = m.getEstimatedBeta(xi);
                         // pmUtility.prettyPrint(beta);
                         // tau.set(mi, 0, m.getPredictedY(xi));
+                        // rcc  =  Data.storeNum(resv+1, i+1 ,beta.get(0, 0));
+                        // Data.storeStr(resv+1, i ,String.valueOf(beta.get(0, 0)));
+                        
                         if (verbose) {
-                            System.out.println("mi: " + mi);
+                        	// SFIToolkit.displayln("mi: " + mi);
                         }
                         tau.set(mi, 0, beta.get(0, 0));
-                    }
+                        // beta_backto_Stata.set(i, mi, beta.get(0, 0));
+                    }               
                     uniqueTau.add(pmUtility.mean(tau, 0));
+                    // SFIToolkit.displayln("Is this real???" + pmUtility.mean(tau, 0));
+                    rcc  =  Data.storeNum(Data.getParsedVarCount()+2+resv, i+1 ,pmUtility.mean(tau, 0));
                     String stars = "";
                     NormalDistribution normal = new NormalDistribution();
+                    
+                    
 //                 System.out.println(normal.inverse(0.05));
 //                 System.out.println(normal.inverse(0.025));
 //                 System.out.println(normal.inverse(0.005));
@@ -357,19 +391,44 @@ public class EstimationBartRCT {
                     }
                     System.out.format("%.3f \t %s \t %.3f \t [%.3f, %.3f] ", pmUtility.mean(tau, 0), stars, pmUtility.standardDeviation(tau, 0), pmUtility.percentile(tau, 0, 0.025), pmUtility.percentile(tau, 0, 0.975));
                     pmUtility.prettyPrint(xi);
-                    bartOut.write(pmUtility.mean(tau, 0) + "," + pmUtility.standardDeviation(tau, 0) + ",");
-                    for (int j = 0; j < xi.getColumnDimension(); j++) {
-                        bartOut.write(xi.get(0, j) + ",");
-                    }
-                    bartOut.write("\n");
+                    // bartOut.write(pmUtility.mean(tau, 0) + "," + pmUtility.standardDeviation(tau, 0) + ",");
+                    // for (int j = 0; j < xi.getColumnDimension(); j++) {
+                    //    bartOut.write(xi.get(0, j) + ",");
+                    // }
+                    // bartOut.write("\n");
                 }
-                System.out.println("Estimating " + uniqueTau.size() + " unique treatment effects.");
-                System.out.println("Estimating " + significantUniqueTau.size() + " statistically significant unique treatment effects.");
-                bartOut.close();
+                // SFIToolkit.displayln("beta Row Dim" + beta_backto_Stata.getRowDimension());  
+                // SFIToolkit.displayln("beta Col Dim" + beta_backto_Stata.getColumnDimension()); 
+                
+              //Create variables in order to copy results back to Stata
+                int rc;
+                // rc = Data.addVarLong("beta_estimated");
+                // if (rc!=0) return(rc); 
+                
+                
+                //private static void processData(long num_rows, beta_backto_Stata){
+                    // int                     rc;
+                	// SFIToolkit.displayln("beta HERE" + beta_backto_Stata.get(0,0)); 
+                	SFIToolkit.displayln("resv: " + resv );
+                	
+                    
+                    // if (rc!=0) return(rc);
+
+                    // return(rc);
+           // }
+                
+                
+                
+                SFIToolkit.displayln("Estimating " + uniqueTau.size() + " unique treatment effects.");
+                SFIToolkit.displayln("Estimating " + significantUniqueTau.size() + " statistically significant unique treatment effects.");
+                // bartOut.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
-        }
+         }
+        
+    // return(rc);
+    
     }
 
     public static Jama.Matrix resample(Jama.Matrix x, long seed) {
@@ -380,6 +439,7 @@ public class EstimationBartRCT {
         Jama.Matrix re = new Jama.Matrix(x.getRowDimension(), x.getColumnDimension());
         for (int i = 0; i < re.getRowDimension(); i++) {
             int index = (int) Math.floor(re.getRowDimension() * rng.nextDouble());
+            // SFIToolkit.displayln("INDEX " + index );
             for (int j = 0; j < re.getColumnDimension(); j++) {
                 re.set(i, j, x.get(index, j));
             }

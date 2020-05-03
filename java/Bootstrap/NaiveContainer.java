@@ -21,45 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package core;
-
-import java.util.ArrayList;
+package Bootstrap;
 
 /**
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class IntegerPartition {
+public class NaiveContainer {
 
-    ArrayList<Integer> left;
-    ArrayList<Integer> right;
-
-    public IntegerPartition(ArrayList<Integer> left, ArrayList<Integer> right) {
-        this.left = left;
-        this.right = right;
+    double MSPE_OLS;
+    int countSignificant;
+    
+    public NaiveContainer(int countSignificant, double MSPE_OLS) {
+        this.countSignificant = countSignificant;
+        this.MSPE_OLS = MSPE_OLS;
     }
 
-    public ArrayList<Integer> getLeft() {
-        return left;
+    public int getCountSignificant() {
+        return countSignificant;
     }
 
-    public ArrayList<Integer> getRight() {
-        return right;
+    public double getMSPE_OLS() {
+        return MSPE_OLS;
     }
-
-    @Override
-    public String toString() {
-        String s = "";
-        s = s.concat("{ ");
-        for (int i = 0; i < left.size(); i++) {
-            s = s.concat(left.get(i) + " ");
-        }
-        s = s.concat("} { ");
-        for (int i = 0; i < right.size(); i++) {
-            s = s.concat(right.get(i) + " ");
-        }
-        s = s.concat("}");
-        return s;
-    }
-
+    
 }
