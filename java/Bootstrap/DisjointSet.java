@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package core;
+package Bootstrap;
 
 import Jama.Matrix;
 import java.util.ArrayList;
