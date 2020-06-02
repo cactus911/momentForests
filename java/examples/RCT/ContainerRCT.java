@@ -23,6 +23,7 @@
  */
 package examples.RCT;
 
+import com.stata.sfi.*;
 import Jama.Matrix;
 import core.ContainerMoment;
 import utility.pmUtility;
@@ -103,7 +104,7 @@ public class ContainerRCT extends ContainerMoment {
              */
             boolean tryOLS = false;
             if (tryOLS) {
-                System.out.println(" n_control: " + countControl + " n_treatment: " + countTreatment);
+            	SFIToolkit.displayln(" n_control: " + countControl + " n_treatment: " + countTreatment);
                 Jama.Matrix W = pmUtility.getColumn(X, 0);
                 Jama.Matrix betaOLS = pmUtility.OLS(W, Y, true);
                 pmUtility.prettyPrint(pmUtility.concatMatrix(Y, W));
@@ -114,7 +115,7 @@ public class ContainerRCT extends ContainerMoment {
                     double fitY = betaOLS.get(0, 0) + betaOLS.get(1, 0) * W.get(i, 0);
                     sseOLS += Math.pow(Y.get(i, 0) - fitY, 2);
                 }
-                System.out.println("sse: " + sse + " sseOLS: " + sseOLS);
+                SFIToolkit.displayln("sse: " + sse + " sseOLS: " + sseOLS);
             }
             // System.exit(0);
         }

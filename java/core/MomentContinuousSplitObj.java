@@ -27,7 +27,7 @@ import optimization.Fmin_methods;
 
 /**
  *
- * @author Stephen P. Ryan
+ * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
 public abstract class MomentContinuousSplitObj implements Fmin_methods {
 

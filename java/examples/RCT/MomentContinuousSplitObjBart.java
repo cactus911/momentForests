@@ -30,7 +30,7 @@ import core.SplitContainer;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class MomentContinuousSplitObjBart extends MomentContinuousSplitObj {
+public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
 
     SplitContainer container;
     Jama.Matrix X;
@@ -38,7 +38,7 @@ public class MomentContinuousSplitObjBart extends MomentContinuousSplitObj {
     int minCount;
     double minProportion;
 
-    public MomentContinuousSplitObjBart(int indexSplitVariable, Jama.Matrix X, Jama.Matrix Y, double minProportion, int minCount) {
+    public MomentContinuousSplitObjRCT(int indexSplitVariable, Jama.Matrix X, Jama.Matrix Y, double minProportion, int minCount) {
         this.indexSplitVariable = indexSplitVariable;
         this.X = X;
         this.Y = Y;

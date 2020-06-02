@@ -25,16 +25,14 @@ package examples.RCT;
 
 import com.stata.sfi.*;
 import Jama.Matrix;
+import java.util.Random;
+import JSci.maths.statistics.NormalDistribution;
 import core.ContainerMoment;
 import core.IntegerPartition;
 import core.MomentContinuousSplitObj;
 import core.MomentPartitionObj;
 import core.MomentSpecification;
 import core.NaiveContainer;
-
-import java.util.Random;
-import JSci.maths.statistics.NormalDistribution;
-
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.TreeSet;
@@ -43,10 +41,9 @@ import java.util.TreeSet;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class MomentSpecificationRCT implements MomentSpecification {
+public class MomentSpecificationRCTbootstrap implements MomentSpecification {
 
-    // boolean monteCarlo = false;
-    
+
     Jama.Matrix X;
     Jama.Matrix Xoriginal;
     Jama.Matrix Y;
@@ -54,8 +51,8 @@ public class MomentSpecificationRCT implements MomentSpecification {
     
     Jama.Matrix CVparameters;
     int numtrees;
-    
-
+   
+   
     // Let it automatically detect the names of the variables from Stata dataset
     private final String[] variableNamess() {
     	
@@ -72,8 +69,7 @@ public class MomentSpecificationRCT implements MomentSpecification {
     
     final private String[] variableNames = variableNamess();
 
-
-    
+        
 
     /**
      * Try the simplest possible thing here. Y = \tau W + \epsilon, where W is
@@ -83,7 +79,7 @@ public class MomentSpecificationRCT implements MomentSpecification {
      * treatment indicator We will skip that when evaluating splits add one
      * column to X as a set of group indicators
      */
-    public MomentSpecificationRCT() {
+    public MomentSpecificationRCTbootstrap() {
     }
 
    @Override
@@ -202,7 +198,7 @@ public class MomentSpecificationRCT implements MomentSpecification {
     
     @Override
     public Jama.Matrix getXoriginal() {
-        return X; // in this case X is X
+        return Xoriginal;
     }
     
     @Override
@@ -214,7 +210,7 @@ public class MomentSpecificationRCT implements MomentSpecification {
     public int numberoftrees() {
         return numtrees;
     }
-    
+
     @Override  // using the parameter row, which is the last row from Stata, to identify whether discrete or continuous
     public Boolean[] getDiscreteVector() {
     	    	
@@ -223,13 +219,13 @@ public class MomentSpecificationRCT implements MomentSpecification {
         int  numvar = Data.getParsedVarCount();
     	Boolean[] discreteIndicator = new Boolean[numvar - 1];
         for(int i=0; i < discreteIndicator.length; i++){
-        	parameter = Data.getNum(i+2,obsEnd - 1 - 6); // We need to skip those numtree and CV parameter rows
+        	parameter = Data.getNum(i+2,obsEnd - 1 - 1 - 6); // We need to skip those numtree and CV parameter rows and bootstrap parameter row
 			if (parameter >= 1) {
 				discreteIndicator[i] = true;
     		} else {
     			discreteIndicator[i] = false;
     		}
-        }
+        }    	
         return discreteIndicator;
     }
     
@@ -252,19 +248,35 @@ public class MomentSpecificationRCT implements MomentSpecification {
         return beta;
     }
 
-
-    @Override  
+    /* Add this part in order to Subsample with replacement: Bootstrap sampling */
+    public static Jama.Matrix resample(Jama.Matrix x, long seed) {
+        Random rng = new Random(seed);
+        if (1 == 0) {
+            return x.copy();
+        }
+        Jama.Matrix re = new Jama.Matrix(x.getRowDimension(), x.getColumnDimension());
+        for (int i = 0; i < re.getRowDimension(); i++) {
+            int index = (int) Math.floor(re.getRowDimension() * rng.nextDouble());
+           
+            for (int j = 0; j < re.getColumnDimension(); j++) {
+                re.set(i, j, x.get(index, j));
+            }
+        }
+        return re;
+    }
+    
+    
+    @Override   
 	   public void loadData() {
   	
 	   int varIndex_x, varIndex_y;
 	   int rc ;
 	   double value_x, value_y;
-	   String msg_x, msg_y;
+	   String msg_x, msg_y ;
 	   TreeSet<Integer> exclusionTree = new TreeSet<>();
-           
-       // Get number of variables in varlist specified to javacall
+      // Get number of variables in varlist specified to javacall
 	   int nVariables = Data.getParsedVarCount();
-	   SFIToolkit.displayln("How many variables?  " + nVariables); 
+	   SFIToolkit.displayln("How many variables?  " + nVariables);
 	   // Get first observation specified by an in restriction
 	   long firstObs = Data.getObsParsedIn1();
 	   // Get last observation specified by an in restriction
@@ -283,22 +295,24 @@ public class MomentSpecificationRCT implements MomentSpecification {
 	   counter++;
 	   }
 	   
-	   // We should not count the last discrete/continuous parameter row
+	   // We should not count the last discrete/continuous parameter row + and the bootstrap parameter row
 	   // We should not count the number of tree parameter row
-	   // We would not count the last 6 CV parameter rows
-	   Y = new Jama.Matrix(counter - 1 - 1 - 6 - exclusionTree.size(), 1);
-	   X = new Jama.Matrix(counter - 1 - 1 - 6 - exclusionTree.size(), nVariables-1);
+	   // We should not count the last 6 CV parameter rows
+           // We should not count the bootstrap parameter row
+	   Y = new Jama.Matrix(counter - 1 - 1 - 1 - 6 - exclusionTree.size(), 1);
+	   X = new Jama.Matrix(counter - 1 - 1 - 1 - 6 - exclusionTree.size(), nVariables-1);
+	   Xoriginal = new Jama.Matrix(counter - 1 - 1 - 1 - 6 - exclusionTree.size(), nVariables-1);
 	   
-	   numtrees = (int) Data.getNum(1,nObs - 1 - 5);
+	   numtrees = (int) Data.getNum(1,nObs - 1 - 5 - 1);
 	   
-	   CVparameters = new Jama.Matrix(1,6);
-	   for (int cv = 5; cv >= 0; cv-- ) {
-		   CVparameters.set(0,5-cv, Data.getNum(1,nObs - cv));  
+	   CVparameters = new Jama.Matrix(1,2);
+	   for (int cv = 0; cv <= 1; cv++ ) {
+		   CVparameters.set(0, cv, Data.getNum(1,nObs - 6 + cv)); // subtract bootstrap parameter  
 	   }
-	    
+	   
 	   
 	// Loop over variables
-	   		for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 6; obs_y++ ) {
+	   		for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 1 - 6; obs_y++ ) {
                if (!exclusionTree.contains(obs_y-1)) {
 	   		   int var_y = 1;
 	 		   // get the real variable index for parsed variable -var-
@@ -322,7 +336,7 @@ public class MomentSpecificationRCT implements MomentSpecification {
 	   			   
 		   for(int var_x = 2; var_x <= nVariables; var_x++) {
 			// Loop over observations
-	   	   for (long obs_x = 1; obs_x<=nObs - 1 - 1 - 6; obs_x++ ) {
+	   	   for (long obs_x = 1; obs_x<=nObs - 1 - 1 - 1 - 6; obs_x++ ) {
 	   		if (!exclusionTree.contains(obs_x-1)) {
 		   // get the real variable index for parsed variable -var-
 			   varIndex_x = Data.mapParsedVarIndex(var_x);
@@ -344,7 +358,37 @@ public class MomentSpecificationRCT implements MomentSpecification {
 	   }
 		  
 		    SFIToolkit.displayln("Missing Observations : " + exclusionTree.size()); 
-                    Data.addVarLong("beta_estimated");
+		  
+                    
+		 
+	        for (int i = 0; i < X.getRowDimension(); i++) {      
+	            for (int j = 0; j < X.getColumnDimension(); j++) {
+	                Xoriginal.set(i, j, X.get(i, j));
+	            }
+	        }
+	        // Jama.Matrix Xoriginal = X;
+	        
+	        
+		
+                /* Add this part in order to Subsample with replacement: Bootstrap sampling */  
+	        Random rng = new Random();
+	        long seed = rng.nextLong();
+	        Jama.Matrix XX = resample(X, seed);
+            Jama.Matrix YY = resample(Y, seed);
+		    
+	        for (int i = 0; i < XX.getRowDimension(); i++) {      
+	            for (int j = 0; j < XX.getColumnDimension(); j++) {
+	                X.set(i, j, XX.get(i, j));
+	            }
+	        }
+	        
+	        for (int i = 0; i < YY.getRowDimension(); i++) {      
+	            for (int j = 0; j < YY.getColumnDimension(); j++) {
+	                Y.set(i, j, YY.get(i, j));
+	            }
+	        }
+	        
+          Data.addVarLong("beta_bootstrapped");
 }
     
 
@@ -368,7 +412,7 @@ public class MomentSpecificationRCT implements MomentSpecification {
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
 
-            return "var[" + variableIndex + "]=" + fixedEffectIndex;
+             return "var[" + variableIndex + "]=" + fixedEffectIndex;
 
     }
 

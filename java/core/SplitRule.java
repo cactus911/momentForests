@@ -118,7 +118,7 @@ public class SplitRule {
             return spec.getVariableName(optimalSplitVariableIndex) + " < " + optimalX;
         }
     }
-
+    
     SplitRuleContainer getLeftSplitContainer() {
         if (splitOnDiscreteVariable) {
             return new SplitRuleContainer(partition.getLeft(), optimalSplitVariableIndex);
@@ -160,6 +160,7 @@ public class SplitRule {
             return spec.getVariableName(optimalSplitVariableIndex) + " > " + optimalX;
         }
     }
+    
 
     SplitRuleContainer getRightSplitContainer() {
         if (splitOnDiscreteVariable) {

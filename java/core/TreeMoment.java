@@ -23,7 +23,9 @@
  */
 package core;
 
+import com.stata.sfi.*;
 import Jama.Matrix;
+
 import java.util.ArrayList;
 import java.util.TreeSet;
 import optimization.Fmin;
@@ -158,8 +160,8 @@ public class TreeMoment {
 
     public void determineSplit() {
         if (verbose) {
-            System.out.println("----------- computing optimal split --------------");
-            System.out.println(depth + " " + getParentRule(null));
+        	SFIToolkit.displayln("----------- computing optimal split --------------");
+        	SFIToolkit.displayln(depth + " " + getParentRule(null));
         }
 
 //        System.out.println("in this sub-node:");
@@ -230,8 +232,9 @@ public class TreeMoment {
             boolean first = true;
 
             for (int indexSplitVariable : momentSpec.getVariableIndicesToSearchOver()) {
+            	// SFIToolkit.displayln(" CHECKCHECK " + indexSplitVariable);
                 if(debugOptimization) {
-                    System.out.println("indexSplitVariable: "+indexSplitVariable+" isDiscrete: "+discreteVector[indexSplitVariable]+" "+randomForestIndex.contains(indexSplitVariable));
+                	SFIToolkit.displayln("indexSplitVariable: "+indexSplitVariable+" isDiscrete: "+discreteVector[indexSplitVariable]+" "+randomForestIndex.contains(indexSplitVariable));
                 }
                 if (randomForestIndex.contains(indexSplitVariable)) {
                     if (discreteVector[indexSplitVariable] == false) {
@@ -239,20 +242,20 @@ public class TreeMoment {
                         double minX = pmUtility.min(nodeX, indexSplitVariable);
                         double maxX = pmUtility.max(nodeX, indexSplitVariable);
                         // System.out.println("TreeMoment.java:224 -> min x_1: "+minX+" max x_1: "+maxX);
-                        double optimalX_k = Fmin.fmin(minX, maxX, obj, 1E-16);
+                        double optimalX_k = Fmin.fmin(minX, maxX, obj, 1E-100);
                         double optimalX_MSE_k = obj.f_to_minimize(optimalX_k);
 
                         if (debugOptimization) {
-                            System.out.println("\tFmin search on x_" + indexSplitVariable + " found x = " + optimalX_k + " mse: " + optimalX_MSE_k);
+                        	SFIToolkit.displayln("\tFmin search on x_" + indexSplitVariable + " found x = " + optimalX_k + " mse: " + optimalX_MSE_k);
                         }
 
-                        boolean testGridSearch = true;
-                        double h = 1E-5;
+                        boolean testGridSearch = false;
+                        double h = 1E-30;
                         if (testGridSearch) {
                             for (double x = minX; x <= maxX; x += h + (maxX - minX) / 100.0) {
                                 double f = obj.f_to_minimize(x);
                                 if (debugOptimization) {
-                                    System.out.println("\tGrid search x_" + indexSplitVariable + " from " + optimalX_MSE_k + " to " + f + " by moving from " + optimalX_k + " to " + x);
+                                	SFIToolkit.displayln("\tGrid search x_" + indexSplitVariable + " from " + optimalX_MSE_k + " to " + f + " by moving from " + optimalX_k + " to " + x);
                                 }
                                 if (f < optimalX_MSE_k) {
                                     optimalX_k = x;
@@ -275,7 +278,7 @@ public class TreeMoment {
                         int collectionIndex = discreteCollectionIndex.indexOf(indexSplitVariable);
                         ArrayList<Integer> discreteList = discreteCollection.get(collectionIndex);
                         ArrayList<IntegerPartition> partitions = DisjointSet.computeAllDisjointSets(discreteList);
-                        // System.out.println("Partition size: "+partitions.size()+" discreteList.size(): "+discreteList.size());
+                        // SFIToolkit.displayln("Partition size: "+partitions.size()+" discreteList.size(): "+discreteList.size());
                         /**
                          * Need to put in a check here that the
                          * discreteList.size is greater than one element
@@ -292,13 +295,14 @@ public class TreeMoment {
 
                                 double partitionMSE = 0;
                                 if (obj.getNumObsLeft() < minCountEachPartition || obj.getNumObsRight() < minCountEachPartition) {
-                                    if (debugOptimization) {
-                                        System.out.println("\t\tMin K violated: rejecting partition for left obs: " + obj.getNumObsLeft() + " right obs: " + obj.getNumObsRight());
+                                	// SFIToolkit.displayln("IS IT IN? : obj.getNumObsLeft(): " + obj.getNumObsLeft() + " minCountEachPartition " + minCountEachPartition + " right obs: " + obj.getNumObsRight() + " indexSplitVariable " + indexSplitVariable);
+                                	if (debugOptimization) {
+                                    	SFIToolkit.displayln("\t\tMin K violated: rejecting partition for left obs: " + obj.getNumObsLeft() + " right obs: " + obj.getNumObsRight());
                                     }
                                     partitionMSE = Double.POSITIVE_INFINITY;
                                 } else if (((obj.getNumObsLeft() + 0.0) / (nodeX.getRowDimension() + 0.0)) < minProportionEachPartition || ((obj.getNumObsRight() + 0.0) / (nodeX.getRowDimension() + 0.0)) < minProportionEachPartition) {
                                     if (debugOptimization) {
-                                        System.out.println("\t\tRejecting partition for proportion; left: " + ((obj.getNumObsLeft() + 0.0) / (nodeX.getRowDimension() + 0.0)) + " right: " + ((obj.getNumObsRight() + 0.0) / (nodeX.getRowDimension() + 0.0)));
+                                    	SFIToolkit.displayln("\t\tRejecting partition for proportion; left: " + ((obj.getNumObsLeft() + 0.0) / (nodeX.getRowDimension() + 0.0)) + " right: " + ((obj.getNumObsRight() + 0.0) / (nodeX.getRowDimension() + 0.0)));
                                         // System.exit(0);
                                     }
                                     partitionMSE = Double.POSITIVE_INFINITY;
@@ -307,7 +311,7 @@ public class TreeMoment {
                                 }
 
                                 if (debugOptimization) {
-                                    System.out.println("\t x_" + indexSplitVariable + " Partition: " + i + " " + partitions.get(i) + " mse: " + partitionMSE);
+                                	SFIToolkit.displayln("\t x_" + indexSplitVariable + " Partition: " + i + " " + partitions.get(i) + " mse: " + partitionMSE);
                                 }
 
                                 if (partitionMSE < bestPartitionMSE || i == 0) {
@@ -318,7 +322,7 @@ public class TreeMoment {
                                     numObsLeft_Partition = obj.getNumObsLeft();
                                     numObsRight_Partition = obj.getNumObsRight();
                                     if (debugOptimization) {
-                                        System.out.println("\tPartition: " + i + " " + partitions.get(i) + " mse: " + partitionMSE + " set as within-variable current best.");
+                                    	SFIToolkit.displayln("\tPartition: " + i + " " + partitions.get(i) + " mse: " + partitionMSE + " set as within-variable current best.");
                                     }
                                 }
                             }
@@ -333,7 +337,7 @@ public class TreeMoment {
                                 numObsRight = numObsRight_Partition;
                                 first = false;
                                 if (debugOptimization) {
-                                    System.out.println("Variable x_" + optimalSplitVariableIndex + " with partition " + partitions.get((int) optimalX) + " giving mse of " + optimalX_MSE + " set as overall current best.");
+                                	SFIToolkit.displayln("Variable x_" + optimalSplitVariableIndex + " with partition " + partitions.get((int) optimalX) + " giving mse of " + optimalX_MSE + " set as overall current best.");
                                 }
                             }
                         }
@@ -352,7 +356,7 @@ public class TreeMoment {
             double baseline = currentNodeMoment.getMSE();
             // System.out.println("Baseline SSE is computed as: " + baseline);
             if (verbose) {
-                System.out.println("Improvement from " + baseline + " to " + optimalX_MSE + " (left: " + optimalX_MSE_Left + " [" + numObsLeft + "] right: " + optimalX_MSE_Right + " [" + numObsRight + "])");
+            	SFIToolkit.displayln("Improvement from " + baseline + " to " + optimalX_MSE + " (left: " + optimalX_MSE_Left + " [" + numObsLeft + "] right: " + optimalX_MSE_Right + " [" + numObsRight + "])");
             }
 
             /**
@@ -367,7 +371,7 @@ public class TreeMoment {
             if ((baseline - optimalX_MSE) / baseline < improvementThreshold || first || baseline == 0) {
                 setTerminal(true);
                 if (verbose) {
-                    System.out.println(depth + ". Terminating due to lack of improvement in MSE; rules: " + getParentRule(null) + " beta: " + pmUtility.stringPrettyPrintVector(betaEstimateNode));
+                	SFIToolkit.displayln(depth + ". Terminating due to lack of improvement in MSE; rules: " + getParentRule(null) + " beta: " + pmUtility.stringPrettyPrintVector(betaEstimateNode));
                 }
             } else {
                 setTerminal(false);
@@ -377,7 +381,7 @@ public class TreeMoment {
 
                     MomentPartitionObj obj = momentSpec.getMomentPartitionObj(nodeX, nodeY, optimalSplitVariableIndex, partitions.get((int) optimalX));
                     if (verbose) {
-                        System.out.println(depth + ". Calculated optimal split along discrete variable, partitioning x_" + optimalSplitVariableIndex + " -> " + partitions.get((int) optimalX) + ", generating MSE of " + obj.getMSE());
+                    	SFIToolkit.displayln(depth + ". Calculated optimal split along discrete variable, partitioning x_" + optimalSplitVariableIndex + " -> " + partitions.get((int) optimalX) + ", generating MSE of " + obj.getMSE());
                     }
                     rule = new SplitRule(true, optimalSplitVariableIndex, optimalX, partitions.get((int) optimalX));
                     childLeft = new TreeMoment(this, momentSpec, obj.getDataSplit().getxLeft(), obj.getDataSplit().getyLeft(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
@@ -387,7 +391,7 @@ public class TreeMoment {
                 } else {
                     MomentContinuousSplitObj obj = momentSpec.getFminObjective(nodeY, nodeX, optimalSplitVariableIndex, minProportionEachPartition, minCountEachPartition);
                     if (verbose) {
-                        System.out.println(depth + ". Calculated optimal split along variable " + optimalSplitVariableIndex + " at " + optimalX + ", generating MSE of " + obj.f_to_minimize(optimalX));
+                    	SFIToolkit.displayln(depth + ". Calculated optimal split along variable " + optimalSplitVariableIndex + " at " + optimalX + ", generating MSE of " + obj.f_to_minimize(optimalX));
                     }
                     rule = new SplitRule(false, optimalSplitVariableIndex, optimalX, null);
 
@@ -416,7 +420,7 @@ public class TreeMoment {
             setNodeEstimatedVariance(currentNodeMoment.getVariance());
 
             if (verbose) {
-                System.out.println(depth + ". Terminal beta: " + pmUtility.stringPrettyPrintVector(betaEstimateNode));
+            	SFIToolkit.displayln(depth + ". Terminal beta: " + pmUtility.stringPrettyPrintVector(betaEstimateNode));
                 // System.out.println(depth + ". Terminal RDD value: " + getRDDEstimate());
             }
         }
@@ -553,7 +557,7 @@ public class TreeMoment {
             childRight.printTree();
         } else {
             // System.out.println(getParentRuleDescriptive(null) + " " + pmUtility.stringPrettyPrintVector(betaEstimateNode) + " (" + pmUtility.stringPrettyPrintVector(varianceMatrix) + ")");
-            System.out.println(getParentRuleDescriptive(null) + " ["+numHonestXObservations+"] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix));
+        	SFIToolkit.displayln(getParentRuleDescriptive(null) + " ["+numHonestXObservations+"] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix));
         }
     }
 
@@ -570,13 +574,13 @@ public class TreeMoment {
          */
         if (terminal) {
             if (verbose) {
-                System.out.print(getParentRule(null) + " honest set to ");
+            	SFIToolkit.displayln(getParentRule(null) + " honest set to ");
             }
             if (honestY == null) {
                 setNodeEstimatedBeta(null);
                 setNodeEstimatedVariance(null);
                 if (verbose) {
-                    System.out.println("honestY null");
+                	SFIToolkit.displayln("honestY null");
                 }
             } else {
                 ContainerMoment c = momentSpec.computeOptimalBeta(honestY, honestX);
@@ -590,9 +594,9 @@ public class TreeMoment {
                     // System.exit(0);
 
                     if (c.getBeta() != null) {
-                        System.out.println(c.getBeta().get(0, 0) + " (" + Math.sqrt(c.getVariance().get(0, 0)) + ")");
+                    	SFIToolkit.displayln(c.getBeta().get(0, 0) + " (" + Math.sqrt(c.getVariance().get(0, 0)) + ")");
                     } else {
-                        System.out.println("null");
+                    	SFIToolkit.displayln("null");
                     }
                 }
             }
@@ -611,12 +615,12 @@ public class TreeMoment {
                 if (leftBeta == null || rightBeta == null) {
                     if (leftBeta == null) {
                         if (verbose) {
-                            System.out.println("Detected child left is null");
+                        	SFIToolkit.displayln("Detected child left is null");
                         }
                     }
                     if (rightBeta == null) {
                         if (verbose) {
-                            System.out.println("Detected child right is null");
+                        	SFIToolkit.displayln("Detected child right is null");
                         }
                     }
                     setTerminal(true);
@@ -629,7 +633,7 @@ public class TreeMoment {
                         setNodeEstimatedBeta(c.getBeta());
                         setNodeEstimatedVariance(c.getVariance());
                         if (verbose) {
-                            System.out.println("pruned children, replaced with: n = " + honestX.getRowDimension() + " " + pmUtility.stringPrettyPrintVector(c.getBeta()));
+                        	SFIToolkit.displayln("pruned children, replaced with: n = " + honestX.getRowDimension() + " " + pmUtility.stringPrettyPrintVector(c.getBeta()));
                         }
                     }
                 } else {

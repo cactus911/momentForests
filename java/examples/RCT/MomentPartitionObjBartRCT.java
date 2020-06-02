@@ -32,11 +32,11 @@ import core.SplitContainer;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class MomentPartitionObjBartRCT extends MomentPartitionObj {
+public class MomentPartitionObjRCT extends MomentPartitionObj {
 
     SplitContainer container;
     
-    public MomentPartitionObjBartRCT(IntegerPartition partition, int indexSplitVariable, Matrix X, Matrix Y) {
+    public MomentPartitionObjRCT(IntegerPartition partition, int indexSplitVariable, Matrix X, Matrix Y) {
         this.partition = partition;
         this.indexSplitVariable = indexSplitVariable;
         this.X = X;
