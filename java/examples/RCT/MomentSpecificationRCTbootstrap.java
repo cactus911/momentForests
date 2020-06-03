@@ -198,7 +198,7 @@ public class MomentSpecificationRCTbootstrap implements MomentSpecification {
     
     @Override
     public Jama.Matrix getXoriginal() {
-        return Xoriginal;
+        return Xoriginal; // In this case, Xoriginal
     }
     
     @Override
@@ -280,8 +280,7 @@ public class MomentSpecificationRCTbootstrap implements MomentSpecification {
 	   // Get first observation specified by an in restriction
 	   long firstObs = Data.getObsParsedIn1();
 	   // Get last observation specified by an in restriction
-	    long lastObs = Data.getObsParsedIn2();
-	   // create and initialize MyLong for sample size
+	   long lastObs = Data.getObsParsedIn2();
 	   long nObs = Data.getObsTotal();
 	   int nObss = (int) nObs ;
 	   	   	   
@@ -307,13 +306,13 @@ public class MomentSpecificationRCTbootstrap implements MomentSpecification {
 	   
 	   CVparameters = new Jama.Matrix(1,2);
 	   for (int cv = 0; cv <= 1; cv++ ) {
-		   CVparameters.set(0, cv, Data.getNum(1,nObs - 6 + cv)); // subtract bootstrap parameter  
+		   CVparameters.set(0, cv, Data.getNum(1,nObs - 6 + cv)); // plug in bootstrap parameters  
 	   }
 	   
 	   
 	// Loop over variables
-	   		for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 1 - 6; obs_y++ ) {
-               if (!exclusionTree.contains(obs_y-1)) {
+	   	for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 1 - 6; obs_y++ ) {
+                   if (!exclusionTree.contains(obs_y-1)) {
 	   		   int var_y = 1;
 	 		   // get the real variable index for parsed variable -var-
 			   varIndex_y = Data.mapParsedVarIndex(var_y);
@@ -330,7 +329,7 @@ public class MomentSpecificationRCTbootstrap implements MomentSpecification {
 	   		int obss_y = (int) obs_y ;
 			Y.set(obss_y - 1 , 0 , value_y);
 			// X.set(obss_y - 1 , 0 , value_y);	
-                }
+                      }
 		   }
 	   		
 	   			   
@@ -358,7 +357,6 @@ public class MomentSpecificationRCTbootstrap implements MomentSpecification {
 	   }
 		  
 		    SFIToolkit.displayln("Missing Observations : " + exclusionTree.size()); 
-		  
                     
 		 
 	        for (int i = 0; i < X.getRowDimension(); i++) {      
@@ -366,8 +364,6 @@ public class MomentSpecificationRCTbootstrap implements MomentSpecification {
 	                Xoriginal.set(i, j, X.get(i, j));
 	            }
 	        }
-	        // Jama.Matrix Xoriginal = X;
-	        
 	        
 		
                 /* Add this part in order to Subsample with replacement: Bootstrap sampling */  
@@ -411,9 +407,7 @@ public class MomentSpecificationRCTbootstrap implements MomentSpecification {
 
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-
              return "var[" + variableIndex + "]=" + fixedEffectIndex;
-
     }
 
      @Override

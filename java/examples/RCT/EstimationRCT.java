@@ -167,22 +167,20 @@ public class EstimationRCT {
             for (int i = 0; i < dim1; i++) {
             	mink.set(i, 0, mink_value);
             	mink_value = mink_value + minCountEachPartition_jumpsize;
-            }
-            
+            }           
             Jama.Matrix mink_random = resample(mink, seed_cv1);
+            
             
             Random rng_cv2 = new Random();
             long seed_cv2 = rng_cv1.nextLong();
             
             Jama.Matrix barmse;
-            
             barmse = new Jama.Matrix(dim22, 1);
             double barmse_value = improvementThreshold_start;
             for (int i = 0; i < dim22; i++) {
             	barmse.set(i, 0, barmse_value);
             	barmse_value = barmse_value + improvementThreshold_jumpsize;
             }
-            
             Jama.Matrix barmse_random = resample(barmse, seed_cv2);
            
 

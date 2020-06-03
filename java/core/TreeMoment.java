@@ -232,7 +232,6 @@ public class TreeMoment {
             boolean first = true;
 
             for (int indexSplitVariable : momentSpec.getVariableIndicesToSearchOver()) {
-            	// SFIToolkit.displayln(" CHECKCHECK " + indexSplitVariable);
                 if(debugOptimization) {
                 	SFIToolkit.displayln("indexSplitVariable: "+indexSplitVariable+" isDiscrete: "+discreteVector[indexSplitVariable]+" "+randomForestIndex.contains(indexSplitVariable));
                 }

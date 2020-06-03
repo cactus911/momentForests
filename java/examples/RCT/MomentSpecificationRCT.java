@@ -268,10 +268,9 @@ public class MomentSpecificationRCT implements MomentSpecification {
 	   // Get first observation specified by an in restriction
 	   long firstObs = Data.getObsParsedIn1();
 	   // Get last observation specified by an in restriction
-	    long lastObs = Data.getObsParsedIn2();
-	   // create and initialize MyLong for sample size
+	   long lastObs = Data.getObsParsedIn2();
 	   long nObs = Data.getObsTotal();
-	   int nObss = (int) nObs ;
+	   int nObss = (int) nObs;
 	   	   	   
 
 	   // find out missing values

@@ -28,7 +28,7 @@ import java.util.Random;
 
 /**
  *
- * @author Stephen P. Ryan
+ * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
     public interface MomentSpecification {
 
