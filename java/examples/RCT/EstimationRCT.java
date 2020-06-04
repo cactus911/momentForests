@@ -67,7 +67,7 @@ public class EstimationRCT {
         Jama.Matrix allX = bart.getX().copy();
  
         // try implementing a true OOS prediction error here?
-        for (double proportion = 0.3; proportion <= 0.3; proportion += 0.05) {
+        for (double proportion = 0.45; proportion <= 0.45; proportion += 0.05) {
             int numObsEstimateLeafValues = (int) Math.floor(numObs * proportion);
             int numPredictObs = (int) Math.floor(numObs * 0.1); // it was originally 10;
             int numObsGrowTreeStructure = numObs - numObsEstimateLeafValues - numPredictObs; // halfObs / 2;
@@ -304,11 +304,11 @@ public class EstimationRCT {
         SFIToolkit.displayln("\t alpha = " + bestAlpha);
         SFIToolkit.displayln("\t mse_bar = " + bestMSEBar);
         SFIToolkit.displayln("\t depth = " + bestDepth);
-        SFIToolkit.displayln("\t proportion used to estimate tree = " + 0.35); // bestProportion);
+        SFIToolkit.displayln("\t proportion used to estimate tree = " + 0.45); // bestProportion);
         SFIToolkit.displayln("Best MSPE: " + bestMSPE);
         
 
-        int numObsToEstimateTreeStructure = (int) Math.floor(numObs * 0.35);
+        int numObsToEstimateTreeStructure = (int) Math.floor(numObs * 0.5);
         SFIToolkit.displayln("numObs: " + numObs + " halfObs: " + numObsToEstimateTreeStructure);
         Jama.Matrix treeX = new Jama.Matrix(numObsToEstimateTreeStructure, bart.getX().getColumnDimension());
         Jama.Matrix treeY = new Jama.Matrix(numObsToEstimateTreeStructure, 1);

@@ -63,177 +63,26 @@ public class EstimationRCTBootstrap {
         double bestAlpha = 0;
         double bestMSEBar = 0;
         int bestDepth = 0;
-        boolean first = true;
-        double bestMSPE = 0;
-        double bestProportion = 0;
                 
         int numObs = bartbootstrap.getX().getRowDimension();
         Jama.Matrix allX = bartbootstrap.getX().copy();
         Jama.Matrix allXoriginal = bartbootstrap.getXoriginal().copy();
-
-        // try implementing a true OOS prediction error here?
-        for (double proportion = 0.3; proportion <= 0.3; proportion += 0.05) {
-            int numObsEstimateLeafValues = (int) Math.floor(numObs * proportion);
-            int numPredictObs = (int) Math.floor(numObs * 0.1); // it was originally 10
-            int numObsGrowTreeStructure = numObs - numObsEstimateLeafValues - numPredictObs; // halfObs / 2;
-            SFIToolkit.displayln("numObs: " + numObs + " halfObs: " + numObsEstimateLeafValues + " predictObs: " + numPredictObs);
-
-            Jama.Matrix treeX = new Jama.Matrix(numObsGrowTreeStructure, bartbootstrap.getX().getColumnDimension());
-            Jama.Matrix treeY = new Jama.Matrix(numObsGrowTreeStructure, 1);
-            Jama.Matrix honestX = new Jama.Matrix(numObsEstimateLeafValues, bartbootstrap.getX().getColumnDimension());
-            Jama.Matrix honestY = new Jama.Matrix(numObsEstimateLeafValues, 1);
-            Jama.Matrix predictX = new Jama.Matrix(numPredictObs, bartbootstrap.getX().getColumnDimension());
-            Jama.Matrix predictY = new Jama.Matrix(numPredictObs, 1);
-
-            TreeSet<Integer> growTreeSet = new TreeSet<>();
-            int count = 0;
-            while (count < numObsGrowTreeStructure) {
-                if (count < numObsGrowTreeStructure) {
-                    int index = (int) Math.floor(Math.random() * numObs);
-                    if (!growTreeSet.contains(index)) {
-                        growTreeSet.add(index);
-                        count++;
-                    }
-                }
-            }
-            TreeSet<Integer> predictSet = new TreeSet<>();
-            count = 0;
-            while (count < numPredictObs) {
-                if (count < numPredictObs) {
-                    int index = (int) Math.floor(Math.random() * numObs);
-                    if (!predictSet.contains(index) && !growTreeSet.contains(index)) {
-                        predictSet.add(index);
-                        count++;
-                    }
-                }
-            }
-            SFIToolkit.displayln("honestX row: " + honestX.getRowDimension() + " col: " + honestX.getColumnDimension());
-            SFIToolkit.displayln("treeSet.size(): " + growTreeSet.size());
-
-            int countTree = 0;
-            int countPredict = 0;
-            int countHonest = 0;
-            for (int i = 0; i < numObs; i++) {
-                if (growTreeSet.contains(i)) {
-                    for (int j = 0; j < bartbootstrap.getX().getColumnDimension(); j++) {
-                        treeX.set(countTree, j, bartbootstrap.getX().get(i, j));
-                    }
-                    treeY.set(countTree, 0, bartbootstrap.getY().get(i, 0));  
-                    countTree++;
-                } else if (predictSet.contains(i)) {
-                    for (int j = 0; j < bartbootstrap.getX().getColumnDimension(); j++) {
-                        predictX.set(countPredict, j, bartbootstrap.getX().get(i, j));
-                    }
-                    predictY.set(countPredict, 0, bartbootstrap.getY().get(i, 0));
-                    countPredict++;
-                } else {
-                    for (int j = 0; j < bartbootstrap.getX().getColumnDimension(); j++) {
-                        honestX.set(countHonest, j, bartbootstrap.getX().get(i, j));
-                    }
-                    honestY.set(countHonest, 0, bartbootstrap.getY().get(i, 0));
-                    countHonest++;
-                }
-                // System.out.println(i+" "+treeSet.contains(i)+" "+countTree+" "+countHonest);
-            }
-
-            double minProportionEachPartition = 0.001;
-            int minCountEachPartition = 10;
-            double improvementThreshold = 0.01;
-            int maxDepth = 100;
-            boolean verbose = false;
+        
+        
+        Jama.Matrix CVParameters = bartbootstrap.cvparameters();
+        double minProportionEachPartition = 0.001;
+        int minCountEachPartition = (int) CVParameters.get(0, 0);
+        double improvementThreshold = CVParameters.get(0, 1);
+        int maxDepth = 100;
             
-            Jama.Matrix CVParameters = bartbootstrap.cvparameters();
-               
+        bestK = minCountEachPartition;
+        bestAlpha = minProportionEachPartition;
+        bestMSEBar = improvementThreshold;
+        bestDepth = maxDepth;
 
-            // for (maxDepth = 1; maxDepth <= 20; maxDepth++) {
-            for (improvementThreshold = CVParameters.get(0, 1); improvementThreshold <= CVParameters.get(0, 1); improvementThreshold *= 100) {
-                for (minCountEachPartition = (int) CVParameters.get(0, 0); minCountEachPartition <= (int) CVParameters.get(0, 0); minCountEachPartition += 50) {
-                	SFIToolkit.displayln("MSE_bar: " + improvementThreshold + " k: " + minCountEachPartition);
-                    TreeMoment momentTree = new TreeMoment(null, bartbootstrap, treeX, treeY, bartbootstrap.getDiscreteVector(), verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold, true, maxDepth);
-                    momentTree.determineSplit();
-                    momentTree.printTree();
 
-                    double MSE = 0;
-                    double MSPE = 0;
-                    double counter = 0;
-                    int nullCounter = 0;
-                    for (int i = 0; i < treeX.getRowDimension(); i++) {
-                        Double predictedY = momentTree.getPredictedY(treeX.getMatrix(i, i, 0, treeX.getColumnDimension() - 1));
-                        if (predictedY != null) {
-                            MSE += Math.pow(treeY.get(i, 0) - predictedY, 2);
-                            counter++;
-                        } else {
-                            pmUtility.prettyPrint(treeX.getMatrix(i, i, 0, treeX.getColumnDimension() - 1));
-                            nullCounter++;
-                        }
-                    }
-                    MSE /= counter;
 
-                    boolean computeHonestTree = true;
-                    if (computeHonestTree) {
-                        boolean TIMING_DEBUG = false;
-
-                        long t1 = System.currentTimeMillis();
-                        for (int i = 0; i < honestX.getRowDimension(); i++) {
-                            Jama.Matrix xi = honestX.getMatrix(i, i, 0, honestX.getColumnDimension() - 1);
-                            Jama.Matrix yi = honestY.getMatrix(i, i, 0, honestY.getColumnDimension() - 1);
-                            momentTree.sortXToCorrectLeafs(yi, xi);
-                        }
-                        momentTree.consolidateHonestData();
-                        long t2 = System.currentTimeMillis();
-                        if (TIMING_DEBUG) {
-                        	SFIToolkit.displayln("Sorted observations into tree in " + (t2 - t1) + " ms.");
-                        }
-
-                        t1 = System.currentTimeMillis();
-                        momentTree.estimateHonestTree();
-                        t2 = System.currentTimeMillis();
-                        if (TIMING_DEBUG) {
-                        	SFIToolkit.displayln("Recomputed estimates in " + (t2 - t1) + " ms.");
-                        }
-                    }
-
-                    counter = 0;
-                    int nullCounterMSPE = 0;
-                    for (int i = 0; i < predictX.getRowDimension(); i++) {
-                        Double predictedY = momentTree.getPredictedY(predictX.getMatrix(i, i, 0, predictX.getColumnDimension() - 1));
-                        if (predictedY != null) {
-                            MSPE += Math.pow(predictY.get(i, 0) - predictedY, 2);
-                            counter++;
-                        } else {
-                            pmUtility.prettyPrint(predictX.getMatrix(i, i, 0, honestX.getColumnDimension() - 1));
-                            nullCounterMSPE++;
-                        }
-                    }
-                    MSPE /= counter;
-
-                    SFIToolkit.displayln("maxDepth: " + maxDepth + " " + " k: " + minCountEachPartition + " " + " alpha: " + minProportionEachPartition + " " + " mse_bar: " + improvementThreshold + " ");
-                    SFIToolkit.displayln("MSE: " + MSE + " MSPE: " + MSPE + " nulls: " + nullCounter + " ");
-                    // System.out.println("MSPE: " + MSPE + " nulls: " + nullCounterMSPE);
-                    if (MSPE < bestMSPE || first) {
-                    	SFIToolkit.displayln(" * ");
-                        bestK = minCountEachPartition;
-                        bestAlpha = minProportionEachPartition;
-                        bestMSEBar = improvementThreshold;
-                        bestDepth = maxDepth;
-                        bestMSPE = MSPE;
-                        bestProportion = proportion;
-                        first = false;
-                    } else {
-                    	SFIToolkit.displayln(" ");
-                    }
-                }
-            }
-        }
-        SFIToolkit.displayln("CV parameters:");
-        SFIToolkit.displayln("\t k = " + bestK);
-        SFIToolkit.displayln("\t alpha = " + bestAlpha);
-        SFIToolkit.displayln("\t mse_bar = " + bestMSEBar);
-        SFIToolkit.displayln("\t depth = " + bestDepth);
-        SFIToolkit.displayln("\t proportion used to estimate tree = " + 0.35);
-        SFIToolkit.displayln("Best MSPE: " + bestMSPE);
-
-        int numObsToEstimateTreeStructure = (int) Math.floor(numObs * 0.35); // bestProportion);
+        int numObsToEstimateTreeStructure = (int) Math.floor(numObs * 0.5);
         SFIToolkit.displayln("numObs: " + numObs + " halfObs: " + numObsToEstimateTreeStructure);
         Jama.Matrix treeX = new Jama.Matrix(numObsToEstimateTreeStructure, bartbootstrap.getX().getColumnDimension());
         Jama.Matrix treeY = new Jama.Matrix(numObsToEstimateTreeStructure, 1);
