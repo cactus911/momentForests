@@ -21,15 +21,14 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package MainEstimation;
-
+package core;
 
 import Jama.Matrix;
 import java.util.Random;
 
 /**
  *
- * @author Stephen P. Ryan
+ * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
     public interface MomentSpecification {
 
@@ -48,6 +47,8 @@ import java.util.Random;
    public Jama.Matrix getY();
 
    public Jama.Matrix getX();
+   
+   public Jama.Matrix getXoriginal();
    
    public Jama.Matrix cvparameters();
    

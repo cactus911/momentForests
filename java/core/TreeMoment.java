@@ -21,10 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package MainEstimation;
+package core;
 
 import com.stata.sfi.*;
 import Jama.Matrix;
+
 import java.util.ArrayList;
 import java.util.TreeSet;
 import optimization.Fmin;
@@ -231,7 +232,6 @@ public class TreeMoment {
             boolean first = true;
 
             for (int indexSplitVariable : momentSpec.getVariableIndicesToSearchOver()) {
-            	// SFIToolkit.displayln(" CHECKCHECK " + indexSplitVariable);
                 if(debugOptimization) {
                 	SFIToolkit.displayln("indexSplitVariable: "+indexSplitVariable+" isDiscrete: "+discreteVector[indexSplitVariable]+" "+randomForestIndex.contains(indexSplitVariable));
                 }

@@ -21,18 +21,20 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package Bootstrap;
+package examples.RCT;
 
 import com.stata.sfi.*;
 import Jama.Matrix;
+import core.ContainerMoment;
+import core.IntegerPartition;
+import core.MomentContinuousSplitObj;
+import core.MomentPartitionObj;
+import core.MomentSpecification;
+import core.NaiveContainer;
+
 import java.util.Random;
 import JSci.maths.statistics.NormalDistribution;
-import Bootstrap.ContainerMoment;
-import Bootstrap.IntegerPartition;
-import Bootstrap.MomentContinuousSplitObj;
-import Bootstrap.MomentPartitionObj;
-import Bootstrap.MomentSpecification;
-import Bootstrap.NaiveContainer;
+
 import java.io.BufferedReader;
 import java.io.FileReader;
 import java.util.TreeSet;
@@ -41,7 +43,7 @@ import java.util.TreeSet;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class MomentSpecificationBartRCT implements MomentSpecification {
+public class MomentSpecificationRCT implements MomentSpecification {
 
     // boolean monteCarlo = false;
     
@@ -53,30 +55,7 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
     Jama.Matrix CVparameters;
     int numtrees;
     
-    // static NormalDistribution normal = new NormalDistribution();
-    
-    // public int[] searchArray() {
-    //    int parsedVariables = Data.getParsedVarCount();	
-    //    searchArray = new int[parsedVariables];
-    //    for (int i=0; i<searchArray.length-1; i++)
-    //    {
-    //    	searchArray[i] = i + 1;
-    //    }
-    //    return searchArray;
-    //}
-    
-    // int[] searchArray = {1, 2, 3, 4, 5, 6, 7, 8, 9};
-    // disceteIndicator includes the first column, which is the treatment effect?
-    // okay, the way this works is that the indices above select variables from this list next
-    // so this list +is+ defined across everything in the data set, but searchArray above controls
-    // which of those X's are actually used when splitting the sample
-    
-    // Boolean[] discreteIndicator = {true, false, true, true, true, true, true, true, true, false};
-    
-    
-    
-   // final private String[] variableNames = {"treatment", "age", "symptomatic", "homosexual", "IVDrugUser", "PriorAZT", "Male", "White", "FutureDropout", "Baseline"};
-   
+
     // Let it automatically detect the names of the variables from Stata dataset
     private final String[] variableNamess() {
     	
@@ -88,17 +67,12 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
         	variableNamess[i-1] = Data.getVarName(i+1);
         }
 
-    	// String cc = new Data.getVarName(1);
-    	// variableNames = {"treatment", "age", "symptomatic", "homosexual", "IVDrugUser", "PriorAZT", "Male", "White", "FutureDropout", "Baseline"};
     	return variableNamess;	
     }
     
     final private String[] variableNames = variableNamess();
 
-    
-	// SFIToolkit.displayln("Variable Names : " + variableNamess[0]); 
-    		
-    		
+
     
 
     /**
@@ -109,7 +83,7 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
      * treatment indicator We will skip that when evaluating splits add one
      * column to X as a set of group indicators
      */
-    public MomentSpecificationBartRCT() {
+    public MomentSpecificationRCT() {
     }
 
    @Override
@@ -127,26 +101,23 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
 
   @Override
   public MomentContinuousSplitObj getFminObjective(Matrix nodeY, Matrix nodeX, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-     return new MomentContinuousSplitObjBart(indexSplitVariable, nodeX, nodeY, minProportionEachPartition, minCountEachPartition);
+     return new MomentContinuousSplitObjRCT(indexSplitVariable, nodeX, nodeY, minProportionEachPartition, minCountEachPartition);
   }
 
     @Override
     public int[] getVariableIndicesToSearchOver() {
         int parsedVariables = Data.getParsedVarCount();	
-        // SFIToolkit.displayln(" CHECKCHECK11 " + parsedVariables);
         searchArray = new int[parsedVariables-2];
-        // SFIToolkit.displayln(" CHECKCHECK12 " + searchArray.length);
         for (int i=0; i<searchArray.length; i++)
         {
         	searchArray[i] = i + 1;
         }
-        // SFIToolkit.displayln(" CHECKCHECK13 " + searchArray[0] + searchArray[1] );
         return searchArray;
     }
 
     @Override
     public MomentPartitionObj getMomentPartitionObj(Matrix nodeX, Matrix nodeY, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjBartRCT(partition, indexSplitVariable, nodeX, nodeY);
+        return new MomentPartitionObjRCT(partition, indexSplitVariable, nodeX, nodeY);
     }
 
      @Override
@@ -231,7 +202,7 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
     
     @Override
     public Jama.Matrix getXoriginal() {
-        return Xoriginal;
+        return X; // in this case X is X
     }
     
     @Override
@@ -243,28 +214,22 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
     public int numberoftrees() {
         return numtrees;
     }
-
-    @Override  // using the parameter row from Stata to identify whether discrete or continuous
+    
+    @Override  // using the parameter row, which is the last row from Stata, to identify whether discrete or continuous
     public Boolean[] getDiscreteVector() {
     	    	
     	double parameter;
     	long obsEnd = Data.getObsParsedIn2();
         int  numvar = Data.getParsedVarCount();
-        // SFIToolkit.displayln(" CHECKCHECK21 " + numvar);
     	Boolean[] discreteIndicator = new Boolean[numvar - 1];
-    	// SFIToolkit.displayln(" CHECKCHECK22 " + discreteIndicator.length);
         for(int i=0; i < discreteIndicator.length; i++){
-        	parameter = Data.getNum(i+2,obsEnd - 1 - 1 - 6); // We need to skip those numtree and CV parameter rows and bootstrap parameter row
+        	parameter = Data.getNum(i+2,obsEnd - 1 - 6); // We need to skip those numtree and CV parameter rows
 			if (parameter >= 1) {
 				discreteIndicator[i] = true;
     		} else {
     			discreteIndicator[i] = false;
     		}
         }
-        // SFIToolkit.displayln(" CHECKCHECK32 " + discreteIndicator[0]+ discreteIndicator[1]+ discreteIndicator[2]);
-        // the below was the original predefined discreteIndicator
-        // Boolean[] discreteIndicator = {true, false, true, true, true, true, true, true, true, false};
-    	
         return discreteIndicator;
     }
     
@@ -287,44 +252,25 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
         return beta;
     }
 
-    /* Add this part in order to Subsample with replacement: Bootstrap sampling */
-    public static Jama.Matrix resample(Jama.Matrix x, long seed) {
-        Random rng = new Random(seed);
-        if (1 == 0) {
-            return x.copy();
-        }
-        Jama.Matrix re = new Jama.Matrix(x.getRowDimension(), x.getColumnDimension());
-         // SFIToolkit.displayln("INDEX1 : " + x.getRowDimension() + "INDEX2 : " +  x.getColumnDimension());
-        for (int i = 0; i < re.getRowDimension(); i++) {
-            int index = (int) Math.floor(re.getRowDimension() * rng.nextDouble());
-           
-            for (int j = 0; j < re.getColumnDimension(); j++) {
-                re.set(i, j, x.get(index, j));
-            }
-        }
-        return re;
-    }
-    
-    
-    @Override   
+
+    @Override  
 	   public void loadData() {
   	
 	   int varIndex_x, varIndex_y;
 	   int rc ;
 	   double value_x, value_y;
-	   String msg_x, msg_y ;
-	   // rc = 0 ;
+	   String msg_x, msg_y;
 	   TreeSet<Integer> exclusionTree = new TreeSet<>();
-      // Get number of variables in varlist specified to javacall
+           
+       // Get number of variables in varlist specified to javacall
 	   int nVariables = Data.getParsedVarCount();
-	   SFIToolkit.displayln("How many variables?  " + nVariables);
+	   SFIToolkit.displayln("How many variables?  " + nVariables); 
 	   // Get first observation specified by an in restriction
 	   long firstObs = Data.getObsParsedIn1();
 	   // Get last observation specified by an in restriction
-	    long lastObs = Data.getObsParsedIn2();
-	   // create and initialize MyLong for sample size
+	   long lastObs = Data.getObsParsedIn2();
 	   long nObs = Data.getObsTotal();
-	   int nObss = (int) nObs ;
+	   int nObss = (int) nObs;
 	   	   	   
 
 	   // find out missing values
@@ -336,23 +282,22 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
 	   counter++;
 	   }
 	   
-	   // We should not count the last discrete/continuous parameter row + and the bootstrap parameter row
+	   // We should not count the last discrete/continuous parameter row
 	   // We should not count the number of tree parameter row
 	   // We would not count the last 6 CV parameter rows
-	   Y = new Jama.Matrix(counter - 1 - 1 - 1 - 6 - exclusionTree.size(), 1);
-	   X = new Jama.Matrix(counter - 1 - 1 - 1 - 6 - exclusionTree.size(), nVariables-1);
-	   Xoriginal = new Jama.Matrix(counter - 1 - 1 - 1 - 6 - exclusionTree.size(), nVariables-1);
+	   Y = new Jama.Matrix(counter - 1 - 1 - 6 - exclusionTree.size(), 1);
+	   X = new Jama.Matrix(counter - 1 - 1 - 6 - exclusionTree.size(), nVariables-1);
 	   
-	   numtrees = (int) Data.getNum(1,nObs - 1 - 5 - 1);
+	   numtrees = (int) Data.getNum(1,nObs - 1 - 5);
 	   
-	   CVparameters = new Jama.Matrix(1,2);
-	   for (int cv = 0; cv <= 1; cv++ ) {
-		   CVparameters.set(0, cv, Data.getNum(1,nObs - 6 + cv)); // subtract bootstrap parameter  
+	   CVparameters = new Jama.Matrix(1,6);
+	   for (int cv = 5; cv >= 0; cv-- ) {
+		   CVparameters.set(0,5-cv, Data.getNum(1,nObs - cv));  
 	   }
-	   
+	    
 	   
 	// Loop over variables
-	   		for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 1 - 6; obs_y++ ) {
+	   		for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 6; obs_y++ ) {
                if (!exclusionTree.contains(obs_y-1)) {
 	   		   int var_y = 1;
 	 		   // get the real variable index for parsed variable -var-
@@ -376,7 +321,7 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
 	   			   
 		   for(int var_x = 2; var_x <= nVariables; var_x++) {
 			// Loop over observations
-	   	   for (long obs_x = 1; obs_x<=nObs - 1 - 1 - 1 - 6; obs_x++ ) {
+	   	   for (long obs_x = 1; obs_x<=nObs - 1 - 1 - 6; obs_x++ ) {
 	   		if (!exclusionTree.contains(obs_x-1)) {
 		   // get the real variable index for parsed variable -var-
 			   varIndex_x = Data.mapParsedVarIndex(var_x);
@@ -398,122 +343,7 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
 	   }
 		  
 		    SFIToolkit.displayln("Missing Observations : " + exclusionTree.size()); 
-		  // SFIToolkit.displayln("Report!!: " + searchArray.length);  
-		  // SFIToolkit.displayln("Loaded " + X.get(3, 1)); // + " observations after dropping " + exclusionTree.size() + " observations for missing data.");
-		  // SFIToolkit.displayln("Loaded " + Y.get(0, 0) ); // + " observations after dropping " + exclusionTree.size() + " observations for missing data.");
-	  	  // SFIToolkit.displayln("Loaded " + Y.get(3, 0) ); // + " observations after dropping " + exclusionTree.size() + " observations for missing data.");
-	    // return(rc) ;  
-    
-  
-    	
-/* this is the original import data code */
-//  try {
-//      BufferedReader inCounter = new BufferedReader(new FileReader("simulation_er.csv"));
-//      String line = inCounter.readLine(); // headers
-//      int counter = 0;
-//      TreeSet<Integer> exclusionTree = new TreeSet<>();
-//      while (line != null) {
-//          if (line != null) {
-//              try {
-//                  line = inCounter.readLine();
-//                  int a = 0;
-//                  for (int j = 0; j < 10; j++) {
-//                      int b = line.indexOf(",", a);
-//                      Double.parseDouble(line.substring(a, b));
-//                      a = b + 1;
-//                  }
-//                  Double.parseDouble(line.substring(a));
-//              } catch (Exception e) {
-//                  System.out.println(e);
-//                  System.out.println("Missing data for observation " + counter);
-//                  exclusionTree.add(counter);
-//              }
-//              counter++;
-//          }
-//      }
-//      inCounter.close();
-
-//      X = new Jama.Matrix(counter - exclusionTree.size(), 10);
-//      Y = new Jama.Matrix(counter - exclusionTree.size(), 1);  
- /* set up a new jama matrix so that it can be filled by the following */
-
-//      BufferedReader in = new BufferedReader(new FileReader("simulation_6000.csv"));
-//      line = in.readLine(); // headers
-//      int counter2 = 0;
-//      for (int i = 0; i < counter; i++) {
-//          line = in.readLine();
-     // System.out.println(line);
-//          if (!exclusionTree.contains(i)) {
-//              int a = 0;
-//              int b = line.indexOf(",", a);
-         // System.out.println(line.substring(a, b));
-//              Y.set(counter2, 0, Double.parseDouble(line.substring(a, b)));
-//              a = b + 1;
-//              b = line.indexOf(",", a);
-         // System.out.println(line.substring(a, b));
-//              X.set(counter2, 0, Double.parseDouble(line.substring(a, b)));
-//              for (int j = 0; j < 9; j++) {
-//                  a = b + 1;
-//                  b = line.indexOf(",", a);
-             // System.out.println(line.substring(a, b));
-//                  if (j < 8) {
-//                      X.set(counter2, j + 1, Double.parseDouble(line.substring(a, b)));
-//                  } else {
-//                      X.set(counter2, j + 1, Double.parseDouble(line.substring(a)));
-//                  }
-//              }
-//              counter2++;
-//          }
-//      }
-//      System.out.println("Loaded " + counter2 + " observations after dropping " + exclusionTree.size() + " observations for missing data.");
-//      in.close();
-//  } catch (Exception e) {
-//      e.printStackTrace();
-//      System.exit(0);
-//  }
-
-//    if (monteCarlo) {
-//        // generateData(X.getRowDimension(), new Random(), true);
-//        generateData(15000, new Random(), true);
-//    }
-      // Data.addVarLong("beta_estimated");
-		 
-	        for (int i = 0; i < X.getRowDimension(); i++) {      
-	            for (int j = 0; j < X.getColumnDimension(); j++) {
-	                Xoriginal.set(i, j, X.get(i, j));
-	            }
-	        }
-	        // Jama.Matrix Xoriginal = X;
-	        
-	        
-		    /* Add this part in order to Subsample with replacement: Bootstrap sampling */
-		       
-	        Random rng = new Random();
-	        long seed = rng.nextLong();
-	        Jama.Matrix XX = resample(X, seed);
-            Jama.Matrix YY = resample(Y, seed);
-		    
-	        for (int i = 0; i < XX.getRowDimension(); i++) {      
-	            for (int j = 0; j < XX.getColumnDimension(); j++) {
-	                X.set(i, j, XX.get(i, j));
-	            }
-	        }
-	        
-	        for (int i = 0; i < YY.getRowDimension(); i++) {      
-	            for (int j = 0; j < YY.getColumnDimension(); j++) {
-	                Y.set(i, j, YY.get(i, j));
-	            }
-	        }
-	        
-            // X = XX;
-            // Y = YY;
-		    
-		    // double index;
-		    // long bootsobs = Data.getObsParsedIn2();
-			// index = Data.getNum(1, bootsobs);
-			// String realname = "beta_bootstrap_"+index; 
-			// SFIToolkit.displayln("Real name: " + realname);
-      Data.addVarLong("beta_bootstrapped");
+                    Data.addVarLong("beta_estimated");
 }
     
 
@@ -536,35 +366,9 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
 
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-        // final private String[] variableNames = {"treatment", "age", "symptomatic", "homosexual", "IVDrugUser", "PriorAZT", "Male", "White", "FutureDropout", "Baseline"};
-        // String[][] feNames = {
-        		// {"V0_1", "V0_2"}, // x0
-        		// {"V1"}, // x1
-        		// {"1", "2", "3", "4", "5", "6", "7","8","9","10","11"}, // x2
-                //{"V3_1", "V3_2"}, // x3
-                //{"V4_1", "V4_2"}, // x4
-                //{"V5_1", "V5_2"}, // x5
-                //{"V6_1", "V6_2"}, // x6
-                //{"V7_1", "V7_2"}, // x7
-                //{"V8_1", "V8_2"}, // x8
-                //{"V9"} // x9        	
-        		
-            // {"Control", "Treatment"}, // x0
-            // {"Age (continuous)"}, // x1
-            // {"Not Symptomatic", "Symptomatic"}, // x2
-            // {"Homosexual", "Heterosexual"}, // x3
-            // {"Not IV Drug User", "IV Drug User"}, // x4
-            // {"No Prior AZT", "Prior AZT"}, // x5
-            // {"Female", "Male"}, // x6
-            // {"Not White", "White"}, // x7
-            // {"Not Dropout", "Future Dropout"}, // x8
-            // {"Baseline (not coded)"} // x9
-        // };
-        // System.out.println(variableIndex+" "+fixedEffectIndex);
-        // if(monteCarlo) {
-             return "var[" + variableIndex + "]=" + fixedEffectIndex;
-        // }
-        // return feNames[variableIndex][fixedEffectIndex]; /* naming part */
+
+            return "var[" + variableIndex + "]=" + fixedEffectIndex;
+
     }
 
      @Override
@@ -589,4 +393,3 @@ public class MomentSpecificationBartRCT implements MomentSpecification {
      }
 
 }
-
