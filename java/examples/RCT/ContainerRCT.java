@@ -21,11 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package Bootstrap;
+package examples.RCT;
 
 import com.stata.sfi.*;
 import Jama.Matrix;
-import Bootstrap.ContainerMoment;
+import core.ContainerMoment;
 import utility.pmUtility;
 
 /**

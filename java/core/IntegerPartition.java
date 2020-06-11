@@ -21,40 +21,45 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package Bootstrap;
+package core;
 
-import optimization.Fmin_methods;
+import java.util.ArrayList;
 
 /**
  *
- * @author Stephen P. Ryan
+ * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public abstract class MomentContinuousSplitObj implements Fmin_methods {
+public class IntegerPartition {
 
-    public int indexSplitVariable;
-    
-    public boolean verbose = false;
-    public double leftMSE;
-    public double rightMSE;
-    public int numObsLeft;
-    public int numObsRight;
+    ArrayList<Integer> left;
+    ArrayList<Integer> right;
 
-    public abstract double getMSE();
-
-    public double getRightMSE() {
-        return rightMSE;
+    public IntegerPartition(ArrayList<Integer> left, ArrayList<Integer> right) {
+        this.left = left;
+        this.right = right;
     }
 
-    public double getLeftMSE() {
-        return leftMSE;
+    public ArrayList<Integer> getLeft() {
+        return left;
     }
 
-    public int getNumObsLeft() {
-        return numObsLeft;
+    public ArrayList<Integer> getRight() {
+        return right;
     }
 
-    public int getNumObsRight() {
-        return numObsRight;
+    @Override
+    public String toString() {
+        String s = "";
+        s = s.concat("{ ");
+        for (int i = 0; i < left.size(); i++) {
+            s = s.concat(left.get(i) + " ");
+        }
+        s = s.concat("} { ");
+        for (int i = 0; i < right.size(); i++) {
+            s = s.concat(right.get(i) + " ");
+        }
+        s = s.concat("}");
+        return s;
     }
 
 }

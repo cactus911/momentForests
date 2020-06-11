@@ -21,18 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package MainEstimation;
-
-import Jama.Matrix;
+package core;
 
 /**
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public abstract class ContainerMoment {
+public class NaiveContainer {
 
-    public abstract Matrix getBeta();
-    public abstract double getMSE();
-    public abstract Jama.Matrix getVariance();
+    double MSPE_OLS;
+    int countSignificant;
+    
+    public NaiveContainer(int countSignificant, double MSPE_OLS) {
+        this.countSignificant = countSignificant;
+        this.MSPE_OLS = MSPE_OLS;
+    }
+
+    public int getCountSignificant() {
+        return countSignificant;
+    }
+
+    public double getMSPE_OLS() {
+        return MSPE_OLS;
+    }
     
 }

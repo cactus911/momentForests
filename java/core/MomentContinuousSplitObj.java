@@ -21,13 +21,13 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package MainEstimation;
+package core;
 
 import optimization.Fmin_methods;
 
 /**
  *
- * @author Stephen P. Ryan
+ * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
 public abstract class MomentContinuousSplitObj implements Fmin_methods {
 

@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package MainEstimation;
+package core;
 
 import Jama.Matrix;
 
@@ -118,7 +118,7 @@ public class SplitRule {
             return spec.getVariableName(optimalSplitVariableIndex) + " < " + optimalX;
         }
     }
-
+    
     SplitRuleContainer getLeftSplitContainer() {
         if (splitOnDiscreteVariable) {
             return new SplitRuleContainer(partition.getLeft(), optimalSplitVariableIndex);
@@ -160,6 +160,7 @@ public class SplitRule {
             return spec.getVariableName(optimalSplitVariableIndex) + " > " + optimalX;
         }
     }
+    
 
     SplitRuleContainer getRightSplitContainer() {
         if (splitOnDiscreteVariable) {
