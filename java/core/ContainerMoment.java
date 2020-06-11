@@ -32,7 +32,7 @@ import Jama.Matrix;
 public abstract class ContainerMoment {
 
     /**
-     * Returns the estimated parameter.
+     * Returns the estimated parameter in this partition.
      * @return
      */
     public abstract Matrix getBeta();
