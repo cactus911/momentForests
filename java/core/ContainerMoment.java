@@ -36,6 +36,11 @@ public abstract class ContainerMoment {
      * @return
      */
     public abstract Matrix getBeta();
+
+    /**
+     * Returns the error within this partition.
+     * @return
+     */
     public abstract double getMSE();
     public abstract Jama.Matrix getVariance();
     
