@@ -149,15 +149,31 @@ public class EstimationRCT {
             double improvementThreshold_end = CVParameters.get(0, 5);
 
             
-            int dim1 = (minCountEachPartition_end-minCountEachPartition_start)/minCountEachPartition_jumpsize;
-            double dim2 = (improvementThreshold_end-improvementThreshold_start)/improvementThreshold_jumpsize;
+            int dim1 = (minCountEachPartition_end - minCountEachPartition_start)/minCountEachPartition_jumpsize + 1;
+            double dim2 = (improvementThreshold_end - improvementThreshold_start)/improvementThreshold_jumpsize + 1;
             int dim22 = (int) dim2;
             int Dim = (int) (dim1+1)*(dim22+1);
             
             Jama.Matrix CV_parameters = new Jama.Matrix(Dim, 3);
             
             
-            // add randomization layer here
+            // add randomization layer here. Method 1.
+            Jama.Matrix mink_random;
+            mink_random = new Jama.Matrix(dim1, 1);
+            int mink_value = minCountEachPartition_start;
+            for (int i = 0; i < dim1; i++) {
+            	mink_random.set(i,0, (int)(Math.random() * (minCountEachPartition_end - minCountEachPartition_start + 1) + minCountEachPartition_start) );
+            }           
+            
+            Jama.Matrix barmse_random;
+            barmse_random = new Jama.Matrix(dim22, 1);
+            for (int i = 0; i < dim22; i++) {
+            	barmse_random.set(i, 0, Math.random() * (improvementThreshold_end - improvementThreshold_start) + improvementThreshold_start );
+            }
+            
+            
+            /*
+            // add randomization layer here. Method 2.
             Random rng_cv1 = new Random();
             long seed_cv1 = rng_cv1.nextLong();
             
@@ -182,7 +198,7 @@ public class EstimationRCT {
             	barmse_value = barmse_value + improvementThreshold_jumpsize;
             }
             Jama.Matrix barmse_random = resample(barmse, seed_cv2);
-           
+           */
 
             int CV_index = 1;
             // for (maxDepth = 1; maxDepth <= 20; maxDepth++) {
@@ -277,10 +293,10 @@ public class EstimationRCT {
                 }
             }
             
-    		for (int i = 0; i < Dim; i++) {
-    			System.out.println(" Min Index : " + i + " Min SSPE : " + CV_parameters.get(i,2)  + " Min k : " + CV_parameters.get(i,0) + " Min MSE_bar : " + CV_parameters.get(i,1) ); 
+    		// for (int i = 0; i < Dim; i++) {
+    		//	System.out.println(" Min Index : " + i + " Min SSPE : " + CV_parameters.get(i,2)  + " Min k : " + CV_parameters.get(i,0) + " Min MSE_bar : " + CV_parameters.get(i,1) ); 
     				// minAt = CV_parameters.get(i,2) > CV_parameters.get(minAt,2) ? i : minAt;
-    		}
+    		//}
     		
             // Find out the index of those minimizing CV parameters 
             int minAt = 0;
@@ -360,7 +376,7 @@ public class EstimationRCT {
         ArrayList<TreeMoment> forest = new ArrayList<>();
         
         int numTrees = bart.numberoftrees();
-        // int numTrees = 1; // 500; if this is too big, it doesn't run on Stata
+        // int numTrees = 500; if this is too big, it doesn't run on Stata
 
         boolean verbose = true;
         boolean printTrees= false;
@@ -423,15 +439,15 @@ public class EstimationRCT {
                     uniqueTau.add(pmUtility.mean(tau, 0));
                     // SFIToolkit.displayln("Is this real???" + pmUtility.mean(tau, 0));
                     rcc  =  Data.storeNum(resv+2, i+1 ,pmUtility.mean(tau, 0));
-                    String stars = "";
-                    NormalDistribution normal = new NormalDistribution();
+                    // String stars = "";
+                    // NormalDistribution normal = new NormalDistribution();
                     
                     
 //                 System.out.println(normal.inverse(0.05));
 //                 System.out.println(normal.inverse(0.025));
 //                 System.out.println(normal.inverse(0.005));
 //                 System.exit(0);
-
+                    /*
                     boolean useZStat = false;
                     if (useZStat) {
                         if (Math.abs(pmUtility.mean(tau, 0) / pmUtility.standardDeviation(tau, 0)) > Math.abs(normal.inverse(0.05))) {
@@ -464,11 +480,12 @@ public class EstimationRCT {
                     //    bartOut.write(xi.get(0, j) + ",");
                     // }
                     // bartOut.write("\n");
+                    */
                 }
           
-                SFIToolkit.displayln("getParsedVarCount: " + Data.getParsedVarCount() );
+                // SFIToolkit.displayln("getParsedVarCount: " + Data.getParsedVarCount() );
                 SFIToolkit.displayln("Estimating " + uniqueTau.size() + " unique treatment effects.");
-                SFIToolkit.displayln("Estimating " + significantUniqueTau.size() + " statistically significant unique treatment effects.");
+                // SFIToolkit.displayln("Estimating " + significantUniqueTau.size() + " statistically significant unique treatment effects.");
                 // bartOut.close();
             } catch (Exception e) {
                 e.printStackTrace();
