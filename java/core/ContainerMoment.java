@@ -31,6 +31,10 @@ import Jama.Matrix;
  */
 public abstract class ContainerMoment {
 
+    /**
+     * Returns the estimated parameter.
+     * @return
+     */
     public abstract Matrix getBeta();
     public abstract double getMSE();
     public abstract Jama.Matrix getVariance();
