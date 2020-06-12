@@ -35,7 +35,7 @@ import utility.pmUtility;
 
 /**
  *
- * @author stephen.p.ryan
+ * @author stephen.p.ryan <stephen.p.ryan@wustl.edu>
  */
 public class EstimationRCTBootstrap {
 	
@@ -198,51 +198,9 @@ public class EstimationRCTBootstrap {
                     }               
                     uniqueTau.add(pmUtility.mean(tau, 0));
                     rcc  =  Data.storeNum(Data.getParsedVarCount()+2+resv, i+1 ,pmUtility.mean(tau, 0));
-                    String stars = "";
-                    NormalDistribution normal = new NormalDistribution();
-                                       
-//                 System.out.println(normal.inverse(0.05));
-//                 System.out.println(normal.inverse(0.025));
-//                 System.out.println(normal.inverse(0.005));
-//                 System.exit(0);
 
-                    boolean useZStat = false;
-                    if (useZStat) {
-                        if (Math.abs(pmUtility.mean(tau, 0) / pmUtility.standardDeviation(tau, 0)) > Math.abs(normal.inverse(0.05))) {
-                            stars = "*";
-                        }
-                        if (Math.abs(pmUtility.mean(tau, 0) / pmUtility.standardDeviation(tau, 0)) > Math.abs(normal.inverse(0.025))) {
-                            stars = "**";
-                        }
-                        if (Math.abs(pmUtility.mean(tau, 0) / pmUtility.standardDeviation(tau, 0)) > Math.abs(normal.inverse(0.005))) {
-                            stars = "***";
-                        }
-                    } else {
-                        if (pmUtility.percentile(tau, 0, 0.05) * pmUtility.percentile(tau, 0, 0.95) > 0) {
-                            stars = "*";
-                        }
-                        if (pmUtility.percentile(tau, 0, 0.025) * pmUtility.percentile(tau, 0, 0.975) > 0) {
-                            stars = "**";
-                        }
-                        if (pmUtility.percentile(tau, 0, 0.005) * pmUtility.percentile(tau, 0, 0.995) > 0) {
-                            stars = "***";
-                        }
-                    }
-                    if (!stars.equals("")) {
-                        significantUniqueTau.add(pmUtility.mean(tau, 0));
-                    }
-                    System.out.format("%.3f \t %s \t %.3f \t [%.3f, %.3f] ", pmUtility.mean(tau, 0), stars, pmUtility.standardDeviation(tau, 0), pmUtility.percentile(tau, 0, 0.025), pmUtility.percentile(tau, 0, 0.975));
-                    pmUtility.prettyPrint(xi);
-                    // bartOut.write(pmUtility.mean(tau, 0) + "," + pmUtility.standardDeviation(tau, 0) + ",");
-                    // for (int j = 0; j < xi.getColumnDimension(); j++) {
-                    //    bartOut.write(xi.get(0, j) + ",");
-                    // }
-                    // bartOut.write("\n");
                 }
                 
-                SFIToolkit.displayln("Estimating " + uniqueTau.size() + " unique treatment effects.");
-                SFIToolkit.displayln("Estimating " + significantUniqueTau.size() + " statistically significant unique treatment effects.");
-                // bartOut.close();
             } catch (Exception e) {
                 e.printStackTrace();
             }
