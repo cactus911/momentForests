@@ -1,1 +1,3 @@
 theme: jekyll-theme-slate
+title: Java Implementation for Moment Forests
+description: A Github repository with core code and worked examples for using the Moment Forests from Nekipelov, Novosad, and Ryan (2020).
