@@ -7,3 +7,17 @@ This website contains Java source code related to the Moment Forest estimator fr
 3. Worked examples of several common estimators, including randomized control trials (RCTs), regression discontinuity designs (RDDs), multiple outcomes, linear regression, and logit models.
 
 This website is a work in progress but will be updated regularly as we push forward.
+
+### The Paper
+
+The paper can be found here [PDF](https://sites.wustl.edu/stephenpryan/files/2016/10/momentTrees.pdf).
+
+### How Does It Work?
+
+### Java Source Code
+
+### Hello World Example
+
+### Link to STATA
+
+### Worked Examples
