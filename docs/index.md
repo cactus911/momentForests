@@ -19,6 +19,8 @@ The fundamental building block of our estimator is a moment:
 E[Y-m(X,\theta)] = 0.
 \]
 
+$$\theta$$
+
 ### Java Source Code
 
 ### Hello World Example
