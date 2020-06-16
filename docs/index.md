@@ -14,6 +14,11 @@ The paper can be found here \[[PDF](https://sites.wustl.edu/stephenpryan/files/2
 
 ### How Does It Work?
 
+The fundamental building block of our estimator is a moment:
+\[
+E[Y-m(X,\theta)] = 0.
+\]
+
 ### Java Source Code
 
 ### Hello World Example
