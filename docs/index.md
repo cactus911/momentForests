@@ -19,7 +19,8 @@ The fundamental building block of our estimator is a moment:
 E[Y-m(X,\theta)] = 0.
 \]
 
-$$\theta$$
+Is there a theta here: $$\theta$$
+There should be
 
 ### Java Source Code
 
