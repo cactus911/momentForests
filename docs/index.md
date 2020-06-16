@@ -10,7 +10,7 @@ This website is a work in progress but will be updated regularly as we push forw
 
 ### The Paper
 
-The paper can be found here [PDF](https://sites.wustl.edu/stephenpryan/files/2016/10/momentTrees.pdf).
+The paper can be found here [[PDF]](https://sites.wustl.edu/stephenpryan/files/2016/10/momentTrees.pdf).
 
 ### How Does It Work?
 
