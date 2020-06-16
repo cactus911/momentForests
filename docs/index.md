@@ -15,12 +15,12 @@ The paper can be found here \[[PDF](https://sites.wustl.edu/stephenpryan/files/2
 ### How Does It Work?
 
 The fundamental building block of our estimator is a moment:
-\[
+\\[
 E[Y-m(X,\theta)] = 0.
-\]
+\\]
 
 Is there a theta here: $$\theta$$
-There should be
+There should be. Trying inline \\( \theta \\).
 
 ### Java Source Code
 
