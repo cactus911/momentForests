@@ -24,7 +24,7 @@ The primary innovation of the moment forest is to replace that model with the fo
 \\[
 E[Y-m(X;\theta(Z))] = 0,
 \\]
-where the parameter vector now depends on the matrix \\( Z \\), which may or may not be a subset of \\( X \\). Essentially, the moment forest produces an estimate of how the structure of \\( \theta \\) changes with \\( Z \\), generating arbitrary observable heterogeneity in parameters.
+where the parameter vector now depends on the matrix \\( Z \\), which may or may not be a subset of \\( X \\). Essentially, the moment forest produces an estimate of how the structure of \\( \theta \\) changes with \\( Z \\), allowing for arbitrary observable heterogeneity in parameters.
 
 ### Java Source Code
 
