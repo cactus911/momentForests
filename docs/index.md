@@ -6,7 +6,7 @@ This website contains Java source code related to the Moment Forest estimator fr
 2. Java and Stata source code linking the moment forest estimator to Stata. This allows for an easy bridge between existing Stata data sets and workflow and the moment forest.
 3. Worked examples of several common estimators, including randomized control trials (RCTs), regression discontinuity designs (RDDs), multiple outcomes, linear regression, and logit models.
 
-This website is a work in progress but will be updated regularly as we push forward.
+This website is a work in progress but will be updated regularly.
 
 ### The Paper
 
@@ -16,15 +16,15 @@ The paper can be found here \[[PDF](https://sites.wustl.edu/stephenpryan/files/2
 
 The fundamental building block of our estimator is a moment:
 \\[
-E[Y-m(X,\theta)] = 0.
+E[Y-m(X;\theta)] = 0,
 \\]
+where \\( m(X;\theta) \\) is the data-generating process which maps \\( X \\) into \\( Y \\) as a function of the parameter \\( \theta \\). Empirical models specify that relationship and then seek to find a vector of parameters, \\( \theta \\), in order to match the outcomes as closely as possible in some metric.
 
-Is there a theta here: $$\theta$$
-There should be. Trying inline \\( \theta \\).
-
-{% raw %}
-  $$a^2 + b^2 = c^2$$ --> note that all equations between these tags will not need escaping! 
- {% endraw %}
+The primary innovation of the moment forest is to replace that model with the following:
+\\[
+E[Y-m(X;\theta(Z))] = 0,
+\\]
+where the parameter vector now depends on the matrix \\( Z \\), which may or may not be a subset of \\( X \\). Essentially, the moment forest produces an estimate of how the structure of \\( \theta \\) changes with \\( Z \\), generating arbitrary observable heterogeneity in parameters.
 
 ### Java Source Code
 
