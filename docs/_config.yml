@@ -2,3 +2,4 @@ theme: jekyll-theme-slate
 title: Moment Forests
 description: Java code and worked examples for using the Moment Forests from Nekipelov, Novosad, and Ryan (2020).
 markdown: kramdown
+mathjax: true
