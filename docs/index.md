@@ -22,6 +22,10 @@ E[Y-m(X,\theta)] = 0.
 Is there a theta here: $$\theta$$
 There should be. Trying inline \\( \theta \\).
 
+{% raw %}
+  $$a^2 + b^2 = c^2$$ --> note that all equations between these tags will not need escaping! 
+ {% endraw %}
+
 ### Java Source Code
 
 ### Hello World Example
