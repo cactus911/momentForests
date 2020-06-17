@@ -42,4 +42,7 @@ We have also developed a link between the functionality contained in the Java co
 
 A simple "Hello, world" style example is coming soon, both in the underlying Java code and using the associated STATA link.
 
-Test [link](./subpage.md).
+{% comment %} 
+    Test [link](./subpage.md).
+{% endcomment %}
+
