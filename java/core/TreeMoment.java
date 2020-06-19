@@ -57,6 +57,8 @@ public class TreeMoment {
     private final ArrayList<Jama.Matrix> honestYList = new ArrayList<>();
     private Jama.Matrix honestX = null;
     private Jama.Matrix honestY = null;
+    private final Jama.Matrix honestXtemp;
+    private final Jama.Matrix honestYtemp;
     int numHonestXObservations;
 
     // private final static double improvementThreshold = 0.01;
@@ -71,7 +73,10 @@ public class TreeMoment {
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, Matrix subsampleX, Matrix subsampleY,
             Boolean[] discreteVector, boolean verbose, double minProportionEachPartition,
-            int minCountEachPartition, double improvementThreshold, boolean isLeft, int maxDepth) {
+            int minCountEachPartition, double improvementThreshold, boolean isLeft, int maxDepth,
+            Jama.Matrix honestXT, Jama.Matrix honestYT) {
+        this.honestXtemp = honestXT;
+        this.honestYtemp = honestYT;
         this.momentSpec = spec;
         this.parent = parent;
         this.nodeX = subsampleX;
@@ -90,6 +95,7 @@ public class TreeMoment {
             depth = parent.getDepth() + 1;
         }
     }
+    
 
     /**
      * This will tell us how many treatment effects are estimated in the
@@ -384,9 +390,9 @@ public class TreeMoment {
                     }
                     rule = new SplitRule(true, optimalSplitVariableIndex, optimalX, partitions.get((int) optimalX));
                     childLeft = new TreeMoment(this, momentSpec, obj.getDataSplit().getxLeft(), obj.getDataSplit().getyLeft(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            true, maxDepth);
+                            true, maxDepth, null, null);
                     childRight = new TreeMoment(this, momentSpec, obj.getDataSplit().getxRight(), obj.getDataSplit().getyRight(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            false, maxDepth);
+                            false, maxDepth, null, null);
                 } else {
                     MomentContinuousSplitObj obj = momentSpec.getFminObjective(nodeY, nodeX, optimalSplitVariableIndex, minProportionEachPartition, minCountEachPartition);
                     if (verbose) {
@@ -401,9 +407,9 @@ public class TreeMoment {
                     // System.out.println("Max left: "+pmUtility.max(childLeftX, 1));
                     // System.out.println("Min right: "+pmUtility.min(childRightX, 1));
                     childLeft = new TreeMoment(this, momentSpec, childLeftX, childLeftY, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            true, maxDepth);
+                            true, maxDepth, null, null);
                     childRight = new TreeMoment(this, momentSpec, childRightX, childRightY, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            false, maxDepth);
+                            false, maxDepth, null, null);
                 }
                 childLeft.determineSplit();
                 childRight.determineSplit();
@@ -691,6 +697,20 @@ public class TreeMoment {
             } else {
                 return childRight.getVarianceMatrix(xi);
             }
+    }
+
+    /**
+     * @return the honestXtemp
+     */
+    public Jama.Matrix getHonestXtemp() {
+        return honestXtemp;
+    }
+
+    /**
+     * @return the honestYtemp
+     */
+    public Jama.Matrix getHonestYtemp() {
+        return honestYtemp;
     }
 
 }

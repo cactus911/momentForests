@@ -209,7 +209,8 @@ public class EstimationRCT {
                 	improvementThreshold = barmse_random.get(j,0);
                 // for (improvementThreshold = improvementThreshold_end /*0.07514298*/; improvementThreshold >= improvementThreshold_start; improvementThreshold -= improvementThreshold_jumpsize) {
                 	SFIToolkit.displayln("MSE_bar: " + improvementThreshold + " k: " + minCountEachPartition);
-                    TreeMoment momentTree = new TreeMoment(null, bart, treeX, treeY, bart.getDiscreteVector(), verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold, true, maxDepth);
+                    TreeMoment momentTree = new TreeMoment(null, bart, treeX, treeY, bart.getDiscreteVector(), verbose, 
+                            minProportionEachPartition, minCountEachPartition, improvementThreshold, true, maxDepth, null, null);
                     momentTree.determineSplit();
                     momentTree.printTree();
 
@@ -384,7 +385,8 @@ public class EstimationRCT {
         Random rng = new Random();
         for (int fi = 0; fi < numTrees; fi++) {
             long seed = rng.nextLong();
-            TreeMoment momentTree = new TreeMoment(null, bart, resample(treeX, seed), resample(treeY, seed), bart.getDiscreteVector(), verbose, bestAlpha, bestK, bestMSEBar, true, bestDepth);
+            TreeMoment momentTree = new TreeMoment(null, bart, resample(treeX, seed), resample(treeY, seed), bart.getDiscreteVector(), verbose, 
+                    bestAlpha, bestK, bestMSEBar, true, bestDepth, null, null);
             if (verbose) {
             	SFIToolkit.displayln("----------------------- mi: " + fi + " -----------------------");
             }

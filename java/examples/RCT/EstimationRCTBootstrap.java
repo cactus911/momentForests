@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.RCT;
+package examples.RCT; 
 
 import com.stata.sfi.*;
 import JSci.maths.statistics.NormalDistribution;
@@ -142,7 +142,8 @@ public class EstimationRCTBootstrap {
         Random rng = new Random();
         for (int fi = 0; fi < numTrees; fi++) {
             long seed = rng.nextLong();
-            TreeMoment momentTree = new TreeMoment(null, bartbootstrap, resample(treeX, seed), resample(treeY, seed), bartbootstrap.getDiscreteVector(), verbose, bestAlpha, bestK, bestMSEBar, true, bestDepth);
+            TreeMoment momentTree = new TreeMoment(null, bartbootstrap, resample(treeX, seed), resample(treeY, seed), bartbootstrap.getDiscreteVector(), verbose, 
+                    bestAlpha, bestK, bestMSEBar, true, bestDepth, null, null);
             if (verbose) {
             	SFIToolkit.displayln("----------------------- mi: " + fi + " -----------------------");
             }
