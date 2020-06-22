@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.RCT; 
+package examples.RCT;
 
 import com.stata.sfi.*;
 import JSci.maths.statistics.NormalDistribution;
@@ -38,49 +38,43 @@ import utility.pmUtility;
  * @author stephen.p.ryan <stephen.p.ryan@wustl.edu>
  */
 public class EstimationRCTBootstrap {
-	
-	 public static int Momentforests(String[] args) {  
-             
-		 double resvv;
-		 long bootsobs = Data.getObsParsedIn2();
-		 resvv = Data.getNum(1, bootsobs);  
-		 int resv = (int) resvv ;
-        
-                int rc = 0;
-		EstimationRCTBootstrap go = new EstimationRCTBootstrap(resv);
-		return(rc);
-     }
-    
 
-         
-       @SuppressWarnings("deprecation")
-	public EstimationRCTBootstrap(int resv) {
-   		MomentSpecificationRCTbootstrap bartbootstrap = new MomentSpecificationRCTbootstrap();
-	    bartbootstrap.loadData();		 
-        
+    public static int Momentforests(String[] args) {
+
+        double resvv;
+        long bootsobs = Data.getObsParsedIn2();
+        resvv = Data.getNum(1, bootsobs);
+        int resv = (int) resvv;
+
+        int rc = 0;
+        EstimationRCTBootstrap go = new EstimationRCTBootstrap(resv);
+        return (rc);
+    }
+
+    @SuppressWarnings("deprecation")
+    public EstimationRCTBootstrap(int resv) {
+        MomentSpecificationRCTbootstrap bartbootstrap = new MomentSpecificationRCTbootstrap();
+        bartbootstrap.loadData();
 
         int bestK = 0;
         double bestAlpha = 0;
         double bestMSEBar = 0;
         int bestDepth = 0;
-                
+
         int numObs = bartbootstrap.getX().getRowDimension();
         Jama.Matrix allX = bartbootstrap.getX().copy();
         Jama.Matrix allXoriginal = bartbootstrap.getXoriginal().copy();
-        
-        
+
         Jama.Matrix CVParameters = bartbootstrap.cvparameters();
         double minProportionEachPartition = 0.001;
         int minCountEachPartition = (int) CVParameters.get(0, 0);
         double improvementThreshold = CVParameters.get(0, 1);
         int maxDepth = 100;
-            
+
         bestK = minCountEachPartition;
         bestAlpha = minProportionEachPartition;
         bestMSEBar = improvementThreshold;
         bestDepth = maxDepth;
-
-
 
         int numObsToEstimateTreeStructure = (int) Math.floor(numObs * 0.5);
         SFIToolkit.displayln("numObs: " + numObs + " halfObs: " + numObsToEstimateTreeStructure);
@@ -132,20 +126,20 @@ public class EstimationRCTBootstrap {
 //        pmUtility.prettyPrint(honestX);
         // this would be the place to introduce resampling of the treeX/Y and the honestX/Y to produce forest estimates
         ArrayList<TreeMoment> forest = new ArrayList<>();
-        
+
         int numTrees = bartbootstrap.numberoftrees();
         // if this is too big, it doesn't run on Stata
 
         boolean verbose = false;
-        boolean printTrees= false;
+        boolean printTrees = false;
 
         Random rng = new Random();
         for (int fi = 0; fi < numTrees; fi++) {
             long seed = rng.nextLong();
-            TreeMoment momentTree = new TreeMoment(null, bartbootstrap, resample(treeX, seed), resample(treeY, seed), bartbootstrap.getDiscreteVector(), verbose, 
+            TreeMoment momentTree = new TreeMoment(null, bartbootstrap, resample(treeX, seed), resample(treeY, seed), bartbootstrap.getDiscreteVector(), verbose,
                     bestAlpha, bestK, bestMSEBar, true, bestDepth, null, null);
             if (verbose) {
-            	SFIToolkit.displayln("----------------------- mi: " + fi + " -----------------------");
+                SFIToolkit.displayln("----------------------- mi: " + fi + " -----------------------");
             }
             momentTree.determineSplit();
 
@@ -164,7 +158,7 @@ public class EstimationRCTBootstrap {
             momentTree.consolidateHonestData();
             momentTree.estimateHonestTree();
             if (verbose || printTrees) {
-            	SFIToolkit.displayln("********* tree "+fi+" *********");
+                SFIToolkit.displayln("********* tree " + fi + " *********");
                 momentTree.printTree();
             }
             forest.add(momentTree);
@@ -181,7 +175,7 @@ public class EstimationRCTBootstrap {
                 int rcc;
                 for (int i = 0; i < allXoriginal.getRowDimension(); i++) {
                     // for (int i = 0; i < 25; i++) {
-                    Jama.Matrix xi = allXoriginal.getMatrix(i, i, 0, allXoriginal.getColumnDimension() - 1);              
+                    Jama.Matrix xi = allXoriginal.getMatrix(i, i, 0, allXoriginal.getColumnDimension() - 1);
                     xi.set(0, 0, 1); // set the treatment to one to see what the treatment effect is
                     Jama.Matrix tau = new Jama.Matrix(forest.size(), 1);
                     for (int mi = 0; mi < forest.size(); mi++) {
@@ -191,26 +185,30 @@ public class EstimationRCTBootstrap {
                         // tau.set(mi, 0, m.getPredictedY(xi));
                         // rcc  =  Data.storeNum(resv+1, i+1 ,beta.get(0, 0));
                         // Data.storeStr(resv+1, i ,String.valueOf(beta.get(0, 0)));
-                        
+
                         if (verbose) {
-                        	// SFIToolkit.displayln("mi: " + mi);
+                            // SFIToolkit.displayln("mi: " + mi);
                         }
                         tau.set(mi, 0, beta.get(0, 0));
-                    }               
+                    }
                     uniqueTau.add(pmUtility.mean(tau, 0));
-                    rcc  =  Data.storeNum(Data.getParsedVarCount()+2+resv, i+1 ,pmUtility.mean(tau, 0));
+                    rcc = Data.storeNum(Data.getParsedVarCount() + 2 + resv, i + 1, pmUtility.mean(tau, 0));
 
                 }
-                
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
-         }
-        
+        }
 
     }
 
     public static Jama.Matrix resample(Jama.Matrix x, long seed) {
+        /**
+         * Think about balancing on treatment/control here for better
+         * small-sample splitting performance?
+         */
+
         Random rng = new Random(seed);
         if (1 == 0) {
             return x.copy();

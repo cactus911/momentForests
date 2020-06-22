@@ -36,11 +36,11 @@ public class BootstrapForest {
 
     ArrayList<MomentForest> forestList = new ArrayList<>();
 
-    public BootstrapForest(MomentSpecification spec, int numberBootstraps, int numberTreesInForest, long randomSeed) {
+    public BootstrapForest(MomentSpecification spec, int numberBootstraps, int numberTreesInForest, long randomSeed, TreeOptions options) {
         Random rng = new Random(randomSeed);
         for (int i = 0; i < numberBootstraps; i++) {
             long seed = rng.nextLong();
-            forestList.add(new MomentForest(spec, numberTreesInForest, rng.nextLong(), MomentForest.resample(spec.getX(), seed), MomentForest.resample(spec.getY(), seed)));
+            forestList.add(new MomentForest(spec, numberTreesInForest, rng.nextLong(), MomentForest.resample(spec.getX(), seed), MomentForest.resample(spec.getY(), seed), false, options));
         }
         forestList.parallelStream().forEach((forest) -> forest.growForest());
     }

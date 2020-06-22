@@ -93,6 +93,9 @@ public class MomentSpecificationRCT implements MomentSpecification {
 //        pmUtility.prettyPrintVector(beta);
 //        pmUtility.prettyPrint(xi);
         if (beta != null) {
+            System.out.println("MomentSpecificationRCT.java:getPredictedY(Matrix xi, Jama.Matrix beta)");
+            System.out.println("This is probably wrong since we are not conditioning on the treatment indicator");
+            System.exit(0);
             double yhat = xi.get(0, 0) * beta.get(0, 0);
             return yhat;
         }
