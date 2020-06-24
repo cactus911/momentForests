@@ -134,14 +134,29 @@ public class MomentForest {
         Random rng = new Random(honestRNG.nextLong());
         forest = new ArrayList<>();
 
+        Jama.Matrix balancingTreeX = pmUtility.getColumn(treeX, 0);
+        Jama.Matrix balancingHonestX = pmUtility.getColumn(honestX, 0);
+
         for (int i = 0; i < numberTreesInForest; i++) {
             long seed = rng.nextLong();
             long seedHonest = rng.nextLong();
-            forest.add(new TreeMoment(null, spec, resample(treeX, seed, pmUtility.getColumn(treeX, 0)), resample(treeY, seed, pmUtility.getColumn(treeX, 0)),
-                    spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
-                    resample(honestX, seedHonest, pmUtility.getColumn(honestX, 0)), resample(honestY, seedHonest, pmUtility.getColumn(honestX, 0))));
-        }
 
+            boolean useResampleMatrix = true;
+            if (!useResampleMatrix) {
+                forest.add(new TreeMoment(null, spec, resample(treeX, seed, balancingTreeX), resample(treeY, seed, balancingTreeX),
+                        spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
+                        resample(honestX, seedHonest, balancingHonestX), resample(honestY, seedHonest, balancingHonestX)));
+            } else {
+                ResamplingLens reTreeX = new ResamplingLens(treeX, seed, balancingTreeX);
+                ResamplingLens reTreeY = new ResamplingLens(treeY, seed, balancingTreeX);
+                ResamplingLens reHonestX = new ResamplingLens(honestX, seedHonest, balancingHonestX);
+                ResamplingLens reHonestY = new ResamplingLens(honestY, seedHonest, balancingHonestX);
+                forest.add(new TreeMoment(null, spec, reTreeX, reTreeY,
+                        spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
+                        reHonestX, reHonestY));
+            }
+        }
+        
         forest.parallelStream().forEach((tree) -> {
             tree.determineSplit();
             Jama.Matrix thisHonestX = tree.getHonestXtemp();
@@ -154,7 +169,11 @@ public class MomentForest {
             }
             tree.consolidateHonestData();
             tree.estimateHonestTree();
+            
+            tree.clearEstimationData();
+            tree.clearHonestyData();
         });
+        // System.out.format("Memory usage: %,d bytes %n", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
     }
 
     public Matrix getEstimatedParameters(Matrix x) {
@@ -259,7 +278,6 @@ public class MomentForest {
         /**
          * Obviously the other thing to consider is stratifying by group
          */
-        
         int countTree = 0;
         int countPredict = 0;
         for (int i = 0; i < numObs; i++) {
@@ -298,9 +316,7 @@ public class MomentForest {
                 Random rng = new Random(667);
                 options.setMinCount(minCountEachPartition);
                 options.setMinMSEImprovement(improvementThreshold);
-                // TreeMoment momentTree = new TreeMoment(null, spec, treeX, treeY, spec.getDiscreteVector(), verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold, true, maxDepth, null, null);
-                // momentTree.determineSplit();
-                // momentTree.printTree();
+                
                 MomentForest momentForest = new MomentForest(spec, numTrees, rng.nextLong(), treeX, treeY, verboseTreeConstruction, options);
                 momentForest.growForest();
                 /**
@@ -316,7 +332,6 @@ public class MomentForest {
 //                momentForest.getTree(0).printTree();
 //                System.out.println("Tree B:");
 //                momentForestSwitch.getTree(0).printTree();
-
                 double MSPE = 0;
 
                 int counter = 0;

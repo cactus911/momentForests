@@ -49,7 +49,7 @@ public class SimpleRCTMain {
          * 1. Running CV to obtain optimal hyper-parameters 2. Estimate a moment
          * forest 3. Estimate standard errors via bootstrapping
          */
-        for (int n = 1000; n <= 16000; n *= 2) {
+        for (int n = 5000; n <= 16000; n *= 2) {
             System.out.println("*********** n = "+n+" (really one-tenth of that, since n here = observations*outcomes) ***********");
             MomentSpecification mySpecification = new SimpleRCTMomentSpecification(n);
             mySpecification.loadData();
@@ -64,7 +64,8 @@ public class SimpleRCTMain {
             /**
              * Run a CV for the hyper-parameters and see the tree options
              */
-            TreeOptions cvOptions = myForest.performCrossValidation(100);
+            int numTreesCrossValidation = 100;
+            TreeOptions cvOptions = myForest.performCrossValidation(numTreesCrossValidation);
             myForest.setTreeOptions(cvOptions);
             /**
              * Grow the moment forest

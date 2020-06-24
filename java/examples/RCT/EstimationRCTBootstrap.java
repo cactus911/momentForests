@@ -157,6 +157,8 @@ public class EstimationRCTBootstrap {
             }
             momentTree.consolidateHonestData();
             momentTree.estimateHonestTree();
+            momentTree.clearEstimationData();
+            momentTree.clearHonestyData();
             if (verbose || printTrees) {
                 SFIToolkit.displayln("********* tree " + fi + " *********");
                 momentTree.printTree();

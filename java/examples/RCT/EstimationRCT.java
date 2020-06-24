@@ -410,6 +410,8 @@ public class EstimationRCT {
             	SFIToolkit.displayln("********* tree "+fi+" *********");
                 momentTree.printTree();
             }
+            momentTree.clearEstimationData();
+            momentTree.clearHonestyData();
             forest.add(momentTree);
         }
 
