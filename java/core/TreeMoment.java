@@ -218,9 +218,9 @@ public class TreeMoment {
              * track across branches.
              */
             TreeSet<Integer> randomForestIndex = new TreeSet<>();
-            boolean useRandomForest = false;
+            boolean useRandomForest = true;
             if (useRandomForest) {
-                int P = Math.min(100, momentSpec.getVariableIndicesToSearchOver().length);
+                int P = Math.min(5, momentSpec.getVariableIndicesToSearchOver().length);
                 for (int i = 0; i < P; i++) {
                     int index = (int) Math.floor(Math.random() * momentSpec.getVariableIndicesToSearchOver().length);
                     while (randomForestIndex.contains(index)) {
@@ -365,14 +365,6 @@ public class TreeMoment {
                 echoLn("Improvement percentage (to compare against threshold): " + ((baseline - optimalX_MSE) / baseline));
             }
 
-            /**
-             * There may be a problem here in that first is never hit when the
-             * first index of X is not evaluated. The basic issue is that the
-             * index of X=0 is set as the default best. That leads to insanity
-             * when you are doing discrete cuts on X1 and ignoring X0. Need to
-             * add in check here for whether first is still true (which means
-             * that there were no valid splits, and we should terminate)
-             */
             // if (baseline - optimalX_MSE < improvementThreshold) {
             if ((baseline - optimalX_MSE) / baseline < improvementThreshold || first || baseline == 0) {
                 setTerminal(true);

@@ -51,6 +51,21 @@ public class ResamplingLens extends Jama.Matrix {
         rng.setSeed(seed);
         initializeIndex(balancing);
     }
+    
+    /**
+     * Use this constructor to create a submatrix. Simply pass the int[] index to the
+     * constructor to get a subset of the original data.
+     * 
+     * @param m Original data Jama.Matrix.
+     * @param seed Random number generator seed.
+     * @param resampleIndex An index that controls re/subsampling
+     */
+    public ResamplingLens(Jama.Matrix m, long seed, int[] resampleIndex) {
+        super(0,0);
+        originalData = m;
+        rng.setSeed(seed); // don't even think this is necessary for the subsampling part
+        this.resampleIndex = resampleIndex;
+    }
 
     private void initializeIndex(Jama.Matrix balancingVector) {
         resampleIndex = new int[originalData.getRowDimension()];
@@ -89,10 +104,13 @@ public class ResamplingLens extends Jama.Matrix {
         return originalData.get(resampleIndex[row], column);
     }
 
+    /**
+     * We will control submatrices through here. 
+     * @return Number of observations.
+     */
     @Override
     public int getRowDimension() {
-        // System.out.println("Getting row dimension");
-        return originalData.getRowDimension();
+        return resampleIndex.length;
     }
 
     @Override
@@ -149,11 +167,6 @@ public class ResamplingLens extends Jama.Matrix {
         System.exit(0);
         return super.getRowPackedCopy(); //To change body of generated methods, choose Tools | Templates.
     }
-    
-    
-    
-    
-    
     
 
     @Override
