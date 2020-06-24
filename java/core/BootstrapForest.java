@@ -40,7 +40,10 @@ public class BootstrapForest {
         Random rng = new Random(randomSeed);
         for (int i = 0; i < numberBootstraps; i++) {
             long seed = rng.nextLong();
-            forestList.add(new MomentForest(spec, numberTreesInForest, rng.nextLong(), MomentForest.resample(spec.getX(), seed), MomentForest.resample(spec.getY(), seed), false, options));
+            forestList.add(new MomentForest(spec, numberTreesInForest, rng.nextLong(), 
+                    MomentForest.resample(spec.getX(), seed, pmUtility.getColumn(spec.getX(), 0)), 
+                    MomentForest.resample(spec.getY(), seed, pmUtility.getColumn(spec.getX(), 0)), 
+                    false, options));
         }
         forestList.parallelStream().forEach((forest) -> forest.growForest());
     }

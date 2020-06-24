@@ -204,11 +204,6 @@ public class EstimationRCTBootstrap {
     }
 
     public static Jama.Matrix resample(Jama.Matrix x, long seed) {
-        /**
-         * Think about balancing on treatment/control here for better
-         * small-sample splitting performance?
-         */
-
         Random rng = new Random(seed);
         if (1 == 0) {
             return x.copy();

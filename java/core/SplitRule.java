@@ -110,7 +110,7 @@ public class SplitRule {
             s = s.concat("}");
 
             if (partition.getLeft().size() == 1) {
-                s = "x"+optimalSplitVariableIndex+" = "+spec.getFixedEffectName(optimalSplitVariableIndex, partition.getLeft().get(0));
+                s = spec.getVariableName(optimalSplitVariableIndex) + " = " + spec.getFixedEffectName(optimalSplitVariableIndex, partition.getLeft().get(0));
             }
 
             return s;
@@ -118,7 +118,7 @@ public class SplitRule {
             return spec.getVariableName(optimalSplitVariableIndex) + " < " + optimalX;
         }
     }
-    
+
     SplitRuleContainer getLeftSplitContainer() {
         if (splitOnDiscreteVariable) {
             return new SplitRuleContainer(partition.getLeft(), optimalSplitVariableIndex);
@@ -150,17 +150,16 @@ public class SplitRule {
                 s = s.concat(spec.getFixedEffectName(optimalSplitVariableIndex, partition.getRight().get(i)) + " ");
             }
             s = s.concat("}");
-            
+
             if (partition.getRight().size() == 1) {
-                s = "x"+optimalSplitVariableIndex+" = "+spec.getFixedEffectName(optimalSplitVariableIndex, partition.getRight().get(0));
+                s = spec.getVariableName(optimalSplitVariableIndex) + " = " + spec.getFixedEffectName(optimalSplitVariableIndex, partition.getRight().get(0));
             }
-            
+
             return s;
         } else {
             return spec.getVariableName(optimalSplitVariableIndex) + " > " + optimalX;
         }
     }
-    
 
     SplitRuleContainer getRightSplitContainer() {
         if (splitOnDiscreteVariable) {

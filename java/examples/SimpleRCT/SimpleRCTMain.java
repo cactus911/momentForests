@@ -49,57 +49,60 @@ public class SimpleRCTMain {
          * 1. Running CV to obtain optimal hyper-parameters 2. Estimate a moment
          * forest 3. Estimate standard errors via bootstrapping
          */
-        MomentSpecification mySpecification = new SimpleRCTMomentSpecification();
-        mySpecification.loadData();
+        for (int n = 1000; n <= 16000; n *= 2) {
+            System.out.println("*********** n = "+n+" (really one-tenth of that, since n here = observations*outcomes) ***********");
+            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(n);
+            mySpecification.loadData();
 
-        int numberTreesInForest = 100;
-        System.out.println("numTrees: " + numberTreesInForest);
+            int numberTreesInForest = 500;
+            // System.out.println("numTrees: " + numberTreesInForest);
 
-        /**
-         * Initialize the moment forest
-         */
-        MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, mySpecification.getX(), mySpecification.getY(), false, new TreeOptions());
-        /**
-         * Run a CV for the hyper-parameters and see the tree options
-         */
-        TreeOptions cvOptions = myForest.performCrossValidation();
-        myForest.setTreeOptions(cvOptions);
-        /**
-         * Grow the moment forest
-         */
-        myForest.growForest();
+            /**
+             * Initialize the moment forest
+             */
+            MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, mySpecification.getX(), mySpecification.getY(), false, new TreeOptions());
+            /**
+             * Run a CV for the hyper-parameters and see the tree options
+             */
+            TreeOptions cvOptions = myForest.performCrossValidation(100);
+            myForest.setTreeOptions(cvOptions);
+            /**
+             * Grow the moment forest
+             */
+            myForest.growForest();
 
-        /**
-         * Compute standard errors
-         */
-        int numberBootstraps = 10;
-        int numberTreesInBootForest = 10;
-        BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
+            /**
+             * Compute standard errors
+             */
+            int numberBootstraps = 50;
+            int numberTreesInBootForest = 50;
+            BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
 
-        /**
-         * Show fits for out of sample data
-         */
-        Jama.Matrix fitX = new Jama.Matrix(10, 2);
-        for (int i = 0; i < fitX.getRowDimension(); i++) {
-            fitX.set(i, 1, i);
-        }
-
-        for (int i = 0; i < fitX.getRowDimension(); i++) {
-            Jama.Matrix xi = fitX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
-            Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameters(xi);
-            Jama.Matrix standardErrors = estimatedTreatmentEffects.times(0);
-            boolean useBoot = true;
-            if(useBoot) {
-                standardErrors = boot.computeStandardErrors(xi);
-            }            
-            String sig = "";
-            if (Math.abs(estimatedTreatmentEffects.get(0, 0) / standardErrors.get(0, 0)) > 1.98) {
-                sig = "*";
+            /**
+             * Show fits for out of sample data
+             */
+            Jama.Matrix fitX = new Jama.Matrix(10, 2);
+            for (int i = 0; i < fitX.getRowDimension(); i++) {
+                fitX.set(i, 1, i);
             }
-            System.out.format("%g %g (%g) %s %n", fitX.get(i, 1), estimatedTreatmentEffects.get(0, 0), standardErrors.get(0, 0), sig);
-        }
 
-        mySpecification.computeNaiveStatistics();
+            for (int i = 0; i < fitX.getRowDimension(); i++) {
+                Jama.Matrix xi = fitX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
+                Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameters(xi);
+                Jama.Matrix standardErrors = estimatedTreatmentEffects.times(0);
+                boolean useBoot = true;
+                if (useBoot) {
+                    standardErrors = boot.computeStandardErrors(xi);
+                }
+                String sig = "";
+                if (Math.abs(estimatedTreatmentEffects.get(0, 0) / standardErrors.get(0, 0)) > 1.98) {
+                    sig = "*";
+                }
+                System.out.format("%g %g (%g) %s %n", fitX.get(i, 1), estimatedTreatmentEffects.get(0, 0), standardErrors.get(0, 0), sig);
+            }
+
+            mySpecification.computeNaiveStatistics();
+        }
 
     }
 

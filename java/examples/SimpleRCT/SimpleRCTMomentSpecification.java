@@ -45,11 +45,13 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 
     Jama.Matrix X;
     Jama.Matrix Y;
+    int numObs;
 
     int[] variableSearchIndex = {1};
     Boolean[] whichVariablesDiscrete = {true, true};
 
-    public SimpleRCTMomentSpecification() {
+    public SimpleRCTMomentSpecification(int numObs) {
+        this.numObs = numObs;
     }
 
     @Override
@@ -143,7 +145,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
                 subY.set(i, 0, typeY.get(i));
             }
             // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
-            Jama.Matrix olsBeta = pmUtility.OLS(subX, subY, false);
+            Jama.Matrix olsBeta = pmUtility.OLSsvd(subX, subY, false);
             Jama.Matrix olsVar = pmUtility.getOLSVariances(subY, subX, false);
             String sig = "";
             if (Math.abs(olsBeta.get(0, 0) / Math.sqrt(olsVar.get(0, 0))) > 1.98) {
@@ -206,7 +208,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     @Override
     public void loadData() {
         NormalDistribution normal = new NormalDistribution();
-        int n = 2000;
+        int n = numObs;
         int G = 10; // number of groups
         Y = new Jama.Matrix(n, 1);
         X = new Jama.Matrix(n, 2);
@@ -216,12 +218,12 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
             X.set(i, 1, Math.floor(G * Math.random())); // group number
             if (X.get(i, 0) == 1) {
                 if (X.get(i, 1) < 4) {
-                    Y.set(i, 0, -1.0);
+                    Y.set(i, 0, -4.0);
                 } else if (X.get(i, 1) > 7) {
-                    Y.set(i, 0, 1.0 + X.get(i, 1) * 0.1);
+                    Y.set(i, 0, 1.0 + X.get(i, 1));
                 }
             }
-            Y.set(i, 0, Y.get(i, 0) + 0.1 * normal.inverse(Math.random()));
+            Y.set(i, 0, Y.get(i, 0) + 1.0 * normal.inverse(Math.random()));
         }
     }
 

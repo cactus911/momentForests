@@ -360,6 +360,7 @@ public class TreeMoment {
             double baseline = currentNodeMoment.getMSE();
             // System.out.println("Baseline SSE is computed as: " + baseline);
             if (verbose) {
+                echoLn("Number of observations in node: "+nodeX.getRowDimension());
                 echoLn("Improvement from " + baseline + " to " + optimalX_MSE + " (left: " + optimalX_MSE_Left + " [" + numObsLeft + "] right: " + optimalX_MSE_Right + " [" + numObsRight + "])");
                 echoLn("Improvement percentage (to compare against threshold): " + ((baseline - optimalX_MSE) / baseline));
             }
@@ -579,7 +580,7 @@ public class TreeMoment {
          */
         if (terminal) {
             if (verbose) {
-                echoLn(getParentRule(null) + " honest set to ");
+                echo(getParentRule(null) + " honest set to ");
             }
             if (honestY == null) {
                 setNodeEstimatedBeta(null);
@@ -713,9 +714,14 @@ public class TreeMoment {
         return honestYtemp;
     }
 
-    private void echoLn(String s) {
+    static private void echoLn(String s) {
         // SFIToolkit.displayln
         System.out.println(s);
+    }
+    
+    static private void echo(String s) {
+        // SFIToolkit.displayln
+        System.out.print(s);
     }
 
 }

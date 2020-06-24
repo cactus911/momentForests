@@ -62,9 +62,22 @@ public class MomentForest {
         this.forestSeed = forestSeed;
     }
 
-    public void growForest() {
-        int numObsToEstimateTreeStructure = (int) Math.floor(numObs * 0.25);
+    public TreeMoment getTree(int i) {
+        return forest.get(i);
+    }
 
+    public void growForest() {
+        double proportionObservationsToEstimateTreeStructure = 0.15;
+        int numObsToEstimateTreeStructure = (int) Math.floor(numObs * proportionObservationsToEstimateTreeStructure);
+        // System.out.println("numObs Estimate Tree Structure: "+numObsToEstimateTreeStructure+" out of "+numObs);
+        double ratioTreatment = pmUtility.mean(forestX, 0);
+        int goalTreatmentObsTreeX = (int) Math.round(ratioTreatment * numObsToEstimateTreeStructure);
+        int countTreatmentTreeX = 0;
+
+        /**
+         * Want to figure out how to balance these treeX/Y and honestX/Y
+         * matrices on treatment status.
+         */
         Jama.Matrix treeX = new Jama.Matrix(numObsToEstimateTreeStructure, forestX.getColumnDimension());
         Jama.Matrix treeY = new Jama.Matrix(numObsToEstimateTreeStructure, 1);
         Jama.Matrix honestX = new Jama.Matrix(numObs - numObsToEstimateTreeStructure, forestX.getColumnDimension());
@@ -77,6 +90,16 @@ public class MomentForest {
         while (count < numObsToEstimateTreeStructure) {
             if (count < numObsToEstimateTreeStructure) {
                 int index = (int) Math.floor(honestRNG.nextDouble() * numObs);
+                if (countTreatmentTreeX < goalTreatmentObsTreeX) {
+                    while (forestX.get(index, 0) == 0) {
+                        index = (int) Math.floor(honestRNG.nextDouble() * numObs);
+                    }
+                    countTreatmentTreeX++;
+                } else {
+                    while (forestX.get(index, 0) == 1) {
+                        index = (int) Math.floor(honestRNG.nextDouble() * numObs);
+                    }
+                }
                 if (!treeSet.contains(index)) {
                     treeSet.add(index);
                     count++;
@@ -107,15 +130,16 @@ public class MomentForest {
             }
         }
 
+        // System.out.println("Mean treeX: "+pmUtility.mean(treeX, 0)+" Mean HonestX: "+pmUtility.mean(honestX, 0));
         Random rng = new Random(honestRNG.nextLong());
         forest = new ArrayList<>();
 
         for (int i = 0; i < numberTreesInForest; i++) {
             long seed = rng.nextLong();
             long seedHonest = rng.nextLong();
-            forest.add(new TreeMoment(null, spec, resample(treeX, seed), resample(treeY, seed),
+            forest.add(new TreeMoment(null, spec, resample(treeX, seed, pmUtility.getColumn(treeX, 0)), resample(treeY, seed, pmUtility.getColumn(treeX, 0)),
                     spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
-                    resample(honestX, seedHonest), resample(honestY, seedHonest)));
+                    resample(honestX, seedHonest, pmUtility.getColumn(honestX, 0)), resample(honestY, seedHonest, pmUtility.getColumn(honestX, 0))));
         }
 
         forest.parallelStream().forEach((tree) -> {
@@ -146,14 +170,41 @@ public class MomentForest {
         return estimatedParameters;
     }
 
-    public static Jama.Matrix resample(Jama.Matrix x, long seed) {
+    public static Jama.Matrix resample(Jama.Matrix x, long seed, Jama.Matrix balancingVector) {
+        /**
+         * Think about balancing on treatment/control here for better
+         * small-sample splitting performance?
+         *
+         * How to do that? Do an acceptance/rejection method to balance at
+         * half/half? Need to make sure that it doesn't get stuck Maybe ensure
+         * that the ratio of treatment and control is held (close to) constant
+         *
+         * Since we use this method to resample X and Y, need to pass a
+         * balancing vector for the case when we are resampling Y
+         */
+
+        double ratio = pmUtility.mean(balancingVector, 0);
+        int goalTreatment = (int) Math.round(ratio * balancingVector.getRowDimension());
+
         Random rng = new Random(seed);
-        if (1 == 0) {
-            return x.copy();
-        }
+
+        int countTreatment = 0;
         Jama.Matrix re = new Jama.Matrix(x.getRowDimension(), x.getColumnDimension());
         for (int i = 0; i < re.getRowDimension(); i++) {
             int index = (int) Math.floor(re.getRowDimension() * rng.nextDouble());
+            double treatmentIndicator = balancingVector.get(index, 0);
+            if (countTreatment < goalTreatment) {
+                while (treatmentIndicator == 0) {
+                    index = (int) Math.floor(re.getRowDimension() * rng.nextDouble());
+                    treatmentIndicator = balancingVector.get(index, 0);
+                }
+                countTreatment++;
+            } else {
+                while (treatmentIndicator == 1) {
+                    index = (int) Math.floor(re.getRowDimension() * rng.nextDouble());
+                    treatmentIndicator = balancingVector.get(index, 0);
+                }
+            }
             for (int j = 0; j < re.getColumnDimension(); j++) {
                 re.set(i, j, x.get(index, j));
             }
@@ -161,46 +212,56 @@ public class MomentForest {
         return re;
     }
 
-    public TreeOptions performCrossValidation() {
-        double proportion = 0.33;
-        int numObsEstimateLeafValues = (int) Math.floor(numObs * proportion);
-        int numPredictObs = (int) Math.floor(numObs * 0.33); // it was originally 10;
-        int numObsGrowTreeStructure = numObs - numObsEstimateLeafValues - numPredictObs; // halfObs / 2;
+    public TreeOptions performCrossValidation(int numTrees) {
+        int numPredictObs = (int) Math.floor(numObs * 0.5);
+        int numObsEstimateTree = numObs - numPredictObs; // halfObs / 2;
         // SFIToolkit.displayln("numObs: " + numObs + " halfObs: " + numObsEstimateLeafValues + " predictObs: " + numPredictObs);
 
-        Jama.Matrix treeX = new Jama.Matrix(numObsGrowTreeStructure, spec.getX().getColumnDimension());
-        Jama.Matrix treeY = new Jama.Matrix(numObsGrowTreeStructure, 1);
-        Jama.Matrix honestX = new Jama.Matrix(numObsEstimateLeafValues, spec.getX().getColumnDimension());
-        Jama.Matrix honestY = new Jama.Matrix(numObsEstimateLeafValues, 1);
+        double ratioTreatment = pmUtility.mean(spec.getX(), 0);
+        int goalTreatmentObsTreeX = (int) Math.round(ratioTreatment * numObsEstimateTree);
+        int countTreatmentTreeX = 0;
+        // System.out.println("ratio: " + ratioTreatment + " goalTreeX: " + goalTreatmentObsTreeX + " goalPredictX: " + goalTreatmentObsPredictX + " (out of " + numPredictObs + ")");
+
+        Jama.Matrix treeX = new Jama.Matrix(numObsEstimateTree, spec.getX().getColumnDimension());
+        Jama.Matrix treeY = new Jama.Matrix(numObsEstimateTree, 1);
         Jama.Matrix predictX = new Jama.Matrix(numPredictObs, spec.getX().getColumnDimension());
         Jama.Matrix predictY = new Jama.Matrix(numPredictObs, 1);
 
+        /**
+         * Balancing split of sample into two parts via treatment status
+         */
         TreeSet<Integer> growTreeSet = new TreeSet<>();
         int count = 0;
-        while (count < numObsGrowTreeStructure) {
-            if (count < numObsGrowTreeStructure) {
+        while (count < numObsEstimateTree) {
+            if (count < numObsEstimateTree) {
                 int index = (int) Math.floor(Math.random() * numObs);
+                if (countTreatmentTreeX < goalTreatmentObsTreeX) {
+                    while (spec.getX().get(index, 0) == 0) {
+                        index = (int) Math.floor(Math.random() * numObs);
+                    }
+
+                } else {
+                    while (spec.getX().get(index, 0) == 1) {
+                        index = (int) Math.floor(Math.random() * numObs);
+                    }
+                }
                 if (!growTreeSet.contains(index)) {
                     growTreeSet.add(index);
+                    if (spec.getX().get(index, 0) == 1) {
+                        countTreatmentTreeX++;
+                    }
                     count++;
                 }
             }
         }
-        TreeSet<Integer> predictSet = new TreeSet<>();
-        count = 0;
-        while (count < numPredictObs) {
-            if (count < numPredictObs) {
-                int index = (int) Math.floor(Math.random() * numObs);
-                if (!predictSet.contains(index) && !growTreeSet.contains(index)) {
-                    predictSet.add(index);
-                    count++;
-                }
-            }
-        }
+        // System.out.println("countTreatmentTreeX: " + countTreatmentTreeX + " (out of " + numObsGrowTreeStructure + "); ratio = " + ((countTreatmentTreeX + 0.0) / (numObsGrowTreeStructure + 0.0)));
 
+        /**
+         * Obviously the other thing to consider is stratifying by group
+         */
+        
         int countTree = 0;
         int countPredict = 0;
-        int countHonest = 0;
         for (int i = 0; i < numObs; i++) {
             if (growTreeSet.contains(i)) {
                 for (int j = 0; j < spec.getX().getColumnDimension(); j++) {
@@ -208,23 +269,19 @@ public class MomentForest {
                 }
                 treeY.set(countTree, 0, spec.getY().get(i, 0));
                 countTree++;
-            } else if (predictSet.contains(i)) {
+            } else {
                 for (int j = 0; j < spec.getX().getColumnDimension(); j++) {
                     predictX.set(countPredict, j, spec.getX().get(i, j));
                 }
                 predictY.set(countPredict, 0, spec.getY().get(i, 0));
                 countPredict++;
-            } else {
-                for (int j = 0; j < spec.getX().getColumnDimension(); j++) {
-                    honestX.set(countHonest, j, spec.getX().get(i, j));
-                }
-                honestY.set(countHonest, 0, spec.getY().get(i, 0));
-                countHonest++;
             }
             // System.out.println(i+" "+treeSet.contains(i)+" "+countTree+" "+countHonest);
         }
 
-        boolean verboseTreeConstruction = true;
+        // System.out.println("sum treeX: " + pmUtility.sum(treeX, 0) + " mean treeX: " + pmUtility.mean(treeX, 0) + " mean honestX: " + pmUtility.mean(honestX, 0) + " mean predictX: " + pmUtility.mean(predictX, 0));
+        // System.exit(0);
+        boolean verboseTreeConstruction = false;
         double minProportionEachPartition = 1E-5;
         double improvementThreshold = 50.0;
         double bestMSPE = 0;
@@ -236,16 +293,29 @@ public class MomentForest {
         options.setMaxDepth(100);
         options.setMinMSEImprovement(1E-10);
 
-        for (improvementThreshold = 0.20; improvementThreshold >= 0.001; improvementThreshold *= 0.9) {
-            for (int minCountEachPartition = 10; minCountEachPartition <= 10; minCountEachPartition += 10) {
+        for (improvementThreshold = 5E-5; improvementThreshold <= 0.5; improvementThreshold *= 2.5) {
+            for (int minCountEachPartition = 11; minCountEachPartition >= 1; minCountEachPartition -= 1) {
                 Random rng = new Random(667);
                 options.setMinCount(minCountEachPartition);
                 options.setMinMSEImprovement(improvementThreshold);
-                // TreeMoment momentTree = new TreeMoment(null, spec, treeX, treeY, spec.getDiscreteVector(), verbose,                        minProportionEachPartition, minCountEachPartition, improvementThreshold, true, maxDepth, null, null);
+                // TreeMoment momentTree = new TreeMoment(null, spec, treeX, treeY, spec.getDiscreteVector(), verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold, true, maxDepth, null, null);
                 // momentTree.determineSplit();
                 // momentTree.printTree();
-                MomentForest momentForest = new MomentForest(spec, 1, rng.nextLong(), treeX, treeY, verboseTreeConstruction, options);
+                MomentForest momentForest = new MomentForest(spec, numTrees, rng.nextLong(), treeX, treeY, verboseTreeConstruction, options);
                 momentForest.growForest();
+                /**
+                 * We can easily implement cross-fitting here by swapping the
+                 * prediction and estimation data sets and adding another MSPE
+                 * component
+                 */
+                MomentForest momentForestSwitch = new MomentForest(spec, numTrees, rng.nextLong(), predictX, predictY, verboseTreeConstruction, options);
+                momentForestSwitch.growForest();
+
+//                System.out.println("-------");
+//                System.out.println("Tree A:");
+//                momentForest.getTree(0).printTree();
+//                System.out.println("Tree B:");
+//                momentForestSwitch.getTree(0).printTree();
 
                 double MSPE = 0;
 
@@ -258,10 +328,26 @@ public class MomentForest {
                         MSPE += Math.pow(predictY.get(i, 0) - predictedY, 2);
                         counter++;
                     } else {
-                        pmUtility.prettyPrint(predictX.getMatrix(i, i, 0, honestX.getColumnDimension() - 1));
+                        pmUtility.prettyPrint(predictX.getMatrix(i, i, 0, predictX.getColumnDimension() - 1));
                         nullCounterMSPE++;
                     }
                 }
+                /**
+                 * Cross-fitting part (reverse estimation data with prediction
+                 * data)
+                 */
+                for (int i = 0; i < treeX.getRowDimension(); i++) {
+                    Jama.Matrix xi = treeX.getMatrix(i, i, 0, treeX.getColumnDimension() - 1);
+                    Double predictedY = spec.getPredictedY(xi, momentForestSwitch.getEstimatedParameters(xi));
+                    if (predictedY != null) {
+                        MSPE += Math.pow(treeY.get(i, 0) - predictedY, 2);
+                        counter++;
+                    } else {
+                        pmUtility.prettyPrint(treeX.getMatrix(i, i, 0, treeX.getColumnDimension() - 1));
+                        nullCounterMSPE++;
+                    }
+                }
+
                 MSPE /= counter;
 
                 // SFIToolkit.displayln("CV_index: " + CV_Index + " " );
@@ -269,6 +355,9 @@ public class MomentForest {
                 // + " " + " mse_bar: " + options.getMinMSEImprovement() + " ");
                 // System.out.print("MSPE: " + MSPE + " nulls: " + nullCounterMSPE + " ");
                 String s = "";
+                if (MSPE == bestMSPE) {
+                    s = " - ";
+                }
                 if (MSPE < bestMSPE || first) {
                     s = " * ";
                     bestK = minCountEachPartition;
@@ -279,14 +368,13 @@ public class MomentForest {
                     // bestProportion = proportion;
                     first = false;
                 }
-                System.out.format("maxDepth: %d k: %d mse_bar: %g mspe: %g nulls: %d %s %n", options.getMaxDepth(), options.getMinCount(), options.getMinMSEImprovement(),
-                         MSPE, nullCounterMSPE, s);
+                // System.out.format("maxDepth: %d k: %d mse_bar: %g mspe: %g nulls: %d %s %n", options.getMaxDepth(), options.getMinCount(), options.getMinMSEImprovement(), MSPE, nullCounterMSPE, s);
                 // System.out.println("MSPE: " + MSPE + " nulls: " + nullCounterMSPE);
 
             }
         }
-        System.out.println("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
-        System.out.println("Optimal improvement threshold: " + bestMSEBar);
+        System.out.print("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
+        System.out.println(" Optimal improvement threshold: " + bestMSEBar);
 
         options.setMinCount(bestK);
         options.setMinMSEImprovement(bestMSEBar);
