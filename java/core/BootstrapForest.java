@@ -37,6 +37,8 @@ public class BootstrapForest {
     ArrayList<MomentForest> forestList = new ArrayList<>();
 
     public BootstrapForest(MomentSpecification spec, int numberBootstraps, int numberTreesInForest, long randomSeed, TreeOptions options) {
+        DataLens originalLens = new DataLens(spec.getX(), spec.getY(), pmUtility.getColumn(spec.getX(), 0));
+        
         Random rng = new Random(randomSeed);
         for (int i = 0; i < numberBootstraps; i++) {
             long seed = rng.nextLong();
@@ -45,8 +47,7 @@ public class BootstrapForest {
 //                    MomentForest.resample(spec.getY(), seed, pmUtility.getColumn(spec.getX(), 0)), 
 //                    false, options));
             forestList.add(new MomentForest(spec, numberTreesInForest, rng.nextLong(),
-                    new ResamplingLens(spec.getX(), seed, pmUtility.getColumn(spec.getX(), 0)),
-                    new ResamplingLens(spec.getY(), seed, pmUtility.getColumn(spec.getX(), 0)),
+                    originalLens.getResampledDataLens(seed),
                     false, options));
         }
         forestList.parallelStream().forEach((forest) -> forest.growForest());

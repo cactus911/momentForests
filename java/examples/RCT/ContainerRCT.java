@@ -26,6 +26,7 @@ package examples.RCT;
 import com.stata.sfi.*;
 import Jama.Matrix;
 import core.ContainerMoment;
+import core.DataLens;
 import utility.pmUtility;
 
 /**
@@ -38,42 +39,28 @@ public class ContainerRCT extends ContainerMoment {
     Jama.Matrix beta;
     Jama.Matrix variance;
 
-    public ContainerRCT(Jama.Matrix X, Jama.Matrix Y) {
-        computeBetaAndErrors(X, Y);
+    public ContainerRCT(DataLens lens) {
+        computeBetaAndErrors(lens);
     }
 
-    private void computeBetaAndErrors(Jama.Matrix X, Jama.Matrix Y) {
+    private void computeBetaAndErrors(DataLens lens) {
         double meanTreatment = 0;
         double meanControl = 0;
-        double varianceTreatment = 0;
-        double varianceControl = 0;
 
         int countTreatment = 0;
         int countControl = 0;
-        for (int i = 0; i < Y.getRowDimension(); i++) {
-            if (X.get(i, 0) == 0) {
-                meanControl += Y.get(i, 0);
+        for (int i = 0; i < lens.getNumObs(); i++) {
+            if (lens.getX(i, 0) == 0) {
+                meanControl += lens.getY(i);
                 countControl++;
             } else {
-                meanTreatment += Y.get(i, 0);
+                meanTreatment += lens.getY(i);
                 countTreatment++;
             }
         }
 
         meanControl /= countControl;
         meanTreatment /= countTreatment;
-
-        for (int i = 0; i < Y.getRowDimension(); i++) {
-            if (X.get(i, 0) == 0) {
-                varianceControl += Math.pow(Y.get(i, 0) - meanControl, 2);
-            } else {
-                varianceTreatment += Math.pow(Y.get(i, 0) - meanTreatment, 2);
-            }
-        }
-        varianceControl /= countControl;
-        varianceTreatment /= countTreatment;
-        // System.out.format("Treatment Mean: %f Variance: %f %n", meanTreatment, varianceTreatment);
-        // System.out.format("  Control Mean: %f Variance: %f %n", meanControl, varianceControl);
 
         if (countControl == 0 || countTreatment == 0) {
             // System.out.println("Setting beta to NULL");
@@ -83,41 +70,18 @@ public class ContainerRCT extends ContainerMoment {
             mse = Double.POSITIVE_INFINITY;
         } else {
             beta = new Jama.Matrix(1, 1, meanTreatment - meanControl);
-            variance = new Jama.Matrix(1, 1, (varianceControl / countControl) + (varianceTreatment / countTreatment));
+            variance = beta.times(0.0);
 
             // pmUtility.prettyPrintVector(Y);
             double sse = 0;
-            for (int i = 0; i < Y.getRowDimension(); i++) {
-                if (X.get(i, 0) == 0) {
-                    sse += Math.pow(Y.get(i, 0) - meanControl, 2);
+            for (int i = 0; i < lens.getNumObs(); i++) {
+                if (lens.getX(i, 0) == 0) {
+                    sse += Math.pow(lens.getY(i) - meanControl, 2);
                 } else {
-                    sse += Math.pow(Y.get(i, 0) - meanTreatment, 2);
+                    sse += Math.pow(lens.getY(i) - meanTreatment, 2);
                 }
             }
-            mse = sse; // / Y.getRowDimension();
-            // System.out.println("containerRCT.java:77, mse = "+mse);
-
-            /**
-             * Try this with a simple OLS and compare just to make sure
-             *
-             * I verified that these give identical answers.
-             */
-            boolean tryOLS = false;
-            if (tryOLS) {
-            	SFIToolkit.displayln(" n_control: " + countControl + " n_treatment: " + countTreatment);
-                Jama.Matrix W = pmUtility.getColumn(X, 0);
-                Jama.Matrix betaOLS = pmUtility.OLS(W, Y, true);
-                pmUtility.prettyPrint(pmUtility.concatMatrix(Y, W));
-                System.out.print("beta_hand: " + beta.get(0, 0) + " ");
-                pmUtility.prettyPrintVector(betaOLS);
-                double sseOLS = 0;
-                for (int i = 0; i < Y.getRowDimension(); i++) {
-                    double fitY = betaOLS.get(0, 0) + betaOLS.get(1, 0) * W.get(i, 0);
-                    sseOLS += Math.pow(Y.get(i, 0) - fitY, 2);
-                }
-                SFIToolkit.displayln("sse: " + sse + " sseOLS: " + sseOLS);
-            }
-            // System.exit(0);
+            mse = sse; // why am i not dividing this by sample size?
         }
     }
 

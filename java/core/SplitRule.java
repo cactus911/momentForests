@@ -33,7 +33,7 @@ public class SplitRule {
 
     private final boolean splitOnDiscreteVariable;
     private final int optimalSplitVariableIndex;
-    private final double optimalX;
+    private final double splitPoint;
     private final IntegerPartition partition;
 
     /**
@@ -48,7 +48,7 @@ public class SplitRule {
     SplitRule(boolean splitOnDiscreteVariable, int optimalSplitVariableIndex, double optimalX, IntegerPartition partition) {
         this.splitOnDiscreteVariable = splitOnDiscreteVariable;
         this.optimalSplitVariableIndex = optimalSplitVariableIndex;
-        this.optimalX = optimalX;
+        this.splitPoint = optimalX;
         this.partition = partition;
     }
 
@@ -57,15 +57,15 @@ public class SplitRule {
         if (splitOnDiscreteVariable) {
             return partition.toString();
         }
-        return "x" + optimalSplitVariableIndex + " < " + optimalX;
+        return "x" + optimalSplitVariableIndex + " < " + splitPoint;
     }
 
     public int getOptimalSplitVariableIndex() {
         return optimalSplitVariableIndex;
     }
 
-    public double getOptimalX() {
-        return optimalX;
+    public double getSplitPoint() {
+        return splitPoint;
     }
 
     public IntegerPartition getPartition() {
@@ -81,7 +81,7 @@ public class SplitRule {
             Integer xc = new Integer((int) xi.get(0, optimalSplitVariableIndex));
             return partition.getLeft().contains(xc);
         } else {
-            return xi.get(0, optimalSplitVariableIndex) < optimalX;
+            return xi.get(0, optimalSplitVariableIndex) < splitPoint;
         }
     }
 
@@ -95,7 +95,7 @@ public class SplitRule {
             s = s.concat("}");
             return s;
         } else {
-            return "x" + optimalSplitVariableIndex + " < " + optimalX;
+            return "x" + optimalSplitVariableIndex + " < " + splitPoint;
         }
     }
 
@@ -115,7 +115,7 @@ public class SplitRule {
 
             return s;
         } else {
-            return spec.getVariableName(optimalSplitVariableIndex) + " < " + optimalX;
+            return spec.getVariableName(optimalSplitVariableIndex) + " < " + splitPoint;
         }
     }
 
@@ -123,7 +123,7 @@ public class SplitRule {
         if (splitOnDiscreteVariable) {
             return new SplitRuleContainer(partition.getLeft(), optimalSplitVariableIndex);
         } else {
-            return new SplitRuleContainer(optimalSplitVariableIndex, optimalX, true);
+            return new SplitRuleContainer(optimalSplitVariableIndex, splitPoint, true);
         }
     }
 
@@ -137,7 +137,7 @@ public class SplitRule {
             s = s.concat("}");
             return s;
         } else {
-            return "x" + optimalSplitVariableIndex + " > " + optimalX;
+            return "x" + optimalSplitVariableIndex + " > " + splitPoint;
         }
     }
 
@@ -157,7 +157,7 @@ public class SplitRule {
 
             return s;
         } else {
-            return spec.getVariableName(optimalSplitVariableIndex) + " > " + optimalX;
+            return spec.getVariableName(optimalSplitVariableIndex) + " > " + splitPoint;
         }
     }
 
@@ -165,7 +165,7 @@ public class SplitRule {
         if (splitOnDiscreteVariable) {
             return new SplitRuleContainer(partition.getRight(), optimalSplitVariableIndex);
         } else {
-            return new SplitRuleContainer(optimalSplitVariableIndex, optimalX, false);
+            return new SplitRuleContainer(optimalSplitVariableIndex, splitPoint, false);
         }
     }
 

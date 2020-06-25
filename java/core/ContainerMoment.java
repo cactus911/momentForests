@@ -23,7 +23,6 @@
  */
 package core;
 
-import Jama.Matrix;
 
 /**
  *
@@ -35,7 +34,7 @@ public abstract class ContainerMoment {
      * Returns the estimated parameter in this partition.
      * @return
      */
-    public abstract Matrix getBeta();
+    public abstract Jama.Matrix getBeta();
 
     /**
      * Returns the error within this partition.
