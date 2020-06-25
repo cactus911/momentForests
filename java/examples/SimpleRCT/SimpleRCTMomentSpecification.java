@@ -26,6 +26,7 @@ package examples.SimpleRCT;
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
+import core.DataLens;
 import core.IntegerPartition;
 import core.MomentContinuousSplitObj;
 import core.MomentPartitionObj;
@@ -69,18 +70,18 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public MomentContinuousSplitObj getFminObjective(Matrix nodeY, Matrix nodeX, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-        return new MomentContinuousSplitObjRCT(indexSplitVariable, nodeX, nodeY, minProportionEachPartition, minCountEachPartition);
+    public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
+        return new MomentContinuousSplitObjRCT(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition);
     }
 
     @Override
-    public MomentPartitionObj getMomentPartitionObj(Matrix nodeX, Matrix nodeY, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjRCT(partition, indexSplitVariable, nodeX, nodeY);
+    public MomentPartitionObj getMomentPartitionObj(DataLens lens, int indexSplitVariable, IntegerPartition partition) {
+        return new MomentPartitionObjRCT(partition, indexSplitVariable, lens);
     }
 
     @Override
-    public ContainerMoment computeOptimalBeta(Matrix nodeY, Matrix nodeX) {
-        return new ContainerRCT(nodeX, nodeY);
+    public ContainerMoment computeOptimalBeta(DataLens lens) {
+        return new ContainerRCT(lens);
     }
 
     @Override
@@ -176,7 +177,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
                     typeX.add(X.getMatrix(i, i, 0, X.getColumnDimension() - 1));
                     typeY.add(Y.get(i, 0));
                 }
-            }            
+            }
             Jama.Matrix subX = new Jama.Matrix(typeX.size(), 1);
             Jama.Matrix subY = new Jama.Matrix(typeX.size(), 1);
             int countControl = 0;
@@ -186,7 +187,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
                     subX.set(i, j, typeX.get(i).get(0, j));
                 }
                 subY.set(i, 0, typeY.get(i));
-                if(subX.get(i,0)==0) {
+                if (subX.get(i, 0) == 0) {
                     countControl++;
                 } else {
                     countTreatment++;
@@ -217,10 +218,12 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
             X.set(i, 0, Math.floor(2 * Math.random())); // treatment indicator
             X.set(i, 1, Math.floor(G * Math.random())); // group number
             if (X.get(i, 0) == 1) {
-                if (X.get(i, 1) < 4) {
-                    Y.set(i, 0, -4.0);
-                } else if (X.get(i, 1) > 7) {
-                    Y.set(i, 0, 1.0 + X.get(i, 1));
+                if (X.get(i, 1) == 0) {
+                    Y.set(i, 0, -10.0);
+                } else if (X.get(i, 1) == 2) {
+                    Y.set(i, 0, 10.0);
+                } else {
+                    Y.set(i, 0, -1.0);
                 }
             }
             Y.set(i, 0, Y.get(i, 0) + 1.0 * normal.inverse(Math.random()));

@@ -24,9 +24,11 @@
 package examples.SimpleRCT;
 
 import core.BootstrapForest;
+import core.DataLens;
 import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeOptions;
+import utility.pmUtility;
 
 /**
  *
@@ -49,24 +51,30 @@ public class SimpleRCTMain {
          * 1. Running CV to obtain optimal hyper-parameters 2. Estimate a moment
          * forest 3. Estimate standard errors via bootstrapping
          */
-        for (int n = 5000; n <= 16000; n *= 2) {
-            System.out.println("*********** n = "+n+" (really one-tenth of that, since n here = observations*outcomes) ***********");
+        for (int n = 250; n <= 250; n *= 2) {
+            System.out.println("*********** n = " + n + " (really one-tenth of that, since n here = observations*outcomes) ***********");
             MomentSpecification mySpecification = new SimpleRCTMomentSpecification(n);
             mySpecification.loadData();
 
-            int numberTreesInForest = 500;
+            int numberTreesInForest = 100;
             // System.out.println("numTrees: " + numberTreesInForest);
 
             /**
              * Initialize the moment forest
              */
-            MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, mySpecification.getX(), mySpecification.getY(), false, new TreeOptions());
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), pmUtility.getColumn(mySpecification.getX(), 0));
+            MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, false, new TreeOptions());
+
+            TreeOptions cvOptions = new TreeOptions(1E-5, 1, 0.05, 100);
             /**
              * Run a CV for the hyper-parameters and see the tree options
              */
-            int numTreesCrossValidation = 100;
-            TreeOptions cvOptions = myForest.performCrossValidation(numTreesCrossValidation);
-            myForest.setTreeOptions(cvOptions);
+            boolean useCV = false;
+            if (useCV) {
+                int numTreesCrossValidation = 1;
+                cvOptions = myForest.performCrossValidation(numTreesCrossValidation);
+                myForest.setTreeOptions(cvOptions);
+            }
             /**
              * Grow the moment forest
              */
@@ -75,8 +83,8 @@ public class SimpleRCTMain {
             /**
              * Compute standard errors
              */
-            int numberBootstraps = 50;
-            int numberTreesInBootForest = 50;
+            int numberBootstraps = 10;
+            int numberTreesInBootForest = 10;
             BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
 
             /**
@@ -87,6 +95,8 @@ public class SimpleRCTMain {
                 fitX.set(i, 1, i);
             }
 
+            System.out.println("\nMoment Forest Estimates by Group");
+            
             for (int i = 0; i < fitX.getRowDimension(); i++) {
                 Jama.Matrix xi = fitX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
                 Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameters(xi);
@@ -102,7 +112,7 @@ public class SimpleRCTMain {
                 System.out.format("%g %g (%g) %s %n", fitX.get(i, 1), estimatedTreatmentEffects.get(0, 0), standardErrors.get(0, 0), sig);
             }
 
-            mySpecification.computeNaiveStatistics();
+            // mySpecification.computeNaiveStatistics();
         }
 
     }

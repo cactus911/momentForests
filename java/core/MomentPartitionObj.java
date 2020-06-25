@@ -23,7 +23,6 @@
  */
 package core;
 
-import Jama.Matrix;
 import java.util.ArrayList;
 
 /**
@@ -34,15 +33,14 @@ public abstract class MomentPartitionObj {
 
     public IntegerPartition partition;
     public int indexSplitVariable;
-    public Matrix X;
-    public Matrix Y;
+    public DataLens lens;
 
     public boolean verbose = false;
     public double leftMSE;
     public double rightMSE;
     public int numObsLeft;
     public int numObsRight;
-    
+
     public abstract double getMSE();
 
     public double getRightMSE() {
@@ -64,43 +62,64 @@ public abstract class MomentPartitionObj {
     public SplitContainer getDataSplit() {
         int countLeft = 0;
         int countRight = 0;
-        int numX = X.getColumnDimension();
 
         ArrayList<Integer> leftList = partition.getLeft();
 
-        for (int i = 0; i < X.getRowDimension(); i++) {
-            if (leftList.contains((int) X.get(i, indexSplitVariable))) {
+        for (int i = 0; i < lens.getNumObs(); i++) {
+            if (leftList.contains((int) lens.getX(i, indexSplitVariable))) {
                 countLeft++;
             } else {
                 countRight++;
             }
         }
 
-        Jama.Matrix xLeft = new Jama.Matrix(countLeft, numX);
-        Jama.Matrix xRight = new Jama.Matrix(countRight, numX);
-        Jama.Matrix yLeft = new Jama.Matrix(countLeft, 1);
-        Jama.Matrix yRight = new Jama.Matrix(countRight, 1);
+        int[] observationIndicesLeftSplit = new int[countLeft];
+        int[] observationIndicesRightSplit = new int[countRight];
+
+//        System.out.println("Entire data:");
+//        System.out.println(lens);
+        
         countRight = 0;
         countLeft = 0;
-        for (int i = 0; i < X.getRowDimension(); i++) {
-            if (leftList.contains((int) X.get(i, indexSplitVariable))) {
-                for (int j = 0; j < numX; j++) {
-                    xLeft.set(countLeft, j, X.get(i, j));
-                }
-                yLeft.set(countLeft, 0, Y.get(i, 0));
+        for (int i = 0; i < lens.getNumObs(); i++) {
+            if (leftList.contains((int) lens.getX(i, indexSplitVariable))) {
+                observationIndicesLeftSplit[countLeft] = i;
                 countLeft++;
             } else {
-                for (int j = 0; j < numX; j++) {
-                    xRight.set(countRight, j, X.get(i, j));
-                }
-                yRight.set(countRight, 0, Y.get(i, 0));
+                observationIndicesRightSplit[countRight] = i;
                 countRight++;
             }
         }
-        // System.out.println("Index split variable: "+indexSplitVariable);
-        //pmUtility.prettyPrint(xLeft);
-        //System.exit(0);
-        return new SplitContainer(yLeft, xLeft, yRight, xRight);
+//        
+//        for(int i : observationIndicesLeftSplit) {
+//            System.out.print(" "+i);
+//        }
+//        System.out.println();
+//        for(int i : observationIndicesRightSplit) {
+//            System.out.print(" "+i);
+//        }
+//        System.out.println();
+        
+
+        DataLens left = lens.getDataLensSubset(observationIndicesLeftSplit);
+        DataLens right = lens.getDataLensSubset(observationIndicesRightSplit);
+
+        String leftVars = "";
+        for (int i : partition.getLeft()) {
+            leftVars = leftVars + i + " ";
+        }
+        String rightVars = "";
+        for (int i : partition.getRight()) {
+            rightVars = rightVars + i + " ";
+        }
+
+//        System.out.println("Left " + leftVars);
+//        System.out.println(left);
+//        System.out.println("Right " + rightVars);
+//        System.out.println(right);
+//        System.exit(0);
+
+        return new SplitContainer(left, right);
     }
 
 }

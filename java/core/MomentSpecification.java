@@ -32,15 +32,15 @@ import java.util.Random;
  */
     public interface MomentSpecification {
 
-    public Double getPredictedY(Matrix xi, Jama.Matrix beta);
+    public Double getPredictedY(Jama.Matrix xi, Jama.Matrix beta);
     
     public int[] getVariableIndicesToSearchOver();
 
-    public MomentContinuousSplitObj getFminObjective(Matrix nodeY, Matrix nodeX, int k, double minProportionEachPartition, int minCountEachPartition);
+    public MomentContinuousSplitObj getFminObjective(DataLens lens, int k, double minProportionEachPartition, int minCountEachPartition);
 
-    public MomentPartitionObj getMomentPartitionObj(Matrix nodeX, Matrix nodeY, int k, IntegerPartition get);
+    public MomentPartitionObj getMomentPartitionObj(DataLens lens, int k, IntegerPartition get);
 
-    public ContainerMoment computeOptimalBeta(Matrix nodeY, Matrix nodeX);
+    public ContainerMoment computeOptimalBeta(DataLens lens);
 
    //  public void generateData(int numObs, Random rng, boolean addNoise);
 

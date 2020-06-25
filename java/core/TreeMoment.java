@@ -23,9 +23,6 @@
  */
 package core;
 
-import com.stata.sfi.*;
-import Jama.Matrix;
-
 import java.util.ArrayList;
 import java.util.TreeSet;
 import optimization.Fmin;
@@ -38,8 +35,6 @@ import utility.pmUtility;
 public class TreeMoment {
 
     TreeMoment parent;
-    Jama.Matrix nodeX;
-    Jama.Matrix nodeY;
     TreeMoment childLeft;
     TreeMoment childRight;
     Boolean isLeftNode;
@@ -53,12 +48,8 @@ public class TreeMoment {
     Jama.Matrix betaEstimateNode;
     Jama.Matrix varianceMatrix;
 
-    private final ArrayList<Jama.Matrix> honestXList = new ArrayList<>();
-    private final ArrayList<Jama.Matrix> honestYList = new ArrayList<>();
-    private Jama.Matrix honestX = null;
-    private Jama.Matrix honestY = null;
-    private final Jama.Matrix honestXtemp;
-    private final Jama.Matrix honestYtemp;
+    final private DataLens lensGrowingTree;
+    private DataLens lensHonest;
     int numHonestXObservations;
 
     // private final static double improvementThreshold = 0.01;
@@ -71,16 +62,14 @@ public class TreeMoment {
 
     boolean debugOptimization = false;
 
-    public TreeMoment(TreeMoment parent, MomentSpecification spec, Matrix subsampleX, Matrix subsampleY,
+    public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
             Boolean[] discreteVector, boolean verbose, double minProportionEachPartition,
             int minCountEachPartition, double improvementThreshold, boolean isLeft, int maxDepth,
-            Jama.Matrix honestXT, Jama.Matrix honestYT) {
-        this.honestXtemp = honestXT;
-        this.honestYtemp = honestYT;
+            DataLens lensHonest) {
         this.momentSpec = spec;
         this.parent = parent;
-        this.nodeX = subsampleX;
-        this.nodeY = subsampleY;
+        this.lensHonest = lensHonest;
+        this.lensGrowingTree = lensGrowingTree;
         this.discreteVector = discreteVector;
         this.verbose = verbose;
         this.minProportionEachPartition = minProportionEachPartition;
@@ -135,14 +124,6 @@ public class TreeMoment {
         return depth;
     }
 
-    public Matrix getSubsampleX() {
-        return nodeX;
-    }
-
-    public void setSubsampleY(Matrix subsampleY) {
-        this.nodeY = subsampleY;
-    }
-
     public TreeMoment getChildLeft() {
         return childLeft;
     }
@@ -170,8 +151,8 @@ public class TreeMoment {
         }
 
 //        System.out.println("in this sub-node:");
-//        if (nodeY.getRowDimension() > 10) {
-//            pmUtility.prettyPrint(pmUtility.concatMatrix(nodeY, nodeX).getMatrix(0, 10, 0, nodeX.getColumnDimension()));
+//        if (nodeY.getNumObs() > 10) {
+//            pmUtility.prettyPrint(pmUtility.concatMatrix(nodeY, nodeX).getSubsetData(0, 10, 0, nodeX.getColumnDimension()));
 //            System.out.println("TreeMoment.java:152 -> min: "+pmUtility.min(nodeX, 1)+" max: "+pmUtility.max(nodeX, 1));
 //        }
         /**
@@ -202,8 +183,8 @@ public class TreeMoment {
             for (int k : momentSpec.getVariableIndicesToSearchOver()) {
                 if (discreteVector[k] == true) {
                     TreeSet<Integer> discreteTreeSet = new TreeSet<>();
-                    for (int i = 0; i < nodeX.getRowDimension(); i++) {
-                        discreteTreeSet.add((int) nodeX.get(i, k));
+                    for (int i = 0; i < lensGrowingTree.getNumObs(); i++) {
+                        discreteTreeSet.add((int) lensGrowingTree.getX(i, k));
                     }
                     ArrayList<Integer> discreteList = new ArrayList<>(discreteTreeSet);
                     discreteCollection.add(discreteList);
@@ -220,7 +201,7 @@ public class TreeMoment {
             TreeSet<Integer> randomForestIndex = new TreeSet<>();
             boolean useRandomForest = false;
             if (useRandomForest) {
-                int P = Math.min(100, momentSpec.getVariableIndicesToSearchOver().length);
+                int P = Math.min(5, momentSpec.getVariableIndicesToSearchOver().length);
                 for (int i = 0; i < P; i++) {
                     int index = (int) Math.floor(Math.random() * momentSpec.getVariableIndicesToSearchOver().length);
                     while (randomForestIndex.contains(index)) {
@@ -238,13 +219,13 @@ public class TreeMoment {
 
             for (int indexSplitVariable : momentSpec.getVariableIndicesToSearchOver()) {
                 if (debugOptimization) {
-                    echoLn("indexSplitVariable: " + indexSplitVariable + " isDiscrete: " + discreteVector[indexSplitVariable] + " " + randomForestIndex.contains(indexSplitVariable));
+                    echoLn("indexSplitVariable: " + indexSplitVariable + "; isDiscrete: " + discreteVector[indexSplitVariable] + "; In Tree: " + randomForestIndex.contains(indexSplitVariable));
                 }
                 if (randomForestIndex.contains(indexSplitVariable)) {
                     if (discreteVector[indexSplitVariable] == false) {
-                        MomentContinuousSplitObj obj = momentSpec.getFminObjective(nodeY, nodeX, indexSplitVariable, minProportionEachPartition, minCountEachPartition);
-                        double minX = pmUtility.min(nodeX, indexSplitVariable);
-                        double maxX = pmUtility.max(nodeX, indexSplitVariable);
+                        MomentContinuousSplitObj obj = momentSpec.getFminObjective(lensGrowingTree, indexSplitVariable, minProportionEachPartition, minCountEachPartition);
+                        double minX = lensGrowingTree.getMinimumValue(indexSplitVariable);
+                        double maxX = lensGrowingTree.getMaximumValue(indexSplitVariable);
                         // System.out.println("TreeMoment.java:224 -> min x_1: "+minX+" max x_1: "+maxX);
                         double optimalX_k = Fmin.fmin(minX, maxX, obj, 1E-100);
                         double optimalX_MSE_k = obj.f_to_minimize(optimalX_k);
@@ -295,8 +276,8 @@ public class TreeMoment {
                             int numObsLeft_Partition = 0;
                             int numObsRight_Partition = 0;
                             for (int i = 0; i < partitions.size(); i++) {
-                                MomentPartitionObj obj = momentSpec.getMomentPartitionObj(nodeX, nodeY, indexSplitVariable, partitions.get(i));
-
+                                MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, indexSplitVariable, partitions.get(i));
+                                
                                 double partitionMSE = 0;
                                 if (obj.getNumObsLeft() < minCountEachPartition || obj.getNumObsRight() < minCountEachPartition) {
                                     // echoLn("IS IT IN? : obj.getNumObsLeft(): " + obj.getNumObsLeft() + " minCountEachPartition " + minCountEachPartition + " right obs: " + obj.getNumObsRight() + " indexSplitVariable " + indexSplitVariable);
@@ -304,9 +285,9 @@ public class TreeMoment {
                                         echoLn("\t\tMin K violated: rejecting partition for left obs: " + obj.getNumObsLeft() + " right obs: " + obj.getNumObsRight());
                                     }
                                     partitionMSE = Double.POSITIVE_INFINITY;
-                                } else if (((obj.getNumObsLeft() + 0.0) / (nodeX.getRowDimension() + 0.0)) < minProportionEachPartition || ((obj.getNumObsRight() + 0.0) / (nodeX.getRowDimension() + 0.0)) < minProportionEachPartition) {
+                                } else if (((obj.getNumObsLeft() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) < minProportionEachPartition || ((obj.getNumObsRight() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) < minProportionEachPartition) {
                                     if (debugOptimization) {
-                                        echoLn("\t\tRejecting partition for proportion; left: " + ((obj.getNumObsLeft() + 0.0) / (nodeX.getRowDimension() + 0.0)) + " right: " + ((obj.getNumObsRight() + 0.0) / (nodeX.getRowDimension() + 0.0)));
+                                        echoLn("\t\tRejecting partition for proportion; left: " + ((obj.getNumObsLeft() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) + " right: " + ((obj.getNumObsRight() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)));
                                         // System.exit(0);
                                     }
                                     partitionMSE = Double.POSITIVE_INFINITY;
@@ -353,26 +334,19 @@ public class TreeMoment {
              * Now compute a baseline MSE for comparing the improvement in fit
              */
             // System.out.println("Computing baseline SSE");
-            ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(nodeY, nodeX);
+            
+            ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
             setNodeEstimatedBeta(currentNodeMoment.getBeta());
             setNodeEstimatedVariance(currentNodeMoment.getVariance());
 
             double baseline = currentNodeMoment.getMSE();
             // System.out.println("Baseline SSE is computed as: " + baseline);
             if (verbose) {
-                echoLn("Number of observations in node: "+nodeX.getRowDimension());
+                echoLn("Number of observations in node: "+lensGrowingTree.getNumObs());
                 echoLn("Improvement from " + baseline + " to " + optimalX_MSE + " (left: " + optimalX_MSE_Left + " [" + numObsLeft + "] right: " + optimalX_MSE_Right + " [" + numObsRight + "])");
                 echoLn("Improvement percentage (to compare against threshold): " + ((baseline - optimalX_MSE) / baseline));
             }
 
-            /**
-             * There may be a problem here in that first is never hit when the
-             * first index of X is not evaluated. The basic issue is that the
-             * index of X=0 is set as the default best. That leads to insanity
-             * when you are doing discrete cuts on X1 and ignoring X0. Need to
-             * add in check here for whether first is still true (which means
-             * that there were no valid splits, and we should terminate)
-             */
             // if (baseline - optimalX_MSE < improvementThreshold) {
             if ((baseline - optimalX_MSE) / baseline < improvementThreshold || first || baseline == 0) {
                 setTerminal(true);
@@ -384,33 +358,31 @@ public class TreeMoment {
                 if (discreteVector[optimalSplitVariableIndex]) {
                     ArrayList<Integer> discreteList = discreteCollection.get(optimalDiscreteCollectionIndex);
                     ArrayList<IntegerPartition> partitions = DisjointSet.computeAllDisjointSets(discreteList);
-
-                    MomentPartitionObj obj = momentSpec.getMomentPartitionObj(nodeX, nodeY, optimalSplitVariableIndex, partitions.get((int) optimalX));
+                    
+                    MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, optimalSplitVariableIndex, partitions.get((int) optimalX));
                     if (verbose) {
                         echoLn(depth + ". Calculated optimal split along discrete variable, partitioning x_" + optimalSplitVariableIndex + " -> " + partitions.get((int) optimalX) + ", generating MSE of " + obj.getMSE());
                     }
                     rule = new SplitRule(true, optimalSplitVariableIndex, optimalX, partitions.get((int) optimalX));
-                    childLeft = new TreeMoment(this, momentSpec, obj.getDataSplit().getxLeft(), obj.getDataSplit().getyLeft(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            true, maxDepth, null, null);
-                    childRight = new TreeMoment(this, momentSpec, obj.getDataSplit().getxRight(), obj.getDataSplit().getyRight(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            false, maxDepth, null, null);
+                    childLeft = new TreeMoment(this, momentSpec, obj.getDataSplit().getLeft(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
+                            true, maxDepth, null);
+                    childRight = new TreeMoment(this, momentSpec, obj.getDataSplit().getRight(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
+                            false, maxDepth, null);
                 } else {
-                    MomentContinuousSplitObj obj = momentSpec.getFminObjective(nodeY, nodeX, optimalSplitVariableIndex, minProportionEachPartition, minCountEachPartition);
+                    MomentContinuousSplitObj obj = momentSpec.getFminObjective(lensGrowingTree, optimalSplitVariableIndex, minProportionEachPartition, minCountEachPartition);
                     if (verbose) {
                         echoLn(depth + ". Calculated optimal split along variable " + optimalSplitVariableIndex + " at " + optimalX + ", generating MSE of " + obj.f_to_minimize(optimalX));
                     }
                     rule = new SplitRule(false, optimalSplitVariableIndex, optimalX, null);
 
-                    Jama.Matrix childLeftX = SplitContainer.getContinuousDataSplit(nodeY, nodeX, optimalX, optimalSplitVariableIndex).getxLeft();
-                    Jama.Matrix childRightX = SplitContainer.getContinuousDataSplit(nodeY, nodeX, optimalX, optimalSplitVariableIndex).getxRight();
-                    Jama.Matrix childLeftY = SplitContainer.getContinuousDataSplit(nodeY, nodeX, optimalX, optimalSplitVariableIndex).getyLeft();
-                    Jama.Matrix childRightY = SplitContainer.getContinuousDataSplit(nodeY, nodeX, optimalX, optimalSplitVariableIndex).getyRight();
+                    DataLens left = SplitContainer.getContinuousDataSplit(lensGrowingTree, optimalX, optimalSplitVariableIndex).getLeft();
+                    DataLens right = SplitContainer.getContinuousDataSplit(lensGrowingTree, optimalX, optimalSplitVariableIndex).getRight();
                     // System.out.println("Max left: "+pmUtility.max(childLeftX, 1));
                     // System.out.println("Min right: "+pmUtility.min(childRightX, 1));
-                    childLeft = new TreeMoment(this, momentSpec, childLeftX, childLeftY, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            true, maxDepth, null, null);
-                    childRight = new TreeMoment(this, momentSpec, childRightX, childRightY, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            false, maxDepth, null, null);
+                    childLeft = new TreeMoment(this, momentSpec, left, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
+                            true, maxDepth, null);
+                    childRight = new TreeMoment(this, momentSpec, right, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
+                            false, maxDepth, null);
                 }
                 childLeft.determineSplit();
                 childRight.determineSplit();
@@ -419,7 +391,7 @@ public class TreeMoment {
             setTerminal(true);
             // System.out.print("before call: ");
             // pmUtility.prettyPrintVector(betaEstimateNode);
-            ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(nodeY, nodeX);
+            ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
             setNodeEstimatedBeta(currentNodeMoment.getBeta());
             // System.out.print("after call: ");
             // pmUtility.prettyPrintVector(betaEstimateNode);
@@ -452,9 +424,9 @@ public class TreeMoment {
                 s = s + r.getRightSplit();
             }
         } else if (isLeftNode) {
-            s = s + "x_" + r.getOptimalSplitVariableIndex() + " < " + r.getOptimalX();
+            s = s + "x_" + r.getOptimalSplitVariableIndex() + " < " + r.getSplitPoint();
         } else {
-            s = s + "x_" + r.getOptimalSplitVariableIndex() + " > " + r.getOptimalX();
+            s = s + "x_" + r.getOptimalSplitVariableIndex() + " > " + r.getSplitPoint();
         }
         if (indexPreviousSplits == null) {
             indexPreviousSplits = new TreeSet<>();
@@ -489,9 +461,9 @@ public class TreeMoment {
                 s = s + r.getRightSplitDescriptive(momentSpec);
             }
         } else if (isLeftNode) {
-            s = s + momentSpec.getVariableName(r.getOptimalSplitVariableIndex()) + " < " + r.getOptimalX();
+            s = s + momentSpec.getVariableName(r.getOptimalSplitVariableIndex()) + " < " + r.getSplitPoint();
         } else {
-            s = s + momentSpec.getVariableName(r.getOptimalSplitVariableIndex()) + " > " + r.getOptimalX();
+            s = s + momentSpec.getVariableName(r.getOptimalSplitVariableIndex()) + " > " + r.getSplitPoint();
         }
         if (indexPreviousSplits == null) {
             indexPreviousSplits = new TreeSet<>();
@@ -506,7 +478,7 @@ public class TreeMoment {
         return s + parent.getParentRuleDescriptive(indexPreviousSplits);
     }
 
-    public void setNodeEstimatedBeta(Matrix beta) {
+    public void setNodeEstimatedBeta(Jama.Matrix beta) {
         this.betaEstimateNode = beta;
     }
 
@@ -526,36 +498,6 @@ public class TreeMoment {
         }
     }
 
-    public void sortXToCorrectLeafs(Matrix yi, Matrix xi) {
-        honestXList.add(xi.copy());
-        honestYList.add(yi.copy());
-        if (!terminal) {
-            if (rule.isLeft(xi)) {
-                // System.out.println("Went left");
-                childLeft.sortXToCorrectLeafs(yi, xi);
-            } else {
-                // System.out.println("Went right");
-                childRight.sortXToCorrectLeafs(yi, xi);
-            }
-        }
-    }
-
-    public void consolidateHonestData() {
-        if (honestXList.size() > 0) {
-            honestX = new Jama.Matrix(honestXList.size(), honestXList.get(0).getColumnDimension());
-            honestY = new Jama.Matrix(honestXList.size(), 1);
-            for (int i = 0; i < honestXList.size(); i++) {
-                for (int j = 0; j < honestXList.get(0).getColumnDimension(); j++) {
-                    honestX.set(i, j, honestXList.get(i).get(0, j));
-                    honestY.set(i, 0, honestYList.get(i).get(0, 0));
-                }
-            }
-        }
-        if (!terminal) {
-            childLeft.consolidateHonestData();
-            childRight.consolidateHonestData();
-        }
-    }
 
     public void printTree() {
         if (!terminal) {
@@ -567,6 +509,15 @@ public class TreeMoment {
         }
     }
 
+    public void distributeHonestObservations(DataLens honest) {
+        lensHonest = honest;
+        if(!terminal) {
+            DataLens[] split = honest.splitOnRule(rule);
+            childLeft.distributeHonestObservations(split[0]);
+            childRight.distributeHonestObservations(split[1]);
+        }
+    }
+    
     public void estimateHonestTree() {
         /**
          * This is the place to put some rules on what are acceptable numbers of
@@ -578,33 +529,29 @@ public class TreeMoment {
          *
          * TODO: implement pruning if children nodes have null estimates
          */
+        
+        /**
+         * At the top of the tree, start the sorting of honest observations to
+         * branches. DataLens should just be able to split on the basis of the rule!
+         */
+        if(parent==null) {
+            distributeHonestObservations(lensHonest);
+        }
+        
         if (terminal) {
             if (verbose) {
                 echo(getParentRule(null) + " honest set to ");
             }
-            if (honestY == null) {
+            if (lensHonest.getNumObs() == 0) {
                 setNodeEstimatedBeta(null);
                 setNodeEstimatedVariance(null);
                 if (verbose) {
                     echoLn("honestY null");
                 }
             } else {
-                ContainerMoment c = momentSpec.computeOptimalBeta(honestY, honestX);
+                ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest);
                 setNodeEstimatedBeta(c.getBeta());
                 setNodeEstimatedVariance(c.getVariance());
-                if (verbose) {
-//                    System.out.println("beta:");
-//                    pmUtility.prettyPrintVector(c.getBeta());
-//                    System.out.println("var(beta):");
-//                    pmUtility.prettyPrint(c.getVariance());
-                    // System.exit(0);
-
-                    if (c.getBeta() != null) {
-                        echoLn(c.getBeta().get(0, 0) + " (" + Math.sqrt(c.getVariance().get(0, 0)) + ")");
-                    } else {
-                        echoLn("null");
-                    }
-                }
             }
         } else {
             childLeft.estimateHonestTree();
@@ -630,28 +577,31 @@ public class TreeMoment {
                         }
                     }
                     setTerminal(true);
-                    if (honestX == null) {
+                    if (lensHonest.getNumObs() == 0) {
                         setNodeEstimatedBeta(null);
                         setNodeEstimatedVariance(null);
                         // System.out.println("null pruned");
                     } else {
-                        ContainerMoment c = momentSpec.computeOptimalBeta(honestY, honestX);
+                        ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest);
                         setNodeEstimatedBeta(c.getBeta());
                         setNodeEstimatedVariance(c.getVariance());
                         if (verbose) {
-                            echoLn("pruned children, replaced with: n = " + honestX.getRowDimension() + " " + pmUtility.stringPrettyPrintVector(c.getBeta()));
+                            echoLn("pruned children, replaced with: n = " + lensHonest.getNumObs() + " " + pmUtility.stringPrettyPrintVector(c.getBeta()));
                         }
                     }
                 } else {
-                    // System.out.println("not pruned: n = " + honestX.getRowDimension());
+                    // System.out.println("not pruned: n = " + honestX.getNumObs());
                 }
             }
         }
     }
 
     public void clearEstimationData() {
-        nodeX = null;
-        nodeY = null;
+        /**
+         * I am not nulling out the grow lens now because hopefully it is not needed and
+         * i am worried about what that does to the master data (probably nothing)
+         * but come back to this later if we need to for memory reasons
+         */
         if (!terminal) {
             childLeft.clearEstimationData();
             childRight.clearEstimationData();
@@ -659,16 +609,14 @@ public class TreeMoment {
     }
 
     public void clearHonestyData() {
-        numHonestXObservations = honestX.getRowDimension();
-        honestX = null;
-        honestY = null;
+        numHonestXObservations = lensHonest.getNumObs();
         if (!terminal) {
             childLeft.clearHonestyData();
             childRight.clearHonestyData();
         }
     }
 
-    public Matrix getEstimatedBeta(Matrix xi) {
+    public Jama.Matrix getEstimatedBeta(Jama.Matrix xi) {
         if (terminal) {
             // return the treatment effect for this x_i, not the predicted y_i
             return betaEstimateNode;
@@ -682,11 +630,11 @@ public class TreeMoment {
         }
     }
 
-    private void setNodeEstimatedVariance(Matrix variance) {
+    private void setNodeEstimatedVariance(Jama.Matrix variance) {
         varianceMatrix = variance;
     }
 
-    public Matrix getVarianceMatrix(Jama.Matrix xi) {
+    public Jama.Matrix getVarianceMatrix(Jama.Matrix xi) {
         if (terminal) {
             // return the treatment effect for this x_i, not the predicted y_i
             return varianceMatrix;
@@ -698,20 +646,6 @@ public class TreeMoment {
         } else {
             return childRight.getVarianceMatrix(xi);
         }
-    }
-
-    /**
-     * @return the honestXtemp
-     */
-    public Jama.Matrix getHonestXtemp() {
-        return honestXtemp;
-    }
-
-    /**
-     * @return the honestYtemp
-     */
-    public Jama.Matrix getHonestYtemp() {
-        return honestYtemp;
     }
 
     static private void echoLn(String s) {

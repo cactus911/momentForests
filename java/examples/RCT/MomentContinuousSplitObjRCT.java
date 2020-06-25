@@ -24,6 +24,7 @@
 package examples.RCT;
 
 import core.MomentContinuousSplitObj;
+import core.DataLens;
 import core.SplitContainer;
 
 /**
@@ -33,15 +34,13 @@ import core.SplitContainer;
 public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
 
     SplitContainer container;
-    Jama.Matrix X;
-    Jama.Matrix Y;
+    DataLens lens;
     int minCount;
     double minProportion;
 
-    public MomentContinuousSplitObjRCT(int indexSplitVariable, Jama.Matrix X, Jama.Matrix Y, double minProportion, int minCount) {
+    public MomentContinuousSplitObjRCT(int indexSplitVariable, DataLens lens, double minProportion, int minCount) {
         this.indexSplitVariable = indexSplitVariable;
-        this.X = X;
-        this.Y = Y;
+        this.lens = lens;
         this.minCount = minCount;
         this.minProportion = minProportion;
 
@@ -52,23 +51,23 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
     public int getNumObsLeft() {
         // in the rct context, care about the minimum of count of 0's and 1's in each partition
         int count = 0;
-        for (int i = 0; i < container.getxLeft().getRowDimension(); i++) {
-            if (container.getxLeft().get(i, 0) == 0) {
+        for (int i = 0; i < container.getLeft().getNumObs(); i++) {
+            if (container.getLeft().getX(i, 0) == 0) {
                 count++;
             }
         }
-        return Math.min(count, container.getxLeft().getRowDimension() - count);
+        return Math.min(count, container.getLeft().getNumObs() - count);
     }
 
     @Override
     public int getNumObsRight() {
         int count = 0;
-        for (int i = 0; i < container.getxRight().getRowDimension(); i++) {
-            if (container.getxRight().get(i, 0) == 0) {
+        for (int i = 0; i < container.getRight().getNumObs(); i++) {
+            if (container.getRight().getX(i, 0) == 0) {
                 count++;
             }
         }
-        return Math.min(count, container.getxRight().getRowDimension() - count);
+        return Math.min(count, container.getRight().getNumObs() - count);
     }
 
     @Override
@@ -83,8 +82,8 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
          * this implementation just use the first column to get OLS fits and
          * errors, etc.
          */
-        ContainerRCT leftRCT = new ContainerRCT(container.getxLeft(), container.getyLeft());
-        ContainerRCT rightRCT = new ContainerRCT(container.getxRight(), container.getyRight());
+        ContainerRCT leftRCT = new ContainerRCT(container.getLeft());
+        ContainerRCT rightRCT = new ContainerRCT(container.getRight());
 
         leftMSE = leftRCT.getMSE();
         rightMSE = rightRCT.getMSE();
@@ -94,15 +93,15 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
         }
 
         // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
-        // return (leftMSE + rightMSE) / X.getRowDimension();
+        // return (leftMSE + rightMSE) / X.getNumObs();
         return (leftMSE + rightMSE);
     }
 
     @Override
     public double f_to_minimize(double splitPoint) {
-        container = SplitContainer.getContinuousDataSplit(Y, X, splitPoint, indexSplitVariable);
-        numObsLeft = container.getyLeft().getRowDimension();
-        numObsRight = container.getyRight().getRowDimension();
+        container = SplitContainer.getContinuousDataSplit(lens, splitPoint, indexSplitVariable);
+        numObsLeft = container.getLeft().getNumObs();
+        numObsRight = container.getRight().getNumObs();
         return getMSE();
     }
 

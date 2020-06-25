@@ -23,9 +23,9 @@
  */
 package examples.RCT;
 
-import Jama.Matrix;
 import core.IntegerPartition;
 import core.MomentPartitionObj;
+import core.DataLens;
 import core.SplitContainer;
 
 /**
@@ -36,19 +36,18 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
 
     SplitContainer container;
     
-    public MomentPartitionObjRCT(IntegerPartition partition, int indexSplitVariable, Matrix X, Matrix Y) {
+    public MomentPartitionObjRCT(IntegerPartition partition, int indexSplitVariable, DataLens lens) {
         this.partition = partition;
         this.indexSplitVariable = indexSplitVariable;
-        this.X = X;
-        this.Y = Y;
+        this.lens = lens;
         
         initialize();
     }
     
     private void initialize() {
         container = getDataSplit();
-        numObsLeft = container.getyLeft().getRowDimension();
-        numObsRight = container.getyRight().getRowDimension();
+        numObsLeft = container.getLeft().getNumObs();
+        numObsRight = container.getRight().getNumObs();
     }
     
     @Override
@@ -56,7 +55,7 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
         // in the rct context, care about the minimum of count of 0's and 1's in each partition
         int count = 0;
         for (int i = 0; i < numObsLeft; i++) {
-            if (container.getxLeft().get(i, 0) == 0) {
+            if (container.getLeft().getX(i, 0) == 0) {
                 count++;
             }
         }
@@ -67,7 +66,7 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
     public int getNumObsRight() {
         int count = 0;
         for (int i = 0; i < numObsRight; i++) {
-            if (container.getxRight().get(i, 0) == 0) {
+            if (container.getRight().getX(i, 0) == 0) {
                 count++;
             }
         }
@@ -84,14 +83,14 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
          * There is a constant, and we measure the coefficient on the W
          * So in this implementation just use the first column to get OLS fits and errors, etc.
          */
-        ContainerRCT leftRCT = new ContainerRCT(container.getxLeft(), container.getyLeft());
-        ContainerRCT rightRCT = new ContainerRCT(container.getxRight(), container.getyRight());
+        ContainerRCT leftRCT = new ContainerRCT(container.getLeft());
+        ContainerRCT rightRCT = new ContainerRCT(container.getRight());
         
         leftMSE = leftRCT.getMSE();
         rightMSE = rightRCT.getMSE();
         
         // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
-        // return (leftMSE + rightMSE) / X.getRowDimension();
+        // return (leftMSE + rightMSE) / X.getNumObs();
         return (leftMSE + rightMSE);
     }
     

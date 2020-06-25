@@ -23,7 +23,7 @@
  */
 package experimental;
 
-import core.ResamplingLens;
+import core.DataLens;
 import java.util.ArrayList;
 import java.util.Random;
 import utility.pmUtility;
@@ -33,9 +33,9 @@ import utility.pmUtility;
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
 public class TestResamplingMatrix {
-    
+
     Random rng = new Random();
-    
+
     /**
      * @param args the command line arguments
      */
@@ -47,54 +47,70 @@ public class TestResamplingMatrix {
         /**
          * Create a baseline data set and populate with random numbers.
          */
-        Jama.Matrix baseline = new Jama.Matrix(10000, 4);
-        for (int i = 0; i < baseline.getRowDimension(); i++) {
-            for (int j = 0; j < baseline.getColumnDimension(); j++) {
-                baseline.set(i, j, rng.nextGaussian());
+        int numObs = 50;
+        Jama.Matrix baselineX = new Jama.Matrix(numObs, 4);
+        Jama.Matrix baselineY = new Jama.Matrix(numObs, 1);
+        Jama.Matrix balancingVector = new Jama.Matrix(numObs, 1);
+        for (int i = 0; i < baselineX.getRowDimension(); i++) {
+            for (int j = 0; j < baselineX.getColumnDimension(); j++) {
+                baselineX.set(i, j, rng.nextGaussian());
             }
-        } 
-
-        boolean testMemory = true;
-        if (testMemory) {
-            testMemory(baseline);
+            baselineY.set(i, 0, rng.nextDouble());
+            balancingVector.set(i, 0, rng.nextInt(2));
         }
 
-        boolean testResampling = true;
+        boolean testSplit = true;
+        if(testSplit) {
+            testSplit(new DataLens(baselineX, baselineY, balancingVector));
+        }
+        
+        boolean testMemory = false;
+        if (testMemory) {
+            testMemory(baselineX, baselineY, balancingVector);
+        }
+
+        boolean testResampling = false;
         if (testResampling) {
-            testResampling(baseline);
+            testResampling(baselineX, baselineY, balancingVector);
         }
     }
 
-    private void testResampling(Jama.Matrix baseline) {
+    private void testResampling(Jama.Matrix baselineX, Jama.Matrix baselineY, Jama.Matrix balancingVector) {
         /**
          * Show that resampling works
          */
         System.out.println("Original");
-        pmUtility.prettyPrint(baseline.getMatrix(0,9,0,3));
+        Jama.Matrix concat = pmUtility.concatMatrix(baselineY, baselineX);
+        concat = pmUtility.concatMatrix(concat, balancingVector);
+        pmUtility.prettyPrint(concat.getMatrix(0, 9, 0, 5));
+        System.out.println("Original in DataLens");
+        DataLens lens = new DataLens(baselineX, baselineY, balancingVector);
+        System.out.println(lens.getSubsetData(0, 9));
         System.out.println("Resampled");
-        ResamplingLens lens = new ResamplingLens(baseline, rng.nextLong());
-        pmUtility.prettyPrint(lens.getMatrix(0,9,0,3));
-        
-        System.out.println("Baseline submatrix:");
-        pmUtility.prettyPrint(baseline.getMatrix(0, 0, 0, baseline.getColumnDimension()-1));
-        System.out.println("Resampled submatrix:");
-        pmUtility.prettyPrint(lens.getMatrix(0, 0, 0, 3));
+        DataLens resampledLens = lens.getResampledDataLensWithBalance(rng.nextLong());
+        System.out.println("Getting subdata");
+        DataLens subdata = resampledLens.getSubsetData(0, 9);
+        System.out.println("Printing subdata");
+        System.out.println(subdata);
+        System.exit(0);
     }
 
-    private void testMemory(Jama.Matrix baseline) {
+    private void testMemory(Jama.Matrix baselineX, Jama.Matrix baselineY, Jama.Matrix balancingVector) {
         /**
          * Compute memory usage using resampled matrices
          */
         System.out.println("ResampledMatrix");
+        DataLens lens = new DataLens(baselineX, baselineY, balancingVector);
+        
         for (int numResampledMatrices = 100; numResampledMatrices <= 100 * 100; numResampledMatrices *= 10) {
-            ArrayList<ResamplingLens> resampledList = new ArrayList<>();
+            ArrayList<DataLens> resampledList = new ArrayList<>();
 
             /**
              * Now, create a resampled data set using that baseline data as the
              * underlying foundation.
              */
             for (int r = 0; r < numResampledMatrices; r++) {
-                resampledList.add(new ResamplingLens(baseline, rng.nextLong()));
+                resampledList.add(lens.getResampledDataLensWithBalance(rng.nextLong()));
             }
             System.out.format("R = %d Memory usage: %,d bytes %n", numResampledMatrices, (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
         }
@@ -111,15 +127,22 @@ public class TestResamplingMatrix {
              * underlying foundation.
              */
             for (int r = 0; r < numResampledMatrices; r++) {
-                resampledList.add(baseline.copy());
+                resampledList.add(baselineX.copy());
+                resampledList.add(baselineY.copy());
+                resampledList.add(balancingVector.copy());
             }
             System.out.format("R = %d Memory usage: %,d bytes %n", numResampledMatrices, (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
         }
+    }
 
-        /**
-         * Clearly a massive memory improvement (and speed improvement) over
-         * using copies of Jama.Matrix
-         */
+    private void testSplit(DataLens dataLens) {
+        System.out.println("Together");
+        System.out.println(dataLens);
+        DataLens[] split = dataLens.randomlySplitSample(0.45, rng.nextLong());
+        System.out.println("Split 1");
+        System.out.println(split[0]);
+        System.out.println("Split 2");
+        System.out.println(split[1]);
     }
 
 }
