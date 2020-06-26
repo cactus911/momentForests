@@ -139,68 +139,84 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
             }
             Jama.Matrix subX = new Jama.Matrix(typeX.size(), 1);
             Jama.Matrix subY = new Jama.Matrix(typeX.size(), 1);
-            for (int i = 0; i < typeX.size(); i++) {
-                for (int j = 0; j < 1; j++) {
-                    subX.set(i, j, typeX.get(i).get(0, j));
-                }
-                subY.set(i, 0, typeY.get(i));
-            }
-            // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
-            Jama.Matrix olsBeta = pmUtility.OLSsvd(subX, subY, false);
-            Jama.Matrix olsVar = pmUtility.getOLSVariances(subY, subX, false);
-            String sig = "";
-            if (Math.abs(olsBeta.get(0, 0) / Math.sqrt(olsVar.get(0, 0))) > 1.98) {
-                sig = "*";
-            }
-            System.out.format("Group %d: %g (%g) %s %n", k, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
-        }
-
-        // let's run the oracle estimator and see how that compares
-        System.out.println("\nOracle Estimator");
-        for (int k = 0; k < 4; k++) {
-            ArrayList<Jama.Matrix> typeX = new ArrayList<>();
-            ArrayList<Double> typeY = new ArrayList<>();
-            for (int i = 0; i < X.getRowDimension(); i++) {
-                if (k == 0 && X.get(i, 1) < 4) {
-                    typeX.add(X.getMatrix(i, i, 0, X.getColumnDimension() - 1));
-                    typeY.add(Y.get(i, 0));
-                }
-                if (k == 1 && X.get(i, 1) >= 4 && X.get(i, 1) < 8) {
-                    typeX.add(X.getMatrix(i, i, 0, X.getColumnDimension() - 1));
-                    typeY.add(Y.get(i, 0));
-                }
-                if (k == 2 && X.get(i, 1) == 8) {
-                    typeX.add(X.getMatrix(i, i, 0, X.getColumnDimension() - 1));
-                    typeY.add(Y.get(i, 0));
-                }
-                if (k == 3 && X.get(i, 1) == 9) {
-                    typeX.add(X.getMatrix(i, i, 0, X.getColumnDimension() - 1));
-                    typeY.add(Y.get(i, 0));
-                }
-            }
-            Jama.Matrix subX = new Jama.Matrix(typeX.size(), 1);
-            Jama.Matrix subY = new Jama.Matrix(typeX.size(), 1);
             int countControl = 0;
-            int countTreatment = 0;
+                int countTreatment = 0;
             for (int i = 0; i < typeX.size(); i++) {
                 for (int j = 0; j < 1; j++) {
                     subX.set(i, j, typeX.get(i).get(0, j));
                 }
                 subY.set(i, 0, typeY.get(i));
                 if (subX.get(i, 0) == 0) {
-                    countControl++;
-                } else {
-                    countTreatment++;
-                }
+                        countControl++;
+                    } else {
+                        countTreatment++;
+                    }
             }
             // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
-            Jama.Matrix olsBeta = pmUtility.OLS(subX, subY, false);
+            Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, false, 500, 787);
+
+            Jama.Matrix olsBeta = pmUtility.OLSsvd(subX, subY, false);
             Jama.Matrix olsVar = pmUtility.getOLSVariances(subY, subX, false);
             String sig = "";
             if (Math.abs(olsBeta.get(0, 0) / Math.sqrt(olsVar.get(0, 0))) > 1.98) {
                 sig = "*";
             }
-            System.out.format("Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
+            // System.out.format("OLS Formula  Group %d: %g (%g) %s %n", k, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
+            System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, bootOLS[0].get(0, 0), bootOLS[1].get(0, 0), sig);
+        }
+
+        boolean computeOracle = true;
+        if (computeOracle) {
+            // let's run the oracle estimator and see how that compares
+            System.out.println("\nOracle Estimator");
+            for (int k = 0; k < 4; k++) {
+                ArrayList<Jama.Matrix> typeX = new ArrayList<>();
+                ArrayList<Double> typeY = new ArrayList<>();
+                for (int i = 0; i < X.getRowDimension(); i++) {
+                    if (k == 0 && X.get(i, 1) < 4) {
+                        typeX.add(X.getMatrix(i, i, 0, X.getColumnDimension() - 1));
+                        typeY.add(Y.get(i, 0));
+                    }
+                    if (k == 1 && X.get(i, 1) >= 4 && X.get(i, 1) < 8) {
+                        typeX.add(X.getMatrix(i, i, 0, X.getColumnDimension() - 1));
+                        typeY.add(Y.get(i, 0));
+                    }
+                    if (k == 2 && X.get(i, 1) == 8) {
+                        typeX.add(X.getMatrix(i, i, 0, X.getColumnDimension() - 1));
+                        typeY.add(Y.get(i, 0));
+                    }
+                    if (k == 3 && X.get(i, 1) == 9) {
+                        typeX.add(X.getMatrix(i, i, 0, X.getColumnDimension() - 1));
+                        typeY.add(Y.get(i, 0));
+                    }
+                }
+                Jama.Matrix subX = new Jama.Matrix(typeX.size(), 1);
+                Jama.Matrix subY = new Jama.Matrix(typeX.size(), 1);
+                int countControl = 0;
+                int countTreatment = 0;
+                for (int i = 0; i < typeX.size(); i++) {
+                    for (int j = 0; j < 1; j++) {
+                        subX.set(i, j, typeX.get(i).get(0, j));
+                    }
+                    subY.set(i, 0, typeY.get(i));
+                    if (subX.get(i, 0) == 0) {
+                        countControl++;
+                    } else {
+                        countTreatment++;
+                    }
+                }
+                // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
+                Jama.Matrix olsBeta = pmUtility.OLS(subX, subY, false);
+                Jama.Matrix olsVar = pmUtility.getOLSVariances(subY, subX, false);
+                Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, false, 5000, 787);
+
+                String sig = "";
+                if (Math.abs(olsBeta.get(0, 0) / Math.sqrt(olsVar.get(0, 0))) > 1.98) {
+                    sig = "*";
+                }
+                // System.out.format("Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
+                System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, bootOLS[0].get(0, 0), bootOLS[1].get(0, 0), sig);
+            }
         }
 
         return null;
@@ -218,15 +234,17 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
             X.set(i, 0, Math.floor(2 * Math.random())); // treatment indicator
             X.set(i, 1, Math.floor(G * Math.random())); // group number
             if (X.get(i, 0) == 1) {
-                if (X.get(i, 1) == 0) {
-                    Y.set(i, 0, -10.0);
-                } else if (X.get(i, 1) == 2) {
+                if (X.get(i, 1) < 2) {
+                    Y.set(i, 0, 5.0);
+                } else if (X.get(i, 1) == 8) {
                     Y.set(i, 0, 10.0);
+                } else if (X.get(i, 1) == 9) {
+                    Y.set(i, 0, -4.0);
                 } else {
-                    Y.set(i, 0, -1.0);
+                    Y.set(i, 0, 0.0);
                 }
             }
-            Y.set(i, 0, Y.get(i, 0) + 1.0 * normal.inverse(Math.random()));
+            Y.set(i, 0, Y.get(i, 0) + 0.25 * normal.inverse(Math.random()));
         }
     }
 

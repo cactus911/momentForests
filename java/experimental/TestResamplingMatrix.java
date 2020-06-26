@@ -47,7 +47,7 @@ public class TestResamplingMatrix {
         /**
          * Create a baseline data set and populate with random numbers.
          */
-        int numObs = 50;
+        int numObs = 10;
         Jama.Matrix baselineX = new Jama.Matrix(numObs, 4);
         Jama.Matrix baselineY = new Jama.Matrix(numObs, 1);
         Jama.Matrix balancingVector = new Jama.Matrix(numObs, 1);
@@ -69,7 +69,7 @@ public class TestResamplingMatrix {
             testMemory(baselineX, baselineY, balancingVector);
         }
 
-        boolean testResampling = false;
+        boolean testResampling = true;
         if (testResampling) {
             testResampling(baselineX, baselineY, balancingVector);
         }
