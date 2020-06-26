@@ -505,7 +505,7 @@ public class TreeMoment {
             childRight.printTree();
         } else {
             // System.out.println(getParentRuleDescriptive(null) + " " + pmUtility.stringPrettyPrintVector(betaEstimateNode) + " (" + pmUtility.stringPrettyPrintVector(varianceMatrix) + ")");
-            echoLn(getParentRuleDescriptive(null) + " [" + numHonestXObservations + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix));
+            echoLn(getParentRuleDescriptive(null) + " [" + lensHonest.getNumObs() + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix));
         }
     }
 
@@ -550,8 +550,12 @@ public class TreeMoment {
                 }
             } else {
                 ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest);
+                Jama.Matrix oldBeta = getNodeEstimatedBeta();
                 setNodeEstimatedBeta(c.getBeta());
                 setNodeEstimatedVariance(c.getVariance());
+                if(verbose) {
+                    echoLn(pmUtility.stringPrettyPrint(c.getBeta())+" [ "+lensHonest.getNumObs()+" ] from "+pmUtility.stringPrettyPrint(oldBeta));
+                }
             }
         } else {
             childLeft.estimateHonestTree();

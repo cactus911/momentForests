@@ -47,14 +47,14 @@ public class BootstrapForest {
 //                    MomentForest.resample(spec.getY(), seed, pmUtility.getColumn(spec.getX(), 0)), 
 //                    false, options));
             forestList.add(new MomentForest(spec, numberTreesInForest, rng.nextLong(),
-                    originalLens.getResampledDataLens(seed),
+                    originalLens.getResampledDataLensWithBalance(seed),
                     false, options));
         }
         forestList.parallelStream().forEach((forest) -> forest.growForest());
     }
 
     public Jama.Matrix computeStandardErrors(Matrix xi) {
-        Jama.Matrix results = new Jama.Matrix(forestList.size(), xi.getRowDimension());
+        Jama.Matrix results = new Jama.Matrix(forestList.size(), forestList.get(0).getEstimatedParameters(xi).getRowDimension());
         for (int r = 0; r < forestList.size(); r++) {
             Jama.Matrix estimatedParameter = forestList.get(r).getEstimatedParameters(xi);
             for (int i = 0; i < estimatedParameter.getRowDimension(); i++) {
@@ -66,6 +66,7 @@ public class BootstrapForest {
         for (int i = 0; i < standardErrors.getRowDimension(); i++) {
             standardErrors.set(i, 0, pmUtility.standardDeviation(results, i));
         }
+        // pmUtility.prettyPrintVector(results);
         return standardErrors;
     }
 

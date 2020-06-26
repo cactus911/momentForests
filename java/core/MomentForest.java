@@ -48,7 +48,7 @@ public class MomentForest {
 
     // TreeMoment momentTree = new TreeMoment(null, spec, treeX, treeY, spec.getDiscreteVector(), verbose,
     // minProportionEachPartition, minCountEachPartition, improvementThreshold, true, maxDepth, null, null);
-    public MomentForest(MomentSpecification spec, int numberTreesInForest, long forestSeed, DataLens forestLens, 
+    public MomentForest(MomentSpecification spec, int numberTreesInForest, long forestSeed, DataLens forestLens,
             boolean verbose, TreeOptions options) {
         this.spec = spec;
         this.numberTreesInForest = numberTreesInForest;
@@ -65,32 +65,24 @@ public class MomentForest {
 
     public void growForest() {
         double proportionObservationsToEstimateTreeStructure = 0.5;
-        
+
         Random rng = new Random(forestSeed);
-        
-        DataLens[] split = forestLens.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
-        DataLens lensGrow = split[0];
-        DataLens lensHonest = split[1];
-        
-//        System.out.println("Structure");
-//        System.out.println(lensGrowingTreeStructure);
-//        System.out.println("Values");
-//        System.out.println(lensEstimatingValuesInTree);
-        
-        verbose = false;
 
         for (int i = 0; i < numberTreesInForest; i++) {
+            // resample the forestLens, then split it
+            DataLens resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
+            DataLens[] split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+            DataLens lensGrow = split[0];
+            DataLens lensHonest = split[1];
+
             forest.add(new TreeMoment(null, spec, lensGrow,
                     spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
                     lensHonest));
         }
 
-        // forest.parallelStream().forEach((tree) -> {
-        forest.stream().forEach((tree) -> {
+        forest.parallelStream().forEach((tree) -> {
             tree.determineSplit();
-            // tree.estimateHonestTree();
-            // tree.clearEstimationData();
-            // tree.clearHonestyData();
+            tree.estimateHonestTree();
         });
         // System.out.format("Memory usage: %,d bytes %n", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
     }
@@ -113,14 +105,11 @@ public class MomentForest {
         DataLens[] split = forestLens.randomlySplitSample(0.5, rng.nextLong());
         DataLens growLens = split[0];
         DataLens predictLens = split[1];
-        
+
         // System.out.println(growLens.getNumObs()+" "+predictLens.getNumObs());
-        
         // System.out.println("sum treeX: " + pmUtility.sum(treeX, 0) + " mean treeX: " + pmUtility.mean(treeX, 0) + " mean honestX: " + pmUtility.mean(honestX, 0) + " mean predictX: " + pmUtility.mean(predictX, 0));
         // System.exit(0);
         boolean verboseTreeConstruction = false;
-        double minProportionEachPartition = 1E-5;
-        double improvementThreshold = 50.0;
         double bestMSPE = 0;
         double bestMSEBar = 0;
         boolean first = true;
@@ -130,8 +119,8 @@ public class MomentForest {
         options.setMaxDepth(100);
         options.setMinMSEImprovement(1E-10);
 
-        for (improvementThreshold = 5E-5; improvementThreshold <= 0.5; improvementThreshold *= 2.5) {
-            for (int minCountEachPartition = 11; minCountEachPartition >= 1; minCountEachPartition -= 1) {
+        for (double improvementThreshold = 0.01; improvementThreshold <= 0.5; improvementThreshold += 0.05) {
+            for (int minCountEachPartition = 10; minCountEachPartition <= growLens.getNumObs() / 2; minCountEachPartition *= 2) {
                 rng = new Random(667);
                 options.setMinCount(minCountEachPartition);
                 options.setMinMSEImprovement(improvementThreshold);
@@ -187,7 +176,7 @@ public class MomentForest {
                 if (MSPE == bestMSPE) {
                     s = " - ";
                 }
-                if (MSPE < bestMSPE || first) {
+                if (MSPE <= bestMSPE || first) {
                     s = " * ";
                     bestK = minCountEachPartition;
                     // best = minProportionEachPartition;
@@ -196,9 +185,13 @@ public class MomentForest {
                     bestMSPE = MSPE;
                     // bestProportion = proportion;
                     first = false;
+
+                    System.out.format("maxDepth: %d k: %d mse_bar: %g mspe: %g nulls: %d %s %n", options.getMaxDepth(), options.getMinCount(), options.getMinMSEImprovement(), MSPE, nullCounterMSPE, s);
+                    System.out.println("MSPE: " + MSPE + " nulls: " + nullCounterMSPE);
+                    System.out.println("Example tree:");
+                    momentForest.getTree(0).printTree();
+                    System.out.println("---------------");
                 }
-                // System.out.format("maxDepth: %d k: %d mse_bar: %g mspe: %g nulls: %d %s %n", options.getMaxDepth(), options.getMinCount(), options.getMinMSEImprovement(), MSPE, nullCounterMSPE, s);
-                // System.out.println("MSPE: " + MSPE + " nulls: " + nullCounterMSPE);
 
             }
         }
