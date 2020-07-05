@@ -23,6 +23,7 @@
  */
 package examples.SimpleRCT;
 
+import com.stata.sfi.*;
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
@@ -47,25 +48,32 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     Jama.Matrix X;
     Jama.Matrix Y;
     int numObs;
+    int numtrees;
+    Jama.Matrix CVparameters;
 
-    int[] variableSearchIndex = {1};
-    Boolean[] whichVariablesDiscrete = {true, true};
-
+    
     public SimpleRCTMomentSpecification(int numObs) {
         this.numObs = numObs;
     }
 
     @Override
-    public Double getPredictedY(Matrix xi, Matrix beta) {
+    public Double getPredictedY(Matrix xi, Jama.Matrix beta) {
         // pmUtility.prettyPrint(xi);
-        if (xi.get(0, 0) == 1) {
-            return beta.get(0, 0);
+        if (beta != null) {
+            double yhat = xi.get(0, 0) * beta.get(0, 0);
+            return yhat;
         }
-        return 0.0;
+        return null;
     }
 
     @Override
     public int[] getVariableIndicesToSearchOver() {
+        int parsedVariables = Data.getParsedVarCount();
+        int[] variableSearchIndex = new int[parsedVariables-2];
+        for (int i=0; i<variableSearchIndex.length; i++)
+            {
+        	variableSearchIndex[i] = i + 1;
+            }
         return variableSearchIndex;
     }
 
@@ -101,22 +109,37 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 
     @Override
     public Matrix cvparameters() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return CVparameters;
     }
 
     @Override
     public int numberoftrees() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        return numtrees;
     }
 
     @Override
     public Boolean[] getDiscreteVector() {
+        double parameter;
+    	long obsEnd = Data.getObsParsedIn2();
+        int  numvar = Data.getParsedVarCount();
+    	Boolean[] whichVariablesDiscrete = new Boolean[numvar - 1];
+        for(int i=0; i < whichVariablesDiscrete.length; i++){
+        	parameter = Data.getNum(i+2,obsEnd - 1 - 6); // We need to skip those numtree and CV parameter rows
+			if (parameter >= 1) {
+				whichVariablesDiscrete[i] = true;
+    		} else {
+    			whichVariablesDiscrete[i] = false;
+    		}
+        }
         return whichVariablesDiscrete;
     }
 
     @Override
     public Matrix getBetaTruth(Matrix xi) {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+        Jama.Matrix beta = new Jama.Matrix(1, 1);
+        beta.set(0, 0, 0);
+        beta.set(0, 0, xi.get(0, 1) + xi.get(0, 1) * (xi.get(0, 2) - 1));
+        return beta;
     }
 
     @Override
@@ -224,28 +247,80 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 
     @Override
     public void loadData() {
-        NormalDistribution normal = new NormalDistribution();
-        int n = numObs;
-        int G = 10; // number of groups
-        Y = new Jama.Matrix(n, 1);
-        X = new Jama.Matrix(n, 2);
+        
+	int varIndex_x, varIndex_y;
+	int rc ;
+	double value_x, value_y;
+	String msg_x, msg_y;
+	TreeSet<Integer> exclusionTree = new TreeSet<>();    
+        
+        
+	int nVariables = Data.getParsedVarCount(); // Get number of variables in varlist specified to javacall
+	long firstObs = Data.getObsParsedIn1(); // Get first observation specified by an in restriction
+	long lastObs = Data.getObsParsedIn2(); // Get last observation specified by an in restriction
+	long nObs = Data.getObsTotal();
+	int nObss = (int) nObs;  	   
 
-        for (int i = 0; i < n; i++) {
-            X.set(i, 0, Math.floor(2 * Math.random())); // treatment indicator
-            X.set(i, 1, Math.floor(G * Math.random())); // group number
-            if (X.get(i, 0) == 1) {
-                if (X.get(i, 1) < 2) {
-                    Y.set(i, 0, 5.0);
-                } else if (X.get(i, 1) == 8) {
-                    Y.set(i, 0, 10.0);
-                } else if (X.get(i, 1) == 9) {
-                    Y.set(i, 0, -4.0);
-                } else {
-                    Y.set(i, 0, 0.0);
+	// find out missing values
+	int counter = 0;
+	for (long obs = firstObs; obs <= lastObs; obs++ ) {
+	if (!Data.isParsedIfTrue(obs)) {
+		exclusionTree.add(counter);
+	   }
+	   counter++;
+	   }
+        
+        // should not count the last discrete/continuous parameter row
+	// should not count the number of tree parameter row
+	// should not count the last 6 CV parameter rows
+	Y = new Jama.Matrix(counter - 1 - 1 - 6 - exclusionTree.size(), 1);
+	X = new Jama.Matrix(counter - 1 - 1 - 6 - exclusionTree.size(), nVariables-1);
+        
+        numtrees = (int) Data.getNum(1,nObs - 1 - 5);
+        
+    	CVparameters = new Jama.Matrix(1,6);
+	for (int cv = 5; cv >= 0; cv-- ) {
+		CVparameters.set(0,5-cv, Data.getNum(1,nObs - cv));  
+	}    
+        
+        // Loop over y to assign values 
+	    for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 6; obs_y++ ) {
+                if (!exclusionTree.contains(obs_y-1)) {
+	   	    int var_y = 1;
+	            // get the real variable index for parsed variable -var-
+	            varIndex_y = Data.mapParsedVarIndex(var_y);
+	            value_y = Data.getNum(varIndex_y, obs_y);
+			   
+	 	    // Exit with error
+	            if (Data.isValueMissing(value_y)) {
+		        msg_y = "{err}missing values encountered" ;
+			SFIToolkit.errorln(msg_y);
+			}
+			
+	   	    int obss_y = (int) obs_y ;
+	            Y.set(obss_y - 1 , 0 , value_y);
                 }
-            }
-            Y.set(i, 0, Y.get(i, 0) + 0.25 * normal.inverse(Math.random()));
-        }
+	    } 		
+        // Loop over x to assign values 		   
+	    for(int var_x = 2; var_x <= nVariables; var_x++) {
+	   	for (long obs_x = 1; obs_x<=nObs - 1 - 1 - 6; obs_x++ ) {
+	            if (!exclusionTree.contains(obs_x-1)) {
+		        // get the real variable index for parsed variable -var-
+			varIndex_x = Data.mapParsedVarIndex(var_x);
+			value_x = Data.getNum(varIndex_x, obs_x);
+			   
+		    // Exit with error
+		    if (Data.isValueMissing(value_x)) {
+			msg_x = "{err}missing values encountered" ;
+		        SFIToolkit.errorln(msg_x);
+			}
+
+		    int obss_x = (int) obs_x ;
+	            X.set(obss_x - 1 , var_x - 2 , value_x);
+		   }
+	   	}
+	   }
+            
     }
 
     @Override
