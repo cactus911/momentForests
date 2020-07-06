@@ -51,11 +51,11 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     int numObs;
     int numtrees;
     Jama.Matrix CVparameters;
-    int nVariables
+    int nVariables;
 
     
-    public SimpleRCTMomentSpecification(int numObs) {
-        this.numObs = numObs;
+    public void SimpleRCTMomentSpecification() {
+        // this.numObs = numObs;
     }
 
     @Override
