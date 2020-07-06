@@ -50,8 +50,6 @@ import java.util.Random;
    
    public Jama.Matrix getXoriginal();
    
-   public int varcount();
-   
    public Jama.Matrix cvparameters();
    
    public int numberoftrees();

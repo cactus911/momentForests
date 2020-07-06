@@ -36,11 +36,15 @@ import utility.pmUtility;
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
 public class SimpleRCTMain {
-
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
+    
+    	 public static int Momentforests(String[] args) { 
+            int resv = Data.getParsedVarCount();
+            int rc = 0;
+            SimpleRCTMain go = new SimpleRCTMain(resv);
+            return(rc);
+        }
+           
+	public SimpleRCTMain(int resv) {
         /**
          * Aiming for a simple three-step process:
          *
@@ -91,8 +95,7 @@ public class SimpleRCTMain {
             
             /**
              * export the results to Stata
-             */          
-                        
+             */                 
             Jama.Matrix allX = mySpecification.getX().copy();
             for (int i = 0; i < allX.getRowDimension(); i++) {
                 Jama.Matrix xi = allX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);  
@@ -102,11 +105,11 @@ public class SimpleRCTMain {
                 if (useBoot) {
                     standardErrors = boot.computeStandardErrors(xi);
                 }
-                Data.storeNum(mySpecification.varcount()+2, i+1, estimatedTreatmentEffects.get(0, 0));
-                Data.storeNum(mySpecification.varcount()+2, i+1, standardErrors.get(0, 0));
+                Data.storeNum(resv+2, i+1, estimatedTreatmentEffects.get(0, 0));
+                Data.storeNum(resv+3, i+1, standardErrors.get(0, 0));
             }
             
-            mySpecification.computeNaiveStatistics();
+            // mySpecification.computeNaiveStatistics();
           
     }
 

@@ -33,9 +33,6 @@ import core.MomentContinuousSplitObj;
 import core.MomentPartitionObj;
 import core.MomentSpecification;
 import core.NaiveContainer;
-import examples.RCT.ContainerRCT;
-import examples.RCT.MomentContinuousSplitObjRCT;
-import examples.RCT.MomentPartitionObjRCT;
 import java.util.ArrayList;
 import utility.pmUtility;
 import java.util.TreeSet;
@@ -51,7 +48,6 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     int numObs;
     int numtrees;
     Jama.Matrix CVparameters;
-    int nVariables;
 
     
     public void SimpleRCTMomentSpecification() {
@@ -109,11 +105,6 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
     
-    @Override
-    public int varcount() {
-        return nVariables;
-    }
-
     @Override
     public Matrix cvparameters() {
         return CVparameters;
@@ -183,7 +174,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
                     }
             }
             // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
-            Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, false, 500, 787);
+            // Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, false, 500, 787);
 
             Jama.Matrix olsBeta = pmUtility.OLSsvd(subX, subY, false);
             Jama.Matrix olsVar = pmUtility.getOLSVariances(subY, subX, false);
@@ -192,7 +183,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
                 sig = "*";
             }
             // System.out.format("OLS Formula  Group %d: %g (%g) %s %n", k, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
-            System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, bootOLS[0].get(0, 0), bootOLS[1].get(0, 0), sig);
+            System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, /* bootOLS[0].get(0, 0), bootOLS[1].get(0, 0),*/ sig);
         }
 
         boolean computeOracle = true;
@@ -238,14 +229,14 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
                 // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
                 Jama.Matrix olsBeta = pmUtility.OLS(subX, subY, false);
                 Jama.Matrix olsVar = pmUtility.getOLSVariances(subY, subX, false);
-                Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, false, 5000, 787);
+                // Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, false, 5000, 787);
 
                 String sig = "";
                 if (Math.abs(olsBeta.get(0, 0) / Math.sqrt(olsVar.get(0, 0))) > 1.98) {
                     sig = "*";
                 }
                 // System.out.format("Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
-                System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, bootOLS[0].get(0, 0), bootOLS[1].get(0, 0), sig);
+                System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, /* bootOLS[0].get(0, 0), bootOLS[1].get(0, 0),*/ sig);
             }
         }
 
@@ -326,7 +317,8 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 		   }
 	   	}
 	   }
-            
+        Data.addVarLong("beta_estimated");
+        Data.addVarLong("beta_bootstrapped");
     }
 
     @Override
