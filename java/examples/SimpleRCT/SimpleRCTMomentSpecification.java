@@ -38,6 +38,7 @@ import examples.RCT.MomentContinuousSplitObjRCT;
 import examples.RCT.MomentPartitionObjRCT;
 import java.util.ArrayList;
 import utility.pmUtility;
+import java.util.TreeSet;
 
 /**
  *
@@ -50,6 +51,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     int numObs;
     int numtrees;
     Jama.Matrix CVparameters;
+    int nVariables
 
     
     public SimpleRCTMomentSpecification(int numObs) {
@@ -105,6 +107,11 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     @Override
     public Matrix getXoriginal() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    
+    @Override
+    public int varcount() {
+        return nVariables;
     }
 
     @Override
@@ -249,7 +256,6 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     public void loadData() {
         
 	int varIndex_x, varIndex_y;
-	int rc ;
 	double value_x, value_y;
 	String msg_x, msg_y;
 	TreeSet<Integer> exclusionTree = new TreeSet<>();    

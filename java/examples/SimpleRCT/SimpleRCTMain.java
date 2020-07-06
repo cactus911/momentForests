@@ -23,6 +23,7 @@
  */
 package examples.SimpleRCT;
 
+import com.stata.sfi.*;
 import core.BootstrapForest;
 import core.DataLens;
 import core.MomentForest;
@@ -56,7 +57,7 @@ public class SimpleRCTMain {
             MomentSpecification mySpecification = new SimpleRCTMomentSpecification(n);
             mySpecification.loadData();
 
-            int numberTreesInForest = 500;
+            int numberTreesInForest = mySpecification.numberoftrees();
             // System.out.println("numTrees: " + numberTreesInForest);
 
             /**
@@ -113,8 +114,24 @@ public class SimpleRCTMain {
                 }
                 System.out.format("%g %g (%g) %s %n", fitX.get(i, 1), estimatedTreatmentEffects.get(0, 0), standardErrors.get(0, 0), sig);
             }
-
+              
+            
+                        
+            Jama.Matrix allX = mySpecification.getX().copy();
+            for (int i = 0; i < allX.getRowDimension(); i++) {
+                Jama.Matrix xi = allX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);  
+                Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameters(xi);
+                Jama.Matrix standardErrors = estimatedTreatmentEffects.times(0);
+                boolean useBoot = true;
+                if (useBoot) {
+                    standardErrors = boot.computeStandardErrors(xi);
+                }
+                Data.storeNum(mySpecification.varcount()+2, i+1, estimatedTreatmentEffects.get(0, 0));
+                Data.storeNum(mySpecification.varcount()+2, i+1, standardErrors.get(0, 0));
+            }
+            
             mySpecification.computeNaiveStatistics();
+          
         }
 
     }
