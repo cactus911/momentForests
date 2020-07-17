@@ -53,6 +53,13 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     public void SimpleRCTMomentSpecification() {
         // this.numObs = numObs;
     }
+    
+    public SimpleRCTMomentSpecification(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters) {      
+        this.X = X;
+        this.Y = Y;
+        this.numtrees = numtrees;
+        this.CVparameters = CVparameters;
+    }
 
     @Override
     public Double getPredictedY(Matrix xi, Jama.Matrix beta) {
@@ -245,80 +252,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 
     @Override
     public void loadData() {
-        
-	int varIndex_x, varIndex_y;
-	double value_x, value_y;
-	String msg_x, msg_y;
-	TreeSet<Integer> exclusionTree = new TreeSet<>();    
-        
-        
-	int nVariables = Data.getParsedVarCount(); // Get number of variables in varlist specified to javacall
-	long firstObs = Data.getObsParsedIn1(); // Get first observation specified by an in restriction
-	long lastObs = Data.getObsParsedIn2(); // Get last observation specified by an in restriction
-	long nObs = Data.getObsTotal();
-	int nObss = (int) nObs;  	   
-
-	// find out missing values
-	int counter = 0;
-	for (long obs = firstObs; obs <= lastObs; obs++ ) {
-	if (!Data.isParsedIfTrue(obs)) {
-		exclusionTree.add(counter);
-	   }
-	   counter++;
-	   }
-        
-        // should not count the last discrete/continuous parameter row
-	// should not count the number of tree parameter row
-	// should not count the last 6 CV parameter rows
-	Y = new Jama.Matrix(counter - 1 - 1 - 6 - exclusionTree.size(), 1);
-	X = new Jama.Matrix(counter - 1 - 1 - 6 - exclusionTree.size(), nVariables-1);
-        
-        numtrees = (int) Data.getNum(1,nObs - 1 - 5);
-        
-    	CVparameters = new Jama.Matrix(1,6);
-	for (int cv = 5; cv >= 0; cv-- ) {
-		CVparameters.set(0,5-cv, Data.getNum(1,nObs - cv));  
-	}    
-        
-        // Loop over y to assign values 
-	    for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 6; obs_y++ ) {
-                if (!exclusionTree.contains(obs_y-1)) {
-	   	    int var_y = 1;
-	            // get the real variable index for parsed variable -var-
-	            varIndex_y = Data.mapParsedVarIndex(var_y);
-	            value_y = Data.getNum(varIndex_y, obs_y);
-			   
-	 	    // Exit with error
-	            if (Data.isValueMissing(value_y)) {
-		        msg_y = "{err}missing values encountered" ;
-			SFIToolkit.errorln(msg_y);
-			}
-			
-	   	    int obss_y = (int) obs_y ;
-	            Y.set(obss_y - 1 , 0 , value_y);
-                }
-	    } 		
-        // Loop over x to assign values 		   
-	    for(int var_x = 2; var_x <= nVariables; var_x++) {
-	   	for (long obs_x = 1; obs_x<=nObs - 1 - 1 - 6; obs_x++ ) {
-	            if (!exclusionTree.contains(obs_x-1)) {
-		        // get the real variable index for parsed variable -var-
-			varIndex_x = Data.mapParsedVarIndex(var_x);
-			value_x = Data.getNum(varIndex_x, obs_x);
-			   
-		    // Exit with error
-		    if (Data.isValueMissing(value_x)) {
-			msg_x = "{err}missing values encountered" ;
-		        SFIToolkit.errorln(msg_x);
-			}
-
-		    int obss_x = (int) obs_x ;
-	            X.set(obss_x - 1 , var_x - 2 , value_x);
-		   }
-	   	}
-	   }
-        Data.addVarLong("beta_estimated");
-        Data.addVarLong("beta_bootstrapped");
+	throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override

@@ -36,15 +36,8 @@ import utility.pmUtility;
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
 public class SimpleRCTMain {
-    
-    	 public static int Momentforests(String[] args) { 
-            int resv = Data.getParsedVarCount();
-            int rc = 0;
-            SimpleRCTMain go = new SimpleRCTMain(resv);
-            return(rc);
-        }
-           
-	public SimpleRCTMain(int resv) {
+               
+	public SimpleRCTMain(int resv, Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters) {
         /**
          * Aiming for a simple three-step process:
          *
@@ -57,8 +50,8 @@ public class SimpleRCTMain {
          * forest 3. Estimate standard errors via bootstrapping
          */
 
-            MomentSpecification mySpecification = new SimpleRCTMomentSpecification();
-            mySpecification.loadData();
+            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(X, Y, numtrees, CVparameters);
+            // mySpecification.loadData();
 
             int numberTreesInForest = mySpecification.numberoftrees();
             // System.out.println("numTrees: " + numberTreesInForest);

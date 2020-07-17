@@ -23,6 +23,7 @@
  */
 package core;
 
+import com.stata.sfi.*;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
