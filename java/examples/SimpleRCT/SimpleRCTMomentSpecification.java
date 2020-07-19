@@ -23,7 +23,7 @@
  */
 package examples.SimpleRCT;
 
-import com.stata.sfi.*;
+
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
@@ -48,17 +48,20 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     int numObs;
     int numtrees;
     Jama.Matrix CVparameters;
-
+    int[] variableSearchIndex;
+    Boolean[] DiscreteVariables;
     
     public void SimpleRCTMomentSpecification() {
         // this.numObs = numObs;
     }
     
-    public SimpleRCTMomentSpecification(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters) {      
+    public SimpleRCTMomentSpecification(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters, int[] variableSearchIndex, Boolean[] DiscreteVariables) {      
         this.X = X;
         this.Y = Y;
         this.numtrees = numtrees;
         this.CVparameters = CVparameters;
+        this.variableSearchIndex = variableSearchIndex;
+        this.DiscreteVariables = DiscreteVariables;
     }
 
     @Override
@@ -73,12 +76,6 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 
     @Override
     public int[] getVariableIndicesToSearchOver() {
-        int parsedVariables = Data.getParsedVarCount();
-        int[] variableSearchIndex = new int[parsedVariables-2];
-        for (int i=0; i<variableSearchIndex.length; i++)
-            {
-        	variableSearchIndex[i] = i + 1;
-            }
         return variableSearchIndex;
     }
 
@@ -124,19 +121,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 
     @Override
     public Boolean[] getDiscreteVector() {
-        double parameter;
-    	long obsEnd = Data.getObsParsedIn2();
-        int  numvar = Data.getParsedVarCount();
-    	Boolean[] whichVariablesDiscrete = new Boolean[numvar - 1];
-        for(int i=0; i < whichVariablesDiscrete.length; i++){
-        	parameter = Data.getNum(i+2,obsEnd - 1 - 6); // We need to skip those numtree and CV parameter rows
-			if (parameter >= 1) {
-				whichVariablesDiscrete[i] = true;
-    		} else {
-    			whichVariablesDiscrete[i] = false;
-    		}
-        }
-        return whichVariablesDiscrete;
+        return DiscreteVariables;
     }
 
     @Override

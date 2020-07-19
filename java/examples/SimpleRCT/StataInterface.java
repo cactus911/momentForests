@@ -33,17 +33,17 @@ import examples.SimpleRCT.SimpleRCTMain;
  */
 
 public class StataInterface {
-    public static int Momentforests(String[] args) { 
-        int resv = Data.getParsedVarCount();
+    public static int Momentforests(String[] args) {
+
         int rc = 0;
-            
         Jama.Matrix X;
         Jama.Matrix Y;
         int numObs;
         int numtrees;
         Jama.Matrix CVparameters;
     
-    
+        
+        // 1. Load Data from Stata
         int varIndex_x, varIndex_y;
 	double value_x, value_y;
 	String msg_x, msg_y;
@@ -115,13 +115,41 @@ public class StataInterface {
 		   }
 	   	}
 	   }
-        Data.addVarLong("beta_estimated");
-        Data.addVarLong("beta_bootstrapped");
             
+            
+            // 2. Variable Index for Searching over
+            int[] variableSearchIndex = new int[nVariables-2];
+            for (int i=0; i<variableSearchIndex.length; i++)
+                {
+                    variableSearchIndex[i] = i + 1;
+                }    
+            
+            
+            // 3. Discrete, Continuous Index
+            double parameter;
+            Boolean[] DiscreteVariables = new Boolean[nVariables - 1];
+            for(int i=0; i < DiscreteVariables.length; i++){
+        	parameter = Data.getNum(i+2,lastObs - 1 - 6); // We need to skip those numtree and CV parameter rows
+			if (parameter >= 1) {
+				DiscreteVariables[i] = true;
+    		} else {
+    			DiscreteVariables[i] = false;
+    		}
+            }
 
             
-            SimpleRCTMain go = new SimpleRCTMain(resv, X, Y, numtrees, CVparameters);
-            return(rc);
+        SimpleRCTMain go = new SimpleRCTMain(X, Y, numtrees, CVparameters, variableSearchIndex, DiscreteVariables);
             
-}
+        Jama.Matrix estimationresults = go.EstimationResults();
+        Data.addVarLong("beta_estimated");
+        Data.addVarLong("se_bootstrapped");
+        
+            for (int i = 0; i < estimationresults.getRowDimension(); i++) {      
+                Data.storeNum(Data.getParsedVarCount()+2, i+1, estimationresults.get(i,0));
+                Data.storeNum(Data.getParsedVarCount()+3, i+1, estimationresults.get(i,1));
+            }    
+            
+    return(rc);
+    
+    }
 }

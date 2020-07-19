@@ -23,7 +23,6 @@
  */
 package examples.SimpleRCT;
 
-import com.stata.sfi.*;
 import core.BootstrapForest;
 import core.DataLens;
 import core.MomentForest;
@@ -36,8 +35,12 @@ import utility.pmUtility;
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
 public class SimpleRCTMain {
-               
-	public SimpleRCTMain(int resv, Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters) {
+
+    Jama.Matrix EstimationResults;
+            
+    public SimpleRCTMain(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters, int[] variableSearchIndex, Boolean[] DiscreteVariables) {
+            
+
         /**
          * Aiming for a simple three-step process:
          *
@@ -49,8 +52,9 @@ public class SimpleRCTMain {
          * 1. Running CV to obtain optimal hyper-parameters 2. Estimate a moment
          * forest 3. Estimate standard errors via bootstrapping
          */
-
-            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(X, Y, numtrees, CVparameters);
+            
+            // Write down an option here
+            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(X, Y, numtrees, CVparameters, variableSearchIndex, DiscreteVariables);
             // mySpecification.loadData();
 
             int numberTreesInForest = mySpecification.numberoftrees();
@@ -87,9 +91,14 @@ public class SimpleRCTMain {
             BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
             
             /**
-             * export the results to Stata
+             * stack the estimation results
              */                 
+            
+
+            
             Jama.Matrix allX = mySpecification.getX().copy();
+            EstimationResults = new Jama.Matrix(allX.getRowDimension(), 2);
+            
             for (int i = 0; i < allX.getRowDimension(); i++) {
                 Jama.Matrix xi = allX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);  
                 Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameters(xi);
@@ -98,12 +107,20 @@ public class SimpleRCTMain {
                 if (useBoot) {
                     standardErrors = boot.computeStandardErrors(xi);
                 }
-                Data.storeNum(resv+2, i+1, estimatedTreatmentEffects.get(0, 0));
-                Data.storeNum(resv+3, i+1, standardErrors.get(0, 0));
+                
+                EstimationResults.set(i, 0 ,estimatedTreatmentEffects.get(0, 0));
+                EstimationResults.set(i, 1 ,standardErrors.get(0, 0));
+                // Data.storeNum(resv+2, i+1, estimatedTreatmentEffects.get(0, 0));
+                // Data.storeNum(resv+3, i+1, standardErrors.get(0, 0));
             }
             
             // mySpecification.computeNaiveStatistics();
-          
+                        
+    }
+                
+
+    public Jama.Matrix EstimationResults() {
+        return EstimationResults;
     }
 
 }

@@ -196,8 +196,10 @@ public class MomentForest {
 
             }
         }
-        System.out.print("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
-        System.out.println(" Optimal improvement threshold: " + bestMSEBar);
+        SFIToolkit.displayln("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
+        SFIToolkit.displayln(" Optimal improvement threshold: " + bestMSEBar);
+        // System.out.print("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
+        // System.out.println(" Optimal improvement threshold: " + bestMSEBar);
 
         options.setMinCount(bestK);
         options.setMinMSEImprovement(bestMSEBar);
