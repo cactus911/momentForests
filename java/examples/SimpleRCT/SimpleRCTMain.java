@@ -38,7 +38,7 @@ public class SimpleRCTMain {
 
     Jama.Matrix EstimationResults;
             
-    public SimpleRCTMain(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters, int[] variableSearchIndex, Boolean[] DiscreteVariables) {
+    public SimpleRCTMain(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters1, Jama.Matrix CVparameters2, int[] variableSearchIndex, Boolean[] DiscreteVariables, int numbootstrap) {
             
 
         /**
@@ -54,7 +54,7 @@ public class SimpleRCTMain {
          */
             
             // Write down an option here
-            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(X, Y, numtrees, CVparameters, variableSearchIndex, DiscreteVariables);
+            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(X, Y, numtrees, CVparameters1, variableSearchIndex, DiscreteVariables);
             // mySpecification.loadData();
 
             int numberTreesInForest = mySpecification.numberoftrees();
@@ -67,14 +67,14 @@ public class SimpleRCTMain {
             boolean verbose = false;
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
-            TreeOptions cvOptions = new TreeOptions(1E-5, 1, 0.5, 100);
+            TreeOptions cvOptions = new TreeOptions(1E-5, (int) CVparameters1.get(0,0), (int) CVparameters1.get(0,1), 100);
             /**
              * Run a CV for the hyper-parameters and see the tree options
              */
             boolean useCV = true;
             if (useCV) {
                 int numTreesCrossValidation = mySpecification.numberoftrees();
-                cvOptions = myForest.performCrossValidation(numTreesCrossValidation);
+                cvOptions = myForest.performCrossValidation(numTreesCrossValidation, CVparameters2);
                 myForest.setTreeOptions(cvOptions);
             }
             /**
@@ -85,7 +85,7 @@ public class SimpleRCTMain {
             /**
              * Compute standard errors
              */
-            int numberBootstraps = 50;
+            int numberBootstraps = numbootstrap;
             // System.out.println("Number of bootstraps: " + numberBootstraps);
             int numberTreesInBootForest = mySpecification.numberoftrees();
             BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);

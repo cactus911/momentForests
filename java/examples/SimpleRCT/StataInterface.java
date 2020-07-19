@@ -40,7 +40,9 @@ public class StataInterface {
         Jama.Matrix Y;
         int numObs;
         int numtrees;
-        Jama.Matrix CVparameters;
+        Jama.Matrix CVparameters1;
+        Jama.Matrix CVparameters2;
+        int numbootstrap;
     
         
         // 1. Load Data from Stata
@@ -53,8 +55,7 @@ public class StataInterface {
 	int nVariables = Data.getParsedVarCount(); // Get number of variables in varlist specified to javacall
 	long firstObs = Data.getObsParsedIn1(); // Get first observation specified by an in restriction
 	long lastObs = Data.getObsParsedIn2(); // Get last observation specified by an in restriction
-	long nObs = Data.getObsTotal();
-	int nObss = (int) nObs;  	   
+	long nObs = Data.getObsTotal();	   
 
 	// find out missing values
 	int counter = 0;
@@ -68,18 +69,12 @@ public class StataInterface {
         // should not count the last discrete/continuous parameter row
 	// should not count the number of tree parameter row
 	// should not count the last 6 CV parameter rows
-	Y = new Jama.Matrix(counter - 1 - 1 - 6 - exclusionTree.size(), 1);
-	X = new Jama.Matrix(counter - 1 - 1 - 6 - exclusionTree.size(), nVariables-1);
-        
-        numtrees = (int) Data.getNum(1,nObs - 1 - 5);
-        
-    	CVparameters = new Jama.Matrix(1,6);
-	for (int cv = 5; cv >= 0; cv-- ) {
-		CVparameters.set(0,5-cv, Data.getNum(1,nObs - cv));  
-	}    
-        
+        // should not count the last 1 number of bootstrapping row
+	Y = new Jama.Matrix(counter - 1 - 1 - 6 - 1 - exclusionTree.size(), 1);
+	X = new Jama.Matrix(counter - 1 - 1 - 6 - 1 - exclusionTree.size(), nVariables-1);
+                
         // Loop over y to assign values 
-	    for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 6; obs_y++ ) {
+	    for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 6 - 1; obs_y++ ) {
                 if (!exclusionTree.contains(obs_y-1)) {
 	   	    int var_y = 1;
 	            // get the real variable index for parsed variable -var-
@@ -98,7 +93,7 @@ public class StataInterface {
 	    } 		
         // Loop over x to assign values 		   
 	    for(int var_x = 2; var_x <= nVariables; var_x++) {
-	   	for (long obs_x = 1; obs_x<=nObs - 1 - 1 - 6; obs_x++ ) {
+	   	for (long obs_x = 1; obs_x<=nObs - 1 - 1 - 6 - 1; obs_x++ ) {
 	            if (!exclusionTree.contains(obs_x-1)) {
 		        // get the real variable index for parsed variable -var-
 			varIndex_x = Data.mapParsedVarIndex(var_x);
@@ -117,7 +112,21 @@ public class StataInterface {
 	   }
             
             
-            // 2. Variable Index for Searching over
+            // 2. Number of Trees            
+            numtrees = (int) Data.getNum(1,nObs - 1 - 5 - 1);
+            
+            
+            // 3. CV parameters
+            CVparameters1 = new Jama.Matrix(1,2);
+            CVparameters1.set(0,0, (Data.getNum(1,nObs - 4) + Data.getNum(1,nObs - 6))/2 );  
+            CVparameters1.set(0,1, (Data.getNum(1,nObs - 1) + Data.getNum(1,nObs - 3))/2 );  
+        
+            CVparameters2 = new Jama.Matrix(1,6);
+            for (int cv = 6; cv >= 1; cv-- ) {
+                CVparameters2.set(0,6-cv, Data.getNum(1,nObs - cv));  
+            }        
+            
+            // 4. Variable Index for Searching over
             int[] variableSearchIndex = new int[nVariables-2];
             for (int i=0; i<variableSearchIndex.length; i++)
                 {
@@ -125,29 +134,35 @@ public class StataInterface {
                 }    
             
             
-            // 3. Discrete, Continuous Index
+            // 5. Discrete, Continuous Index
             double parameter;
             Boolean[] DiscreteVariables = new Boolean[nVariables - 1];
             for(int i=0; i < DiscreteVariables.length; i++){
-        	parameter = Data.getNum(i+2,lastObs - 1 - 6); // We need to skip those numtree and CV parameter rows
-			if (parameter >= 1) {
-				DiscreteVariables[i] = true;
+        	parameter = Data.getNum(i+2,lastObs - 1 - 6 - 1); // We need to skip those numtree, CV parameter rows, and the number of bootstrapping
+		if (parameter >= 1) {
+			DiscreteVariables[i] = true;
     		} else {
     			DiscreteVariables[i] = false;
     		}
             }
-
             
-        SimpleRCTMain go = new SimpleRCTMain(X, Y, numtrees, CVparameters, variableSearchIndex, DiscreteVariables);
             
+            // 6. Number of Bootstrapping
+            numbootstrap = (int) Data.getNum(1,nObs);
+            
+            
+        SimpleRCTMain go = new SimpleRCTMain(X, Y, numtrees, CVparameters1, CVparameters2, variableSearchIndex, DiscreteVariables, numbootstrap);
+            
+        
+        // Export the results to Stata
         Jama.Matrix estimationresults = go.EstimationResults();
         Data.addVarLong("beta_estimated");
         Data.addVarLong("se_bootstrapped");
         
-            for (int i = 0; i < estimationresults.getRowDimension(); i++) {      
-                Data.storeNum(Data.getParsedVarCount()+2, i+1, estimationresults.get(i,0));
-                Data.storeNum(Data.getParsedVarCount()+3, i+1, estimationresults.get(i,1));
-            }    
+        for (int i = 0; i < estimationresults.getRowDimension(); i++) {      
+            Data.storeNum(Data.getParsedVarCount()+2, i+1, estimationresults.get(i,0));
+            Data.storeNum(Data.getParsedVarCount()+3, i+1, estimationresults.get(i,1));
+        }    
             
     return(rc);
     
