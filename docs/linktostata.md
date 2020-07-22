@@ -15,6 +15,8 @@ Users should download all the files from folder “jars” and save them in thei
 
 The Stata personal directory can be found by typing “adopath” in the Stata command window. The one starts with “(PERSONAL)” is the personal directory. For example, "c:\ado\personal/".
 
+![](./adopath.PNG)
+
 
 ### How to modify the original codes
 
