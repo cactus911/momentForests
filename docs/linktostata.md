@@ -35,3 +35,4 @@ For example,
 momentforests y w x1 x2, mink_size(1) bootstrap(300) num_tree(150)
 
 
+[back](./index.md)
