@@ -23,6 +23,7 @@
  */
 package examples.SimpleRCT;
 
+import Jama.Matrix;
 import core.BootstrapForest;
 import core.DataLens;
 import core.MomentForest;
@@ -38,7 +39,7 @@ public class SimpleRCTMain {
 
     Jama.Matrix EstimationResults;
             
-    public SimpleRCTMain(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters1, Jama.Matrix CVparameters2, int[] variableSearchIndex, Boolean[] DiscreteVariables, int numbootstrap) {
+    public SimpleRCTMain(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters1, Jama.Matrix CVparameters2, boolean cv, int[] variableSearchIndex, Boolean[] DiscreteVariables, int numbootstrap) {
             
 
         /**
@@ -64,19 +65,19 @@ public class SimpleRCTMain {
              * Initialize the moment forest
              */
             DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), pmUtility.getColumn(mySpecification.getX(), 0));
-            boolean verbose = false;
+            boolean verbose = true;
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
             TreeOptions cvOptions = new TreeOptions(1E-5, (int) CVparameters1.get(0,0), (int) CVparameters1.get(0,1), 100);
             /**
              * Run a CV for the hyper-parameters and see the tree options
              */
-            boolean useCV = true;
+            boolean useCV = cv;
             if (useCV) {
                 int numTreesCrossValidation = mySpecification.numberoftrees();
                 cvOptions = myForest.performCrossValidation(numTreesCrossValidation, CVparameters2);
-                myForest.setTreeOptions(cvOptions);
             }
+            myForest.setTreeOptions(cvOptions);
             /**
              * Grow the moment forest
              */
@@ -117,8 +118,10 @@ public class SimpleRCTMain {
             // mySpecification.computeNaiveStatistics();
                         
     }
-                
 
+
+
+    
     public Jama.Matrix EstimationResults() {
         return EstimationResults;
     }
