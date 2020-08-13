@@ -120,11 +120,11 @@ public class MomentForest {
         options.setMaxDepth(100);
         options.setMinMSEImprovement(1E-10);
         
-       for (double improvementThreshold = 0.01; improvementThreshold <= 0.5; improvementThreshold += 0.05) {
-            for (int minCountEachPartition = 10; minCountEachPartition <= growLens.getNumObs() / 2; minCountEachPartition *= 2) {
+        // for (double improvementThreshold = 0.01; improvementThreshold <= 0.5; improvementThreshold += 0.05) {
+            // for (int minCountEachPartition = 10; minCountEachPartition <= growLens.getNumObs() / 2; minCountEachPartition *= 2) {
                      
-        // for (double improvementThreshold = CVparameters2.get(0,3); improvementThreshold <= CVparameters2.get(0,5); improvementThreshold += CVparameters2.get(0,4)) {
-        //        for (int minCountEachPartition = (int) CVparameters2.get(0,0); minCountEachPartition <= CVparameters2.get(0,2) /*growLens.getNumObs() / 2*/; minCountEachPartition += CVparameters2.get(0,1) /**= 2*/) {
+        for (double improvementThreshold = CVparameters2.get(0,3); improvementThreshold <= CVparameters2.get(0,5); improvementThreshold += CVparameters2.get(0,4)) {
+                for (int minCountEachPartition = (int) CVparameters2.get(0,0); minCountEachPartition <= CVparameters2.get(0,2) /*growLens.getNumObs() / 2*/; minCountEachPartition += CVparameters2.get(0,1) /**= 2*/) {
                 rng = new Random(667);
                 options.setMinCount(minCountEachPartition);
                 options.setMinMSEImprovement(improvementThreshold);
