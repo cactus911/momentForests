@@ -32,7 +32,7 @@ public class TreeOptions {
     private double minProportion = 0.0001;
     private int minCount = 1;
     private double minMSEImprovement = 0.2;
-    private int maxDepth = 20;
+    private int maxDepth = 100;
 
     public TreeOptions() {
     }

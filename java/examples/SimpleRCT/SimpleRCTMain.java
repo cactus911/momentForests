@@ -24,6 +24,7 @@
 package examples.SimpleRCT;
 
 import Jama.Matrix;
+import com.stata.sfi.SFIToolkit;
 import core.BootstrapForest;
 import core.DataLens;
 import core.MomentForest;
@@ -55,10 +56,10 @@ public class SimpleRCTMain {
          */
             
             // Write down an option here
-            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(X, Y, numtrees, CVparameters1, variableSearchIndex, DiscreteVariables);
+            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(X, Y, numtrees, variableSearchIndex, DiscreteVariables);
             // mySpecification.loadData();
 
-            int numberTreesInForest = mySpecification.numberoftrees();
+            // int numberTreesInForest = mySpecification.numberoftrees();
             // System.out.println("numTrees: " + numberTreesInForest);
 
             /**
@@ -66,7 +67,7 @@ public class SimpleRCTMain {
              */
             DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), pmUtility.getColumn(mySpecification.getX(), 0));
             boolean verbose = true;
-            MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
+            MomentForest myForest = new MomentForest(mySpecification, numtrees, 314, forestLens, verbose, new TreeOptions());
 
             TreeOptions cvOptions = new TreeOptions(1E-5, (int) CVparameters1.get(0,0), (int) CVparameters1.get(0,1), 100);
             /**
@@ -74,10 +75,14 @@ public class SimpleRCTMain {
              */
             boolean useCV = cv;
             if (useCV) {
-                int numTreesCrossValidation = mySpecification.numberoftrees();
-                cvOptions = myForest.performCrossValidation(numTreesCrossValidation, CVparameters2);
-            }
+                // int numTreesCrossValidation = mySpecification.numberoftrees();
+                cvOptions = myForest.performCrossValidation(numtrees, CVparameters2);
+            } 
+            
             myForest.setTreeOptions(cvOptions);
+            
+            // SFIToolkit.displayln("test.getMincount " + cvOptions.getMinCount() + "test.MinMSEImprove " + cvOptions.getMinMSEImprovement());
+            
             /**
              * Grow the moment forest
              */
@@ -96,7 +101,6 @@ public class SimpleRCTMain {
              */                 
             
 
-            
             Jama.Matrix allX = mySpecification.getX().copy();
             EstimationResults = new Jama.Matrix(allX.getRowDimension(), 2);
             

@@ -47,7 +47,6 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     Jama.Matrix Y;
     int numObs;
     int numtrees;
-    Jama.Matrix CVparameters;
     int[] variableSearchIndex;
     Boolean[] DiscreteVariables;
     
@@ -55,11 +54,10 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
         // this.numObs = numObs;
     }
     
-    public SimpleRCTMomentSpecification(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters, int[] variableSearchIndex, Boolean[] DiscreteVariables) {      
+    public SimpleRCTMomentSpecification(Jama.Matrix X, Jama.Matrix Y, int numtrees, int[] variableSearchIndex, Boolean[] DiscreteVariables) {      
         this.X = X;
         this.Y = Y;
         this.numtrees = numtrees;
-        this.CVparameters = CVparameters;
         this.variableSearchIndex = variableSearchIndex;
         this.DiscreteVariables = DiscreteVariables;
     }
@@ -111,7 +109,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     
     @Override
     public Matrix cvparameters() {
-        return CVparameters;
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
