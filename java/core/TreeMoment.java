@@ -53,7 +53,7 @@ public class TreeMoment {
     int numHonestXObservations;
 
     // private final static double improvementThreshold = 0.01;
-    int maxDepth = 100;
+    int maxDepth = 20;
     double minProportionEachPartition;
     int minCountEachPartition;
     double improvementThreshold;

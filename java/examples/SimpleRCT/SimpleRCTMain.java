@@ -24,7 +24,7 @@
 package examples.SimpleRCT;
 
 import Jama.Matrix;
-import com.stata.sfi.SFIToolkit;
+// import com.stata.sfi.SFIToolkit;
 import core.BootstrapForest;
 import core.DataLens;
 import core.MomentForest;
@@ -69,7 +69,7 @@ public class SimpleRCTMain {
             boolean verbose = true;
             MomentForest myForest = new MomentForest(mySpecification, numtrees, 314, forestLens, verbose, new TreeOptions());
 
-            TreeOptions cvOptions = new TreeOptions(1E-5, (int) CVparameters1.get(0,0), (int) CVparameters1.get(0,1), 100);
+            TreeOptions cvOptions = new TreeOptions(1E-5, (int) CVparameters1.get(0,0), (int) CVparameters1.get(0,1), 20);
             /**
              * Run a CV for the hyper-parameters and see the tree options
              */

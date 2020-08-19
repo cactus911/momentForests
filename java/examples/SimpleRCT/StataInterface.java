@@ -39,7 +39,6 @@ public class StataInterface {
         Jama.Matrix X;
         Jama.Matrix Y;
         Boolean[] DiscreteVariables;
-        int numObs;
         int numtrees;
         Jama.Matrix CVparameters1;
         Jama.Matrix CVparameters2;
@@ -52,7 +51,6 @@ public class StataInterface {
 	double value_x, value_y;
 	String msg_x, msg_y;
 	TreeSet<Integer> exclusionTree = new TreeSet<>();    
-        
         
 	int nVariables = Data.getParsedVarCount(); // Get number of variables in varlist specified to javacall
 	long firstObs = Data.getObsParsedIn1(); // Get first observation specified by an in restriction
@@ -130,13 +128,13 @@ public class StataInterface {
             
             // 3. Number of Trees            
             numtrees = (int) Data.getNum(1,nObs - 6 - 1 - 2 - 1);
-            SFIToolkit.displayln("numtree" + numtrees );
+            SFIToolkit.displayln("numtree: " + numtrees );
             
             // 4. Search parameters
             CVparameters2 = new Jama.Matrix(1,6);
             for (int i = 6; i >= 1; i-- ) {
                 CVparameters2.set(0,6-i, (double) Data.getNum(1,nObs - (i - 1) - 1 - 2 - 1));  
-                SFIToolkit.displayln("search cv parameters" + CVparameters2.get(0,i-1) );
+                SFIToolkit.displayln("search cv parameters: " + CVparameters2.get(0,i-1) );
             }        
             
             // 5. CV parameter
@@ -146,20 +144,20 @@ public class StataInterface {
     		} else {
     			cv = false;
             }
-            SFIToolkit.displayln("cv yes or no" + cv );
+            SFIToolkit.displayln("cv yes or no: " + cv );
             
             // 6.Hyper parameters
             CVparameters1 = new Jama.Matrix(1,2);
             CVparameters1.set(0,0, Data.getNum(1,nObs - 1 - 1) );  
             CVparameters1.set(0,1, Data.getNum(1,nObs - 1) );  
            
-            SFIToolkit.displayln("hyper para1" + CVparameters1.get(0,0) );
-            SFIToolkit.displayln("hyper para2" + CVparameters1.get(0,1) );
+            SFIToolkit.displayln("hyper para1: " + CVparameters1.get(0,0) );
+            SFIToolkit.displayln("hyper para2: " + CVparameters1.get(0,1) );
             
             // 7. Number of Bootstrapping
             numbootstrap = (int) Data.getNum(1,nObs);
             
-            SFIToolkit.displayln("numbootstrap" + numbootstrap );
+            SFIToolkit.displayln("numbootstrap: " + numbootstrap );
             
             // 8. Variable Index for Searching over
             int[] variableSearchIndex = new int[nVariables-2];

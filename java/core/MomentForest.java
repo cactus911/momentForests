@@ -23,7 +23,7 @@
  */
 package core;
 
-import com.stata.sfi.*;
+// import com.stata.sfi.*;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
@@ -80,7 +80,7 @@ public class MomentForest {
                     spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
                     lensHonest));
         }
-        SFIToolkit.displayln("test.getMincount " + treeOptions.getMinCount() + "test.MinMSEImprove " + treeOptions.getMinMSEImprovement() );
+        // SFIToolkit.displayln("test.getMincount " + treeOptions.getMinCount() + "test.MinMSEImprove " + treeOptions.getMinMSEImprovement() );
         forest.parallelStream().forEach((tree) -> {
             tree.determineSplit();
             tree.estimateHonestTree();
@@ -117,7 +117,7 @@ public class MomentForest {
         int bestK = 10;
 
         TreeOptions options = new TreeOptions();
-        options.setMaxDepth(100);
+        options.setMaxDepth(20);
         options.setMinMSEImprovement(1E-10);
         
         // for (double improvementThreshold = (double) CVparameters2.get(0,3); improvementThreshold <= 0.5; improvementThreshold += 0.05) {
@@ -200,8 +200,8 @@ public class MomentForest {
 
             }
         }
-        SFIToolkit.displayln("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
-        SFIToolkit.displayln(" Optimal improvement threshold: " + bestMSEBar);
+        // SFIToolkit.displayln("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
+        // SFIToolkit.displayln(" Optimal improvement threshold: " + bestMSEBar);
         System.out.print("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
         System.out.println(" Optimal improvement threshold: " + bestMSEBar);
 
