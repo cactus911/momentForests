@@ -29,10 +29,6 @@ Download all the files from folder “jars” [“jars”](https://github.com/ca
 
 <img src="./jars.PNG" width="600" >
 
-{% comment %} 
-![](./jars.PNG)
-{% endcomment %}
-
 
 #### Step 3/3.
 
