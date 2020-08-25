@@ -11,40 +11,32 @@ Folder “java” contains all the original java codes that implement Moment For
 
 ##  How to run the Stata code for Moment Forests 
 
-### 1. Direct Download without using NetBeans.
-
-#### Step 1/3. Find out Stata personal directories
+### Step 1/3. Find out Stata personal directories
 
 The Stata personal directory can be found by typing “adopath” in the Stata command window. The one starts with “(PERSONAL)” is the personal directory. For example, "c:\ado\personal/".
 
-<img src="./adopath.PNG" width="800" >
+<img src="./adopath.PNG" width="700" >
 
 {% comment %} 
 ![](./adopath.PNG)
 {% endcomment %}
 
-#### Step 2/3. Download files from the GitHub website.
+### Step 2/3. Download files from the GitHub website.
 
 Download all the files from folder [“jars”](https://github.com/cactus911/momentForests/tree/master/jars) and save them in Stata personal directories. Make sure all 15 files (13 jar files, 1 readme text file, 1 Stata ado file) are properly downloaded and stored.
 
-<img src="./jars.png" width="800" >
+<img src="./jars.png" width="700" >
 
 
-#### Step 3/3.
+### Step 3/3.
 
 Close and reopen Stata. Now you are ready use Moment Forests on Stata.
 
 
 
-### 2. Download using NetBeans.
-
-
-
-
-
 ## How to modify the original codes
 
-If a user wants to check how the algorithm is structured or wants to modify it, one needs to look at the original java codes in folder [“java”](https://github.com/cactus911/momentForests/tree/master/java). After making modifications, users can compile them into a jar file with the name “momentforests.jar”. Then, by replacing this jar file in their own Stata personal directory, one can use their own version of Moment Forests Stata on Stata.
+If a user wants to check how the algorithm is structured or wants to modify it, one needs to look at the original java codes in folder [“java”](https://github.com/cactus911/momentForests/tree/master/java). After making modifications, users should compile them into a jar file “momentforests.jar”. Then, by replacing this jar file in their own Stata personal directory, one can use own version of Moment Forests on Stata.
 
 
 ## Stata command “momentforests” 
