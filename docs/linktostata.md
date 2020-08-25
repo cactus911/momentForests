@@ -25,7 +25,7 @@ The Stata personal directory can be found by typing “adopath” in the Stata c
 
 #### Step 2/3. Download files from the GitHub website.
 
-Download all the files from folder [“jars”](https://github.com/cactus911/momentForests/tree/master/jars) and save them in own Stata personal directories. Make sure all 15 files (13 jar files, 1 readme text file, 1 Stata ado file) are properly downloaded and stored.
+Download all the files from folder [“jars”](https://github.com/cactus911/momentForests/tree/master/jars) and save them in Stata personal directories. Make sure all 15 files (13 jar files, 1 readme text file, 1 Stata ado file) are properly downloaded and stored.
 
 <img src="./jars.png" width="800" >
 
