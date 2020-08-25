@@ -42,12 +42,12 @@ Close and reopen Stata. Now you are ready use Moment Forests on Stata.
 
 
 
-### How to modify the original codes
+## How to modify the original codes
 
 If a user wants to check how the algorithm is structured or wants to modify some parts of it, one needs to look at the original java codes in folder “java”. After making modifications to these java codes, users can compile them into a jar file with the name “momentforests.jar”. Then, by replacing this jar file in their own Stata personal directory, users can use their own version of the Moment Forests Stata code.
 
 
-### Stata function “momentforests” 
+## Stata command “momentforests” 
 
 Syntax
 momentforests depvar treatment indepvars [if] [in] [, options]
