@@ -36,7 +36,7 @@ The java source code is contained in two separate folders on the Github reposito
 
 ### Link to STATA
 
-We have also developed a link between the functionality contained in the Java code and STATA.
+We have also developed a link between the functionality contained in the Java code and STATA. [STATA interface](./linktostata.md)
 
 ### Worked Examples
 

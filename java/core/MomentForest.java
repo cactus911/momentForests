@@ -80,10 +80,16 @@ public class MomentForest {
                     spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
                     lensHonest));
         }
+        
+        // for (int i = 0; i < numberTreesInForest; i++) {
+        //     forest.get(i).determineSplit();
+        //    forest.get(i).estimateHonestTree();
+        // }
+        
         // SFIToolkit.displayln("test.getMincount " + treeOptions.getMinCount() + "test.MinMSEImprove " + treeOptions.getMinMSEImprovement() );
         forest.parallelStream().forEach((tree) -> {
-            tree.determineSplit();
-            tree.estimateHonestTree();
+           tree.determineSplit();
+           tree.estimateHonestTree();
         });
         // System.out.format("Memory usage: %,d bytes %n", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
     }
@@ -210,11 +216,7 @@ public class MomentForest {
 
         return options;
     }
-    
-    public static double roundAvoid(double value, int places) {
-    double scale = Math.pow(10, places);
-    return Math.round(value * scale) / scale;
-    }
+
     
     public void setTreeOptions(TreeOptions cvOptions) {
         this.treeOptions = cvOptions;
