@@ -23,7 +23,6 @@
  */
 package core;
 
-// import com.stata.sfi.*;
 import java.util.ArrayList;
 import java.util.TreeSet;
 import optimization.Fmin;
@@ -54,7 +53,7 @@ public class TreeMoment {
     int numHonestXObservations;
 
     // private final static double improvementThreshold = 0.01;
-    int maxDepth = 20;
+    int maxDepth = 100;
     double minProportionEachPartition;
     int minCountEachPartition;
     double improvementThreshold;
@@ -541,10 +540,10 @@ public class TreeMoment {
         
         if (terminal) {
             if (verbose) {
-                echo(getParentRule(null) + " honest set to ");
+                echoLn(getParentRule(null) + " honest set to ");
             }
-            // if (lensHonest.getNumObs() == 0) {
             if (lensHonest ==  null) {
+                // lensHonest.getNumObs() == 0 || lensHonest ==  null || lensHonest.getXsum(lensHonest.getNumObs()) == 0 || lensHonest.getXsum(lensHonest.getNumObs()) == lensHonest.getNumObs() ) {
                 setNodeEstimatedBeta(null);
                 setNodeEstimatedVariance(null);
                 if (verbose) {
@@ -555,13 +554,16 @@ public class TreeMoment {
                 Jama.Matrix oldBeta = getNodeEstimatedBeta();
                 setNodeEstimatedBeta(c.getBeta());
                 setNodeEstimatedVariance(c.getVariance());
-                // echoLn("Did you stop here? 2-5." + "    " + pmUtility.stringPrettyPrint(c.getBeta()) + "    " + pmUtility.stringPrettyPrint(oldBeta) );
+         
+            // for (int i = 0; i < lensHonest.getNumObs(); i++) {
+            // echoLn("Did you stop here? 2-6." + " num: " + lensHonest.getNumObs() + " y: " + lensHonest.getY(0) + " x: " + lensHonest.getX(i,0) ); //  + "    " + pmUtility.stringPrettyPrint(c.getBeta()) + "    " + pmUtility.stringPrettyPrint(oldBeta) );
+            // }
+                        
                 if(verbose) {
                      echoLn(pmUtility.stringPrettyPrint(c.getBeta())+" [ "+lensHonest.getNumObs()+" ] from "+pmUtility.stringPrettyPrint(oldBeta));
                 }
             }
         } else {
-            echoLn("Did you stop here? 3-1.");
             childLeft.estimateHonestTree();
             childRight.estimateHonestTree();
             /**
@@ -572,7 +574,6 @@ public class TreeMoment {
             if (pruneTree) {
                 Jama.Matrix leftBeta = childLeft.getNodeEstimatedBeta();
                 Jama.Matrix rightBeta = childRight.getNodeEstimatedBeta();
-                echoLn("Did you stop here? 3-2.");
                 if (leftBeta == null || rightBeta == null) {
                     if (leftBeta == null) {
                         if (verbose) {
@@ -585,23 +586,20 @@ public class TreeMoment {
                         }
                     }
                     setTerminal(true);
-                    // if (lensHonest.getNumObs() == 0) {
                     if (lensHonest ==  null) {
+                       // lensHonest.getNumObs() == 0 | lensHonest ==  null || lensHonest.getXsum(lensHonest.getNumObs()) == 0 || lensHonest.getXsum(lensHonest.getNumObs()) == lensHonest.getNumObs()     }) {
                         setNodeEstimatedBeta(null);
                         setNodeEstimatedVariance(null);
                         echoLn("null pruned");
                     } else {
                         ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest);
-                        echoLn("Did you stop here? 3-5." + "    " );
                         setNodeEstimatedBeta(c.getBeta());
                         setNodeEstimatedVariance(c.getVariance());
-                        echoLn("Did you stop here? 3-7.");
                         if (verbose) {
                              echoLn("pruned children, replaced with: n = " + lensHonest.getNumObs() + " " + pmUtility.stringPrettyPrintVector(c.getBeta()));
                         }
                     }
                 } else {
-                    echoLn("Did you stop here? 3-8.");
                      // System.out.println("not pruned: n = " + honestX.getNumObs());
                 }
             }
@@ -665,9 +663,9 @@ public class TreeMoment {
         System.out.println(s);
     }
     
-    static private void echo(String s) {
-        // SFIToolkit.displayln(s);
-        System.out.print(s);
-    }
+//    static private void echo(String s) {
+//        // SFIToolkit.displayln(s);
+//        System.out.print(s);
+//    }
 
 }

@@ -199,7 +199,15 @@ public class DataLens {
     public int getNumObs() {
         return dataIndex.length;
     }
-
+    
+    public double getXsum(int rowEnd) {
+        double totalsum = 0;
+        for (int i = 0; i < rowEnd; i++) {
+            totalsum += originalDataX.get(dataIndex[i], 0);
+        }
+        return totalsum;
+    }
+    
     public int getColumnDimensionX() {
         // System.out.println("Getting column dimension");
         return originalDataX.getColumnDimension();
@@ -223,7 +231,7 @@ public class DataLens {
     public double getX(int i, int j) {
         return originalDataX.get(dataIndex[i], j);
     }
-
+    
     public Jama.Matrix getRowX(int row) {
         return originalDataX.getMatrix(dataIndex[row], dataIndex[row], 0, originalDataX.getColumnDimension() - 1);
     }

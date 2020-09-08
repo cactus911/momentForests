@@ -24,7 +24,7 @@
 package examples.SimpleRCT;
 
 import Jama.Matrix;
-// import com.stata.sfi.SFIToolkit;
+import com.stata.sfi.SFIToolkit;
 import core.BootstrapForest;
 import core.DataLens;
 import core.MomentForest;
@@ -39,6 +39,11 @@ import utility.pmUtility;
 public class SimpleRCTMain {
 
     Jama.Matrix EstimationResults;
+    
+    double minProportion;
+    int minCount;
+    double minMSEImprovement;
+    int maxDepth;
             
     public SimpleRCTMain(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters1, Jama.Matrix CVparameters2, boolean cv, int[] variableSearchIndex, Boolean[] DiscreteVariables, int numbootstrap) {
             
@@ -68,8 +73,8 @@ public class SimpleRCTMain {
             DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), pmUtility.getColumn(mySpecification.getX(), 0));
             boolean verbose = true;
             MomentForest myForest = new MomentForest(mySpecification, numtrees, 314, forestLens, verbose, new TreeOptions());
-
-            TreeOptions cvOptions = new TreeOptions(1E-5, (int) CVparameters1.get(0,0), (int) CVparameters1.get(0,1), 20);
+            
+            TreeOptions cvOptions = new TreeOptions(0.001/*1E-5*/, (int) CVparameters1.get(0,0), (double) CVparameters1.get(0,1), 100);
             /**
              * Run a CV for the hyper-parameters and see the tree options
              */
@@ -79,6 +84,12 @@ public class SimpleRCTMain {
                 cvOptions = myForest.performCrossValidation(numtrees, CVparameters2);
             } 
             
+            /* Read out hyper parameters */ 
+            minProportion = cvOptions.getMinProportion();
+            minCount = cvOptions.getMinCount();
+            minMSEImprovement = cvOptions.getMinMSEImprovement();
+            maxDepth = cvOptions.getMaxDepth();
+            SFIToolkit.displayln("testing parameter1: " + cvOptions.getMinMSEImprovement() + "  testing parameter2:  " + minMSEImprovement );
             myForest.setTreeOptions(cvOptions);
             
             // SFIToolkit.displayln("test.getMincount " + cvOptions.getMinCount() + "test.MinMSEImprove " + cvOptions.getMinMSEImprovement());
@@ -95,12 +106,11 @@ public class SimpleRCTMain {
             // System.out.println("Number of bootstraps: " + numberBootstraps);
             int numberTreesInBootForest = mySpecification.numberoftrees();
             BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
-            
+            SFIToolkit.displayln("testing parameter3: " + cvOptions.getMinMSEImprovement() + "  testing parameter4:  " + minMSEImprovement );
             /**
              * stack the estimation results
              */                 
             
-
             Jama.Matrix allX = mySpecification.getX().copy();
             EstimationResults = new Jama.Matrix(allX.getRowDimension(), 2);
             
@@ -108,26 +118,47 @@ public class SimpleRCTMain {
                 Jama.Matrix xi = allX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);  
                 Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameters(xi);
                 Jama.Matrix standardErrors = estimatedTreatmentEffects.times(0);
+                SFIToolkit.displayln("test 1_0: " + xi.get(0, 0) );
+                SFIToolkit.displayln("test 1_1: " + xi.get(0, 1) );
+                SFIToolkit.displayln("test 1_2: " + xi.get(0, 2) );
+                SFIToolkit.displayln("test 2: " + estimatedTreatmentEffects.get(0, 0) );
+                SFIToolkit.displayln("test 3: " + standardErrors.get(0, 0) );
                 boolean useBoot = true;
                 if (useBoot) {
                     standardErrors = boot.computeStandardErrors(xi);
                 }
-                
+                SFIToolkit.displayln("test 4: " + standardErrors.get(0, 0) );
                 EstimationResults.set(i, 0 ,estimatedTreatmentEffects.get(0, 0));
                 EstimationResults.set(i, 1 ,standardErrors.get(0, 0));
                 // Data.storeNum(resv+2, i+1, estimatedTreatmentEffects.get(0, 0));
                 // Data.storeNum(resv+3, i+1, standardErrors.get(0, 0));
             }
-            
+            SFIToolkit.displayln("testing parameter5: " + cvOptions.getMinMSEImprovement() + "  testing parameter6:  " + minMSEImprovement );
             // mySpecification.computeNaiveStatistics();
-                        
+           
     }
 
-
-
+    
+    
     
     public Jama.Matrix EstimationResults() {
         return EstimationResults;
     }
 
+    public double minProportion() {
+        return minProportion;
+    }
+    
+    public int minCount() {
+        return minCount;
+    }
+
+    public double minMSEImprovement() {
+        return minMSEImprovement;
+    }
+
+    public int maxDepth() {
+        return maxDepth;
+    }    
+        
 }

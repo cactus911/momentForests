@@ -23,7 +23,6 @@
  */
 package core;
 
-// import com.stata.sfi.*;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
@@ -83,10 +82,9 @@ public class MomentForest {
         
         // for (int i = 0; i < numberTreesInForest; i++) {
         //     forest.get(i).determineSplit();
-        //    forest.get(i).estimateHonestTree();
+        //     forest.get(i).estimateHonestTree();
         // }
         
-        // SFIToolkit.displayln("test.getMincount " + treeOptions.getMinCount() + "test.MinMSEImprove " + treeOptions.getMinMSEImprovement() );
         forest.parallelStream().forEach((tree) -> {
            tree.determineSplit();
            tree.estimateHonestTree();
@@ -120,18 +118,16 @@ public class MomentForest {
         double bestMSPE = 0;
         double bestMSEBar = 0;
         boolean first = true;
-        int bestK = 10;
+        int bestK = 5;
 
         TreeOptions options = new TreeOptions();
-        options.setMaxDepth(20);
+        options.setMaxDepth(100);
         options.setMinMSEImprovement(1E-10);
         
-        // for (double improvementThreshold = (double) CVparameters2.get(0,3); improvementThreshold <= 0.5; improvementThreshold += 0.05) {
-           // for (int minCountEachPartition = (int) CVparameters2.get(0,0); minCountEachPartition <= (int) CVparameters2.get(0,2) / 2; minCountEachPartition += (int) CVparameters2.get(0,1) ) {
         // for (double improvementThreshold = 0.01; improvementThreshold <= 0.5; improvementThreshold += 0.05) {
                  // for (int minCountEachPartition = 10; minCountEachPartition <= growLens.getNumObs() / 2; minCountEachPartition *= 2) {
          for (double improvementThreshold = (double) CVparameters2.get(0,3); improvementThreshold <= (double) CVparameters2.get(0,5); improvementThreshold += (double) CVparameters2.get(0,4)) {
-            for (int minCountEachPartition = (int) CVparameters2.get(0,0); minCountEachPartition <= (int) CVparameters2.get(0,2) /*growLens.getNumObs() / 2*/; minCountEachPartition += (int) CVparameters2.get(0,1) /**= 2*/) {
+            for (int minCountEachPartition = (int) CVparameters2.get(0,0); minCountEachPartition <= (int) CVparameters2.get(0,2); minCountEachPartition += (int) CVparameters2.get(0,1)) {
                 rng = new Random(667);
                 options.setMinCount(minCountEachPartition);
                 options.setMinMSEImprovement(improvementThreshold);
@@ -179,7 +175,6 @@ public class MomentForest {
 
                 MSPE /= counter;
 
-                // SFIToolkit.displayln("CV_index: " + CV_Index + " " );
                 // System.out.print("maxDepth: " + options.getMaxDepth() + " " + " k: " + options.getMinCount() + " " + " alpha: " + options.getMinProportion()
                 // + " " + " mse_bar: " + options.getMinMSEImprovement() + " ");
                 // System.out.print("MSPE: " + MSPE + " nulls: " + nullCounterMSPE + " ");

@@ -43,10 +43,10 @@ public class DisjointSet {
         // data.add(6);
         // data.add(7);
         // data.add(8);
-//        data.add(7);
-//        data.add(8);
-//        data.add(9);
-//        data.add(10);
+        // data.add(7);
+        // data.add(8);
+        // data.add(9);
+        // data.add(10);
 
         // nice, this works
         ArrayList<IntegerPartition> partition = computeAllDisjointSets(data);
