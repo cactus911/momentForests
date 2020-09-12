@@ -31,31 +31,32 @@ Download all the files from [“jars”](https://github.com/cactus911/momentFore
 ### Step 3/3.
 
 Close then reopen Stata. Now you are ready to use Moment Forests on Stata!
+
+
 <br>
-
-
-
 ## III. Stata command “momentforests”
 
 {% comment %} 
-# Title
+### Title
 momentforests - Moment forests
-# Description
+### Description
 momentforests performs Moment forests estimation proposed by Nekipelov, Novosad, and Ryan (2020).
 {% endcomment %}
 
-# Quick start
+### Quick start
 Perform Moment forests with 150 trees and 300 times of bootstrapping
 - momentforests y w x1 x2, bootstrap(300) num_tree(150)
-<br>
-# Syntax
-momentforests depvar treatment indepvars [if] [in] [, options]
-<br>
 
+
+<br>
+### Syntax
+momentforests depvar treatment indepvars [if] [in] [, options]
+
+<br>
 | options | Description |
 |:-----------|:------------|
-| `num_tree(#)` | number of trees | 
-| `bootstrap(#)` | number of bootstrapping for calculating standard errors | 
+| `num_tree(#)` | number of trees, default = 200 | 
+| `bootstrap(#)` | number of bootstrapping for calculating standard errors, default = 100 | 
 | | |
 | `cv(#)` | `0` = do not perform cross-validation for hyper-parameters, `1` = do perform cross-validation for hyper-parameters |
 | `mink(#)` | minimum number of observations in each leaf when growing trees|
@@ -67,15 +68,13 @@ momentforests depvar treatment indepvars [if] [in] [, options]
 | `msebar_upper(#)` | upper bound of mse imprvoement that the algorithm searches from  |
 | `msebar_size(#)` | the step size that the algorithm uses to search for the optimal mse improvement level  |
 
+
 <br>
 [back](./index.md)
 
 
 
-
-
-
-<br>
-## How to modify the original codes
-
-If a user wants to check how the algorithm is structured or wants to modify it, one needs to look at the original java codes in folder [“java”](https://github.com/cactus911/momentForests/tree/master/java). After making modifications, users should compile them into a jar file “momentforests.jar”. Then, by replacing this jar file in their own Stata personal directory, one can use own version of Moment Forests on Stata.
+{% comment %} 
+- If a user wants to check how the algorithm is structured, one needs to go through these java codes. 
+- If a user wants to modify the codes, one should compile the modified codes into a jar file named “momentforests.jar”. Then, by replacing this jar file in their own Stata personal directory, one can use own version of Moment Forests.
+{% endcomment %}
