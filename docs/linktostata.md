@@ -16,10 +16,10 @@ Folder “java” contains all the java source codes that implement Moment Fores
 
 The Stata personal directory can be found by typing “adopath” in the Stata command window. The one starts with “(PERSONAL)” is the personal directory. For example, "c:\ado\personal/".
 
-<img src="./adopath.PNG" width="700" >
+<img src="./adopath.png" width="700" >
 
 {% comment %} 
-![](./adopath.PNG)
+![](./adopath.png)
 {% endcomment %}
 
 ### Step 2/3. Download files from the GitHub website.
