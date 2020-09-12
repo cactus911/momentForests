@@ -3,7 +3,7 @@
 
 ## I. Components
 
-The codes are grouped into two folders: [jars and java] (https://github.com/cactus911/momentForests)
+The codes are grouped into two folders: [jars and java](https://github.com/cactus911/momentForests)
 
 Folder “jars” contains relevant java utilities, the Moment Forests jar file compiled from the Moment Forests java files, and a Stata ado file. 
 Folder “java” contains all the java source codes that implement Moment Forests. The common components that can be applied to any appliations are stored in the subdirectory "core", while specific application files including RCT are in the subdirectory "examples".
