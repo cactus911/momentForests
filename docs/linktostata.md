@@ -37,23 +37,35 @@ Close then reopen Stata. Now you are ready to use Moment Forests on Stata!
 
 ## III. Stata command “momentforests”
 
+{% comment %} 
 # Title
 momentforests - Moment forests
-
 # Description
 momentforests performs Moment forests estimation proposed by Nekipelov, Novosad, and Ryan (2020).
+{% endcomment %}
 
 # Quick start
-For example, 
-momentforests y w x1 x2, mink_size(1) bootstrap(300) num_tree(150)
+Perform Moment forests with 150 trees and 300 times of bootstrapping
+- momentforests y w x1 x2, bootstrap(300) num_tree(150)
 
 # Syntax
 momentforests depvar treatment indepvars [if] [in] [, options]
 
 
-syntax varlist [if] [in] [, num_tree(numlist)] [mink(numlist)] [mink_lower(numlist)] [mink_size(numlist)] [mink_upper(numlist)] [msebar(numlist)] [msebar_lower(numlist)] [msebar_size(numlist)] [msebar_upper(numlist)] [bootstrap(numlist) ] [cv(numlist) ]
-
-
+| options | Description |
+|:-----------|:------------|
+| `num_tree(#)` | number of trees | 
+| `bootstrap(#)` | number of bootstrapping for calculating standard errors | 
+| | |
+| `cv(#)` | `0` = do not perform cross-validation for hyper-parameters, `1` = do perform cross-validation for hyper-parameters |
+| `mink(#)` | minimum number of observations in each leaf when growing trees|
+| `mink_lower(#)` | lower bound of the minimum number of observations in each leaf that the algorithm searches from  |
+| `mink_upper(#)` | upper bound of the minimum number of observations in each leaf that the algorithm searches from  |
+| `mink_size(#)` | the step size that the algorithm uses to search for the optimal minimum number of observations in each leaf  |
+| `msebar(#)` | minimum mse improvement when growing trees |
+| `msebar_lower(#)` | lower bound of mse imprvoement that the algorithm searches from  |
+| `msebar_upper(#)` | upper bound of mse imprvoement that the algorithm searches from  |
+| `msebar_size(#)` | the step size that the algorithm uses to search for the optimal mse improvement level  |
 
 [back](./index.md)
 
