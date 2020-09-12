@@ -1,6 +1,6 @@
 # How to use Moment Forests on Stata
 
-
+<br>
 ## I. Components
 
 The codes are grouped into two directories: [jars and java](https://github.com/cactus911/momentForests)
@@ -8,7 +8,7 @@ The codes are grouped into two directories: [jars and java](https://github.com/c
 Folder “jars” contains relevant java utilities, the Moment Forests jar file compiled from the Moment Forests java files, and a Stata ado file. 
 Folder “java” contains all the java source codes that implement Moment Forests. The common components that can be applied to any appliations are stored in the subdirectory "core", while specific application files including RCT are in the subdirectory "examples".
 
-
+<br>
 ## II. How to run Moment Forests on Stata
 
 ### Step 1/3. Figure out where the Stata personal directories are
@@ -31,7 +31,7 @@ Download all the files from [“jars”](https://github.com/cactus911/momentFore
 ### Step 3/3.
 
 Close then reopen Stata. Now you are ready to use Moment Forests on Stata!
-
+<br>
 
 
 
@@ -47,10 +47,10 @@ momentforests performs Moment forests estimation proposed by Nekipelov, Novosad,
 # Quick start
 Perform Moment forests with 150 trees and 300 times of bootstrapping
 - momentforests y w x1 x2, bootstrap(300) num_tree(150)
-
+<br>
 # Syntax
 momentforests depvar treatment indepvars [if] [in] [, options]
-
+<br>
 
 | options | Description |
 |:-----------|:------------|
@@ -67,6 +67,7 @@ momentforests depvar treatment indepvars [if] [in] [, options]
 | `msebar_upper(#)` | upper bound of mse imprvoement that the algorithm searches from  |
 | `msebar_size(#)` | the step size that the algorithm uses to search for the optimal mse improvement level  |
 
+<br>
 [back](./index.md)
 
 
@@ -74,7 +75,7 @@ momentforests depvar treatment indepvars [if] [in] [, options]
 
 
 
-
+<br>
 ## How to modify the original codes
 
 If a user wants to check how the algorithm is structured or wants to modify it, one needs to look at the original java codes in folder [“java”](https://github.com/cactus911/momentForests/tree/master/java). After making modifications, users should compile them into a jar file “momentforests.jar”. Then, by replacing this jar file in their own Stata personal directory, one can use own version of Moment Forests on Stata.
