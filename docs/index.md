@@ -32,7 +32,7 @@ In our theory, we prove several useful theoretical properties of moment forests.
 
 ### Java Source Code
 
-The java source code is contained in two separate folders on the Github repository.
+The java source code is contained in two separate folders on the Github repository: [jars and java](https://github.com/cactus911/momentForests)
 
 ### Link to STATA
 
