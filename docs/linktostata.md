@@ -53,6 +53,7 @@ Perform Moment forests with 150 trees and 300 times of bootstrapping
 momentforests depvar treatment indepvars [if] [in] [, options]
 
 <br>
+
 | options | Description |
 |:-----------|:------------|
 | `num_tree(#)` | number of trees, default = 200 | 
