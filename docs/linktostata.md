@@ -96,3 +96,4 @@ momentforests depvar treatment indepvars [if] [in] [, options]
 - If a user wants to check how the algorithm is structured, one needs to go through these java codes. 
 - If a user wants to modify the codes, one should compile the modified codes into a jar file named “momentforests.jar”. Then, by replacing this jar file in their own Stata personal directory, one can use own version of Moment Forests.
 {% endcomment %}
+
