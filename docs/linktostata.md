@@ -74,7 +74,6 @@ momentforests depvar treatment indepvars [if] [in] [, options]
 |:-----------|:------------|
 | `num_tree(#)` | number of trees, default = 200 | 
 | `bootstrap(#)` | number of bootstrapping for calculating standard errors, default = 100 | 
-| | Options regarding stopping rule hyper-parameters and cross-validation |
 | `cv(#)` | `0` = do not perform cross-validation for hyper-parameters, `1` = do perform cross-validation for hyper-parameters; default is 1 if either mink(#) or msebar(#) is missing |
 | `mink(#)` | minimum number of observations in each leaf when growing trees|
 | `mink_lower(#)` | lower bound of the minimum number of observations in each leaf that the algorithm searches from  |
@@ -92,6 +91,8 @@ momentforests depvar treatment indepvars [if] [in] [, options]
 
 
 {% comment %} 
+| | Options regarding stopping rule hyper-parameters and cross-validation |
+
 - If a user wants to check how the algorithm is structured, one needs to go through these java codes. 
 - If a user wants to modify the codes, one should compile the modified codes into a jar file named “momentforests.jar”. Then, by replacing this jar file in their own Stata personal directory, one can use own version of Moment Forests.
 {% endcomment %}
