@@ -64,7 +64,7 @@ Results printed on Stata window
 </figure>
 
 
-| ![./3_hybrid_graph.png] | 
+| <img src="./3_hybrid_graph.png" width="500"  alt="{{ Scatter plot, true beta against estimated beta }}"> | 
 |:--:| 
 | *Scatter plot, true beta against estimated beta* |
 
