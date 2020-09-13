@@ -75,13 +75,13 @@ momentforests depvar treatment indepvars [if] [in] [, options]
 | `num_tree(#)` | number of trees, default = 200 | 
 | `bootstrap(#)` | number of bootstrapping for calculating standard errors, default = 100 | 
 | `cv(#)` | `0` = do not perform cross-validation for hyper-parameters, `1` = do perform cross-validation for hyper-parameters; default is 1 if either mink(#) or msebar(#) is missing |
-| `mink(#)` | minimum number of observations in each leaf when growing trees|
+| `mink(#)` | minimum number of observations in each leaf when growing trees |
 | `mink_lower(#)` | lower bound of the minimum number of observations in each leaf that the algorithm searches from  |
 | `mink_upper(#)` | upper bound of the minimum number of observations in each leaf that the algorithm searches from  |
 | `mink_size(#)` | the step size that the algorithm uses to search for the optimal minimum number of observations in each leaf  |
 | `msebar(#)` | minimum mse improvement when growing trees |
-| `msebar_lower(#)` | lower bound of mse imprvoement that the algorithm searches from  |
-| `msebar_upper(#)` | upper bound of mse imprvoement that the algorithm searches from  |
+| `msebar_lower(#)` | lower bound of mse improvement that the algorithm searches from  |
+| `msebar_upper(#)` | upper bound of mse improvement that the algorithm searches from  |
 | `msebar_size(#)` | the step size that the algorithm uses to search for the optimal mse improvement level  |
 
 
