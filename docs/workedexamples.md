@@ -26,7 +26,7 @@ where \\( \epsilon \\) follows N(0,1)
 
 <br>
 ## III. Results
-The estimation results are reported and plotted here. The full estimation results are stored [here](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo)
+The estimation results are reported and plotted below. The Stata do file for running these simulations and the corresponding full estimates are stored [here](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo).
 
 
 ### 1/3 Discrete Case
@@ -57,18 +57,6 @@ The estimation results are reported and plotted here. The full estimation result
 
 <br>
 [back](./index.md)
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
