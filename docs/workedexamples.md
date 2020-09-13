@@ -32,18 +32,22 @@ The estimation results are reported and plotted below. The Stata do file for run
 ### 1/3. Discrete Case
 <br>
 <img src="./1_discrete_screen.PNG" width="700" >
+
 Results printed on Stata window
 
 <img src="./1_discrete_graph.png" width="500" >
+
 Scatter plot, true beta against estimated beta
 
 <br>
 ### 2/3. Continuous Case
 <br>
 <img src="./2_continuous_screen.PNG" width="700" >
+
 Results printed on Stata window
 
 <img src="./2_continuous_graph.png" width="500" >
+
 Scatter plot, x against estimated beta
 
 
@@ -51,9 +55,11 @@ Scatter plot, x against estimated beta
 ### 3/3. Hybrid Case
 <br>
 <img src="./3_hybrid_screen.PNG" width="700" >
+
 Results printed on Stata window
 
 <img src="./3_hybrid_graph.png" width="500" >
+
 Scatter plot, true beta against estimated beta
 
 
