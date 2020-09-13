@@ -19,28 +19,36 @@ where \\( \epsilon \\) follows N(0,1)
 ## II. Detailed procedures to run Moment Forests on Stata
 
 1. Load the [simulation datasets](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo) to Stata.
-2. Proceed with Moment Forests with default values.
-3. Plot the simulation results.
+2. Proceed with Moment Forests estimation. (see the detailed specification below)
+3. Report and plot the simulation results.
 
 
 
 <br>
-## III. Result 1/3 Discrete Case
+## III. Results
 
+### 1/3 Discrete Case
+
+<img src="./1_discrete_screen.PNG" width="700" >
+
+<img src="./1_discrete_graph.PNG" width="700" >
+
+
+<br>
+### 2/3 Continuous Case
+
+<img src="./2_continuous_screen.PNG" width="700" >
+
+<img src="./2_continuous_graph.PNG" width="700" >
 
 
 
 <br>
-## III. Result 2/3 Continuous Case
+### 3/3 Hybrid Case
 
+<img src="./3_hybrid_screen.PNG" width="700" >
 
-
-
-
-<br>
-## III. Result 3/3 Hybrid Case
-
-
+<img src="./3_hybrid_graph.PNG" width="700" >
 
 
 
