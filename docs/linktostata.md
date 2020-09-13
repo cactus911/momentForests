@@ -46,12 +46,16 @@ momentforests performs Moment forests estimation proposed by Nekipelov, Novosad,
 ### Quick start
 Perform Moment forests with all the default values
 - momentforests y w x1 x2
+
 Perform Moment forests with 150 trees and 200 times of bootstrapping
 - momentforests y w x1 x2, bootstrap(200) num_tree(150)
+
 Perform Moment forests with the optimal minimum observations in each leaf to be 10 and mse improvement level to be 0.001. There is no cross-validation prcoess.
 - momentforests y w x1 x2, mink(10) msebar(0.001) cv(0)
+
 Perform Moment forests that searches for the optimal minimum observations in each leaf with cross-validation. It searches from 5 to 100 with the step size 5.
 - momentforests y w x1 x2, mink_lower(5) mink_size(5) mink_upper(50)
+
 Perform Moment forests that searches for the optimal mse improvement level with cross-validation. It searches from 0.0001 to 0.0005 with the step size 0.0001.
 - momentforests y w x1 x2, msebar_lower(0.0001) msebar_size(0.00005) msebar_upper(0.0001) cv(1)
 
@@ -68,6 +72,7 @@ momentforests depvar treatment indepvars [if] [in] [, options]
 | `bootstrap(#)` | number of bootstrapping for calculating standard errors, default = 100 | 
 
 | options regarding stopping rule hyper-parameters and cross-validation |
+|:-----------|:------------|
 | `cv(#)` | `0` = do not perform cross-validation for hyper-parameters, `1` = do perform cross-validation for hyper-parameters; default is 1 if either mink(#) or msebar(#) is missing |
 | `mink(#)` | minimum number of observations in each leaf when growing trees|
 | `mink_lower(#)` | lower bound of the minimum number of observations in each leaf that the algorithm searches from  |
