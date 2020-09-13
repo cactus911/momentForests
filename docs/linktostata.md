@@ -74,11 +74,7 @@ momentforests depvar treatment indepvars [if] [in] [, options]
 |:-----------|:------------|
 | `num_tree(#)` | number of trees, default = 200 | 
 | `bootstrap(#)` | number of bootstrapping for calculating standard errors, default = 100 | 
-
-<br>
-options regarding stopping rule hyper-parameters and cross-validation
-
-| Options | Description |
+| | Options regarding stopping rule hyper-parameters and cross-validation |
 |:-----------|:------------|
 | `cv(#)` | `0` = do not perform cross-validation for hyper-parameters, `1` = do perform cross-validation for hyper-parameters; default is 1 if either mink(#) or msebar(#) is missing |
 | `mink(#)` | minimum number of observations in each leaf when growing trees|
