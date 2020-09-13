@@ -31,7 +31,7 @@ where \\( \epsilon \\) follows N(0,1)
 
 <img src="./1_discrete_screen.PNG" width="700" >
 
-<img src="./1_discrete_graph.PNG" width="700" >
+<img src="./1_discrete_graph.png" width="700" >
 
 
 <br>
@@ -39,7 +39,7 @@ where \\( \epsilon \\) follows N(0,1)
 
 <img src="./2_continuous_screen.PNG" width="700" >
 
-<img src="./2_continuous_graph.PNG" width="700" >
+<img src="./2_continuous_graph.png" width="700" >
 
 
 
@@ -48,7 +48,7 @@ where \\( \epsilon \\) follows N(0,1)
 
 <img src="./3_hybrid_screen.PNG" width="700" >
 
-<img src="./3_hybrid_graph.PNG" width="700" >
+<img src="./3_hybrid_graph.png" width="700" >
 
 
 
