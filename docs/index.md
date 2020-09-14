@@ -32,7 +32,8 @@ In our theory, we prove several useful theoretical properties of moment forests.
 
 ### Java Source Code
 
-The java source code is contained in two separate folders on the Github repository.
+The java source code is contained in two separate folders on the Github repository: [jars and java](https://github.com/cactus911/momentForests) 
+
 
 ### Link to STATA
 
@@ -40,9 +41,7 @@ We have also developed a link between the functionality contained in the Java co
 
 ### Worked Examples
 
-A simple "Hello, world" style example is coming soon, both in the underlying Java code and using the associated STATA link.
+A simple "Hello, world" style example is [here](./workedexamples.md)
+Three simulations were run based on different types of parameters: discrete, continuous, and hybrid.
 
-{% comment %} 
-    Test [link](./subpage.md).
-{% endcomment %}
 

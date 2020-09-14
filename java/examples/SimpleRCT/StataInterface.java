@@ -55,7 +55,7 @@ public class StataInterface {
 	int nVariables = Data.getParsedVarCount(); // Get number of variables in varlist specified to javacall
 	long firstObs = Data.getObsParsedIn1(); // Get first observation specified by an in restriction
 	long lastObs = Data.getObsParsedIn2(); // Get last observation specified by an in restriction
-	long nObs = Data.getObsTotal();	   
+	int nObs = (int) Data.getObsTotal();	   
 
 	// find out missing values
 	int counter = 0;
@@ -74,6 +74,8 @@ public class StataInterface {
         // should not count 1 the number of the bootstrapping row (1)
 	Y = new Jama.Matrix(counter - 1 - 1 - 6 - 1 - 2 - 1 - exclusionTree.size(), 1);
 	X = new Jama.Matrix(counter - 1 - 1 - 6 - 1 - 2 - 1 - exclusionTree.size(), nVariables-1);
+        // Y = new Jama.Matrix(nObs - 1 - 1 - 6 - 1 - 2 - 1, 1);
+	// X = new Jama.Matrix(nObs - 1 - 1 - 6 - 1 - 2 - 1, nVariables-1);
                 
         // Loop over y to assign values 
 	    for (long obs_y = 1; obs_y <= nObs - 1 - 1 - 6 - 1 - 2 - 1; obs_y++ ) {
