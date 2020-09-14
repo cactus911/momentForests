@@ -85,6 +85,22 @@ momentforests depvar treatment indepvars [if] [in] [, options]
 | `msebar_size(#)` | the step size that the algorithm uses to search for the optimal mse improvement level  |
 
 
+| Field | Description |
+|:-----------|:------------|
+| `id` |  |
+| `active` | `0` = Inactive, `1` = Active |
+| `description` | Optional text for your purpose |
+| `type` | `text` or `image` |
+| `text` | The text which should be placed on your photo |
+| `font_path` | Relative path to the `*.ttf` for the font of your text |
+| `font_size` | Size of the font |
+| `font_color` | Hex-color of your font starting with a `#` |
+| `font_bgcolor` | Hex-color for the background of your text (starting with a `#`) |
+| `image_path` | Relative path to the watermarks-image |
+| `position_align` | `topleft`, `topcenter`, `topright`, `centerleft`, `center` … |
+| `position_x` | x-offset in px |
+| `position_y` | y-offset in px |
+
 <br>
 [back](./index.md)
 
