@@ -29,7 +29,7 @@ where \\( \epsilon \\) follows N(0,1)
 The estimation results are reported and plotted below. The Stata do file for running these simulations and the corresponding full estimates are stored [here](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo).
 
 
-### 1/3. Discrete Case: \( \beta = x1 +10*(x2 -1) \\)
+### 1/3. Discrete Case: \\( \beta = x1 +10*(x2 -1) \\)
 
 | <img src="./1_discrete_screen.PNG" width="700" > |
 |:--:| 
