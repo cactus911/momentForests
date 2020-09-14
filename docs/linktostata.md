@@ -69,6 +69,7 @@ Perform Moment forests that searches for the optimal mse improvement level with 
 ### Syntax
 momentforests depvar treatment indepvars [if] [in] [, options]
 
+<br>
 
 | Options | Description |
 |:-----------|:------------|
