@@ -234,7 +234,7 @@ public class TreeMoment {
                             echoLn("\tFmin search on x_" + indexSplitVariable + " found x = " + optimalX_k + " mse: " + optimalX_MSE_k);
                         }
 
-                        boolean testGridSearch = false;
+                        boolean testGridSearch = true;
                         double h = 1E-30;
                         if (testGridSearch) {
                             for (double x = minX; x <= maxX; x += h + (maxX - minX) / 100.0) {
@@ -253,6 +253,7 @@ public class TreeMoment {
                             optimalX = optimalX_k;
                             optimalX_MSE = optimalX_MSE_k;
                             optimalSplitVariableIndex = indexSplitVariable;
+                            obj.f_to_minimize(optimalX);
                             optimalX_MSE_Left = obj.getLeftMSE();
                             optimalX_MSE_Right = obj.getRightMSE();
                             numObsLeft = obj.getNumObsLeft();
@@ -296,7 +297,7 @@ public class TreeMoment {
                                 }
 
                                 if (debugOptimization) {
-                                    echoLn("\t x_" + indexSplitVariable + " Partition: " + i + " " + partitions.get(i) + " mse: " + partitionMSE);
+                                    echoLn("\t x_" + indexSplitVariable + " Partition: " + i + " " + partitions.get(i) + " mse: " + partitionMSE+" betaLeft: "+pmUtility.stringPrettyPrintVector(obj.getBetaLeft())+" betaRight: "+pmUtility.stringPrettyPrintVector(obj.getBetaRight()));
                                 }
 
                                 if (partitionMSE < bestPartitionMSE || i == 0) {
@@ -338,9 +339,13 @@ public class TreeMoment {
             ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
             setNodeEstimatedBeta(currentNodeMoment.getBeta());
             setNodeEstimatedVariance(currentNodeMoment.getVariance());
+            
+            // System.out.print("Node beta: ");
+            // pmUtility.prettyPrintVector(getNodeEstimatedBeta());
 
             double baseline = currentNodeMoment.getMSE();
             // System.out.println("Baseline SSE is computed as: " + baseline);
+            
             if (verbose) {
                 echoLn("Number of observations in node: "+lensGrowingTree.getNumObs());
                 echoLn("Improvement from " + baseline + " to " + optimalX_MSE + " (left: " + optimalX_MSE_Left + " [" + numObsLeft + "] right: " + optimalX_MSE_Right + " [" + numObsRight + "])");
@@ -398,7 +403,7 @@ public class TreeMoment {
             setNodeEstimatedVariance(currentNodeMoment.getVariance());
 
             if (verbose) {
-                echoLn(depth + ". Terminal beta: " + pmUtility.stringPrettyPrintVector(betaEstimateNode));
+                echoLn(depth + ". Terminal beta: " + pmUtility.stringPrettyPrintVector(getNodeEstimatedBeta()));
                 // System.out.println(depth + ". Terminal RDD value: " + getRDDEstimate());
             }
         }
@@ -526,8 +531,6 @@ public class TreeMoment {
          * This is also the place to put the functionality to prune the children
          * nodes if their estimates are null. That preserves that every X will
          * get an estimate.
-         *
-         * TODO: implement pruning if children nodes have null estimates
          */
         
         /**

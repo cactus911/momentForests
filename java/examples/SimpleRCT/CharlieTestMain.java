@@ -34,7 +34,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class SimpleRCTMain {
+public class CharlieTestMain {
 
     /**
      * @param args the command line arguments
@@ -56,7 +56,7 @@ public class SimpleRCTMain {
             MomentSpecification mySpecification = new SimpleRCTMomentSpecification(n);
             mySpecification.loadData();
 
-            int numberTreesInForest = 5;
+            int numberTreesInForest = 1;
             // System.out.println("numTrees: " + numberTreesInForest);
 
             /**
@@ -64,7 +64,10 @@ public class SimpleRCTMain {
              */
             Jama.Matrix rctX = mySpecification.getX();
             Jama.Matrix rctY = mySpecification.getY();
-            Jama.Matrix balancing = pmUtility.getColumn(mySpecification.getX(), 3);
+            Jama.Matrix balancing = pmUtility.getColumn(mySpecification.getX(), 0); // treatment indicator
+            
+            // pmUtility.prettyPrint(rctX);
+            
             DataLens forestLens = new DataLens(rctX, rctY, balancing);
             boolean verbose = false;
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
@@ -94,13 +97,13 @@ public class SimpleRCTMain {
 
             Jama.Matrix fitX = new Jama.Matrix(10, 2);
             boolean isMonteCarlo = false;
-            if(isMonteCarlo) {
-            /**
-             * Show fits for out of sample data
-             */
-            for (int i = 0; i < fitX.getRowDimension(); i++) {
-                fitX.set(i, 1, i);
-            }
+            if (isMonteCarlo) {
+                /**
+                 * Show fits for out of sample data
+                 */
+                for (int i = 0; i < fitX.getRowDimension(); i++) {
+                    fitX.set(i, 1, i);
+                }
             } else {
                 fitX = mySpecification.getX();
             }
@@ -119,7 +122,7 @@ public class SimpleRCTMain {
                 if (Math.abs(estimatedTreatmentEffects.get(0, 0) / standardErrors.get(0, 0)) > 1.98) {
                     sig = "*";
                 }
-                System.out.format("%g %g (%g) %s %n", fitX.get(i, 1), estimatedTreatmentEffects.get(0, 0), standardErrors.get(0, 0), sig);
+                System.out.format("x = %g tau = %g (%g) %s %n", fitX.get(i, 1), estimatedTreatmentEffects.get(0, 0), standardErrors.get(0, 0), sig);
             }
 
             mySpecification.computeNaiveStatistics();

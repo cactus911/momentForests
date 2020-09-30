@@ -138,7 +138,7 @@ public class TestResamplingMatrix {
     private void testSplit(DataLens dataLens) {
         System.out.println("Together");
         System.out.println(dataLens);
-        DataLens[] split = dataLens.randomlySplitSample(0.45, rng.nextLong());
+        DataLens[] split = dataLens.randomlySplitSampleWithBalance(0.45, rng.nextLong());
         System.out.println("Split 1");
         System.out.println(split[0]);
         System.out.println("Split 2");
