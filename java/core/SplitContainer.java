@@ -77,17 +77,27 @@ public class SplitContainer {
         countRight = 0;
         countLeft = 0;
         for (int i = 0; i < lens.getNumObs(); i++) {
+            // System.out.print(lens.getX(i, indexSplitVariable)+" -> ");
             if (lens.getX(i, indexSplitVariable) < splitPoint) {
-                indicesObservationsForLeftSplit[countLeft] = i;
+                indicesObservationsForLeftSplit[countLeft] = lens.dataIndex[i];
                 countLeft++;
+                // System.out.println("left");
             } else {
-                indicesObservationsForRightSplit[countRight] = i;
+                indicesObservationsForRightSplit[countRight] = lens.dataIndex[i];
                 countRight++;
+                // System.out.println("right");
             }
         }
-
+        
         DataLens left = new DataLens(lens, indicesObservationsForLeftSplit);
         DataLens right = new DataLens(lens, indicesObservationsForRightSplit);
+        
+//        System.out.println("Index to split "+indexSplitVariable+" split point: "+splitPoint);
+//        System.out.println("Left:");
+//        System.out.println(left);
+//        System.out.println("Right:");
+//        System.out.println(right);
+//        System.exit(0);
         
         return new SplitContainer(left, right);
     }

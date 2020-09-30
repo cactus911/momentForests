@@ -95,17 +95,21 @@ public class DataLens {
 
     private double getMeanBalancingVector() {
         double ratio = 0;
+        // System.out.println("dataIndex.length: "+dataIndex.length);
         for (int i : dataIndex) {
             ratio += balancingVector.get(i, 0);
         }
         ratio /= dataIndex.length;
+        // System.out.println(this);
+        // System.out.println("balancing ratio: "+ratio); // wait there is something weird here; should always be 0.5
         return ratio;
     }
 
     public DataLens getResampledDataLensWithBalance(long seed) {
         Random rng = new Random(seed);
-        int[] newIndex = new int[originalDataX.getRowDimension()];
+        int[] newIndex = new int[dataIndex.length];
 
+        // System.out.println("in getResampledDataLensWithBalance");
         double ratio = getMeanBalancingVector();
         int goalTreatment = (int) Math.round(ratio * dataIndex.length);
 
@@ -139,7 +143,7 @@ public class DataLens {
         return new DataLens(this, newIndex);
     }
 
-    public DataLens[] randomlySplitSample(double proportionFirstSample, long seed) {
+    public DataLens[] randomlySplitSampleWithBalance(double proportionFirstSample, long seed) {
         Random rng = new Random(seed);
         DataLens[] splitLens = new DataLens[2]; // the two parts of the split sample
         int sizeFirst = (int) Math.round(proportionFirstSample * dataIndex.length);
@@ -151,24 +155,25 @@ public class DataLens {
         int countTreatmentFirst = 0;
         TreeSet<Integer> treeFirst = new TreeSet<>();
 
+        // System.out.println("in randomlySplitSampleWithBalance");
         int desiredNumTreatmentObsInFirstPart = (int) Math.round(getMeanBalancingVector() * sizeFirst);
         // System.out.println("Aiming for " + desiredNumTreatmentObsInFirstPart + " treatments in first sample.");
         for (int i = 0; i < sizeFirst; i++) {
-            int guess = rng.nextInt(getNumObs());
-            double treatmentStatus = balancingVector.get(dataIndex[guess], 0);
+            int randomInteger = rng.nextInt(getNumObs());
+            double treatmentStatus = balancingVector.get(dataIndex[randomInteger], 0);
             if (countTreatmentFirst < desiredNumTreatmentObsInFirstPart) {
-                while (treatmentStatus == 0 || treeFirst.contains(guess)) {
-                    guess = rng.nextInt(getNumObs());
-                    treatmentStatus = balancingVector.get(dataIndex[guess], 0);
+                while (treatmentStatus == 0 || treeFirst.contains(randomInteger)) {
+                    randomInteger = rng.nextInt(getNumObs());
+                    treatmentStatus = balancingVector.get(dataIndex[randomInteger], 0);
                 }
-                treeFirst.add(guess);
+                treeFirst.add(randomInteger);
                 countTreatmentFirst++;
             } else {
-                while (treatmentStatus == 1 || treeFirst.contains(guess)) {
-                    guess = rng.nextInt(getNumObs());
-                    treatmentStatus = balancingVector.get(dataIndex[guess], 0);
+                while (treatmentStatus == 1 || treeFirst.contains(randomInteger)) {
+                    randomInteger = rng.nextInt(getNumObs());
+                    treatmentStatus = balancingVector.get(dataIndex[randomInteger], 0);
                 }
-                treeFirst.add(guess);
+                treeFirst.add(randomInteger);
             }
         }
         ArrayList<Integer> firstList = new ArrayList(treeFirst);

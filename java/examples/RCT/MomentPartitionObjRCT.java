@@ -89,6 +89,9 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
         leftMSE = leftRCT.getMSE();
         rightMSE = rightRCT.getMSE();
         
+        setBetaLeft(leftRCT.getBeta());
+        setBetaRight(rightRCT.getBeta());
+        
         // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
         // return (leftMSE + rightMSE) / X.getNumObs();
         return (leftMSE + rightMSE);
