@@ -45,7 +45,9 @@ momentforests performs Moment forests estimation proposed by Nekipelov, Novosad,
 
 ### Variables
 y : dependent variable
+
 w : treatment dummy variable
+
 x : covariates over which the treatment effects may vary. For example, x1, x2, ...
 
 ### Quick start
