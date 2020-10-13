@@ -41,7 +41,6 @@ We have also developed a link between the functionality contained in the Java co
 
 ### Worked Examples
 
-A simple "Hello, world" style example is [here](./workedexamples.md)
-Three simulations were run based on different types of parameters: discrete, continuous, and hybrid.
+A simple "Hello, world" style example is [here](./workedexamples.md).
 
 
