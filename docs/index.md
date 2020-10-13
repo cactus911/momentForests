@@ -37,11 +37,11 @@ The java source code is contained in two separate folders on the Github reposito
 
 ### Link to STATA
 
-We have also developed a link between the functionality contained in the Java code and STATA. [STATA interface](./linktostata.md)
+We have also developed a link between the functionality contained in the Java code and STATA. [STATA interface for RCT](./linktostata.md)
 
 ### Worked Examples
 
 A simple "Hello, world" style example is [here](./workedexamples.md)
-
+Three simulations were run based on different types of parameters: discrete, continuous, and hybrid.
 
 
