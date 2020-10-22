@@ -5,4 +5,4 @@ GitHub webpage for Moment Forests: https://cactus911.github.io/momentForests/
 
 Copyright 2018-2020 Stephen P. Ryan.
 
-<img src="./examplegraph.PNG" width="500" >
+<img src="./docs/examplegraph.PNG" width="500" >
