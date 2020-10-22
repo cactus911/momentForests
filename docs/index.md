@@ -12,6 +12,8 @@ This website is a work in progress but will be updated regularly.
 
 The paper can be found here \[[PDF](https://sites.wustl.edu/stephenpryan/files/2016/10/momentTrees.pdf)\].
 
+<img src="./examplegraph.PNG" width="700" >
+
 ### How Does It Work?
 
 The fundamental building block of our estimator is a moment:
