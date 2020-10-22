@@ -12,7 +12,7 @@ This website is a work in progress but will be updated regularly.
 
 The paper can be found here \[[PDF](https://sites.wustl.edu/stephenpryan/files/2016/10/momentTrees.pdf)\].
 
-<img src="./examplegraph.PNG" width="700" >
+<img src="./examplegraph.PNG" width="500" >
 
 ### How Does It Work?
 
