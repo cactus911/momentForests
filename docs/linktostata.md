@@ -43,6 +43,13 @@ momentforests - Moment forests
 momentforests performs Moment forests estimation proposed by Nekipelov, Novosad, and Ryan (2020).
 {% endcomment %}
 
+### Variables
+y : dependent variable
+
+w : treatment dummy variable, either 0 or 1
+
+x : covariates over which treatment effects may vary. For example, x1, x2, ...
+
 ### Quick start
 
 Perform Moment forests with all the default values

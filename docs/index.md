@@ -12,6 +12,8 @@ This website is a work in progress but will be updated regularly.
 
 The paper can be found here \[[PDF](https://sites.wustl.edu/stephenpryan/files/2016/10/momentTrees.pdf)\].
 
+<img src="./examplegraph.PNG" width="500" >
+
 ### How Does It Work?
 
 The fundamental building block of our estimator is a moment:
@@ -37,11 +39,10 @@ The java source code is contained in two separate folders on the Github reposito
 
 ### Link to STATA
 
-We have also developed a link between the functionality contained in the Java code and STATA. [STATA interface](./linktostata.md)
+We have also developed a link between the functionality contained in the Java code and STATA. [STATA interface for RCT](./linktostata.md)
 
 ### Worked Examples
 
-A simple "Hello, world" style example is [here](./workedexamples.md)
-Three simulations were run based on different types of parameters: discrete, continuous, and hybrid.
+A simple "Hello, world" style example is [here](./workedexamples.md).
 
 

@@ -19,14 +19,14 @@ where \\( \epsilon \\) follows N(0,1)
 ## II. Detailed procedures to run Moment Forests on Stata
 
 1. Load the [simulation datasets](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo) to Stata.
-2. Proceed with Moment Forests estimation. (see the detailed specification below)
+2. Proceed with Moment Forests estimation. See the Stata do file [here](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo).
 3. Report and plot the simulation results.
 
 
 
 <br>
 ## III. Results
-The estimation results are reported and plotted below. The Stata do file for running these simulations and the corresponding full estimates are stored [here](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo).
+The estimation results are reported and plotted below.
 
 
 ### 1/3. Discrete Case: \\( \beta = x1 +10*(x2 -1) \\)
