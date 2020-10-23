@@ -3,7 +3,7 @@ program define momentforests
 
 	version 15.1
 
-	syntax varlist [if] [in] [, num_tree(numlist)] [mink(numlist)] [mink_lower(numlist)] [mink_size(numlist)] [mink_upper(numlist)] [msebar(numlist)] [msebar_lower(numlist)] [msebar_size(numlist)] [msebar_upper(numlist)] [bootstrap(numlist) ] [cv(numlist) ]
+	syntax varlist [if] [in] [, num_tree(numlist)] [mink(numlist)] [mink_lower(numlist)] [mink_size(numlist)] [mink_upper(numlist)] [msebar(numlist)] [msebar_lower(numlist)] [msebar_size(numlist)] [msebar_upper(numlist)] [bootstrap(numlist)] [cv(numlist)]
 	
 	
 	/*** Preliminary calculations for searching parameters ***/
