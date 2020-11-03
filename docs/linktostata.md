@@ -35,9 +35,9 @@ Download momentforests.jar from [“jars”](https://github.com/cactus911/moment
 <br>
 #### b. sfi-api.jar
 
-Copy and paste sfi-api.jar (Stata function interface) to the Stata personal directory. sfi-api.jar is distributed by Stata, so it can be found in Stata/utilities/jar
+Copy and paste sfi-api.jar (Stata function interface) to the Stata personal directory. sfi-api.jar is distributed by Stata, so it can be found in Stata/utilities/jar in users' local computers.
 
-<img src="./jama.png" width="500" >
+<img src="./sfiapi.png" width="500" >
 
 <br>
 #### c. momentforests.ado
@@ -59,7 +59,7 @@ Make sure all of these three above are properly downloaded and stored in your St
 1. Jama-1.0.3.jar
 Go to ["JAMA: A Java Matrix Package"](https://math.nist.gov/javanumerics/jama/#license). Download the jar file as below.
 
-<img src="./jama.png" width="700" >
+<img src="./jama.png" width="500" >
 {% endcomment %}
 
 
