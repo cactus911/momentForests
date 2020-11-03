@@ -18,24 +18,22 @@ where \\( W \\) is a treatment dummy variable and \\( \epsilon \\) follows N(0,1
 <br>
 ## II. Monte Carlo Simulation
 
-### 1. Download the [simulation datasets and Stata do file](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo) to your own working directory.
+Step 1/4. Download the simulation datasets and Stata do file in [here](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo) to your own working directory.
 
 <img src="./simulationdatacode.png" width="500" >
 
 <br>
-### 2. Open Stata and open the Stata do file downloaded (workedexample.do).
+Step 2/4. Open Stata and open the Stata do file downloaded (workedexample.do).
 
 <img src="./workedexample_do.png" width="700" >
 
 <br>
-### 3. Set your working directory in the do file. 
+Step 3/4. Set your working directory in the do file. 
 
-For example,
-
-`cd "C:\Users\Valued Customer"`
+For example, `cd "C:\Users\Valued Customer"`
 
 <br>
-### 4. Run the rest of the code.
+Step 4/4. Run the rest of the code.
 
 
 <br>
