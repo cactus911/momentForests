@@ -21,6 +21,7 @@ Stata personal directory can be found by typing “adopath” in the Stata comma
 ![](./adopath.png)
 {% endcomment %}
 
+<br>
 ### Step 2/3. Download related files to Stata personal directory
 
 There are several files needed to be downloaded to the Stata personal directories discussed in Step 1/3.
