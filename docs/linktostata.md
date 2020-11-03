@@ -33,7 +33,7 @@ Download momentforests.jar from [“jars”](https://github.com/cactus911/moment
 <img src="./jars.png" width="700" >
 
 <br>
-#### c. momentforests.ado
+#### b. momentforests.ado
 
 Click momentforests.ado in [“jars”](https://github.com/cactus911/momentForests/tree/master/jars).
 
@@ -45,7 +45,7 @@ Manually copy and paste the code into a Stata do file. Then, save it as a ado-fi
 <img src="./adosave.png" width="700" >
 
 <br>
-#### b. sfi-api.jar
+#### c. sfi-api.jar
 
 Copy and paste sfi-api.jar (Stata function interface) to the Stata personal directory. sfi-api.jar is distributed by Stata, so it can be found in Stata/utilities/jar in users' local computers.
 
