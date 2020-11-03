@@ -26,16 +26,21 @@ Stata personal directory can be found by typing “adopath” in the Stata comma
 There are several files needed to be downloaded to the Stata personal directories discussed in Step 1/3.
 
 1. momentforests.jar
+
 Download momentforests.jar from [“jars”](https://github.com/cactus911/momentForests/tree/master/jars) and save it in the Stata personal directory. 
 
 <img src="./jars.png" width="700" >
 
+<br>
 2. sfi-api.jar
+
 Copy and paste sfi-api.jar (Stata function interface) to the Stata personal directory. sfi-api.jar is distributed by Stata, so it can be found in Stata/utilities/jar
 
-<img src="./jama.png" width="700" >
+<img src="./jama.png" width="500" >
 
+<br>
 3. momentforests.ado
+
 Click momentforests.ado in [“jars”](https://github.com/cactus911/momentForests/tree/master/jars).
 
 <img src="./adocopy.png" width="500" >
@@ -57,7 +62,7 @@ Go to ["JAMA: A Java Matrix Package"](https://math.nist.gov/javanumerics/jama/#l
 {% endcomment %}
 
 
-
+<br>
 ### Step 3/3.
 
 Close then reopen Stata. Now you are ready to use Moment Forests on Stata!
