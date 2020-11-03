@@ -6,9 +6,9 @@
 In order to show the overall performance of the algorithm, we proceeded with three simulations based on different types of parameters.
 
 \\[
-Y = D \beta + \epsilon
+Y = W \beta + \epsilon
 \\]
-where \\( \epsilon \\) follows N(0,1)
+where \\( W \\) is a treatment dummy variable and \\( \epsilon \\) follows N(0,1)
  1. discrete case: \\( \beta(x1,x2) = x1 +10*(x2 -1) \\), where \\( x1, x2 = {1,..,10} \\)
  2. continuous case: \\( \beta(x) = sin(x) \\), where \\( x = (0,2 \pi) \\)
  3. hybrid case: \\( \beta(x1,x2) = sin(x1)*(x2 -5) \\), where \\( x1= (0,2 \pi) \\) & \\( x2 = {1,..,10} \\)
@@ -16,16 +16,28 @@ where \\( \epsilon \\) follows N(0,1)
 
 
 <br>
-## II. Detailed procedures to run Moment Forests on Stata
+## II. Monte Carlo Simulation
 
-1. Load the [simulation datasets](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo) to Stata.
-2. Proceed with Moment Forests estimation. See the Stata do file [here](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo).
-3. Report and plot the simulation results.
+Step 1/4. Download the simulation datasets and Stata do file in [here](https://github.com/cactus911/momentForests/tree/master/Monte_Carlo) to your own working directory.
 
+<img src="./simulationdatacode.png" width="500" >
+
+<br>
+Step 2/4. Open Stata and open the Stata do file downloaded (workedexample.do).
+
+<img src="./workedexample_do.png" width="700" >
+
+<br>
+Step 3/4. Set your working directory in the do file. 
+
+For example, `cd "C:\Users\Valued Customer"`
+
+<br>
+Step 4/4. Run the code.
 
 
 <br>
-## III. Results
+## III. Simulation Results
 The estimation results are reported and plotted below.
 
 
