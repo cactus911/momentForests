@@ -11,9 +11,9 @@ Folder “java” contains all the java source codes that implement Moment Fores
 <br>
 ## II. How to run Moment Forests on Stata
 
-### Step 1/3. Figure out where the Stata personal directories are
+### Step 1/3. Find Stata personal directory
 
-The Stata personal directory can be found by typing “adopath” in the Stata command window. The one starts with “(PERSONAL)” is the personal directory. For example, "c:\ado\personal/".
+Stata personal directory can be found by typing “adopath” in the Stata command window. The one starts with “(PERSONAL)” is the personal directory. For example, "c:\ado\personal/".
 
 <img src="./adopath.png" width="700" >
 
@@ -21,11 +21,41 @@ The Stata personal directory can be found by typing “adopath” in the Stata c
 ![](./adopath.png)
 {% endcomment %}
 
-### Step 2/3. Download files from the GitHub website.
+### Step 2/3. Download related files to Stata personal directory
 
-Download all the files from [“jars”](https://github.com/cactus911/momentForests/tree/master/jars) and save them in the Stata personal directory. Make sure all 15 files (13 jar files, 1 readme text file, 1 Stata ado file) are properly downloaded and stored.
+There are several files needed to be downloaded to the Stata personal directories discussed in Step 1/3.
+
+1. momentforests.jar
+Download momentforests.jar from [“jars”](https://github.com/cactus911/momentForests/tree/master/jars) and save it in the Stata personal directory. 
 
 <img src="./jars.png" width="700" >
+
+2. sfi-api.jar
+Copy and paste sfi-api.jar (Stata function interface) to the Stata personal directory. sfi-api.jar is distributed by Stata, so it can be found in Stata/utilities/jar
+
+<img src="./jama.png" width="700" >
+
+3. momentforests.ado
+Click momentforests.ado in [“jars”](https://github.com/cactus911/momentForests/tree/master/jars).
+
+<img src="./adocopy.png" width="500" >
+
+Manually copy and paste the code into a Stata do file. Then, save it as a ado-file with the name momentforests.ado in the Stata personal directory.
+
+<img src="./adopaste.png" width="500" >
+<img src="./adosave.png" width="500" >
+
+
+Make sure all of these three above are properly downloaded and stored in your Stata personal directory.
+
+
+{% comment %} 
+1. Jama-1.0.3.jar
+Go to ["JAMA: A Java Matrix Package"](https://math.nist.gov/javanumerics/jama/#license). Download the jar file as below.
+
+<img src="./jama.png" width="700" >
+{% endcomment %}
+
 
 
 ### Step 3/3.
