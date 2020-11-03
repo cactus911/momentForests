@@ -6,9 +6,9 @@
 In order to show the overall performance of the algorithm, we proceeded with three simulations based on different types of parameters.
 
 \\[
-Y = D \beta + \epsilon
+Y = W \beta + \epsilon
 \\]
-where \\( \epsilon \\) follows N(0,1)
+where \\( W \\) is a treatment dummy variable and \\( \epsilon \\) follows N(0,1)
  1. discrete case: \\( \beta(x1,x2) = x1 +10*(x2 -1) \\), where \\( x1, x2 = {1,..,10} \\)
  2. continuous case: \\( \beta(x) = sin(x) \\), where \\( x = (0,2 \pi) \\)
  3. hybrid case: \\( \beta(x1,x2) = sin(x1)*(x2 -5) \\), where \\( x1= (0,2 \pi) \\) & \\( x2 = {1,..,10} \\)
