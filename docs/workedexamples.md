@@ -37,7 +37,7 @@ Step 4/4. Run the code.
 
 
 <br>
-## III. Results
+## III. Simulation Results
 The estimation results are reported and plotted below.
 
 
