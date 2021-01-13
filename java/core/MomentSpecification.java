@@ -68,7 +68,7 @@ import java.util.Random;
     
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex);
 
-    public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance);
+    // public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance);
     
 
 }

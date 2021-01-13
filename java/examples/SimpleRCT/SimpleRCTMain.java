@@ -24,13 +24,13 @@
 package examples.SimpleRCT;
 
 import Jama.Matrix;
-import com.stata.sfi.SFIToolkit;
+// import com.stata.sfi.SFIToolkit;
 import core.BootstrapForest;
 import core.DataLens;
 import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeOptions;
-import utility.pmUtility;
+import utility.utility;
 
 /**
  *
@@ -70,7 +70,7 @@ public class SimpleRCTMain {
             /**
              * Initialize the moment forest
              */
-            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), pmUtility.getColumn(mySpecification.getX(), 0));
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), utility.getColumn(mySpecification.getX(), 0));
             boolean verbose = true;
             MomentForest myForest = new MomentForest(mySpecification, numtrees, 314, forestLens, verbose, new TreeOptions());
             

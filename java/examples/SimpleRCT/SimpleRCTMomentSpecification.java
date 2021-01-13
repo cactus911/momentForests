@@ -24,7 +24,7 @@
 package examples.SimpleRCT;
 
 
-import JSci.maths.statistics.NormalDistribution;
+// import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
@@ -34,7 +34,7 @@ import core.MomentPartitionObj;
 import core.MomentSpecification;
 import core.NaiveContainer;
 import java.util.ArrayList;
-import utility.pmUtility;
+import utility.utility;
 import java.util.TreeSet;
 
 /**
@@ -134,7 +134,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     public Matrix getOutOfSampleX() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-
+    
     @Override
     public NaiveContainer computeNaiveStatistics() {
         // this is to run separate OLS regressions for each treatment
@@ -166,20 +166,20 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
             // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
             // Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, false, 500, 787);
 
-            Jama.Matrix olsBeta = pmUtility.OLSsvd(subX, subY, false);
-            Jama.Matrix olsVar = pmUtility.getOLSVariances(subY, subX, false);
+            Jama.Matrix olsBeta = utility.OLSsvd(subX, subY, false);
+            Jama.Matrix olsVar = utility.getOLSVariances(subY, subX, false);
             String sig = "";
             if (Math.abs(olsBeta.get(0, 0) / Math.sqrt(olsVar.get(0, 0))) > 1.98) {
                 sig = "*";
             }
-            // System.out.format("OLS Formula  Group %d: %g (%g) %s %n", k, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
-            System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, /* bootOLS[0].get(0, 0), bootOLS[1].get(0, 0),*/ sig);
+            System.out.format("OLS Formula  Group %d: %g (%g) %s %n", k, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
+            System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, sig); // bootOLS[0].get(0, 0), bootOLS[1].get(0, 0),
         }
-
+        
         boolean computeOracle = true;
         if (computeOracle) {
             // let's run the oracle estimator and see how that compares
-            System.out.println("\nOracle Estimator");
+            // System.out.println("\nOracle Estimator");
             for (int k = 0; k < 4; k++) {
                 ArrayList<Jama.Matrix> typeX = new ArrayList<>();
                 ArrayList<Double> typeY = new ArrayList<>();
@@ -217,22 +217,22 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
                     }
                 }
                 // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
-                Jama.Matrix olsBeta = pmUtility.OLS(subX, subY, false);
-                Jama.Matrix olsVar = pmUtility.getOLSVariances(subY, subX, false);
+                Jama.Matrix olsBeta = utility.OLS(subX, subY, false);
+                Jama.Matrix olsVar = utility.getOLSVariances(subY, subX, false);
                 // Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, false, 5000, 787);
 
                 String sig = "";
                 if (Math.abs(olsBeta.get(0, 0) / Math.sqrt(olsVar.get(0, 0))) > 1.98) {
                     sig = "*";
                 }
-                // System.out.format("Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
-                System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, /* bootOLS[0].get(0, 0), bootOLS[1].get(0, 0),*/ sig);
+                System.out.format("Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
+                System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, sig); // bootOLS[0].get(0, 0), bootOLS[1].get(0, 0),
             }
         }
 
         return null;
     }
-
+    
     @Override
     public void loadData() {
 	throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -254,6 +254,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
         return "Group " + fixedEffectIndex;
     }
 
+    /*
     @Override
     public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
         if (beta == null) {
@@ -274,5 +275,5 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
         }
         return String.format("%.2f (%.2f) %s", b, se, stars);
     }
-
+    */
 }

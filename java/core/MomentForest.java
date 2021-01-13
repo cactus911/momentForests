@@ -26,7 +26,7 @@ package core;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
-import utility.pmUtility;
+import utility.utility;
 
 /**
  * Class containing a collection of trees and utility classes for interacting
@@ -153,7 +153,7 @@ public class MomentForest {
                         MSPE += Math.pow(predictLens.getY(i) - predictedY, 2);
                         counter++;
                     } else {
-                        pmUtility.prettyPrint(xi);
+                        utility.prettyPrint(xi);
                         nullCounterMSPE++;
                     }
                 }
@@ -168,7 +168,7 @@ public class MomentForest {
                         MSPE += Math.pow(growLens.getY(i) - predictedY, 2);
                         counter++;
                     } else {
-                        pmUtility.prettyPrint(xi);
+                        utility.prettyPrint(xi);
                         nullCounterMSPE++;
                     }
                 }
@@ -176,7 +176,7 @@ public class MomentForest {
                 MSPE /= counter;
 
                 // System.out.print("maxDepth: " + options.getMaxDepth() + " " + " k: " + options.getMinCount() + " " + " alpha: " + options.getMinProportion()
-                // + " " + " mse_bar: " + options.getMinMSEImprovement() + " ");
+                //  + " " + " mse_bar: " + options.getMinMSEImprovement() + " ");
                 // System.out.print("MSPE: " + MSPE + " nulls: " + nullCounterMSPE + " ");
                 String s = "";
                 if (MSPE == bestMSPE) {
@@ -201,8 +201,6 @@ public class MomentForest {
 
             }
         }
-        // SFIToolkit.displayln("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
-        // SFIToolkit.displayln(" Optimal improvement threshold: " + bestMSEBar);
         System.out.print("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
         System.out.println(" Optimal improvement threshold: " + bestMSEBar);
 

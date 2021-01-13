@@ -50,7 +50,7 @@ public class DisjointSet {
 
         // nice, this works
         ArrayList<IntegerPartition> partition = computeAllDisjointSets(data);
-        System.out.println(partition);
+        // System.out.println(partition);
     }
 
     public static ArrayList<IntegerPartition> computeAllDisjointSets(ArrayList<Integer> parent) {
@@ -87,7 +87,7 @@ public class DisjointSet {
             
             boolean debug = false;
             if (debug) {
-                System.out.println(s1 + " " + s2);
+                // System.out.println(s1 + " " + s2);
             }
             IntegerPartition p = new IntegerPartition(group1, group2);
 
@@ -121,7 +121,7 @@ public class DisjointSet {
             if ((binaryCounter.getRowDimension() / 2.0) != Math.floor(binaryCounter.getRowDimension() / 2)) {
                 maxIndex++;
             }
-//            System.out.println(maxIndex);
+            // System.out.println(maxIndex);
             // pmUtility.prettyPrintVector(binaryCounter);
             int count = (int) (ones.times(binaryCounter)).get(0, 0);
             boolean valid = true;
