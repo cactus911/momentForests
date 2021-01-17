@@ -84,6 +84,3 @@ The estimation results are reported and plotted below.
 <br>
 [back](./index.md)
 
-
-
-
