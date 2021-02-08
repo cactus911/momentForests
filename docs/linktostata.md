@@ -24,7 +24,7 @@ Stata personal directory can be found by typing “adopath” in the Stata comma
 <br>
 ### Step 2/3. Download related files to Stata personal directory
 
-There are three files needed to be downloaded to the Stata personal directory mentioned in Step 1/3.
+There are two files needed to be downloaded to the Stata personal directory mentioned in Step 1/3.
 
 #### a. momentforests.jar
 
