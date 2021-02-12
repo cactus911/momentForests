@@ -21,10 +21,10 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.RCT;
+package examples.SimpleRCT;
 
-import core.IntegerPartition;
-import core.MomentPartitionObj;
+import examples.SimpleRCT.ContainerRCT;
+import core.MomentContinuousSplitObj;
 import core.DataLens;
 import core.SplitContainer;
 
@@ -32,71 +32,78 @@ import core.SplitContainer;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class MomentPartitionObjRCT extends MomentPartitionObj {
+public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
 
     SplitContainer container;
-    
-    public MomentPartitionObjRCT(IntegerPartition partition, int indexSplitVariable, DataLens lens) {
-        this.partition = partition;
+    DataLens lens;
+    int minCount;
+    double minProportion;
+
+    public MomentContinuousSplitObjRCT(int indexSplitVariable, DataLens lens, double minProportion, int minCount) {
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
-        
-        initialize();
+        this.minCount = minCount;
+        this.minProportion = minProportion;
+
+        // System.out.println("MomentContinuousSplitObjBart.java:26 -> min/max x_1 = "+pmUtility.min(X, 1)+" "+pmUtility.max(X,1));
     }
-    
-    private void initialize() {
-        container = getDataSplit();
-        numObsLeft = container.getLeft().getNumObs();
-        numObsRight = container.getRight().getNumObs();
-    }
-    
+
     @Override
     public int getNumObsLeft() {
         // in the rct context, care about the minimum of count of 0's and 1's in each partition
         int count = 0;
-        for (int i = 0; i < numObsLeft; i++) {
+        for (int i = 0; i < container.getLeft().getNumObs(); i++) {
             if (container.getLeft().getX(i, 0) == 0) {
                 count++;
             }
         }
-        return Math.min(count, numObsLeft - count);
+        return Math.min(count, container.getLeft().getNumObs() - count);
     }
 
     @Override
     public int getNumObsRight() {
         int count = 0;
-        for (int i = 0; i < numObsRight; i++) {
+        for (int i = 0; i < container.getRight().getNumObs(); i++) {
             if (container.getRight().getX(i, 0) == 0) {
                 count++;
             }
         }
-        return Math.min(count, numObsRight - count);
+        return Math.min(count, container.getRight().getNumObs() - count);
     }
-    
+
     @Override
     public double getMSE() {
+
         leftMSE = 0;
         rightMSE = 0;
 
         /**
          * RCT regresses outcome on indicator for treatment; there are no X's
-         * There is a constant, and we measure the coefficient on the W
-         * So in this implementation just use the first column to get OLS fits and errors, etc.
+         * There is a constant, and we measure the coefficient on the W So in
+         * this implementation just use the first column to get OLS fits and
+         * errors, etc.
          */
         ContainerRCT leftRCT = new ContainerRCT(container.getLeft());
         ContainerRCT rightRCT = new ContainerRCT(container.getRight());
-        
+
         leftMSE = leftRCT.getMSE();
         rightMSE = rightRCT.getMSE();
-        
-        setBetaLeft(leftRCT.getBeta());
-        setBetaRight(rightRCT.getBeta());
-        
+
+        if (getNumObsLeft() < minCount || getNumObsRight() < minCount) {
+            return Double.POSITIVE_INFINITY;
+        }
+
         // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
         // return (leftMSE + rightMSE) / X.getNumObs();
         return (leftMSE + rightMSE);
     }
-    
-    
-    
+
+    @Override
+    public double f_to_minimize(double splitPoint) {
+        container = SplitContainer.getContinuousDataSplit(lens, splitPoint, indexSplitVariable);
+        numObsLeft = container.getLeft().getNumObs();
+        numObsRight = container.getRight().getNumObs();
+        return getMSE();
+    }
+
 }

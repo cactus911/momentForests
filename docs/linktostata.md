@@ -24,7 +24,7 @@ Stata personal directory can be found by typing “adopath” in the Stata comma
 <br>
 ### Step 2/3. Download related files to Stata personal directory
 
-There are two files needed to be downloaded to the Stata personal directory mentioned in Step 1/3.
+There are three files needed to be downloaded to the Stata personal directory mentioned in Step 1/3.
 
 #### a. momentforests.jar
 
@@ -43,6 +43,21 @@ Manually copy and paste the code into a Stata do file. Then, save it as a ado-fi
 
 <img src="./adopaste.png" width="700" >
 <img src="./adosave.png" width="700" >
+
+<br>
+#### c. sfi-api.jar
+
+Copy and paste sfi-api.jar (Stata function interface) to the Stata personal directory. sfi-api.jar is distributed by Stata, so it can be found in Stata/utilities/jar in users' local computers.
+
+<img src="./sfiapi.png" width="700" >
+
+
+{% comment %} 
+1. Jama-1.0.3.jar
+Go to ["JAMA: A Java Matrix Package"](https://math.nist.gov/javanumerics/jama/#license). Download the jar file as below.
+
+<img src="./jama.png" width="700" >
+{% endcomment %}
 
 
 <br>

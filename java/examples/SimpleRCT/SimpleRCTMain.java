@@ -23,12 +23,14 @@
  */
 package examples.SimpleRCT;
 
+import Jama.Matrix;
+// import com.stata.sfi.SFIToolkit;
 import core.BootstrapForest;
 import core.DataLens;
 import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeOptions;
-import utility.pmUtility;
+import utility.utility;
 
 /**
  *
@@ -36,10 +38,16 @@ import utility.pmUtility;
  */
 public class SimpleRCTMain {
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) {
+    Jama.Matrix EstimationResults;
+    
+    double minProportion;
+    int minCount;
+    double minMSEImprovement;
+    int maxDepth;
+            
+    public SimpleRCTMain(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters1, Jama.Matrix CVparameters2, boolean cv, int[] variableSearchIndex, Boolean[] DiscreteVariables, int numbootstrap) {
+            
+
         /**
          * Aiming for a simple three-step process:
          *
@@ -51,34 +59,41 @@ public class SimpleRCTMain {
          * 1. Running CV to obtain optimal hyper-parameters 2. Estimate a moment
          * forest 3. Estimate standard errors via bootstrapping
          */
-        for (int n = 1000; n <= 4000; n *= 2) {
-            System.out.println("*********** n = " + n + " (really one-tenth of that, since n here = observations*outcomes) ***********");
-            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(n);
-            mySpecification.loadData();
+            
+            // Write down an option here
+            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(X, Y, numtrees, variableSearchIndex, DiscreteVariables);
+            // mySpecification.loadData();
 
-            int numberTreesInForest = 5;
+            // int numberTreesInForest = mySpecification.numberoftrees();
             // System.out.println("numTrees: " + numberTreesInForest);
 
             /**
              * Initialize the moment forest
              */
-            Jama.Matrix rctX = mySpecification.getX();
-            Jama.Matrix rctY = mySpecification.getY();
-            Jama.Matrix balancing = pmUtility.getColumn(mySpecification.getX(), 3);
-            DataLens forestLens = new DataLens(rctX, rctY, balancing);
-            boolean verbose = false;
-            MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
-
-            TreeOptions cvOptions = new TreeOptions(1E-5, 1, 0.5, 100);
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), utility.getColumn(mySpecification.getX(), 0));
+            boolean verbose = true;
+            MomentForest myForest = new MomentForest(mySpecification, numtrees, 314, forestLens, verbose, new TreeOptions());
+            
+            TreeOptions cvOptions = new TreeOptions(1E-5, (int) CVparameters1.get(0,0), (double) CVparameters1.get(0,1), 100);
             /**
              * Run a CV for the hyper-parameters and see the tree options
              */
-            boolean useCV = true;
+            boolean useCV = cv;
             if (useCV) {
-                int numTreesCrossValidation = 1;
-                cvOptions = myForest.performCrossValidation(numTreesCrossValidation);
-                myForest.setTreeOptions(cvOptions);
-            }
+                // int numTreesCrossValidation = mySpecification.numberoftrees();
+                cvOptions = myForest.performCrossValidation(numtrees, CVparameters2);
+            } 
+            
+            /* Read out hyper parameters */ 
+            minProportion = cvOptions.getMinProportion();
+            minCount = cvOptions.getMinCount();
+            minMSEImprovement = cvOptions.getMinMSEImprovement();
+            maxDepth = cvOptions.getMaxDepth();
+            
+            myForest.setTreeOptions(cvOptions);
+            
+            // SFIToolkit.displayln("test.getMincount " + cvOptions.getMinCount() + "test.MinMSEImprove " + cvOptions.getMinMSEImprovement());
+            
             /**
              * Grow the moment forest
              */
@@ -87,44 +102,59 @@ public class SimpleRCTMain {
             /**
              * Compute standard errors
              */
-            int numberBootstraps = 50;
+            int numberBootstraps = numbootstrap;
             // System.out.println("Number of bootstraps: " + numberBootstraps);
-            int numberTreesInBootForest = 10;
+            int numberTreesInBootForest = mySpecification.numberoftrees();
             BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
-
-            Jama.Matrix fitX = new Jama.Matrix(10, 2);
-            boolean isMonteCarlo = false;
-            if(isMonteCarlo) {
+            
             /**
-             * Show fits for out of sample data
-             */
-            for (int i = 0; i < fitX.getRowDimension(); i++) {
-                fitX.set(i, 1, i);
-            }
-            } else {
-                fitX = mySpecification.getX();
-            }
-
-            System.out.println("\nMoment Forest Estimates by Group");
-
-            for (int i = 0; i < fitX.getRowDimension(); i++) {
-                Jama.Matrix xi = fitX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
+             * stack the estimation results
+             */                 
+            
+            Jama.Matrix allX = mySpecification.getX().copy();
+            EstimationResults = new Jama.Matrix(allX.getRowDimension(), 2);
+            
+            for (int i = 0; i < allX.getRowDimension(); i++) {
+                Jama.Matrix xi = allX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);  
                 Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameters(xi);
                 Jama.Matrix standardErrors = estimatedTreatmentEffects.times(0);
+
                 boolean useBoot = true;
                 if (useBoot) {
                     standardErrors = boot.computeStandardErrors(xi);
                 }
-                String sig = "";
-                if (Math.abs(estimatedTreatmentEffects.get(0, 0) / standardErrors.get(0, 0)) > 1.98) {
-                    sig = "*";
-                }
-                System.out.format("%g %g (%g) %s %n", fitX.get(i, 1), estimatedTreatmentEffects.get(0, 0), standardErrors.get(0, 0), sig);
+                
+                EstimationResults.set(i, 0 ,estimatedTreatmentEffects.get(0, 0));
+                EstimationResults.set(i, 1 ,standardErrors.get(0, 0));
+                // Data.storeNum(resv+2, i+1, estimatedTreatmentEffects.get(0, 0));
+                // Data.storeNum(resv+3, i+1, standardErrors.get(0, 0));
             }
-
-            mySpecification.computeNaiveStatistics();
-        }
-
+            
+            // mySpecification.computeNaiveStatistics();
+           
     }
 
+    
+    
+    
+    public Jama.Matrix EstimationResults() {
+        return EstimationResults;
+    }
+
+    public double minProportion() {
+        return minProportion;
+    }
+    
+    public int minCount() {
+        return minCount;
+    }
+
+    public double minMSEImprovement() {
+        return minMSEImprovement;
+    }
+
+    public int maxDepth() {
+        return maxDepth;
+    }    
+        
 }
