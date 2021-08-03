@@ -23,7 +23,6 @@
  */
 package core;
 
-import Jama.Matrix;
 import java.util.ArrayList;
 
 /**
@@ -41,9 +40,6 @@ public abstract class MomentPartitionObj {
     public double rightMSE;
     public int numObsLeft;
     public int numObsRight;
-    
-    private Jama.Matrix betaLeft;
-    private Jama.Matrix betaRight;
 
     public abstract double getMSE();
 
@@ -124,34 +120,6 @@ public abstract class MomentPartitionObj {
 //        System.exit(0);
 
         return new SplitContainer(left, right);
-    }
-
-    /**
-     * @return the betaLeft
-     */
-    public Jama.Matrix getBetaLeft() {
-        return betaLeft;
-    }
-
-    /**
-     * @param betaLeft the betaLeft to set
-     */
-    public void setBetaLeft(Jama.Matrix betaLeft) {
-        this.betaLeft = betaLeft;
-    }
-
-    /**
-     * @return the betaRight
-     */
-    public Jama.Matrix getBetaRight() {
-        return betaRight;
-    }
-
-    /**
-     * @param betaRight the betaRight to set
-     */
-    public void setBetaRight(Jama.Matrix betaRight) {
-        this.betaRight = betaRight;
     }
 
 }

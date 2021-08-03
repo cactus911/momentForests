@@ -29,10 +29,10 @@ package core;
  */
 public class TreeOptions {
 
-    private double minProportion = 0.0001;
-    private int minCount = 1;
-    private double minMSEImprovement = 0.2;
-    private int maxDepth = 20;
+    private double minProportion = 0.001;
+    private int minCount = 5;
+    private double minMSEImprovement = 0.01;
+    private int maxDepth = 100;
 
     public TreeOptions() {
     }
