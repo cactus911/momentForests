@@ -249,10 +249,10 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
                 }
                 // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
                 boolean useIntercept = true;
-                Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, useIntercept, 500, 787);
+                // Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, useIntercept, 500, 787);
 
                 // System.out.format("Group %d: [%d, %d] %g (%g) %s %n", k, countControl, countTreatment, olsBeta.get(0, 0), Math.sqrt(olsVar.get(0, 0)), sig);
-                System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %n", k, countControl, countTreatment, bootOLS[0].get(1, 0), bootOLS[1].get(1, 0));
+                // System.out.format("Bootstrapped Group %d: [%d, %d] %g (%g) %n", k, countControl, countTreatment, bootOLS[0].get(1, 0), bootOLS[1].get(1, 0));
             }
             System.out.println("Single treatment effect theoretical SE (if imposing intercept is zero): " + Math.sqrt(2.0 / (numObs - 1)));
         }
