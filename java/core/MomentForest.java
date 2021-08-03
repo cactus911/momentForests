@@ -25,8 +25,7 @@ package core;
 
 import java.util.ArrayList;
 import java.util.Random;
-import java.util.TreeSet;
-import utility.utility;
+import utility.pmUtility;
 
 /**
  * Class containing a collection of trees and utility classes for interacting
@@ -153,7 +152,7 @@ public class MomentForest {
                         MSPE += Math.pow(predictLens.getY(i) - predictedY, 2);
                         counter++;
                     } else {
-                        utility.prettyPrint(xi);
+                        pmUtility.prettyPrint(xi);
                         nullCounterMSPE++;
                     }
                 }
@@ -168,7 +167,7 @@ public class MomentForest {
                         MSPE += Math.pow(growLens.getY(i) - predictedY, 2);
                         counter++;
                     } else {
-                        utility.prettyPrint(xi);
+                        pmUtility.prettyPrint(xi);
                         nullCounterMSPE++;
                     }
                 }

@@ -175,9 +175,7 @@ program define momentforests
 	
 	/*** Pass the Stata dataset along with the parameter rows to Java for the main estimation computation ***/
 	javacall examples.SimpleRCT.StataInterface Momentforests `varlist' `if' `in',  ///		// /* if `touse' */  , args(`result')
-	jars(momentforests.jar; commons-beanutils-1.9.3.jar; commons-collections4-4.1.jar; ///
-	commons-io-2.6.jar; itext-1.3.jar; Jama-1.0.3.jar; jcommon-1.0.23.jar; jfreechart-1.0.19.jar; ///
-	jsci-core.jar; optimization.jar; pmUtility.jar; snappy-java-1.1.7.jar) // args(estimated_beta) // `V' `N')
+	jars(momentforests.jar; sfi-api.jar)  // args(estimated_beta) // `V' `N')*/
 	
 	quietly set java_heapmax
 	
