@@ -84,12 +84,12 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
          * There is a constant, and we measure the coefficient on the W
          * So in this implementation just use the first column to get OLS fits and errors, etc.
          */
-        ContainerRCT leftRCT = new ContainerRCT(container.getLeft());
+        ContainerRCT leftRCT = new ContainerRCT(container.getLeft()); //This object will compute the beta and MSE for the left split
         ContainerRCT rightRCT = new ContainerRCT(container.getRight());
         
         leftMSE = leftRCT.getMSE();
         rightMSE = rightRCT.getMSE();
-        
+                
         // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
         // return (leftMSE + rightMSE) / X.getNumObs();
         return (leftMSE + rightMSE);

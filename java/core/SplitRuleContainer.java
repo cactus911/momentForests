@@ -37,12 +37,14 @@ public class SplitRuleContainer implements Comparable<SplitRuleContainer> {
     boolean isDiscreteSplit;
     boolean left;
 
+    //Instantiate SplitRuleContainer if split variable is dicrete
     public SplitRuleContainer(ArrayList<Integer> group, int indexVariableSplit) {
         this.group = group;
         this.isDiscreteSplit = true;
         this.indexVariableSplit = indexVariableSplit;
     }
 
+    //Instantiate SplitRuleContainer if split variable is continuous
     public SplitRuleContainer(int indexVariableSplit, double continuousVariableSplitPoint, boolean left) {
         this.indexVariableSplit = indexVariableSplit;
         this.continuousVariableSplitPoint = continuousVariableSplitPoint;

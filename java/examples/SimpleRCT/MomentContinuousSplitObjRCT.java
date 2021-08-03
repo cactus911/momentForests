@@ -83,7 +83,7 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
          * this implementation just use the first column to get OLS fits and
          * errors, etc.
          */
-        ContainerRCT leftRCT = new ContainerRCT(container.getLeft());
+        ContainerRCT leftRCT = new ContainerRCT(container.getLeft()); //This object will compute the beta and MSE for the left split
         ContainerRCT rightRCT = new ContainerRCT(container.getRight());
 
         leftMSE = leftRCT.getMSE();
@@ -98,9 +98,10 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
         return (leftMSE + rightMSE);
     }
 
+    
     @Override
     public double f_to_minimize(double splitPoint) {
-        container = SplitContainer.getContinuousDataSplit(lens, splitPoint, indexSplitVariable);
+        container = SplitContainer.getContinuousDataSplit(lens, splitPoint, indexSplitVariable); //This returns the data split into each leaf based on splitpoint and index of split variable
         numObsLeft = container.getLeft().getNumObs();
         numObsRight = container.getRight().getNumObs();
         return getMSE();

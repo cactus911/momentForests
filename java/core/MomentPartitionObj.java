@@ -66,7 +66,7 @@ public abstract class MomentPartitionObj {
         ArrayList<Integer> leftList = partition.getLeft();
 
         for (int i = 0; i < lens.getNumObs(); i++) {
-            if (leftList.contains((int) lens.getX(i, indexSplitVariable))) {
+            if (leftList.contains((int) lens.getX(i, indexSplitVariable))) { // If this obs value of the splitting variable is in the left partition
                 countLeft++;
             } else {
                 countRight++;
@@ -79,6 +79,7 @@ public abstract class MomentPartitionObj {
 //        System.out.println("Entire data:");
 //        System.out.println(lens);
         
+        // Assign obs indices to either left or right list depending on split
         countRight = 0;
         countLeft = 0;
         for (int i = 0; i < lens.getNumObs(); i++) {
@@ -100,7 +101,7 @@ public abstract class MomentPartitionObj {
 //        }
 //        System.out.println();
         
-
+        //Create new data lens for left and right split
         DataLens left = lens.getDataLensSubset(observationIndicesLeftSplit);
         DataLens right = lens.getDataLensSubset(observationIndicesRightSplit);
 

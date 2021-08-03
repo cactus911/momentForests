@@ -142,7 +142,8 @@ public class TreeMoment {
     public void setTerminal(Boolean terminal) {
         this.terminal = terminal;
     }
-
+    
+    //This method builds the tree
     public void determineSplit() {
         if (verbose) {
             // echoLn("----------- computing optimal split --------------");
@@ -179,16 +180,16 @@ public class TreeMoment {
             ArrayList<ArrayList<Integer>> discreteCollection = new ArrayList<>();
             ArrayList<Integer> discreteCollectionIndex = new ArrayList<>();
             // for (int k = 0; k < nodeX.getColumnDimension(); k++) {
-            for (int k : momentSpec.getVariableIndicesToSearchOver()) {
+            for (int k : momentSpec.getVariableIndicesToSearchOver()) { //The variables Z which we can split on
                 if (discreteVector[k] == true) {
                     TreeSet<Integer> discreteTreeSet = new TreeSet<>();
                     for (int i = 0; i < lensGrowingTree.getNumObs(); i++) {
                         discreteTreeSet.add((int) lensGrowingTree.getX(i, k));
                     }
                     ArrayList<Integer> discreteList = new ArrayList<>(discreteTreeSet);
-                    discreteCollection.add(discreteList);
+                    discreteCollection.add(discreteList); // discreteCollection is the columns of X which are discrete
                     // System.out.println("Added list for k = "+k+" of size "+discreteList.size());
-                    discreteCollectionIndex.add(k);
+                    discreteCollectionIndex.add(k); // discreteCollectionIndex is the indices of the discrete variables
                 }
             }
 
@@ -199,7 +200,7 @@ public class TreeMoment {
              */
             TreeSet<Integer> randomForestIndex = new TreeSet<>();
             boolean useRandomForest = false;
-            if (useRandomForest) {
+            if (useRandomForest) { // Randomly choosing a subset of variables to search over with a max of 5 variables to search over
                 int P = Math.min(5, momentSpec.getVariableIndicesToSearchOver().length);
                 for (int i = 0; i < P; i++) {
                     int index = (int) Math.floor(Math.random() * momentSpec.getVariableIndicesToSearchOver().length);
@@ -226,8 +227,8 @@ public class TreeMoment {
                         double minX = lensGrowingTree.getMinimumValue(indexSplitVariable);
                         double maxX = lensGrowingTree.getMaximumValue(indexSplitVariable);
                         // System.out.println("TreeMoment.java:224 -> min x_1: "+minX+" max x_1: "+maxX);
-                        double optimalX_k = Fmin.fmin(minX, maxX, obj, 1E-100);
-                        double optimalX_MSE_k = obj.f_to_minimize(optimalX_k);
+                        double optimalX_k = Fmin.fmin(minX, maxX, obj, 1E-100); //I think this is choosing a split point such that the summed MSEs of each leaf are minimized
+                        double optimalX_MSE_k = obj.f_to_minimize(optimalX_k); //Now return the summed MSEs of the optimal split point
 
                         if (debugOptimization) {
                             // echoLn("\tFmin search on x_" + indexSplitVariable + " found x = " + optimalX_k + " mse: " + optimalX_MSE_k);
@@ -247,7 +248,8 @@ public class TreeMoment {
                                 }
                             }
                         }
-
+                        
+                        //If the summed MSE for this variable is smaller than for any other previous variable, or if its the first variable being tested, set it to be the optimal splitting variable
                         if (optimalX_MSE_k < optimalX_MSE || first) {
                             optimalX = optimalX_k;
                             optimalX_MSE = optimalX_MSE_k;
@@ -298,6 +300,7 @@ public class TreeMoment {
                                   //  echoLn("\t x_" + indexSplitVariable + " Partition: " + i + " " + partitions.get(i) + " mse: " + partitionMSE);
                                 }
 
+                                //For every possible partition, we check which has the lowest MSE
                                 if (partitionMSE < bestPartitionMSE || i == 0) {
                                     bestPartitionMSE = partitionMSE;
                                     optimalPartitionIndex = i;
@@ -310,8 +313,10 @@ public class TreeMoment {
                                     }
                                 }
                             }
+                            
                             if (bestPartitionMSE < optimalX_MSE || first) {
                                 optimalX = optimalPartitionIndex; // in this case, this will be the index of the best partitioning
+                                // But how do we know which partition the index corresponds to?
                                 optimalX_MSE = bestPartitionMSE;
                                 optimalSplitVariableIndex = indexSplitVariable;
                                 optimalDiscreteCollectionIndex = collectionIndex;
@@ -356,9 +361,9 @@ public class TreeMoment {
                 setTerminal(false);
                 if (discreteVector[optimalSplitVariableIndex]) {
                     ArrayList<Integer> discreteList = discreteCollection.get(optimalDiscreteCollectionIndex);
-                    ArrayList<IntegerPartition> partitions = DisjointSet.computeAllDisjointSets(discreteList);
+                    ArrayList<IntegerPartition> partitions = DisjointSet.computeAllDisjointSets(discreteList); //Recompute all the disjoint sets of the optimal splitting variable, which is discrete
                     
-                    MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, optimalSplitVariableIndex, partitions.get((int) optimalX));
+                    MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, optimalSplitVariableIndex, partitions.get((int) optimalX)); //This is where we use optimalX
                     if (verbose) {
                         // echoLn(depth + ". Calculated optimal split along discrete variable, partitioning x_" + optimalSplitVariableIndex + " -> " + partitions.get((int) optimalX) + ", generating MSE of " + obj.getMSE());
                     }
@@ -383,8 +388,8 @@ public class TreeMoment {
                     childRight = new TreeMoment(this, momentSpec, right, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
                             false, maxDepth, null);
                 }
-                childLeft.determineSplit();
-                childRight.determineSplit();
+                childLeft.determineSplit(); //Prioritizes splits to the left
+                childRight.determineSplit(); //Once we find a terminal node, split to the right
             }
         } else {
             setTerminal(true);
@@ -430,7 +435,7 @@ public class TreeMoment {
         if (indexPreviousSplits == null) {
             indexPreviousSplits = new TreeSet<>();
         }
-        if (indexPreviousSplits.contains(r.getOptimalSplitVariableIndex())) {
+        if (indexPreviousSplits.contains(r.getOptimalSplitVariableIndex())) { //Don't get this part
             s = "";
         } else if (parent.parent != null) {
             s = s + ", ";
@@ -550,7 +555,7 @@ public class TreeMoment {
                 }
             } else {
                 ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest);
-                Jama.Matrix oldBeta = getNodeEstimatedBeta();
+                Jama.Matrix oldBeta = getNodeEstimatedBeta(); //Not sure I understand why this is here... we don't have a beta estimate until we reach a terminal node?
                 setNodeEstimatedBeta(c.getBeta());
                 setNodeEstimatedVariance(c.getVariance());
          
@@ -563,7 +568,7 @@ public class TreeMoment {
                 }
             }
         } else {
-            childLeft.estimateHonestTree();
+            childLeft.estimateHonestTree(); //This will climb us down the tree to the terminal nodes
             childRight.estimateHonestTree();
             /**
              * This is where to impose the pruning if the two child nodes have

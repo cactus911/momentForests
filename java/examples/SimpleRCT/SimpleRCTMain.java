@@ -112,7 +112,7 @@ public class SimpleRCTMain {
              */                 
             
             Jama.Matrix allX = mySpecification.getX().copy();
-            EstimationResults = new Jama.Matrix(allX.getRowDimension(), 2);
+            EstimationResults = new Jama.Matrix(allX.getRowDimension(), 2); //Treatment effect, standard error
             
             for (int i = 0; i < allX.getRowDimension(); i++) {
                 Jama.Matrix xi = allX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);  
@@ -124,7 +124,7 @@ public class SimpleRCTMain {
                     standardErrors = boot.computeStandardErrors(xi);
                 }
                 
-                EstimationResults.set(i, 0 ,estimatedTreatmentEffects.get(0, 0));
+                EstimationResults.set(i, 0 ,estimatedTreatmentEffects.get(0, 0)); //Only coefficient is treatment effect
                 EstimationResults.set(i, 1 ,standardErrors.get(0, 0));
                 // Data.storeNum(resv+2, i+1, estimatedTreatmentEffects.get(0, 0));
                 // Data.storeNum(resv+3, i+1, standardErrors.get(0, 0));

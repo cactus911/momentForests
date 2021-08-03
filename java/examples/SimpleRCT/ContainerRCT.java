@@ -67,14 +67,14 @@ public class ContainerRCT extends ContainerMoment {
             variance = null;
             mse = Double.POSITIVE_INFINITY;
         } else {
-            beta = new Jama.Matrix(1, 1, meanTreatment - meanControl);
+            beta = new Jama.Matrix(1, 1, meanTreatment - meanControl); //The treatment effect is just the difference in means for the simple RCT
             variance = beta.times(0.0);
 
             // pmUtility.prettyPrintVector(Y);
             double sse = 0;
             for (int i = 0; i < lens.getNumObs(); i++) {
                 if (lens.getX(i, 0) == 0) {
-                    sse += Math.pow(lens.getY(i) - meanControl, 2);
+                    sse += Math.pow(lens.getY(i) - meanControl, 2); //I don't think this will hold if we have more regressors other than intercept and treatment status
                 } else {
                     sse += Math.pow(lens.getY(i) - meanTreatment, 2);
                 }

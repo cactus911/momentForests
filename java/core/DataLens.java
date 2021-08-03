@@ -38,17 +38,20 @@ public class DataLens {
     final Jama.Matrix originalDataY;
     final Jama.Matrix balancingVector;
     int[] dataIndex;
-
+    
+    //DataLens for original data
     public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix balanceVector) {
         originalDataX = X;
         originalDataY = Y;
-        balancingVector = balanceVector;
+        balancingVector = balanceVector; // Is the balance vector specific to RCT and natural experiment settings?
         dataIndex = new int[originalDataX.getRowDimension()];
         for (int i = 0; i < originalDataX.getRowDimension(); i++) {
             dataIndex[i] = i;
         }
     }
 
+    //Datalens for the resampled tree data or for a leaf once split
+    //Does each leaf carry around the original data then an index of the observations currently in that leaf?
     public DataLens(DataLens d, int[] resampleIndex) {
         originalDataX = d.getOriginalDataX();
         originalDataY = d.getOriginalDataY();
@@ -59,6 +62,7 @@ public class DataLens {
         }
     }
     
+    //Gets a subset of the current datalens indexed by "observations"
     public DataLens getDataLensSubset(int[] observations) {
         int[] associatedBackingIndex = new int[observations.length];
         for(int i=0;i<observations.length;i++) {
@@ -78,7 +82,8 @@ public class DataLens {
     private Matrix getOriginalDataY() {
         return originalDataY;
     }
-
+    
+    //Prints the original data Y X B, where B is the balancing vector
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
@@ -92,7 +97,8 @@ public class DataLens {
         }
         return s.toString();
     }
-
+    
+    //Returns the fraction of treated obs
     private double getMeanBalancingVector() {
         double ratio = 0;
         for (int i : dataIndex) {
@@ -101,7 +107,8 @@ public class DataLens {
         ratio /= dataIndex.length;
         return ratio;
     }
-
+    
+    //Performs the resampling for tree data, keeping the proportion of treated and untreated obs the same as in original data and returns the resulting datalense
     public DataLens getResampledDataLensWithBalance(long seed) {
         Random rng = new Random(seed);
         int[] newIndex = new int[originalDataX.getRowDimension()];
@@ -114,13 +121,13 @@ public class DataLens {
             int index = rng.nextInt(dataIndex.length);
             double treatmentIndicator = balancingVector.get(dataIndex[index], 0);
             if (countTreatment < goalTreatment) {
-                while (treatmentIndicator == 0) {
+                while (treatmentIndicator == 0) { // Keep resampling until getting a treated obs
                     index = rng.nextInt(dataIndex.length);
                     treatmentIndicator = balancingVector.get(dataIndex[index], 0);
                 }
                 countTreatment++;
             } else {
-                while (treatmentIndicator == 1) {
+                while (treatmentIndicator == 1) { // Now keep resampling until getting an untreated obs
                     index = rng.nextInt(dataIndex.length);
                     treatmentIndicator = balancingVector.get(dataIndex[index], 0);
                 }
@@ -129,7 +136,8 @@ public class DataLens {
         }
         return new DataLens(this, newIndex);
     }
-
+    
+    //Performs the resampling for tree data without balancing treated and untreated; or if there is no treatment variable and returns the resulting datalens
     public DataLens getResampledDataLens(long seed) {
         Random rng = new Random(seed);
         int[] newIndex = new int[dataIndex.length];
@@ -139,17 +147,20 @@ public class DataLens {
         return new DataLens(this, newIndex);
     }
 
+    //Randomly splits the data into the growing and estimating samples and return them
+    //Input is the randomly resampled data
+    //Output is a datalens vector containing the datalens for each sample
     public DataLens[] randomlySplitSample(double proportionFirstSample, long seed) {
         Random rng = new Random(seed);
         DataLens[] splitLens = new DataLens[2]; // the two parts of the split sample
-        int sizeFirst = (int) Math.round(proportionFirstSample * dataIndex.length);
+        int sizeFirst = (int) Math.round(proportionFirstSample * dataIndex.length); //Number of obs going to growing sample
         int sizeSecond = dataIndex.length - sizeFirst;
 
         int[] indicesFirst = new int[sizeFirst];
         int[] indicesSecond = new int[sizeSecond];
 
         int countTreatmentFirst = 0;
-        TreeSet<Integer> treeFirst = new TreeSet<>();
+        TreeSet<Integer> treeFirst = new TreeSet<>(); //Why do we use this TreeSet?
 
         int desiredNumTreatmentObsInFirstPart = (int) Math.round(getMeanBalancingVector() * sizeFirst);
         // System.out.println("Aiming for " + desiredNumTreatmentObsInFirstPart + " treatments in first sample.");
@@ -185,8 +196,8 @@ public class DataLens {
             }
         }
 
-        splitLens[0] = new DataLens(this, indicesFirst);
-        splitLens[1] = new DataLens(this, indicesSecond);
+        splitLens[0] = new DataLens(this, indicesFirst); //Creates resampled datalens for growing tree
+        splitLens[1] = new DataLens(this, indicesSecond); //Creates resampled datalens for estimating tree
 
         return splitLens;
     }
@@ -235,7 +246,8 @@ public class DataLens {
     public Jama.Matrix getRowX(int row) {
         return originalDataX.getMatrix(dataIndex[row], dataIndex[row], 0, originalDataX.getColumnDimension() - 1);
     }
-
+    
+    //Returns the minimum value of the split variable
     double getMinimumValue(int indexSplitVariable) {
         double minimumValue = getX(0, indexSplitVariable);
         for (int i = 1; i < getNumObs(); i++) {
@@ -265,7 +277,8 @@ public class DataLens {
         }
         return rowX;
     }
-
+    
+    //Performs the splitting of the data based on the optimal splitting rule and returns the datalens for each leaf
     DataLens[] splitOnRule(SplitRule rule) {
         DataLens[] split = new DataLens[2];
         ArrayList<Integer> leftList = new ArrayList<>();

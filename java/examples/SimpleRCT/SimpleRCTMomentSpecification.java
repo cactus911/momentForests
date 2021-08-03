@@ -66,7 +66,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     public Double getPredictedY(Matrix xi, Jama.Matrix beta) {
         // pmUtility.prettyPrint(xi);
         if (beta != null) {
-            double yhat = xi.get(0, 0) * beta.get(0, 0);
+            double yhat = xi.get(0, 0) * beta.get(0, 0); // There is a single independent variable "treatment" in the simple RCT
             return yhat;
         }
         return null;
@@ -121,12 +121,13 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     public Boolean[] getDiscreteVector() {
         return DiscreteVariables;
     }
-
+    
+    //Return the true treatment effect for a given observation
     @Override
     public Matrix getBetaTruth(Matrix xi) {
-        Jama.Matrix beta = new Jama.Matrix(1, 1);
+        Jama.Matrix beta = new Jama.Matrix(1, 1); // Beta is a scalar
         beta.set(0, 0, 0);
-        beta.set(0, 0, xi.get(0, 1) + xi.get(0, 1) * (xi.get(0, 2) - 1));
+        beta.set(0, 0, xi.get(0, 1) + xi.get(0, 1) * (xi.get(0, 2) - 1)); //Treatment effect is x1+x1*(x2-1)
         return beta;
     }
 

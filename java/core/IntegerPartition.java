@@ -39,6 +39,7 @@ public class IntegerPartition {
         this.right = right;
     }
 
+    // Returns the integer values in the left leaf after splitting on discrete variable
     public ArrayList<Integer> getLeft() {
         return left;
     }
@@ -46,7 +47,8 @@ public class IntegerPartition {
     public ArrayList<Integer> getRight() {
         return right;
     }
-
+    
+    //Prints the values of the variable in each side of the partition
     @Override
     public String toString() {
         String s = "";

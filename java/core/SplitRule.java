@@ -76,6 +76,7 @@ public class SplitRule {
         return splitOnDiscreteVariable;
     }
 
+    //Returns 1 if the observation is on the left side of the partition, 0 otherwise
     public boolean isLeft(Matrix xi) {
         if (splitOnDiscreteVariable) {
             Integer xc = new Integer((int) xi.get(0, optimalSplitVariableIndex));
@@ -84,7 +85,8 @@ public class SplitRule {
             return xi.get(0, optimalSplitVariableIndex) < splitPoint;
         }
     }
-
+    
+    // Returns the values of the variable that are in the left side of the partition
     String getLeftSplit() {
         if (splitOnDiscreteVariable) {
             String s = "";
