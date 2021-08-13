@@ -36,6 +36,11 @@ In our theory, we prove several useful theoretical properties of moment forests.
 
 The java source code is contained in two separate folders on the Github repository: [jars and java](https://github.com/cactus911/momentForests) 
 
+Jar files are various helper utilities, and their license information is as follows.
+
+Jama-1.0.3.jar is in the public domain and it is from https://math.nist.gov/javanumerics/jama/
+optimization.jar is in the public domain and it is from https://github.com/rwl/optimization and http://www1.fpl.fs.fed.us/optimization.html
+utility.jar is written by us for this project.
 
 ### Link to STATA
 
