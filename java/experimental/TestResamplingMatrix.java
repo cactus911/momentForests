@@ -26,7 +26,7 @@ package experimental;
 import core.DataLens;
 import java.util.ArrayList;
 import java.util.Random;
-import utility.utility;
+import utility.pmUtility;
 
 /**
  *
@@ -80,9 +80,9 @@ public class TestResamplingMatrix {
          * Show that resampling works
          */
         System.out.println("Original");
-        Jama.Matrix concat = utility.concatMatrix(baselineY, baselineX);
-        concat = utility.concatMatrix(concat, balancingVector);
-        utility.prettyPrint(concat.getMatrix(0, 9, 0, 5));
+        Jama.Matrix concat = pmUtility.concatMatrix(baselineY, baselineX);
+        concat = pmUtility.concatMatrix(concat, balancingVector);
+        pmUtility.prettyPrint(concat.getMatrix(0, 9, 0, 5));
         System.out.println("Original in DataLens");
         DataLens lens = new DataLens(baselineX, baselineY, balancingVector);
         System.out.println(lens.getSubsetData(0, 9));

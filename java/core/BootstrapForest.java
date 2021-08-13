@@ -26,7 +26,7 @@ package core;
 import Jama.Matrix;
 import java.util.ArrayList;
 import java.util.Random;
-import utility.utility;
+import utility.pmUtility;
 
 /**
  *
@@ -37,7 +37,7 @@ public class BootstrapForest {
     ArrayList<MomentForest> forestList = new ArrayList<>();
 
     public BootstrapForest(MomentSpecification spec, int numberBootstraps, int numberTreesInForest, long randomSeed, TreeOptions options) {
-        DataLens originalLens = new DataLens(spec.getX(), spec.getY(), utility.getColumn(spec.getX(), 0));
+        DataLens originalLens = new DataLens(spec.getX(), spec.getY(), pmUtility.getColumn(spec.getX(), 0));
         
         Random rng = new Random(randomSeed);
         for (int i = 0; i < numberBootstraps; i++) {
@@ -64,7 +64,7 @@ public class BootstrapForest {
 
         Jama.Matrix standardErrors = new Jama.Matrix(results.getColumnDimension(), 1);
         for (int i = 0; i < standardErrors.getRowDimension(); i++) {
-            standardErrors.set(i, 0, utility.standardDeviation(results, i));
+            standardErrors.set(i, 0, pmUtility.standardDeviation(results, i));
         }
         // pmUtility.prettyPrintVector(results);
         return standardErrors;

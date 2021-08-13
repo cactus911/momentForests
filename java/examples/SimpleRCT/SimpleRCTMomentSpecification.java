@@ -35,7 +35,8 @@ import core.MomentSpecification;
 import core.NaiveContainer;
 import java.util.ArrayList;
 import utility.utility;
-import java.util.TreeSet;
+import java.io.FileReader;
+import java.io.BufferedReader;
 
 /**
  *
@@ -49,6 +50,16 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     int numtrees;
     int[] variableSearchIndex;
     Boolean[] DiscreteVariables;
+    
+    /*Begin new*/
+    public SimpleRCTMomentSpecification(int numObs) {
+        this.numObs = numObs;
+        int[] vsi = {1, 2}; //Search over X1, X2 
+        Boolean[] wvd = {true, true, true}; //Treatment, X1, X2 all discrete
+        variableSearchIndex = vsi;
+        DiscreteVariables = wvd;
+    }
+   /*End new*/
     
     public void SimpleRCTMomentSpecification() {
         // this.numObs = numObs;
@@ -233,10 +244,71 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 
         return null;
     }
-    
+    /*
     @Override
     public void loadData() {
 	throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+    */
+    
+    @Override
+    public void loadData() {
+        
+        int numObsFile = 0;
+        try {
+            BufferedReader in = new BufferedReader(new FileReader("C:/Users/Spare/Dropbox/MomentForests/SaturatedHeterogeneityRCT/saturated_heterogeneity_25000.csv")); // Inputting data. What is the cd here?
+            String line = in.readLine(); // headers
+            while (line != null) { // Each line is an observation
+                line = in.readLine(); // Read in data line by line
+                if (line != null) {
+                    numObsFile++;
+                }
+            }
+            in.close();
+            numObsFile /= 1;
+            numObs = numObsFile;
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        //System.out.format("Number of observations = %,d %n", numObsFile);
+        Jama.Matrix dX = new Jama.Matrix(numObsFile, 3); // Used previous loop to create arrays of the correct size, memory saver?
+        Jama.Matrix dY = new Jama.Matrix(numObsFile, 1);
+
+        try {
+            BufferedReader in = new BufferedReader(new FileReader("C:/Users/Spare/Dropbox/MomentForests/SaturatedHeterogeneityRCT/saturated_heterogeneity_25000.csv"));
+            String line = in.readLine(); // headers
+            int i = 0;
+            while (line != null) {
+                line = in.readLine();
+                if (line != null) {
+                    int a = 0;
+                    int b = line.indexOf(",", a); //Returns the index within this string of the first occurrence of "," starting at 0; this is a comma delimited file
+                    // System.out.println(line);
+                    dY.set(i, 0, Double.valueOf(line.substring(a, b))); // outcome, assuming lines are comma delimitted and y value begins at index 0 and ends before the comma
+
+                    a = b + 1;
+                    b = line.indexOf(",", a); // treatment status is the next outcome in the comma delimited line
+                    dX.set(i, 0, Double.valueOf(line.substring(a, b))); // treatment status
+
+                    a = b + 1;
+                    b = line.indexOf(",", a); // X1 is the next outcome in the comma delimited line
+                    dX.set(i, 1, Double.valueOf(line.substring(a,b))); //X1
+
+                    a = b + 1;
+                    b = line.indexOf(",", a); // X1 is the next outcome in the comma delimited line
+                    dX.set(i, 2, Double.valueOf(line.substring(a))); //X2
+
+                    i++;
+                }
+            }
+            X = dX;
+            Y = dY;
+
+            in.close();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override

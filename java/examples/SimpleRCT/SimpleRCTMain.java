@@ -23,7 +23,6 @@
  */
 package examples.SimpleRCT;
 
-import Jama.Matrix;
 // import com.stata.sfi.SFIToolkit;
 import core.BootstrapForest;
 import core.DataLens;
