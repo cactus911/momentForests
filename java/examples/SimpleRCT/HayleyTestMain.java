@@ -23,14 +23,12 @@
  */
 package examples.SimpleRCT;
 
-import core.BootstrapForest;
 import core.DataLens;
 import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeOptions;
-import core.NaiveContainer;
 import java.util.Arrays;
-import utility.utility;
+import utility.pmUtility;
 
 /**
  *
@@ -80,7 +78,7 @@ public class HayleyTestMain {
                  */
                 Jama.Matrix rctX1 = mySpecification.getX();
                 Jama.Matrix rctY1 = mySpecification.getY();
-                Jama.Matrix balancing1 = utility.getColumn(mySpecification.getX(), 0); // Treatment indicators
+                Jama.Matrix balancing1 = pmUtility.getColumn(mySpecification.getX(), 0); // Treatment indicators
                 // pmUtility.prettyPrint(rctX);
                 
                 Jama.Matrix rctX = rctX1.getMatrix(Data_Index, Data_Index + n - 1, 0, 2);

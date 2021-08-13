@@ -34,9 +34,9 @@ import core.MomentPartitionObj;
 import core.MomentSpecification;
 import core.NaiveContainer;
 import java.util.ArrayList;
-import utility.utility;
 import java.io.FileReader;
 import java.io.BufferedReader;
+import utility.pmUtility;
 
 /**
  *
@@ -178,8 +178,8 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
             // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
             // Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, false, 500, 787);
 
-            Jama.Matrix olsBeta = utility.OLSsvd(subX, subY, false);
-            Jama.Matrix olsVar = utility.getOLSVariances(subY, subX, false);
+            Jama.Matrix olsBeta = pmUtility.OLSsvd(subX, subY, false);
+            Jama.Matrix olsVar = pmUtility.getOLSVariances(subY, subX, false);
             String sig = "";
             if (Math.abs(olsBeta.get(0, 0) / Math.sqrt(olsVar.get(0, 0))) > 1.98) {
                 sig = "*";
@@ -229,8 +229,8 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
                     }
                 }
                 // pmUtility.prettyPrint(pmUtility.concatMatrix(subY, subX));
-                Jama.Matrix olsBeta = utility.OLS(subX, subY, false);
-                Jama.Matrix olsVar = utility.getOLSVariances(subY, subX, false);
+                Jama.Matrix olsBeta = pmUtility.OLS(subX, subY, false);
+                Jama.Matrix olsVar = pmUtility.getOLSVariances(subY, subX, false);
                 // Jama.Matrix[] bootOLS = pmUtility.bootstrapOLS(subX, subY, false, 5000, 787);
 
                 String sig = "";
