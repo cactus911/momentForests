@@ -39,7 +39,7 @@ import utility.utility;
  */ 
 
 public class HayleyTestMain { 
-    // Attempting to replicate table 4: RCT with saturated heterogeneity 
+    // Replicate table 4: RCT with saturated heterogeneity 
 
     /**
      * @param args the command line arguments
