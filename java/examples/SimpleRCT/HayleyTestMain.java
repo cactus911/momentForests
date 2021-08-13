@@ -34,7 +34,11 @@ import utility.utility;
 
 /**
  *
- * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>  */ public class HayleyTestMain { 
+ * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu> 
+ * @author Hayley Wabiszewski <hwabiszewski@wustl.edu>
+ */ 
+
+public class HayleyTestMain { 
     // Attempting to replicate table 4: RCT with saturated heterogeneity 
 
     /**
