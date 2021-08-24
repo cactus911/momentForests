@@ -150,7 +150,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     @Override
     public NaiveContainer computeNaiveStatistics() {
         // this is to run separate OLS regressions for each treatment
-        System.out.println("\nIndependent Outcome Estimates");
+        System.out.println("\nIndependent Outcome Estimates"); // These estimates are specific to the simple RCT context
         for (int k = 0; k < 10; k++) {
             ArrayList<Jama.Matrix> typeX = new ArrayList<>();
             ArrayList<Double> typeY = new ArrayList<>();
@@ -189,7 +189,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
         }
         
         boolean computeOracle = true;
-        if (computeOracle) {
+        if (computeOracle) { // This oracle estimator is also specific to the simple RCT context
             // let's run the oracle estimator and see how that compares
             // System.out.println("\nOracle Estimator");
             for (int k = 0; k < 4; k++) {

@@ -32,12 +32,20 @@ import java.util.TreeSet;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
+
+/* TO DO:
+    1. DataLens class takes balancingVector as input. Need to generalize this to non-RCT setting.
+    2. Need to fix randomlySplitSample method. It splits according to treatment status in order to keep the number of treated obs in the growing and honest lens balanced. One
+        possibility would be to make a method randomlySplitSample and randomlySplitSampleWithBalance. This was done with getResampledDataLens and getResampledDataLensWithBalance.
+*/
+
 public class DataLens {
 
     final Jama.Matrix originalDataX;
     final Jama.Matrix originalDataY;
     final Jama.Matrix balancingVector;
     int[] dataIndex;
+    
     
     //DataLens for original data
     public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix balanceVector) {

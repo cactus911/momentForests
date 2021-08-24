@@ -32,6 +32,11 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
+
+/*
+    TO DO:
+        1. BootstrapForest takes a balancing vector as input and uses it for each forest in the bootstrap. See lines 45 and 55.
+*/
 public class BootstrapForest {
 
     ArrayList<MomentForest> forestList = new ArrayList<>();

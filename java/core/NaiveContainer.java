@@ -27,6 +27,11 @@ package core;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
+
+/*
+    TO DO:
+        1. This is trvial but the "naive" statistic may not be OLS. Consider renaming.
+*/
 public class NaiveContainer {
 
     double MSPE_OLS;

@@ -33,6 +33,10 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
+
+/* TO DO:
+    1. getEstimatedParameters method prints the estimated parameters and appears to assume beta is 1x1 and not a vector. Need to allow for beta to be a vector.
+*/
 public class MomentForest {
 
     ArrayList<TreeMoment> forest = new ArrayList<>();
