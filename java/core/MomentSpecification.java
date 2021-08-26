@@ -60,8 +60,6 @@ import java.util.Random;
     
     public Jama.Matrix getOutOfSampleX();
     
-    public NaiveContainer computeNaiveStatistics();
-    
     public void loadData();
     
     public String getVariableName(int variableIndex);
