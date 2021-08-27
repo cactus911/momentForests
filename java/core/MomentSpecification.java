@@ -48,6 +48,8 @@ import java.util.Random;
 
    public Jama.Matrix getX();
    
+   public Jama.Matrix getBalancingVector();
+   
    public Jama.Matrix getXoriginal();
    
    public Jama.Matrix cvparameters();

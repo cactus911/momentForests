@@ -32,8 +32,6 @@ import core.IntegerPartition;
 import core.MomentContinuousSplitObj;
 import core.MomentPartitionObj;
 import core.MomentSpecification;
-import core.NaiveContainer;
-import java.util.ArrayList;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import utility.pmUtility;
@@ -46,20 +44,25 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 
     Jama.Matrix X;
     Jama.Matrix Y;
+    Jama.Matrix balancingVector; // is treatment status in the RCT setting
     int numObs;
     int numtrees;
     int[] variableSearchIndex;
     Boolean[] DiscreteVariables;
     
-    /*Begin new*/
     public SimpleRCTMomentSpecification(int numObs) {
         this.numObs = numObs;
         int[] vsi = {1, 2}; //Search over X1, X2 
         Boolean[] wvd = {true, true, true}; //Treatment, X1, X2 all discrete
         variableSearchIndex = vsi;
-        DiscreteVariables = wvd;
+        DiscreteVariables = wvd;        
     }
-   /*End new*/
+
+    @Override
+    public Matrix getBalancingVector() {
+        return balancingVector;
+    }    
+    
     
     public void SimpleRCTMomentSpecification() {
         // this.numObs = numObs;
@@ -71,6 +74,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
         this.numtrees = numtrees;
         this.variableSearchIndex = variableSearchIndex;
         this.DiscreteVariables = DiscreteVariables;
+        balancingVector = pmUtility.getColumn(X, 0); // treatment status is the first column of X
     }
 
     @Override

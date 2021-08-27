@@ -42,7 +42,8 @@ public class BootstrapForest {
     ArrayList<MomentForest> forestList = new ArrayList<>();
 
     public BootstrapForest(MomentSpecification spec, int numberBootstraps, int numberTreesInForest, long randomSeed, TreeOptions options) {
-        DataLens originalLens = new DataLens(spec.getX(), spec.getY(), pmUtility.getColumn(spec.getX(), 0));
+        // DataLens originalLens = new DataLens(spec.getX(), spec.getY(), pmUtility.getColumn(spec.getX(), 0));
+        DataLens originalLens = new DataLens(spec.getX(), spec.getY(), spec.getBalancingVector());
         
         Random rng = new Random(randomSeed);
         for (int i = 0; i < numberBootstraps; i++) {

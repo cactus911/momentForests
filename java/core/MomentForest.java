@@ -74,7 +74,7 @@ public class MomentForest {
         for (int i = 0; i < numberTreesInForest; i++) {
             // resample the forestLens, then split it
             DataLens resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
-            DataLens[] split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+            DataLens[] split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
             DataLens lensGrow = split[0];
             DataLens lensHonest = split[1];
 
@@ -110,7 +110,7 @@ public class MomentForest {
 
     public TreeOptions performCrossValidation(int numTrees, Jama.Matrix CVparameters2) {
         Random rng = new Random(forestSeed);
-        DataLens[] split = forestLens.randomlySplitSample(0.5, rng.nextLong());
+        DataLens[] split = forestLens.randomlySplitSampleWithBalance(0.5, rng.nextLong());
         DataLens growLens = split[0];
         DataLens predictLens = split[1];
 
