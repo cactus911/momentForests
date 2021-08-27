@@ -38,7 +38,7 @@ public class DisjointSet {
         data.add(1);
         data.add(2);
         data.add(3);
-        data.add(4); // I think in this application, x1 and x2 can only equal 1,2,3 or 4
+        data.add(4);
         // data.add(5);
         // data.add(6);
         // data.add(7);

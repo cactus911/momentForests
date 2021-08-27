@@ -33,6 +33,10 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
+
+/* TO DO:
+    1. getEstimatedParameters method prints the estimated parameters and appears to assume beta is 1x1 and not a vector. Need to allow for beta to be a vector.
+ */
 public class MomentForest {
 
     ArrayList<TreeMoment> forest = new ArrayList<>();
@@ -70,7 +74,7 @@ public class MomentForest {
         for (int i = 0; i < numberTreesInForest; i++) {
             // resample the forestLens, then split it
             DataLens resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
-            DataLens[] split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+            DataLens[] split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
             DataLens lensGrow = split[0];
             DataLens lensHonest = split[1];
 
@@ -78,35 +82,39 @@ public class MomentForest {
                     spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
                     lensHonest));
         }
-        
-        // for (int i = 0; i < numberTreesInForest; i++) {
-        //     forest.get(i).determineSplit();
-        //     forest.get(i).estimateHonestTree();
-        // }
-        
-        forest.parallelStream().forEach((tree) -> {
-           tree.determineSplit();
-           tree.estimateHonestTree();
-        });
+
+        boolean useParallel = false;
+
+        if (!useParallel) {
+            for (int i = 0; i < numberTreesInForest; i++) {
+                forest.get(i).determineSplit();
+                forest.get(i).estimateHonestTree();
+            }
+        } else {
+            forest.parallelStream().forEach((tree) -> {
+                tree.determineSplit();
+                tree.estimateHonestTree();
+            });
+        }
         // System.out.format("Memory usage: %,d bytes %n", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
     }
 
     public Jama.Matrix getEstimatedParameters(Jama.Matrix x) {
         Jama.Matrix estimatedParameters = forest.get(0).getEstimatedBeta(x);
-        String s = "[ " + forest.get(0).getEstimatedBeta(x).get(0, 0) + " "; //Assuming beta is 1 by 1?
+        // String s = "[ " + forest.get(0).getEstimatedBeta(x).get(0, 0) + " "; //Assuming beta is 1 by 1?
         for (int i = 1; i < forest.size(); i++) {
             estimatedParameters = estimatedParameters.plus(forest.get(i).getEstimatedBeta(x));
-            s = s.concat(forest.get(i).getEstimatedBeta(x).get(0, 0) + " ");
+            // s = s.concat(forest.get(i).getEstimatedBeta(x).get(0, 0) + " ");
         }
-        s = s.concat("]");
-        System.out.println(s);
+        // s = s.concat("]");
+        // System.out.println(s);
         estimatedParameters.timesEquals(1.0 / forest.size());
         return estimatedParameters;
     }
 
     public TreeOptions performCrossValidation(int numTrees, Jama.Matrix CVparameters2) {
         Random rng = new Random(forestSeed);
-        DataLens[] split = forestLens.randomlySplitSample(0.5, rng.nextLong());
+        DataLens[] split = forestLens.randomlySplitSampleWithBalance(0.5, rng.nextLong());
         DataLens growLens = split[0];
         DataLens predictLens = split[1];
 
@@ -122,11 +130,11 @@ public class MomentForest {
         TreeOptions options = new TreeOptions();
         options.setMaxDepth(100);
         options.setMinMSEImprovement(1E-10);
-        
+
         // for (double improvementThreshold = 0.01; improvementThreshold <= 0.5; improvementThreshold += 0.05) {
-                 // for (int minCountEachPartition = 10; minCountEachPartition <= growLens.getNumObs() / 2; minCountEachPartition *= 2) {
-         for (double improvementThreshold = (double) CVparameters2.get(0,3); improvementThreshold <= (double) CVparameters2.get(0,5); improvementThreshold += (double) CVparameters2.get(0,4)) {
-            for (int minCountEachPartition = (int) CVparameters2.get(0,0); minCountEachPartition <= (int) CVparameters2.get(0,2); minCountEachPartition += (int) CVparameters2.get(0,1)) {
+        // for (int minCountEachPartition = 10; minCountEachPartition <= growLens.getNumObs() / 2; minCountEachPartition *= 2) {
+        for (double improvementThreshold = (double) CVparameters2.get(0, 3); improvementThreshold <= (double) CVparameters2.get(0, 5); improvementThreshold += (double) CVparameters2.get(0, 4)) {
+            for (int minCountEachPartition = (int) CVparameters2.get(0, 0); minCountEachPartition <= (int) CVparameters2.get(0, 2); minCountEachPartition += (int) CVparameters2.get(0, 1)) {
                 rng = new Random(667);
                 options.setMinCount(minCountEachPartition);
                 options.setMinMSEImprovement(improvementThreshold);
@@ -209,10 +217,8 @@ public class MomentForest {
         return options;
     }
 
-    
     public void setTreeOptions(TreeOptions cvOptions) {
         this.treeOptions = cvOptions;
     }
 
 }
-
