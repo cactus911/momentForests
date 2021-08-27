@@ -32,18 +32,34 @@ import java.util.TreeSet;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
+
+/* TO DO:
+    1. DataLens class takes balancingVector as input. Need to generalize this to non-RCT setting.
+    2. Need to fix randomlySplitSample method. It splits according to treatment status in order to keep the number of treated obs in the growing and honest lens balanced. One
+        possibility would be to make a method randomlySplitSample and randomlySplitSampleWithBalance. This was done with getResampledDataLens and getResampledDataLensWithBalance.
+ */
 public class DataLens {
 
     final Jama.Matrix originalDataX;
     final Jama.Matrix originalDataY;
     final Jama.Matrix balancingVector;
     int[] dataIndex;
-    
+
     //DataLens for original data
     public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix balanceVector) {
         originalDataX = X;
         originalDataY = Y;
         balancingVector = balanceVector; // Is the balance vector specific to RCT and natural experiment settings?
+        dataIndex = new int[originalDataX.getRowDimension()];
+        for (int i = 0; i < originalDataX.getRowDimension(); i++) {
+            dataIndex[i] = i;
+        }
+    }
+
+    public DataLens(Jama.Matrix X, Jama.Matrix Y) {
+        originalDataX = X;
+        originalDataY = Y;
+        balancingVector = null;
         dataIndex = new int[originalDataX.getRowDimension()];
         for (int i = 0; i < originalDataX.getRowDimension(); i++) {
             dataIndex[i] = i;
@@ -61,11 +77,11 @@ public class DataLens {
             dataIndex[i] = resampleIndex[i];
         }
     }
-    
+
     //Gets a subset of the current datalens indexed by "observations"
     public DataLens getDataLensSubset(int[] observations) {
         int[] associatedBackingIndex = new int[observations.length];
-        for(int i=0;i<observations.length;i++) {
+        for (int i = 0; i < observations.length; i++) {
             associatedBackingIndex[i] = dataIndex[observations[i]];
         }
         return new DataLens(this, associatedBackingIndex);
@@ -82,24 +98,31 @@ public class DataLens {
     private Matrix getOriginalDataY() {
         return originalDataY;
     }
-    
+
     //Prints the original data Y X B, where B is the balancing vector
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
         for (int i = 0; i < dataIndex.length; i++) {
-            s.append(dataIndex[i] + " ");
+            s.append(dataIndex[i]);
+            s.append(" ");
             s.append("{ ").append(getY(i)).append(" ");
             for (int j = 0; j < originalDataX.getColumnDimension(); j++) {
                 s.append(getX(i, j)).append(" ");
             }
-            s.append(balancingVector.get(dataIndex[i], 0)).append(" }\n");
+            if (balancingVector != null) {
+                s.append(balancingVector.get(dataIndex[i], 0)).append(" }\n");
+            }
         }
         return s.toString();
     }
-    
+
     //Returns the fraction of treated obs
     private double getMeanBalancingVector() {
+        if (balancingVector == null) {
+            System.out.println("Querying model for average balancing vector when it is null.");
+            System.exit(0);
+        }
         double ratio = 0;
         for (int i : dataIndex) {
             ratio += balancingVector.get(i, 0);
@@ -107,9 +130,13 @@ public class DataLens {
         ratio /= dataIndex.length;
         return ratio;
     }
-    
+
     //Performs the resampling for tree data, keeping the proportion of treated and untreated obs the same as in original data and returns the resulting datalense
     public DataLens getResampledDataLensWithBalance(long seed) {
+        if (balancingVector == null) {
+            System.out.println("Trying to resample with average balancing vector when it is null.");
+            System.exit(0);
+        }
         Random rng = new Random(seed);
         int[] newIndex = new int[originalDataX.getRowDimension()];
 
@@ -136,7 +163,7 @@ public class DataLens {
         }
         return new DataLens(this, newIndex);
     }
-    
+
     //Performs the resampling for tree data without balancing treated and untreated; or if there is no treatment variable and returns the resulting datalens
     public DataLens getResampledDataLens(long seed) {
         Random rng = new Random(seed);
@@ -150,7 +177,7 @@ public class DataLens {
     //Randomly splits the data into the growing and estimating samples and return them
     //Input is the randomly resampled data
     //Output is a datalens vector containing the datalens for each sample
-    public DataLens[] randomlySplitSample(double proportionFirstSample, long seed) {
+    public DataLens[] randomlySplitSampleWithBalance(double proportionFirstSample, long seed) {
         Random rng = new Random(seed);
         DataLens[] splitLens = new DataLens[2]; // the two parts of the split sample
         int sizeFirst = (int) Math.round(proportionFirstSample * dataIndex.length); //Number of obs going to growing sample
@@ -203,6 +230,54 @@ public class DataLens {
     }
 
     /**
+     *
+     * Randomly split the sample into two parts depending on parameters below.
+     * This method does not balance based on balanceVector.
+     *
+     * @param proportionFirstSample What proportion of the sample to split into
+     * the first chunk.
+     * @param seed A random number seed.
+     * @return
+     */
+    public DataLens[] randomlySplitSample(double proportionFirstSample, long seed) {
+        Random rng = new Random(seed);
+        DataLens[] splitLens = new DataLens[2]; // the two parts of the split sample
+        int sizeFirst = (int) Math.round(proportionFirstSample * dataIndex.length); //Number of obs going to first sample
+        int sizeSecond = dataIndex.length - sizeFirst;
+
+        int[] indicesFirst = new int[sizeFirst];
+        int[] indicesSecond = new int[sizeSecond];
+
+        TreeSet<Integer> treeFirst = new TreeSet<>(); // this keeps track of which indices are in the first sample
+
+        for (int i = 0; i < sizeFirst; i++) {
+            int guess = rng.nextInt(getNumObs());
+            while (treeFirst.contains(guess)) {
+                guess = rng.nextInt(getNumObs());
+            }
+            treeFirst.add(guess);
+        }
+        ArrayList<Integer> firstList = new ArrayList(treeFirst);
+        // System.out.println(firstList.size() + " out of desired " + sizeFirst);
+        for (int i = 0; i < sizeFirst; i++) {
+            indicesFirst[i] = dataIndex[firstList.get(i)];
+        }
+
+        int secondCounter = 0;
+        for (int i = 0; i < getNumObs(); i++) {
+            if (!treeFirst.contains(i)) {
+                indicesSecond[secondCounter] = dataIndex[i];
+                secondCounter++;
+            }
+        }
+
+        splitLens[0] = new DataLens(this, indicesFirst); //Creates resampled datalens for growing tree
+        splitLens[1] = new DataLens(this, indicesSecond); //Creates resampled datalens for estimating tree
+
+        return splitLens;
+    }
+
+    /**
      * Obtain the number of observations in the DataLens.
      *
      * @return Number of observations.
@@ -210,7 +285,7 @@ public class DataLens {
     public int getNumObs() {
         return dataIndex.length;
     }
-    
+
     public double getXsum(int rowEnd) {
         double totalsum = 0;
         for (int i = 0; i < rowEnd; i++) {
@@ -218,7 +293,7 @@ public class DataLens {
         }
         return totalsum;
     }
-    
+
     public int getColumnDimensionX() {
         // System.out.println("Getting column dimension");
         return originalDataX.getColumnDimension();
@@ -242,11 +317,11 @@ public class DataLens {
     public double getX(int i, int j) {
         return originalDataX.get(dataIndex[i], j);
     }
-    
+
     public Jama.Matrix getRowX(int row) {
         return originalDataX.getMatrix(dataIndex[row], dataIndex[row], 0, originalDataX.getColumnDimension() - 1);
     }
-    
+
     //Returns the minimum value of the split variable
     double getMinimumValue(int indexSplitVariable) {
         double minimumValue = getX(0, indexSplitVariable);
@@ -277,7 +352,7 @@ public class DataLens {
         }
         return rowX;
     }
-    
+
     //Performs the splitting of the data based on the optimal splitting rule and returns the datalens for each leaf
     DataLens[] splitOnRule(SplitRule rule) {
         DataLens[] split = new DataLens[2];

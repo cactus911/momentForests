@@ -48,6 +48,8 @@ import java.util.Random;
 
    public Jama.Matrix getX();
    
+   public Jama.Matrix getBalancingVector();
+   
    public Jama.Matrix getXoriginal();
    
    public Jama.Matrix cvparameters();
@@ -60,15 +62,13 @@ import java.util.Random;
     
     public Jama.Matrix getOutOfSampleX();
     
-    public NaiveContainer computeNaiveStatistics();
-    
     public void loadData();
     
     public String getVariableName(int variableIndex);
     
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex);
 
-    // public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance);
+    public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance);
     
 
 }

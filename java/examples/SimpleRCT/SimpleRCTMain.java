@@ -128,8 +128,6 @@ public class SimpleRCTMain {
                 // Data.storeNum(resv+2, i+1, estimatedTreatmentEffects.get(0, 0));
                 // Data.storeNum(resv+3, i+1, standardErrors.get(0, 0));
             }
-            
-            // mySpecification.computeNaiveStatistics();
            
     }
 

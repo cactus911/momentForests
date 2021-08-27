@@ -55,14 +55,14 @@ public class HayleyTestMain {
          * forest 3. Estimate standard errors via bootstrapping
          */
         
-        int Number_Simulations = 500; //Number of time we Monte Carlo
+        int Number_Simulations = 1; // 500; //Number of time we Monte Carlo
         int Number_Rows = 1; //Number of rows in the table I will replicate, can only do one at a time bc importing data
         Jama.Matrix Number_Leaves = new Jama.Matrix(Number_Rows,Number_Simulations);
         Jama.Matrix MSPE_Forest = new Jama.Matrix(Number_Rows,Number_Simulations);
         int Monte_Carlo_Index = -1;
         
         
-        for (int n = 50; n <= 50; n *= 2) { 
+        for (int n = 5000; n <= 5000; n *= 2) {  // this is how many observations to use in each monte carlo
             Monte_Carlo_Index += 1;
             int Data_Index = 0;
             for (int Loop_Number = 0; Loop_Number < Number_Simulations; Loop_Number += 1) { //Monte carlo using 500 simulations
@@ -70,7 +70,7 @@ public class HayleyTestMain {
                 MomentSpecification mySpecification = new SimpleRCTMomentSpecification(n);
                 mySpecification.loadData(); // Create data using rng
 
-                int numberTreesInForest = 50;
+                int numberTreesInForest = 1;
                 // System.out.println("numTrees: " + numberTreesInForest);
 
                 /**
@@ -86,7 +86,7 @@ public class HayleyTestMain {
                 Jama.Matrix balancing = balancing1.getMatrix(Data_Index, Data_Index + n - 1, 0, 0);
                 
                 DataLens forestLens = new DataLens(rctX, rctY, balancing); /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
-                boolean verbose = false;
+                boolean verbose = true;
                 MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
                 TreeOptions cvOptions = new TreeOptions(0.01, 1, 1E-3, 100); // k = 1
