@@ -23,8 +23,8 @@
  */
 package examples.SimpleRCT;
 
-
 // import JSci.maths.statistics.NormalDistribution;
+import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
@@ -49,26 +49,25 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     int numtrees;
     int[] variableSearchIndex;
     Boolean[] DiscreteVariables;
-    
+
     public SimpleRCTMomentSpecification(int numObs) {
         this.numObs = numObs;
         int[] vsi = {1, 2}; //Search over X1, X2 
         Boolean[] wvd = {true, true, true}; //Treatment, X1, X2 all discrete
         variableSearchIndex = vsi;
-        DiscreteVariables = wvd;        
+        DiscreteVariables = wvd;
     }
 
     @Override
     public Matrix getBalancingVector() {
         return balancingVector;
-    }    
-    
-    
+    }
+
     public void SimpleRCTMomentSpecification() {
         // this.numObs = numObs;
     }
-    
-    public SimpleRCTMomentSpecification(Jama.Matrix X, Jama.Matrix Y, int numtrees, int[] variableSearchIndex, Boolean[] DiscreteVariables) {      
+
+    public SimpleRCTMomentSpecification(Jama.Matrix X, Jama.Matrix Y, int numtrees, int[] variableSearchIndex, Boolean[] DiscreteVariables) {
         this.X = X;
         this.Y = Y;
         this.numtrees = numtrees;
@@ -121,7 +120,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     public Matrix getXoriginal() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
+
     @Override
     public Matrix cvparameters() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
@@ -136,7 +135,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     public Boolean[] getDiscreteVector() {
         return DiscreteVariables;
     }
-    
+
     //Return the true treatment effect for a given observation
     @Override
     public Matrix getBetaTruth(Matrix xi) {
@@ -150,14 +149,13 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     public Matrix getOutOfSampleX() {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
-    
-    
+
     @Override
     public void loadData() {
-        
+
         int numObsFile = 0;
         try {
-            BufferedReader in = new BufferedReader(new FileReader("C:/Users/Spare/Dropbox/MomentForests/SaturatedHeterogeneityRCT/saturated_heterogeneity_25000.csv")); // Inputting data. What is the cd here?
+            BufferedReader in = new BufferedReader(new FileReader("../Monte_Carlo/saturated_heterogeneity_25000.csv")); // Inputting data. What is the cd here?
             String line = in.readLine(); // headers
             while (line != null) { // Each line is an observation
                 line = in.readLine(); // Read in data line by line
@@ -172,12 +170,12 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
             e.printStackTrace();
         }
 
-        //System.out.format("Number of observations = %,d %n", numObsFile);
+        System.out.format("Number of observations = %,d %n", numObsFile);
         Jama.Matrix dX = new Jama.Matrix(numObsFile, 3); // Used previous loop to create arrays of the correct size, memory saver?
         Jama.Matrix dY = new Jama.Matrix(numObsFile, 1);
 
         try {
-            BufferedReader in = new BufferedReader(new FileReader("C:/Users/Spare/Dropbox/MomentForests/SaturatedHeterogeneityRCT/saturated_heterogeneity_25000.csv"));
+            BufferedReader in = new BufferedReader(new FileReader("../Monte_Carlo/saturated_heterogeneity_25000.csv"));
             String line = in.readLine(); // headers
             int i = 0;
             while (line != null) {
@@ -194,7 +192,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 
                     a = b + 1;
                     b = line.indexOf(",", a); // X1 is the next outcome in the comma delimited line
-                    dX.set(i, 1, Double.valueOf(line.substring(a,b))); //X1
+                    dX.set(i, 1, Double.valueOf(line.substring(a, b))); //X1
 
                     a = b + 1;
                     b = line.indexOf(",", a); // X1 is the next outcome in the comma delimited line
@@ -228,7 +226,6 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
         return "Group " + fixedEffectIndex;
     }
 
-    /*
     @Override
     public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
         if (beta == null) {
@@ -249,5 +246,4 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
         }
         return String.format("%.2f (%.2f) %s", b, se, stars);
     }
-    */
 }
