@@ -23,6 +23,7 @@
  */
 package examples.linear;
 
+import core.BootstrapForest;
 import core.DataLens;
 import core.MomentForest;
 import core.MomentSpecification;
@@ -66,13 +67,12 @@ public class LinearTestMain {
         /**
          * Compute standard errors
          */
-        /* Don't need standard errors for Monte Carlo    
-                int numberBootstraps = 50;
-                // System.out.println("Number of bootstraps: " + numberBootstraps);
-                
-                int numberTreesInBootForest = 10;
-                BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
-         */
+        int numberBootstraps = 50;
+        // System.out.println("Number of bootstraps: " + numberBootstraps);
+
+        int numberTreesInBootForest = 10;
+        BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
+
         Jama.Matrix testX = new Jama.Matrix(4, 4);
         testX.set(0, 2, -1);
         testX.set(0, 3, -1);
@@ -87,8 +87,9 @@ public class LinearTestMain {
         testX.set(3, 3, 1);
 
         for (int j = 0; j < 4; j++) {
-            Jama.Matrix b = myForest.getEstimatedParameters(testX.getMatrix(j, j, 0, 3));
-            System.out.println("z1: "+testX.get(j, 2) + " z2: " + testX.get(j, 3) + " beta: " + pmUtility.stringPrettyPrintVector(b));
+            Jama.Matrix txj = testX.getMatrix(j, j, 0, 3);
+            Jama.Matrix b = myForest.getEstimatedParameters(txj);
+            System.out.println("z1: " + testX.get(j, 2) + " z2: " + testX.get(j, 3) + " beta: " + pmUtility.stringPrettyPrintVector(b)+" se: "+pmUtility.stringPrettyPrintVector(boot.computeStandardErrors(txj)));
         }
     }
 

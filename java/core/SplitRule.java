@@ -24,6 +24,7 @@
 package core;
 
 import Jama.Matrix;
+import utility.pmUtility;
 
 /**
  *
@@ -82,10 +83,21 @@ public class SplitRule {
             Integer xc = new Integer((int) xi.get(0, optimalSplitVariableIndex));
             return partition.getLeft().contains(xc);
         } else {
+//            boolean answer = true;
+//            try {
+//                answer = xi.get(0, optimalSplitVariableIndex) < splitPoint;
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                pmUtility.prettyPrint(xi);
+//                System.out.println(optimalSplitVariableIndex + " " + splitPoint);
+//                System.exit(0);
+//            }
+//
+//            return answer;
             return xi.get(0, optimalSplitVariableIndex) < splitPoint;
         }
     }
-    
+
     // Returns the values of the variable that are in the left side of the partition
     String getLeftSplit() {
         if (splitOnDiscreteVariable) {

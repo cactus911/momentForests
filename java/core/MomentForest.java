@@ -127,6 +127,8 @@ public class MomentForest {
     }
 
     public TreeOptions performCrossValidation(int numTrees, Jama.Matrix CVparameters2) {
+        System.out.println("This is assuming that we are using a balancing vector!");
+        System.exit(0);
         Random rng = new Random(forestSeed);
         DataLens[] split = forestLens.randomlySplitSampleWithBalance(0.5, rng.nextLong());
         DataLens growLens = split[0];
