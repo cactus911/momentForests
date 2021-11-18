@@ -38,6 +38,8 @@ import utility.pmUtility;
 
 /**
  *
+ * NOTE: REQUIRES THAT FIRST COLUMN OF X BE THE INDICATOR FOR TREATMENT / CONTROL
+ * 
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
 public class SimpleRCTMomentSpecification implements MomentSpecification {

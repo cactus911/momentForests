@@ -49,7 +49,7 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
     }
 
     @Override
-    public int getNumObsLeft() {
+    public int getEffectiveNumObsLeft() {
         // in the rct context, care about the minimum of count of 0's and 1's in each partition
         int count = 0;
         for (int i = 0; i < container.getLeft().getNumObs(); i++) {
@@ -61,7 +61,7 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
     }
 
     @Override
-    public int getNumObsRight() {
+    public int getEffectiveNumObsRight() {
         int count = 0;
         for (int i = 0; i < container.getRight().getNumObs(); i++) {
             if (container.getRight().getX(i, 0) == 0) {
@@ -89,7 +89,7 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
         leftMSE = leftRCT.getMSE();
         rightMSE = rightRCT.getMSE();
 
-        if (getNumObsLeft() < minCount || getNumObsRight() < minCount) {
+        if (getEffectiveNumObsLeft() < minCount || getEffectiveNumObsRight() < minCount) {
             return Double.POSITIVE_INFINITY;
         }
 

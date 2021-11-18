@@ -37,6 +37,7 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
     DataLens lens;
     int minCount;
     double minProportion;
+    boolean debugVerbose = false;
 
     public MomentContinuousSplitObjLinear(int indexSplitVariable, DataLens lens, double minProportion, int minCount) {
         this.indexSplitVariable = indexSplitVariable;
@@ -48,26 +49,15 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
     }
 
     @Override
-    public int getNumObsLeft() {
+    public int getEffectiveNumObsLeft() {
         // in the rct context, care about the minimum of count of 0's and 1's in each partition
-        int count = 0;
-        for (int i = 0; i < container.getLeft().getNumObs(); i++) {
-            if (container.getLeft().getX(i, 0) == 0) {
-                count++;
-            }
-        }
-        return Math.min(count, container.getLeft().getNumObs() - count);
+        // here, total N is fine
+        return numObsLeft;
     }
 
     @Override
-    public int getNumObsRight() {
-        int count = 0;
-        for (int i = 0; i < container.getRight().getNumObs(); i++) {
-            if (container.getRight().getX(i, 0) == 0) {
-                count++;
-            }
-        }
-        return Math.min(count, container.getRight().getNumObs() - count);
+    public int getEffectiveNumObsRight() {
+        return numObsRight;
     }
 
     @Override
@@ -76,23 +66,29 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        /**
-         * RCT regresses outcome on indicator for treatment; there are no X's
-         * There is a constant, and we measure the coefficient on the W So in
-         * this implementation just use the first column to get OLS fits and
-         * errors, etc.
-         */
         ContainerLinear leftRCT = new ContainerLinear(container.getLeft()); //This object will compute the beta and MSE for the left split
         ContainerLinear rightRCT = new ContainerLinear(container.getRight());
 
         leftMSE = leftRCT.getMSE();
         rightMSE = rightRCT.getMSE();
 
-        if (getNumObsLeft() < minCount || getNumObsRight() < minCount) {
+        if(debugVerbose) {
+            System.out.println("MSE = "+(leftMSE+rightMSE)+" n_Left: "+numObsLeft+" n_Right: "+numObsRight+" MSE_Left: "+leftMSE+" MSE_Right: "+rightMSE+" minCount: "+minCount);
+        }
+        
+        if (getEffectiveNumObsLeft() < minCount) {
+            if(debugVerbose) {
+                System.out.println("Not enough n_left = "+getEffectiveNumObsLeft()+" ==> Triggered positive infinity");
+            }
+            return Double.POSITIVE_INFINITY;
+        } else if (getEffectiveNumObsRight() < minCount) {
+            if(debugVerbose) {
+                System.out.println("Not enough n_right = "+getEffectiveNumObsRight()+" ==> Triggered positive infinity");
+            }
             return Double.POSITIVE_INFINITY;
         }
 
-        // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
+        
         // return (leftMSE + rightMSE) / X.getNumObs();
         return (leftMSE + rightMSE);
     }

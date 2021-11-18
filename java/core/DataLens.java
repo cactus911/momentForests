@@ -135,6 +135,7 @@ public class DataLens {
     public DataLens getResampledDataLensWithBalance(long seed) {
         if (balancingVector == null) {
             System.out.println("Trying to resample with average balancing vector when it is null.");
+            new Exception().printStackTrace();
             System.exit(0);
         }
         Random rng = new Random(seed);
@@ -284,6 +285,26 @@ public class DataLens {
      */
     public int getNumObs() {
         return dataIndex.length;
+    }
+
+    public Jama.Matrix getX() {
+        // generate a new matrix using the dataIndex
+        Jama.Matrix tempX = new Jama.Matrix(getNumObs(), getColumnDimensionX());
+        for (int i = 0; i < getNumObs(); i++) {
+            for (int j = 0; j < getColumnDimensionX(); j++) {
+                tempX.set(i, j, originalDataX.get(dataIndex[i], j));
+            }
+        }
+        return tempX;
+    }
+
+    public Jama.Matrix getY() {
+        // generate a new matrix using the dataIndex
+        Jama.Matrix tempY = new Jama.Matrix(getNumObs(), 1);
+        for (int i = 0; i < getNumObs(); i++) {
+            tempY.set(i, 0, originalDataY.get(dataIndex[i], 0));
+        }
+        return tempY;
     }
 
     public double getXsum(int rowEnd) {

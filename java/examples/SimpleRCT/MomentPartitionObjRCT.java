@@ -51,6 +51,12 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
         numObsRight = container.getRight().getNumObs();
     }
     
+    
+    /**
+     * Note to self: have to enforce that the first column of X is the indicator for treatment/control
+     * @return 
+     */
+    
     @Override
     public int getNumObsLeft() {
         // in the rct context, care about the minimum of count of 0's and 1's in each partition

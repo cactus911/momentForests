@@ -26,6 +26,7 @@ package examples.linear;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
+import utility.pmUtility;
 
 /**
  *
@@ -36,52 +37,48 @@ public class ContainerLinear extends ContainerMoment {
     double mse;
     Jama.Matrix beta;
     Jama.Matrix variance;
+    boolean debugVerbose = false;
 
     public ContainerLinear(DataLens lens) {
         computeBetaAndErrors(lens);
     }
 
     private void computeBetaAndErrors(DataLens lens) {
-        System.out.println("**** OLS Objective Function/MSE Not Implemented Yet ****");
-        System.exit(0);
-        double meanTreatment = 0;
-        double meanControl = 0;
+        Jama.Matrix X = lens.getX();
+        int n = X.getRowDimension();
+        Jama.Matrix olsX = X.getMatrix(0, n - 1, 0, 1); // take the first two columns for OLS ===> this needs to be generalized at some point
+        Jama.Matrix Y = lens.getY();
 
-        int countTreatment = 0;
-        int countControl = 0;
-        for (int i = 0; i < lens.getNumObs(); i++) {
-            if (lens.getX(i, 0) == 0) {
-                meanControl += lens.getY(i);
-                countControl++;
-            } else {
-                meanTreatment += lens.getY(i);
-                countTreatment++;
-            }
-        }
+        // pmUtility.prettyPrint(pmUtility.concatMatrix(Y, olsX));
+//        beta = pmUtility.OLS(olsX, Y, false);
+//        System.out.print("beta OLS: ");
+//        pmUtility.prettyPrintVector(beta);
+//        System.exit(0);
+        /**
+         * Need to implement filter here to separate X and Z for putting in the
+         * OLS that avoids the whole issue of splitting these matrices over and
+         * over
+         */
+        try {
+            beta = pmUtility.OLSsvd(olsX, Y, false);
 
-        meanControl /= countControl;
-        meanTreatment /= countTreatment;
-
-        if (countControl == 0 || countTreatment == 0) {
-            // System.out.println("Setting beta to NULL");
-            // System.out.println("numObs_control: "+countControl+" numObs_treatment: "+countTreatment);
-            beta = null;
-            variance = null;
-            mse = Double.POSITIVE_INFINITY;
-        } else {
-            beta = new Jama.Matrix(1, 1, meanTreatment - meanControl); //The treatment effect is just the difference in means for the simple RCT
-            variance = beta.times(0.0);
-
-            // pmUtility.prettyPrintVector(Y);
+            Jama.Matrix fittedY = olsX.times(beta);
             double sse = 0;
-            for (int i = 0; i < lens.getNumObs(); i++) {
-                if (lens.getX(i, 0) == 0) {
-                    sse += Math.pow(lens.getY(i) - meanControl, 2); //I don't think this will hold if we have more regressors other than intercept and treatment status
-                } else {
-                    sse += Math.pow(lens.getY(i) - meanTreatment, 2);
-                }
+            for (int i = 0; i < fittedY.getRowDimension(); i++) {
+                sse += Math.pow(Y.get(i, 0) - fittedY.get(i, 0), 2);
             }
-            mse = sse; // why am i not dividing this by sample size?
+            mse = sse; // cannot divide by n since we have unbalanced samples in each leaf
+            if (debugVerbose) {
+                System.out.format("sse: %g ", +sse);
+                pmUtility.prettyPrintVector(beta);
+            }
+        } catch (Exception e) {
+            // e.printStackTrace();
+            if (debugVerbose) {
+                System.out.println("Matrix not invertible");
+            }
+            beta = null;
+            mse = Double.POSITIVE_INFINITY;
         }
     }
 

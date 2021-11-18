@@ -60,7 +60,7 @@ public class TreeMoment {
 
     boolean verbose;
 
-    boolean debugOptimization = true;
+    boolean debugOptimization = false;
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
             Boolean[] discreteVector, boolean verbose, double minProportionEachPartition,
@@ -150,6 +150,16 @@ public class TreeMoment {
             echoLn("----------- computing optimal split --------------");
             echoLn(depth + " " + getParentRule(null));
         }
+        
+        /**
+             * Now compute a baseline MSE for comparing the improvement in fit
+             */
+            // System.out.println("Computing baseline SSE");
+            ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
+            setNodeEstimatedBeta(currentNodeMoment.getBeta());
+            setNodeEstimatedVariance(currentNodeMoment.getVariance());
+
+            double baseline = currentNodeMoment.getMSE();
 
 //        System.out.println("in this sub-node:");
 //        if (nodeY.getNumObs() > 10) {
@@ -235,13 +245,13 @@ public class TreeMoment {
                             echoLn("\tFmin search on x_" + indexSplitVariable + " found x = " + optimalX_k + " mse: " + optimalX_MSE_k);
                         }
 
-                        boolean testGridSearch = false;
+                        boolean testGridSearch = true;
                         double h = 1E-30;
                         if (testGridSearch) {
                             for (double x = minX; x <= maxX; x += h + (maxX - minX) / 100.0) {
                                 double f = obj.f_to_minimize(x);
                                 if (debugOptimization) {
-                                    echoLn("\tGrid search x_" + indexSplitVariable + " from " + optimalX_MSE_k + " to " + f + " by moving from " + optimalX_k + " to " + x);
+                                    echoLn("\tGrid search x_" + indexSplitVariable + " ("+momentSpec.getVariableName(indexSplitVariable)+") from " + optimalX_MSE_k + " to " + f + " by moving from " + optimalX_k + " to " + x);
                                 }
                                 if (f < optimalX_MSE_k) {
                                     optimalX_k = x;
@@ -257,8 +267,8 @@ public class TreeMoment {
                             optimalSplitVariableIndex = indexSplitVariable;
                             optimalX_MSE_Left = obj.getLeftMSE();
                             optimalX_MSE_Right = obj.getRightMSE();
-                            numObsLeft = obj.getNumObsLeft();
-                            numObsRight = obj.getNumObsRight();
+                            numObsLeft = obj.getEffectiveNumObsLeft();
+                            numObsRight = obj.getEffectiveNumObsRight();
                             first = false;
                         }
                     } else {
@@ -334,16 +344,7 @@ public class TreeMoment {
                     }
                 }
             }
-
-            /**
-             * Now compute a baseline MSE for comparing the improvement in fit
-             */
-            // System.out.println("Computing baseline SSE");
-            ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
-            setNodeEstimatedBeta(currentNodeMoment.getBeta());
-            setNodeEstimatedVariance(currentNodeMoment.getVariance());
-
-            double baseline = currentNodeMoment.getMSE();
+            
             // System.out.println("Baseline SSE is computed as: " + baseline);
             if (verbose) {
                 echoLn("Number of observations in node: " + lensGrowingTree.getNumObs());
@@ -395,11 +396,16 @@ public class TreeMoment {
             setTerminal(true);
             // System.out.print("before call: ");
             // pmUtility.prettyPrintVector(betaEstimateNode);
-            ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
-            setNodeEstimatedBeta(currentNodeMoment.getBeta());
+            
+            /**
+             * Already do all this above
+             */
+            
+            // ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
+            // setNodeEstimatedBeta(currentNodeMoment.getBeta());
             // System.out.print("after call: ");
             // pmUtility.prettyPrintVector(betaEstimateNode);
-            setNodeEstimatedVariance(currentNodeMoment.getVariance());
+            // setNodeEstimatedVariance(currentNodeMoment.getVariance());
 
             if (verbose) {
                 echoLn(depth + ". Terminal beta: " + pmUtility.stringPrettyPrintVector(betaEstimateNode));
@@ -555,7 +561,7 @@ public class TreeMoment {
                 }
             } else {
                 ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest);
-                Jama.Matrix oldBeta = getNodeEstimatedBeta(); //Not sure I understand why this is here... we don't have a beta estimate until we reach a terminal node?
+                Jama.Matrix oldBeta = getNodeEstimatedBeta(); //Not sure I understand why this is here... we don't have a beta estimate until we reach a terminal node? A. this is what it was the tree building sample, not the honest tree sample
                 setNodeEstimatedBeta(c.getBeta());
                 setNodeEstimatedVariance(c.getVariance());
 
@@ -563,7 +569,7 @@ public class TreeMoment {
                 // echoLn("Did you stop here? 2-6." + " num: " + lensHonest.getNumObs() + " y: " + lensHonest.getY(0) + " x: " + lensHonest.getX(i,0) ); //  + "    " + pmUtility.stringPrettyPrint(c.getBeta()) + "    " + pmUtility.stringPrettyPrint(oldBeta) );
                 // }
                 if (verbose) {
-                    echoLn(pmUtility.stringPrettyPrint(c.getBeta()) + " [ " + lensHonest.getNumObs() + " ] from " + pmUtility.stringPrettyPrint(oldBeta));
+                    echoLn(pmUtility.stringPrettyPrint(c.getBeta().transpose()) + " [ " + lensHonest.getNumObs() + " ] from " + pmUtility.stringPrettyPrint(oldBeta.transpose()));
                 }
             }
         } else {

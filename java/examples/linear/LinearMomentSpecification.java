@@ -24,7 +24,6 @@
 package examples.linear;
 
 // import JSci.maths.statistics.NormalDistribution;
-import examples.SimpleRCT.*;
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
@@ -35,10 +34,11 @@ import core.MomentPartitionObj;
 import core.MomentSpecification;
 import java.io.FileReader;
 import java.io.BufferedReader;
+import java.util.Random;
 import utility.pmUtility;
 
 /**
- * 
+ *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
 public class LinearMomentSpecification implements MomentSpecification {
@@ -51,11 +51,12 @@ public class LinearMomentSpecification implements MomentSpecification {
     int[] variableSearchIndex;
     Boolean[] DiscreteVariables;
     String filename;
+    boolean MONTE_CARLO = true;
 
     public LinearMomentSpecification(int numObs) {
         this.numObs = numObs;
-        int[] vsi = {1, 2}; //Search over X1, X2 
-        Boolean[] wvd = {true, true, true}; //Treatment, X1, X2 all discrete
+        int[] vsi = {2, 3}; //Search over z1, z2 
+        Boolean[] wvd = {false, false, false, false}; // x1, x2, z1, z2 all continuous
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -63,7 +64,7 @@ public class LinearMomentSpecification implements MomentSpecification {
     public LinearMomentSpecification(String filename) {
         this.filename = filename;
     }
-    
+
     @Override
     public Matrix getBalancingVector() {
         return balancingVector;
@@ -84,9 +85,10 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public Double getPredictedY(Matrix xi, Jama.Matrix beta) {
+
         // pmUtility.prettyPrint(xi);
         if (beta != null) {
-            double yhat = xi.get(0, 0) * beta.get(0, 0); // There is a single independent variable "treatment" in the simple RCT
+            double yhat = (xi.times(beta)).get(0, 0); // There is a single independent variable "treatment" in the simple RCT
             return yhat;
         }
         return null;
@@ -99,17 +101,17 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-        return new MomentContinuousSplitObjRCT(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition);
+        return new MomentContinuousSplitObjLinear(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition);
     }
 
     @Override
     public MomentPartitionObj getMomentPartitionObj(DataLens lens, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjRCT(partition, indexSplitVariable, lens);
+        return new MomentPartitionObjLinear(partition, indexSplitVariable, lens);
     }
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens) {
-        return new ContainerRCT(lens);
+        return new ContainerLinear(lens);
     }
 
     @Override
@@ -145,9 +147,15 @@ public class LinearMomentSpecification implements MomentSpecification {
     //Return the true treatment effect for a given observation
     @Override
     public Matrix getBetaTruth(Matrix xi) {
-        Jama.Matrix beta = new Jama.Matrix(1, 1); // Beta is a scalar
+        Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, 0);
-        beta.set(0, 0, xi.get(0, 1) + xi.get(0, 1) * (xi.get(0, 2) - 1)); //Treatment effect is x1+x1*(x2-1)
+        beta.set(1, 0, 1);
+        if (xi.get(0, 2) > 0) { // z1
+            beta.set(0, 0, 1);
+            if (xi.get(0, 3) < 0.5) {
+                beta.set(1, 0, -1);
+            }
+        }
         return beta;
     }
 
@@ -158,71 +166,94 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public void loadData() {
-
-        int numObsFile = 0;
-        try {
-            BufferedReader in = new BufferedReader(new FileReader(filename)); // Inputting data. What is the cd here?
-            String line = in.readLine(); // headers
-            while (line != null) { // Each line is an observation
-                line = in.readLine(); // Read in data line by line
-                if (line != null) {
-                    numObsFile++;
+        if (!MONTE_CARLO) {
+            int numObsFile = 0;
+            try {
+                BufferedReader in = new BufferedReader(new FileReader(filename)); // Inputting data. What is the cd here?
+                String line = in.readLine(); // headers
+                while (line != null) { // Each line is an observation
+                    line = in.readLine(); // Read in data line by line
+                    if (line != null) {
+                        numObsFile++;
+                    }
                 }
+                in.close();
+                numObsFile /= 1;
+                numObs = numObsFile;
+            } catch (Exception e) {
+                e.printStackTrace();
             }
-            in.close();
-            numObsFile /= 1;
-            numObs = numObsFile;
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
 
-        System.out.format("Number of observations = %,d %n", numObsFile);
-        Jama.Matrix dX = new Jama.Matrix(numObsFile, 3); // Used previous loop to create arrays of the correct size, memory saver?
-        Jama.Matrix dY = new Jama.Matrix(numObsFile, 1);
+            System.out.format("Number of observations = %,d %n", numObsFile);
+            Jama.Matrix dX = new Jama.Matrix(numObsFile, 3); // Used previous loop to create arrays of the correct size, memory saver?
+            Jama.Matrix dY = new Jama.Matrix(numObsFile, 1);
 
-        try {
-            BufferedReader in = new BufferedReader(new FileReader(filename));
-            String line = in.readLine(); // headers
-            int i = 0;
-            while (line != null) {
-                line = in.readLine();
-                if (line != null) {
-                    int a = 0;
-                    int b = line.indexOf(",", a); //Returns the index within this string of the first occurrence of "," starting at 0; this is a comma delimited file
-                    // System.out.println(line);
-                    dY.set(i, 0, Double.valueOf(line.substring(a, b))); // outcome, assuming lines are comma delimitted and y value begins at index 0 and ends before the comma
+            try {
+                BufferedReader in = new BufferedReader(new FileReader(filename));
+                String line = in.readLine(); // headers
+                int i = 0;
+                while (line != null) {
+                    line = in.readLine();
+                    if (line != null) {
+                        int a = 0;
+                        int b = line.indexOf(",", a); //Returns the index within this string of the first occurrence of "," starting at 0; this is a comma delimited file
+                        // System.out.println(line);
+                        dY.set(i, 0, Double.valueOf(line.substring(a, b))); // outcome, assuming lines are comma delimitted and y value begins at index 0 and ends before the comma
 
-                    a = b + 1;
-                    b = line.indexOf(",", a); // treatment status is the next outcome in the comma delimited line
-                    dX.set(i, 0, Double.valueOf(line.substring(a, b))); // treatment status
+                        a = b + 1;
+                        b = line.indexOf(",", a); // treatment status is the next outcome in the comma delimited line
+                        dX.set(i, 0, Double.valueOf(line.substring(a, b))); // treatment status
 
-                    a = b + 1;
-                    b = line.indexOf(",", a); // X1 is the next outcome in the comma delimited line
-                    dX.set(i, 1, Double.valueOf(line.substring(a, b))); //X1
+                        a = b + 1;
+                        b = line.indexOf(",", a); // X1 is the next outcome in the comma delimited line
+                        dX.set(i, 1, Double.valueOf(line.substring(a, b))); //X1
 
-                    a = b + 1;
-                    b = line.indexOf(",", a); // X1 is the next outcome in the comma delimited line
-                    dX.set(i, 2, Double.valueOf(line.substring(a))); //X2
+                        a = b + 1;
+                        b = line.indexOf(",", a); // X1 is the next outcome in the comma delimited line
+                        dX.set(i, 2, Double.valueOf(line.substring(a))); //X2
 
-                    i++;
+                        i++;
+                    }
                 }
-            }
-            X = dX;
-            Y = dY;
+                X = dX;
+                Y = dY;
 
-            in.close();
-        } catch (Exception e) {
-            e.printStackTrace();
+                in.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+        } else {
+            X = new Jama.Matrix(numObs, 4);
+            Y = new Jama.Matrix(numObs, 1);
+            Random rng = new Random(321);
+            NormalDistribution normal = new NormalDistribution();
+            for (int i = 0; i < numObs; i++) {
+                X.set(i, 0, normal.inverse(rng.nextDouble()));
+                X.set(i, 1, rng.nextDouble());
+                X.set(i, 2, normal.inverse(rng.nextDouble()));
+                X.set(i, 3, rng.nextDouble());
+                Jama.Matrix beta = getBetaTruth(X.getMatrix(i, i, 0, 3)); // all four matter since it takes Z1 and Z2 to compute beta
+                // pmUtility.prettyPrintVector(beta);
+                Jama.Matrix subX = X.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
+                // pmUtility.prettyPrint(subX);
+                Y.set(i, 0, (subX.times(beta)).get(0, 0) + normal.inverse(rng.nextDouble()));
+            }
         }
     }
 
     @Override
     public String getVariableName(int variableIndex) {
         if (variableIndex == 0) {
-            return "Treatment Indicator";
+            return "X1";
         }
         if (variableIndex == 1) {
-            return "Outcome";
+            return "X2";
+        }
+        if (variableIndex == 2) {
+            return "Z1";
+        }
+        if (variableIndex == 3) {
+            return "Z2";
         }
         return "Unknown";
     }

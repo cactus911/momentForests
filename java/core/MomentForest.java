@@ -73,8 +73,16 @@ public class MomentForest {
 
         for (int i = 0; i < numberTreesInForest; i++) {
             // resample the forestLens, then split it
-            DataLens resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
-            DataLens[] split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+            DataLens resampled;
+            DataLens[] split;
+            if(forestLens.balancingVector==null) {
+                resampled = forestLens.getResampledDataLens(rng.nextLong());
+                split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+            } else {
+                resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
+                split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+            }            
+            
             DataLens lensGrow = split[0];
             DataLens lensHonest = split[1];
 
@@ -83,7 +91,7 @@ public class MomentForest {
                     lensHonest));
         }
 
-        boolean useParallel = false;
+        boolean useParallel = true;
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
@@ -99,6 +107,12 @@ public class MomentForest {
         // System.out.format("Memory usage: %,d bytes %n", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
     }
 
+    /**
+     * Get parameters associated with a given vector of observables x
+     * 
+     * @param x Observable vector
+     * @return 
+     */
     public Jama.Matrix getEstimatedParameters(Jama.Matrix x) {
         Jama.Matrix estimatedParameters = forest.get(0).getEstimatedBeta(x);
         // String s = "[ " + forest.get(0).getEstimatedBeta(x).get(0, 0) + " "; //Assuming beta is 1 by 1?

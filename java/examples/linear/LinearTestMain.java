@@ -27,6 +27,7 @@ import core.DataLens;
 import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeOptions;
+import utility.pmUtility;
 
 /**
  *
@@ -40,10 +41,11 @@ public class LinearTestMain {
      */
     public static void main(String[] args) {
 
-        MomentSpecification mySpecification = new LinearMomentSpecification("data/moment_forests.csv");
+        // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
+        MomentSpecification mySpecification = new LinearMomentSpecification(1000);
         mySpecification.loadData(); // Create data using rng
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 100;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -51,10 +53,10 @@ public class LinearTestMain {
          */
         DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), null);
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
-        boolean verbose = true;
+        boolean verbose = false;
         MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
-        TreeOptions cvOptions = new TreeOptions(0.01, 1, 1E-3, 100); // k = 1
+        TreeOptions cvOptions = new TreeOptions(0.01, 100, 1E-1, 20); // k = 1
         myForest.setTreeOptions(cvOptions);
         /**
          * Grow the moment forest
@@ -71,6 +73,23 @@ public class LinearTestMain {
                 int numberTreesInBootForest = 10;
                 BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
          */
+        Jama.Matrix testX = new Jama.Matrix(4, 4);
+        testX.set(0, 2, -1);
+        testX.set(0, 3, -1);
+
+        testX.set(1, 2, 1);
+        testX.set(1, 3, -1);
+
+        testX.set(2, 2, -1);
+        testX.set(2, 3, 1);
+
+        testX.set(3, 2, 1);
+        testX.set(3, 3, 1);
+
+        for (int j = 0; j < 4; j++) {
+            Jama.Matrix b = myForest.getEstimatedParameters(testX.getMatrix(j, j, 0, 3));
+            System.out.println("z1: "+testX.get(j, 2) + " z2: " + testX.get(j, 3) + " beta: " + pmUtility.stringPrettyPrintVector(b));
+        }
     }
 
 }

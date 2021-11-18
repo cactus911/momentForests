@@ -49,11 +49,11 @@ public abstract class MomentContinuousSplitObj implements Fmin_methods {
         return leftMSE;
     }
 
-    public int getNumObsLeft() {
+    public int getEffectiveNumObsLeft() {
         return numObsLeft;
     }
 
-    public int getNumObsRight() {
+    public int getEffectiveNumObsRight() {
         return numObsRight;
     }
 
