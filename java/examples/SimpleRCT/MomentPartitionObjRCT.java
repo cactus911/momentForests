@@ -58,7 +58,7 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
      */
     
     @Override
-    public int getNumObsLeft() {
+    public int getEffectiveNumObsLeft() {
         // in the rct context, care about the minimum of count of 0's and 1's in each partition
         int count = 0;
         for (int i = 0; i < numObsLeft; i++) {
@@ -70,7 +70,7 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
     }
 
     @Override
-    public int getNumObsRight() {
+    public int getEffectiveNumObsRight() {
         int count = 0;
         for (int i = 0; i < numObsRight; i++) {
             if (container.getRight().getX(i, 0) == 0) {

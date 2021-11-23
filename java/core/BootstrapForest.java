@@ -43,7 +43,7 @@ public class BootstrapForest {
 
     public BootstrapForest(MomentSpecification spec, int numberBootstraps, int numberTreesInForest, long randomSeed, TreeOptions options) {
         // DataLens originalLens = new DataLens(spec.getX(), spec.getY(), pmUtility.getColumn(spec.getX(), 0));
-        DataLens originalLens = new DataLens(spec.getX(), spec.getY(), spec.getBalancingVector());
+        DataLens originalLens = new DataLens(spec.getX(), spec.getY(), spec.getZ(), spec.getBalancingVector());
 
         Random rng = new Random(randomSeed);
         for (int i = 0; i < numberBootstraps; i++) {
@@ -62,9 +62,9 @@ public class BootstrapForest {
     }
 
     public Jama.Matrix computeStandardErrors(Matrix xi) {
-        Jama.Matrix results = new Jama.Matrix(forestList.size(), forestList.get(0).getEstimatedParameters(xi).getRowDimension());
+        Jama.Matrix results = new Jama.Matrix(forestList.size(), forestList.get(0).getEstimatedParameterForest(xi).getRowDimension());
         for (int r = 0; r < forestList.size(); r++) {
-            Jama.Matrix estimatedParameter = forestList.get(r).getEstimatedParameters(xi);
+            Jama.Matrix estimatedParameter = forestList.get(r).getEstimatedParameterForest(xi);
             for (int i = 0; i < estimatedParameter.getRowDimension(); i++) {
                 results.set(r, i, estimatedParameter.get(i, 0));
             }

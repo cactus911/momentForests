@@ -45,24 +45,25 @@ public class ContainerLinear extends ContainerMoment {
 
     private void computeBetaAndErrors(DataLens lens) {
         Jama.Matrix X = lens.getX();
-        int n = X.getRowDimension();
-        Jama.Matrix olsX = X.getMatrix(0, n - 1, 0, 1); // take the first two columns for OLS ===> this needs to be generalized at some point
         Jama.Matrix Y = lens.getY();
 
-        // pmUtility.prettyPrint(pmUtility.concatMatrix(Y, olsX));
-//        beta = pmUtility.OLS(olsX, Y, false);
+//        pmUtility.prettyPrint(pmUtility.concatMatrix(Y, X));
+//        beta = pmUtility.OLS(X, Y, false);
 //        System.out.print("beta OLS: ");
 //        pmUtility.prettyPrintVector(beta);
-//        System.exit(0);
+        // System.exit(0);
+        
         /**
          * Need to implement filter here to separate X and Z for putting in the
          * OLS that avoids the whole issue of splitting these matrices over and
          * over
+         *
+         * Done that now. Just have to get it working properly again.
          */
         try {
-            beta = pmUtility.OLSsvd(olsX, Y, false);
+            beta = pmUtility.OLSsvd(X, Y, false);
 
-            Jama.Matrix fittedY = olsX.times(beta);
+            Jama.Matrix fittedY = X.times(beta);
             double sse = 0;
             for (int i = 0; i < fittedY.getRowDimension(); i++) {
                 sse += Math.pow(Y.get(i, 0) - fittedY.get(i, 0), 2);

@@ -85,7 +85,11 @@ public class HayleyTestMain {
                 Jama.Matrix rctY = rctY1.getMatrix(Data_Index, Data_Index + n - 1, 0, 0);
                 Jama.Matrix balancing = balancing1.getMatrix(Data_Index, Data_Index + n - 1, 0, 0);
                 
-                DataLens forestLens = new DataLens(rctX, rctY, balancing); /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
+                Jama.Matrix rctZ = null;
+                System.out.println("Need to implement Z for this test case.");
+                System.exit(0);
+                
+                DataLens forestLens = new DataLens(rctX, rctY, rctZ, balancing); /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
                 boolean verbose = true;
                 MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
@@ -138,7 +142,7 @@ public class HayleyTestMain {
                 double MSPE = 0.0;       
                 for (int i = 0; i < fitX.getRowDimension(); i++) {
                     Jama.Matrix xi = fitX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension()-1);
-                    Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameters(xi);
+                    Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameterForest(xi);
                     //Jama.Matrix standardErrors = estimatedTreatmentEffects.times(0);
                     
                     /* Don't need standard errors for Monte Carlo

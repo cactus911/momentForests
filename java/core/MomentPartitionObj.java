@@ -51,11 +51,11 @@ public abstract class MomentPartitionObj {
         return leftMSE;
     }
 
-    public int getNumObsLeft() {
+    public int getEffectiveNumObsLeft() {
         return numObsLeft;
     }
 
-    public int getNumObsRight() {
+    public int getEffectiveNumObsRight() {
         return numObsRight;
     }
 
@@ -66,7 +66,7 @@ public abstract class MomentPartitionObj {
         ArrayList<Integer> leftList = partition.getLeft();
 
         for (int i = 0; i < lens.getNumObs(); i++) {
-            if (leftList.contains((int) lens.getX(i, indexSplitVariable))) { // If this obs value of the splitting variable is in the left partition
+            if (leftList.contains((int) lens.getZ(i, indexSplitVariable))) { // If this obs value of the splitting variable is in the left partition
                 countLeft++;
             } else {
                 countRight++;
@@ -83,7 +83,7 @@ public abstract class MomentPartitionObj {
         countRight = 0;
         countLeft = 0;
         for (int i = 0; i < lens.getNumObs(); i++) {
-            if (leftList.contains((int) lens.getX(i, indexSplitVariable))) {
+            if (leftList.contains((int) lens.getZ(i, indexSplitVariable))) {
                 observationIndicesLeftSplit[countLeft] = i;
                 countLeft++;
             } else {

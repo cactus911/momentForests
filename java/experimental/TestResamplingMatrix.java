@@ -50,6 +50,7 @@ public class TestResamplingMatrix {
          */
         int numObs = 10;
         Jama.Matrix baselineX = new Jama.Matrix(numObs, 4);
+        Jama.Matrix baselineZ = new Jama.Matrix(numObs, 4);
         Jama.Matrix baselineY = new Jama.Matrix(numObs, 1);
         Jama.Matrix balancingVector = new Jama.Matrix(numObs, 1);
         for (int i = 0; i < baselineX.getRowDimension(); i++) {
@@ -59,24 +60,27 @@ public class TestResamplingMatrix {
             baselineY.set(i, 0, rng.nextDouble());
             balancingVector.set(i, 0, rng.nextInt(2));
         }
+        
+        System.out.println("TestResamplingMatrix: Need to implement Z here");
+        System.exit(0);
 
         boolean testSplit = true;
         if(testSplit) {
-            testSplit(new DataLens(baselineX, baselineY, balancingVector));
+            testSplit(new DataLens(baselineX, baselineY, baselineZ, balancingVector));
         }
         
         boolean testMemory = false;
         if (testMemory) {
-            testMemory(baselineX, baselineY, balancingVector);
+            testMemory(baselineX, baselineY, baselineZ, balancingVector);
         }
 
         boolean testResampling = true;
         if (testResampling) {
-            testResampling(baselineX, baselineY, balancingVector);
+            testResampling(baselineX, baselineY, baselineZ, balancingVector);
         }
     }
 
-    private void testResampling(Jama.Matrix baselineX, Jama.Matrix baselineY, Jama.Matrix balancingVector) {
+    private void testResampling(Jama.Matrix baselineX, Jama.Matrix baselineY, Jama.Matrix baselineZ, Jama.Matrix balancingVector) {
         /**
          * Show that resampling works
          */
@@ -85,7 +89,7 @@ public class TestResamplingMatrix {
         concat = pmUtility.concatMatrix(concat, balancingVector);
         pmUtility.prettyPrint(concat.getMatrix(0, 9, 0, 5));
         System.out.println("Original in DataLens");
-        DataLens lens = new DataLens(baselineX, baselineY, balancingVector);
+        DataLens lens = new DataLens(baselineX, baselineY, baselineZ, balancingVector);
         System.out.println(lens.getSubsetData(0, 9));
         System.out.println("Resampled");
         DataLens resampledLens = lens.getResampledDataLensWithBalance(rng.nextLong());
@@ -96,12 +100,12 @@ public class TestResamplingMatrix {
         System.exit(0);
     }
 
-    private void testMemory(Jama.Matrix baselineX, Jama.Matrix baselineY, Jama.Matrix balancingVector) {
+    private void testMemory(Jama.Matrix baselineX, Jama.Matrix baselineY, Jama.Matrix baselineZ, Jama.Matrix balancingVector) {
         /**
          * Compute memory usage using resampled matrices
          */
         System.out.println("ResampledMatrix");
-        DataLens lens = new DataLens(baselineX, baselineY, balancingVector);
+        DataLens lens = new DataLens(baselineX, baselineY, baselineZ, balancingVector);
         
         for (int numResampledMatrices = 100; numResampledMatrices <= 100 * 100; numResampledMatrices *= 10) {
             ArrayList<DataLens> resampledList = new ArrayList<>();

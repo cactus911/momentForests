@@ -62,7 +62,7 @@ public class SplitContainer {
         int countRight = 0;
 
         for (int i = 0; i < lens.getNumObs(); i++) {
-            if (lens.getX(i, indexSplitVariable) < splitPoint) {
+            if (lens.getZ(i, indexSplitVariable) < splitPoint) {
                 countLeft++;
             } else {
                 countRight++;
@@ -75,8 +75,8 @@ public class SplitContainer {
         countRight = 0;
         countLeft = 0;
         for (int i = 0; i < lens.getNumObs(); i++) {
-            // System.out.print(lens.getX(i, indexSplitVariable)+" -> ");
-            if (lens.getX(i, indexSplitVariable) < splitPoint) {
+            // System.out.print(lens.getZ(i, indexSplitVariable)+" -> ");
+            if (lens.getZ(i, indexSplitVariable) < splitPoint) {
                 indicesObservationsForLeftSplit[countLeft] = lens.dataIndex[i];
                 countLeft++;
                 // System.out.println("left");

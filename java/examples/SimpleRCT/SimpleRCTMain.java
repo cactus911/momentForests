@@ -44,7 +44,7 @@ public class SimpleRCTMain {
     double minMSEImprovement;
     int maxDepth;
             
-    public SimpleRCTMain(Jama.Matrix X, Jama.Matrix Y, int numtrees, Jama.Matrix CVparameters1, Jama.Matrix CVparameters2, boolean cv, int[] variableSearchIndex, Boolean[] DiscreteVariables, int numbootstrap) {
+    public SimpleRCTMain(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, int numtrees, Jama.Matrix CVparameters1, Jama.Matrix CVparameters2, boolean cv, int[] variableSearchIndex, Boolean[] DiscreteVariables, int numbootstrap) {
             
 
         /**
@@ -60,7 +60,7 @@ public class SimpleRCTMain {
          */
             
             // Write down an option here
-            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(X, Y, numtrees, variableSearchIndex, DiscreteVariables);
+            MomentSpecification mySpecification = new SimpleRCTMomentSpecification(X, Y, Z, numtrees, variableSearchIndex, DiscreteVariables);
             // mySpecification.loadData();
 
             // int numberTreesInForest = mySpecification.numberoftrees();
@@ -69,7 +69,9 @@ public class SimpleRCTMain {
             /**
              * Initialize the moment forest
              */
-            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), pmUtility.getColumn(mySpecification.getX(), 0));
+            System.out.println("Need to fix up RCT X's and Z's here");
+            System.exit(0);
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), pmUtility.getColumn(mySpecification.getX(), 0));
             boolean verbose = true;
             MomentForest myForest = new MomentForest(mySpecification, numtrees, 314, forestLens, verbose, new TreeOptions());
             
@@ -115,7 +117,7 @@ public class SimpleRCTMain {
             
             for (int i = 0; i < allX.getRowDimension(); i++) {
                 Jama.Matrix xi = allX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);  
-                Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameters(xi);
+                Jama.Matrix estimatedTreatmentEffects = myForest.getEstimatedParameterForest(xi);
                 Jama.Matrix standardErrors = estimatedTreatmentEffects.times(0);
 
                 boolean useBoot = true;

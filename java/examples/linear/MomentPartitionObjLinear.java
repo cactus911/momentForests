@@ -51,26 +51,13 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
     }
     
     @Override
-    public int getNumObsLeft() {
-        // in the rct context, care about the minimum of count of 0's and 1's in each partition
-        int count = 0;
-        for (int i = 0; i < numObsLeft; i++) {
-            if (container.getLeft().getX(i, 0) == 0) {
-                count++;
-            }
-        }
-        return Math.min(count, numObsLeft - count);
+    public int getEffectiveNumObsLeft() {
+        return numObsLeft;
     }
 
     @Override
-    public int getNumObsRight() {
-        int count = 0;
-        for (int i = 0; i < numObsRight; i++) {
-            if (container.getRight().getX(i, 0) == 0) {
-                count++;
-            }
-        }
-        return Math.min(count, numObsRight - count);
+    public int getEffectiveNumObsRight() {
+        return numObsRight;
     }
     
     @Override

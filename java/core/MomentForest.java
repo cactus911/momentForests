@@ -108,16 +108,16 @@ public class MomentForest {
     }
 
     /**
-     * Get parameters associated with a given vector of observables x
+     * Get parameters associated with a given vector of observables zi
      * 
-     * @param x Observable vector
+     * @param zi Observable vector
      * @return 
      */
-    public Jama.Matrix getEstimatedParameters(Jama.Matrix x) {
-        Jama.Matrix estimatedParameters = forest.get(0).getEstimatedBeta(x);
+    public Jama.Matrix getEstimatedParameterForest(Jama.Matrix zi) {
+        Jama.Matrix estimatedParameters = forest.get(0).getEstimatedBeta(zi);
         // String s = "[ " + forest.get(0).getEstimatedBeta(x).get(0, 0) + " "; //Assuming beta is 1 by 1?
         for (int i = 1; i < forest.size(); i++) {
-            estimatedParameters = estimatedParameters.plus(forest.get(i).getEstimatedBeta(x));
+            estimatedParameters = estimatedParameters.plus(forest.get(i).getEstimatedBeta(zi));
             // s = s.concat(forest.get(i).getEstimatedBeta(x).get(0, 0) + " ");
         }
         // s = s.concat("]");
@@ -170,8 +170,9 @@ public class MomentForest {
                 int counter = 0;
                 int nullCounterMSPE = 0;
                 for (int i = 0; i < predictLens.getNumObs(); i++) {
-                    Jama.Matrix xi = predictLens.getRowAsJamaMatrix(i);
-                    Double predictedY = spec.getPredictedY(xi, momentForest.getEstimatedParameters(xi));
+                    Jama.Matrix xi = predictLens.getRowXAsJamaMatrix(i);
+                    Jama.Matrix zi = predictLens.getRowZAsJamaMatrix(i);
+                    Double predictedY = spec.getPredictedY(xi, momentForest.getEstimatedParameterForest(zi));
                     if (predictedY != null) {
                         MSPE += Math.pow(predictLens.getY(i) - predictedY, 2);
                         counter++;
@@ -185,8 +186,9 @@ public class MomentForest {
                  * data)
                  */
                 for (int i = 0; i < growLens.getNumObs(); i++) {
-                    Jama.Matrix xi = growLens.getRowAsJamaMatrix(i);
-                    Double predictedY = spec.getPredictedY(xi, momentForestSwitch.getEstimatedParameters(xi));
+                    Jama.Matrix xi = growLens.getRowXAsJamaMatrix(i);
+                    Jama.Matrix zi = growLens.getRowZAsJamaMatrix(i);
+                    Double predictedY = spec.getPredictedY(xi, momentForestSwitch.getEstimatedParameterForest(zi));
                     if (predictedY != null) {
                         MSPE += Math.pow(growLens.getY(i) - predictedY, 2);
                         counter++;

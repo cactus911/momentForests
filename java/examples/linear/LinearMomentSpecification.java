@@ -45,18 +45,19 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     Jama.Matrix X;
     Jama.Matrix Y;
+    Jama.Matrix Z;
     Jama.Matrix balancingVector; // is treatment status in the RCT setting
     int numObs;
     int numtrees;
-    int[] variableSearchIndex;
-    Boolean[] DiscreteVariables;
+    int[] variableSearchIndex; // this should be restricted to only Z
+    Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean MONTE_CARLO = true;
 
     public LinearMomentSpecification(int numObs) {
         this.numObs = numObs;
-        int[] vsi = {2, 3}; //Search over z1, z2 
-        Boolean[] wvd = {false, false, false, false}; // x1, x2, z1, z2 all continuous
+        int[] vsi = {0, 1}; //Search over z1, z2 
+        Boolean[] wvd = {false, false}; // z1, z2 all continuous
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -74,9 +75,10 @@ public class LinearMomentSpecification implements MomentSpecification {
         // this.numObs = numObs;
     }
 
-    public LinearMomentSpecification(Jama.Matrix X, Jama.Matrix Y, int numtrees, int[] variableSearchIndex, Boolean[] DiscreteVariables) {
+    public LinearMomentSpecification(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, int numtrees, int[] variableSearchIndex, Boolean[] DiscreteVariables) {
         this.X = X;
         this.Y = Y;
+        this.Z = Z;
         this.numtrees = numtrees;
         this.variableSearchIndex = variableSearchIndex;
         this.DiscreteVariables = DiscreteVariables;
@@ -85,7 +87,6 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public Double getPredictedY(Matrix xi, Jama.Matrix beta) {
-
         // pmUtility.prettyPrint(xi);
         if (beta != null) {
             double yhat = (xi.times(beta)).get(0, 0); // There is a single independent variable "treatment" in the simple RCT
@@ -125,13 +126,8 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public Matrix getXoriginal() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Matrix cvparameters() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public Matrix getZ() {
+        return Z;
     }
 
     @Override
@@ -146,13 +142,13 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     //Return the true treatment effect for a given observation
     @Override
-    public Matrix getBetaTruth(Matrix xi) {
+    public Matrix getBetaTruth(Matrix zi) {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
-        beta.set(0, 0, 0);
+        beta.set(0, 0, -1);
         beta.set(1, 0, 1);
-        if (xi.get(0, 2) > 0) { // z1
+        if (zi.get(0, 0) > 0) { // z1
             beta.set(0, 0, 1);
-            if (xi.get(0, 3) < 0.5) {
+            if (zi.get(0, 1) < 0.5) {
                 beta.set(1, 0, -1);
             }
         }
@@ -223,36 +219,36 @@ public class LinearMomentSpecification implements MomentSpecification {
                 e.printStackTrace();
             }
         } else {
-            X = new Jama.Matrix(numObs, 4);
+            X = new Jama.Matrix(numObs, 2);
+            Z = new Jama.Matrix(numObs, 2);
             Y = new Jama.Matrix(numObs, 1);
             Random rng = new Random(321);
             NormalDistribution normal = new NormalDistribution();
             for (int i = 0; i < numObs; i++) {
                 X.set(i, 0, normal.inverse(rng.nextDouble()));
                 X.set(i, 1, rng.nextDouble());
-                X.set(i, 2, normal.inverse(rng.nextDouble()));
-                X.set(i, 3, rng.nextDouble());
-                Jama.Matrix beta = getBetaTruth(X.getMatrix(i, i, 0, 3)); // all four matter since it takes Z1 and Z2 to compute beta
-                // pmUtility.prettyPrintVector(beta);
+                
+                Z.set(i, 0, normal.inverse(rng.nextDouble()));
+                Z.set(i, 1, rng.nextDouble());
+                // Z.set(i, 0, X.get(i, 0));
+                // Z.set(i, 1, X.get(i, 1));
+                Jama.Matrix beta = getBetaTruth(Z.getMatrix(i, i, 0, 1)); // Z1 and Z2 to compute beta
+//                pmUtility.prettyPrintVector(beta);
                 Jama.Matrix subX = X.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
                 // pmUtility.prettyPrint(subX);
-                Y.set(i, 0, (subX.times(beta)).get(0, 0) + normal.inverse(rng.nextDouble()));
+                Y.set(i, 0, (subX.times(beta)).get(0, 0) + 0.0* normal.inverse(rng.nextDouble()));
             }
         }
+//        pmUtility.prettyPrint(pmUtility.concatMatrix(Y,pmUtility.concatMatrix(X,Z)));
+//        System.exit(0);
     }
 
     @Override
     public String getVariableName(int variableIndex) {
         if (variableIndex == 0) {
-            return "X1";
-        }
-        if (variableIndex == 1) {
-            return "X2";
-        }
-        if (variableIndex == 2) {
             return "Z1";
         }
-        if (variableIndex == 3) {
+        if (variableIndex == 1) {
             return "Z2";
         }
         return "Unknown";

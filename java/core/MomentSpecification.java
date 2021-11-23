@@ -30,10 +30,10 @@ import java.util.Random;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-    public interface MomentSpecification {
+public interface MomentSpecification {
 
     public Double getPredictedY(Jama.Matrix xi, Jama.Matrix beta);
-    
+
     public int[] getVariableIndicesToSearchOver();
 
     public MomentContinuousSplitObj getFminObjective(DataLens lens, int k, double minProportionEachPartition, int minCountEachPartition);
@@ -42,33 +42,35 @@ import java.util.Random;
 
     public ContainerMoment computeOptimalBeta(DataLens lens);
 
-   //  public void generateData(int numObs, Random rng, boolean addNoise);
+    //  public void generateData(int numObs, Random rng, boolean addNoise);
+    public Jama.Matrix getY();
 
-   public Jama.Matrix getY();
+    public Jama.Matrix getX();
 
-   public Jama.Matrix getX();
-   
-   public Jama.Matrix getBalancingVector();
-   
-   public Jama.Matrix getXoriginal();
-   
-   public Jama.Matrix cvparameters();
-   
-   public int numberoftrees();
+    public Jama.Matrix getZ();
+
+    public Jama.Matrix getBalancingVector();
+
+    public int numberoftrees();
 
     public Boolean[] getDiscreteVector();
 
-    public Matrix getBetaTruth(Matrix xi);
-    
+    /**
+     * Return the true \beta at a given vector z_i
+     * 
+     * @param zi Observable vector that determines the parameters.
+     * @return 
+     */
+    public Matrix getBetaTruth(Matrix zi);
+
     public Jama.Matrix getOutOfSampleX();
-    
+
     public void loadData();
-    
+
     public String getVariableName(int variableIndex);
-    
+
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex);
 
     public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance);
-    
 
 }

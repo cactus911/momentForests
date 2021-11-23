@@ -44,8 +44,9 @@ import utility.pmUtility;
  */
 public class SimpleRCTMomentSpecification implements MomentSpecification {
 
-    Jama.Matrix X;
+    Jama.Matrix X; // this is probably going to be null here since we aren't using X's in the moment function for RCTs
     Jama.Matrix Y;
+    Jama.Matrix Z; 
     Jama.Matrix balancingVector; // is treatment status in the RCT setting
     int numObs;
     int numtrees;
@@ -54,8 +55,8 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
 
     public SimpleRCTMomentSpecification(int numObs) {
         this.numObs = numObs;
-        int[] vsi = {1, 2}; //Search over X1, X2 
-        Boolean[] wvd = {true, true, true}; //Treatment, X1, X2 all discrete
+        int[] vsi = {0, 1}; //Search over X1, X2 
+        Boolean[] wvd = {true, true}; //Treatment, X1, X2 all discrete
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -69,9 +70,10 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
         // this.numObs = numObs;
     }
 
-    public SimpleRCTMomentSpecification(Jama.Matrix X, Jama.Matrix Y, int numtrees, int[] variableSearchIndex, Boolean[] DiscreteVariables) {
+    public SimpleRCTMomentSpecification(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, int numtrees, int[] variableSearchIndex, Boolean[] DiscreteVariables) {
         this.X = X;
         this.Y = Y;
+        this.Z = Z;
         this.numtrees = numtrees;
         this.variableSearchIndex = variableSearchIndex;
         this.DiscreteVariables = DiscreteVariables;
@@ -119,14 +121,9 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public Matrix getXoriginal() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
-
-    @Override
-    public Matrix cvparameters() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+    public Matrix getZ() {
+        return Z;
+    }    
 
     @Override
     public int numberoftrees() {
