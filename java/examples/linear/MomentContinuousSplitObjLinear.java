@@ -69,8 +69,8 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
         ContainerLinear leftRCT = new ContainerLinear(container.getLeft()); //This object will compute the beta and MSE for the left split
         ContainerLinear rightRCT = new ContainerLinear(container.getRight());
 
-        leftMSE = leftRCT.getMSE();
-        rightMSE = rightRCT.getMSE();
+        leftMSE = leftRCT.getSSE();
+        rightMSE = rightRCT.getSSE();
 
         if(debugVerbose) {
             System.out.println("MSE = "+(leftMSE+rightMSE)+" n_Left: "+numObsLeft+" n_Right: "+numObsRight+" MSE_Left: "+leftMSE+" MSE_Right: "+rightMSE+" minCount: "+minCount);

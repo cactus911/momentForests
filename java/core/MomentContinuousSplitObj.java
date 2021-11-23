@@ -41,11 +41,11 @@ public abstract class MomentContinuousSplitObj implements Fmin_methods {
 
     public abstract double getMSE();
 
-    public double getRightMSE() {
+    public double getRightSSE() {
         return rightMSE;
     }
 
-    public double getLeftMSE() {
+    public double getLeftSSE() {
         return leftMSE;
     }
 

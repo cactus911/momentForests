@@ -89,7 +89,7 @@ public class ContainerRCT extends ContainerMoment {
     }
 
     @Override
-    public double getMSE() {
+    public double getSSE() {
         return mse;
     }
 

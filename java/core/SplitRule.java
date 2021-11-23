@@ -36,6 +36,7 @@ public class SplitRule {
     private final int optimalSplitVariableIndex;
     private final double splitPoint;
     private final IntegerPartition partition;
+    private final MomentSpecification spec;
 
     /**
      *
@@ -46,11 +47,12 @@ public class SplitRule {
      * @param optimalZ Point of Z to split if continuous
      * @param partition Partition of Z to split if discrete
      */
-    SplitRule(boolean splitOnDiscreteVariable, int optimalSplitVariableIndex, double optimalZ, IntegerPartition partition) {
+    SplitRule(boolean splitOnDiscreteVariable, int optimalSplitVariableIndex, double optimalZ, IntegerPartition partition, MomentSpecification spec) {
         this.splitOnDiscreteVariable = splitOnDiscreteVariable;
         this.optimalSplitVariableIndex = optimalSplitVariableIndex;
         this.splitPoint = optimalZ;
         this.partition = partition;
+        this.spec = spec;
     }
 
     @Override
@@ -58,7 +60,7 @@ public class SplitRule {
         if (splitOnDiscreteVariable) {
             return partition.toString();
         }
-        return "z" + optimalSplitVariableIndex + " < " + splitPoint;
+        return spec.getVariableName(optimalSplitVariableIndex) + " < " + splitPoint;
     }
 
     public int getOptimalSplitVariableIndex() {

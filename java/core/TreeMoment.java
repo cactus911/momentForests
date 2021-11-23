@@ -153,14 +153,12 @@ public class TreeMoment {
         }
 
         /**
-         * Now compute a baseline MSE for comparing the improvement in fit
+         * Now compute a baseline SSE for comparing the improvement in fit
          */
         // System.out.println("Computing baseline SSE");
         ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
         setNodeEstimatedVariance(currentNodeMoment.getVariance());
-
-        double baseline = currentNodeMoment.getMSE();
 
 //        System.out.println("in this sub-node:");
 //        if (nodeY.getNumObs() > 10) {
@@ -173,9 +171,9 @@ public class TreeMoment {
          */
         if (depth < maxDepth) {
             double optimalZ = 0;
-            double optimalZ_MSE = 0;
-            double optimalZ_MSE_Left = 0;
-            double optimalZ_MSE_Right = 0;
+            double optimalZ_SSE = 0;
+            double optimalZ_SSE_Left = 0;
+            double optimalZ_SSE_Right = 0;
             int numObsLeft = 0;
             int numObsRight = 0;
             int optimalSplitVariableIndex = 0;
@@ -244,54 +242,86 @@ public class TreeMoment {
                         double maxZ = lensGrowingTree.getMaximumValue(indexSplitVariable);
                         // System.out.println("TreeMoment.java:224 -> min x_1: "+minX+" max x_1: "+maxX);
                         double optimalZ_k;
-                        double optimalZ_MSE_k;
+                        double optimalZ_SSE_k;
 
                         boolean useFmin = true;
                         if (useFmin) {
-                            optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-100); // This is choosing a split point such that the summed MSEs of each leaf are minimized
-                            optimalZ_MSE_k = obj.f_to_minimize(optimalZ_k); //Now return the summed MSEs of the optimal split point
+                            optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
+                            optimalZ_SSE_k = obj.f_to_minimize(optimalZ_k); //Now return the summed SSEs of the optimal split point
                         } else {
                             optimalZ_k = Double.POSITIVE_INFINITY;
-                            optimalZ_MSE_k = Double.POSITIVE_INFINITY;
+                            optimalZ_SSE_k = Double.POSITIVE_INFINITY;
                         }
 
                         if (debugOptimization) {
-                            echoLn("\tFmin search on z_" + indexSplitVariable + " found x = " + optimalZ_k + " mse: " + optimalZ_MSE_k);
+                            echoLn("\tFmin search on z_" + indexSplitVariable + " found x = " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
                         }
 
                         boolean testGridSearch = true;
                         double h = 1E-30;
                         if (testGridSearch) {
+                            double leftZ = minZ;
+                            double rightZ = maxZ;
 
-                            double increment = h + (maxZ - minZ) / 100.0;
-                            
+                            double increment = h + (rightZ - leftZ) / 100.0;
+
                             if (debugOptimization) {
-                                echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " from " + minZ + " to " + maxZ);
+                                echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " from " + leftZ + " to " + rightZ);
                             }
 
-                            for (double z = minZ; z <= maxZ; z += increment) {
+                            for (double z = leftZ; z <= rightZ; z += increment) {
                                 double f = obj.f_to_minimize(z);
                                 if (debugOptimization) {
-                                    echoLn("\tGrid search x_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_MSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
+                                    echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
                                 }
-                                if (f < optimalZ_MSE_k) {
+                                if (f < optimalZ_SSE_k) {
                                     optimalZ_k = z;
-                                    optimalZ_MSE_k = f;
+                                    optimalZ_SSE_k = f;
+                                    // System.out.println("SSE left: "+obj.leftMSE+" SSE right: "+obj.rightMSE);
                                 }
                             }
                             if (debugOptimization) {
-                                echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " best " + optimalZ_k + " MSE: " + optimalZ_MSE_k);
+                                echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " best " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
+                            }
+
+                            /**
+                             * Try a second grid search within the last interval
+                             * to really improve precision of our estimates
+                             */
+                            leftZ = optimalZ_k - increment;
+                            rightZ = optimalZ_k + increment;
+                            increment = h + (rightZ - leftZ) / 100.0;
+
+                            if (debugOptimization) {
+                                echoLn("\tSecond Finer Grid Search " + momentSpec.getVariableName(indexSplitVariable) + " from " + leftZ + " to " + rightZ);
+                            }
+
+                            for (double z = leftZ; z <= rightZ; z += increment) {
+                                double f = obj.f_to_minimize(z);
+                                if (debugOptimization) {
+                                    echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
+                                }
+                                if (f < optimalZ_SSE_k) {
+                                    optimalZ_k = z;
+                                    optimalZ_SSE_k = f;
+                                    // System.out.println("SSE left: "+obj.leftMSE+" SSE right: "+obj.rightMSE);
+                                }
+                            }
+                            if (debugOptimization) {
+                                echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " best " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
                             }
 
                         }
 
-                        //If the summed MSE for this variable is smaller than for any other previous variable, or if its the first variable being tested, set it to be the optimal splitting variable
-                        if (optimalZ_MSE_k < optimalZ_MSE || first) {
+                        //If the summed SSE for this variable is smaller than for any other previous variable, or if its the first variable being tested, set it to be the optimal splitting variable
+                        if (optimalZ_SSE_k < optimalZ_SSE || first) {
+                            obj.f_to_minimize(optimalZ_k);
                             optimalZ = optimalZ_k;
-                            optimalZ_MSE = optimalZ_MSE_k;
+                            optimalZ_SSE = optimalZ_SSE_k;
                             optimalSplitVariableIndex = indexSplitVariable;
-                            optimalZ_MSE_Left = obj.getLeftMSE();
-                            optimalZ_MSE_Right = obj.getRightMSE();
+                            optimalZ_SSE_Left = obj.getLeftSSE();
+                            optimalZ_SSE_Right = obj.getRightSSE();
+                            // System.out.println("SSE left: "+optimalZ_SSE_Left+" SSE right: "+optimalZ_SSE_Right);
                             numObsLeft = obj.getEffectiveNumObsLeft();
                             numObsRight = obj.getEffectiveNumObsRight();
                             first = false;
@@ -307,81 +337,83 @@ public class TreeMoment {
                          */
                         if (discreteList.size() > 1) {
                             int optimalPartitionIndex = 0;
-                            double bestPartitionMSE = 0;
-                            double optimalZ_MSE_Right_Partition = 0;
-                            double optimalZ_MSE_Left_Partition = 0;
+                            double bestPartitionSSE = 0;
+                            double optimalZ_SSE_Right_Partition = 0;
+                            double optimalZ_SSE_Left_Partition = 0;
                             int numObsLeft_Partition = 0;
                             int numObsRight_Partition = 0;
                             for (int i = 0; i < partitions.size(); i++) {
                                 MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, indexSplitVariable, partitions.get(i));
 
-                                double partitionMSE = 0;
+                                double partitionSSE = 0;
                                 if (obj.getEffectiveNumObsLeft() < minCountEachPartition || obj.getEffectiveNumObsRight() < minCountEachPartition) {
                                     echoLn("IS IT IN? : obj.getNumObsLeft(): " + obj.getEffectiveNumObsLeft() + " minCountEachPartition " + minCountEachPartition + " right obs: " + obj.getEffectiveNumObsRight() + " indexSplitVariable " + indexSplitVariable);
                                     if (debugOptimization) {
                                         //   echoLn("\t\tMin K violated: rejecting partition for left obs: " + obj.getNumObsLeft() + " right obs: " + obj.getNumObsRight());
                                     }
-                                    partitionMSE = Double.POSITIVE_INFINITY;
+                                    partitionSSE = Double.POSITIVE_INFINITY;
                                 } else if (((obj.getEffectiveNumObsLeft() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) < minProportionEachPartition || ((obj.getEffectiveNumObsRight() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) < minProportionEachPartition) {
                                     if (debugOptimization) {
                                         //  echoLn("\t\tRejecting partition for proportion; left: " + ((obj.getNumObsLeft() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) + " right: " + ((obj.getNumObsRight() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)));
                                         // System.exit(0);
                                     }
-                                    partitionMSE = Double.POSITIVE_INFINITY;
+                                    partitionSSE = Double.POSITIVE_INFINITY;
                                 } else {
-                                    partitionMSE = obj.getMSE();
+                                    partitionSSE = obj.getSSE();
                                 }
 
                                 if (debugOptimization) {
-                                    //  echoLn("\t x_" + indexSplitVariable + " Partition: " + i + " " + partitions.get(i) + " mse: " + partitionMSE);
+                                    //  echoLn("\t x_" + indexSplitVariable + " Partition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE);
                                 }
 
-                                //For every possible partition, we check which has the lowest MSE
-                                if (partitionMSE < bestPartitionMSE || i == 0) {
-                                    bestPartitionMSE = partitionMSE;
+                                //For every possible partition, we check which has the lowest SSE
+                                if (partitionSSE < bestPartitionSSE || i == 0) {
+                                    bestPartitionSSE = partitionSSE;
                                     optimalPartitionIndex = i;
-                                    optimalZ_MSE_Right_Partition = obj.getRightMSE();
-                                    optimalZ_MSE_Left_Partition = obj.getLeftMSE();
+                                    optimalZ_SSE_Right_Partition = obj.getRightSSE();
+                                    optimalZ_SSE_Left_Partition = obj.getLeftSSE();
                                     numObsLeft_Partition = obj.getEffectiveNumObsLeft();
                                     numObsRight_Partition = obj.getEffectiveNumObsRight();
                                     if (debugOptimization) {
-                                        echoLn("\tPartition: " + i + " " + partitions.get(i) + " mse: " + partitionMSE + " set as within-variable current best.");
+                                        echoLn("\tPartition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE + " set as within-variable current best.");
                                     }
                                 }
                             }
 
-                            if (bestPartitionMSE < optimalZ_MSE || first) {
+                            if (bestPartitionSSE < optimalZ_SSE || first) {
                                 optimalZ = optimalPartitionIndex; // in this case, this will be the index of the best partitioning
                                 // But how do we know which partition the index corresponds to?
-                                optimalZ_MSE = bestPartitionMSE;
+                                optimalZ_SSE = bestPartitionSSE;
                                 optimalSplitVariableIndex = indexSplitVariable;
                                 optimalDiscreteCollectionIndex = collectionIndex;
-                                optimalZ_MSE_Left = optimalZ_MSE_Left_Partition;
-                                optimalZ_MSE_Right = optimalZ_MSE_Right_Partition;
+                                optimalZ_SSE_Left = optimalZ_SSE_Left_Partition;
+                                optimalZ_SSE_Right = optimalZ_SSE_Right_Partition;
                                 numObsLeft = numObsLeft_Partition;
                                 numObsRight = numObsRight_Partition;
                                 first = false;
                                 if (debugOptimization) {
-                                    echoLn("Variable x_" + optimalSplitVariableIndex + " with partition " + partitions.get((int) optimalZ) + " giving mse of " + optimalZ_MSE + " set as overall current best.");
+                                    echoLn("Variable x_" + optimalSplitVariableIndex + " with partition " + partitions.get((int) optimalZ) + " giving SSE of " + optimalZ_SSE + " set as overall current best.");
                                 }
                             }
                         }
                     }
                 }
             }
+            
+            double baseline = currentNodeMoment.getSSE();
 
             // System.out.println("Baseline SSE is computed as: " + baseline);
             if (verbose) {
                 echoLn("Number of observations in node: " + lensGrowingTree.getNumObs());
-                echoLn("Improvement from " + baseline + " to " + optimalZ_MSE + " (left: " + optimalZ_MSE_Left + " [" + numObsLeft + "] right: " + optimalZ_MSE_Right + " [" + numObsRight + "])");
-                echoLn("Improvement percentage (to compare against threshold): " + ((baseline - optimalZ_MSE) / baseline));
+                echoLn("Improvement from " + baseline + " to " + optimalZ_SSE + " (left: " + optimalZ_SSE_Left + " [" + numObsLeft + "] right: " + optimalZ_SSE_Right + " [" + numObsRight + "])");
+                echoLn("Improvement absolute (to compare against threshold): " + (baseline - optimalZ_SSE));
             }
 
-            // if (baseline - optimalX_MSE < improvementThreshold) {
-            if ((baseline - optimalZ_MSE) / baseline < improvementThreshold || first || baseline == 0) {
+            // if (baseline - optimalX_SSE < improvementThreshold) {
+            if ((baseline - optimalZ_SSE) < improvementThreshold || first || baseline == 0) {
                 setTerminal(true);
                 if (verbose) {
-                    echoLn(depth + ". Terminating due to lack of improvement in MSE; rules: " + getParentRuleDescriptive(null) + " beta: " + pmUtility.stringPrettyPrintVector(betaEstimateNode));
+                    echoLn(depth + ". Terminating due to lack of improvement in SSE; rules: " + getParentRuleDescriptive(null) + " beta: " + pmUtility.stringPrettyPrintVector(betaEstimateNode));
                 }
             } else {
                 setTerminal(false);
@@ -391,9 +423,9 @@ public class TreeMoment {
 
                     MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, optimalSplitVariableIndex, partitions.get((int) optimalZ)); //This is where we use optimalX
                     if (verbose) {
-                        echoLn(depth + ". Calculated optimal split along discrete variable, partitioning x_" + optimalSplitVariableIndex + " -> " + partitions.get((int) optimalZ) + ", generating MSE of " + obj.getMSE());
+                        echoLn(depth + ". Calculated optimal split along discrete variable, partitioning x_" + optimalSplitVariableIndex + " -> " + partitions.get((int) optimalZ) + ", generating SSE of " + obj.getSSE());
                     }
-                    setRule(new SplitRule(true, optimalSplitVariableIndex, optimalZ, partitions.get((int) optimalZ)));
+                    setRule(new SplitRule(true, optimalSplitVariableIndex, optimalZ, partitions.get((int) optimalZ), momentSpec));
                     childLeft = new TreeMoment(this, momentSpec, obj.getDataSplit().getLeft(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
                             true, maxDepth, null);
                     childRight = new TreeMoment(this, momentSpec, obj.getDataSplit().getRight(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
@@ -401,9 +433,9 @@ public class TreeMoment {
                 } else {
                     MomentContinuousSplitObj obj = momentSpec.getFminObjective(lensGrowingTree, optimalSplitVariableIndex, minProportionEachPartition, minCountEachPartition);
                     if (verbose) {
-                        echoLn(depth + ". Calculated optimal split along "+momentSpec.getVariableName(optimalSplitVariableIndex)+ " at " + optimalZ + ", generating MSE of " + obj.f_to_minimize(optimalZ));
+                        echoLn(depth + ". Calculated optimal split along " + momentSpec.getVariableName(optimalSplitVariableIndex) + " at " + optimalZ + ", generating SSE of " + obj.f_to_minimize(optimalZ));
                     }
-                    setRule(new SplitRule(false, optimalSplitVariableIndex, optimalZ, null));
+                    setRule(new SplitRule(false, optimalSplitVariableIndex, optimalZ, null, momentSpec));
 
                     DataLens left = SplitContainer.getContinuousDataSplit(lensGrowingTree, optimalZ, optimalSplitVariableIndex).getLeft();
                     DataLens right = SplitContainer.getContinuousDataSplit(lensGrowingTree, optimalZ, optimalSplitVariableIndex).getRight();
@@ -473,7 +505,6 @@ public class TreeMoment {
 //        indexPreviousSplits.add(r.getOptimalSplitVariableIndex());
 //        return s + parent.getParentRule(indexPreviousSplits);
 //    }
-
     public String getParentRuleDescriptive(TreeSet<Integer> indexPreviousSplits) {
         if (terminal && parent == null) {
             return "{ Stump }";
@@ -483,6 +514,7 @@ public class TreeMoment {
         }
 
         SplitRule r = parent.getRule();
+        // System.out.println("this node's parent rule: " + r);
         String s = "";
         if (terminal) {
             s = "{ ";
@@ -508,6 +540,7 @@ public class TreeMoment {
         }
 
         indexPreviousSplits.add(r.getOptimalSplitVariableIndex());
+        //System.out.println("Current s = " + s + " parent descriptive: " + parent.getParentRuleDescriptive(indexPreviousSplits));
         return s + parent.getParentRuleDescriptive(indexPreviousSplits);
     }
 

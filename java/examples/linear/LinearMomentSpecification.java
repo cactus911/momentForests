@@ -56,8 +56,8 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     public LinearMomentSpecification(int numObs) {
         this.numObs = numObs;
-        int[] vsi = {0, 1}; //Search over z1, z2 
-        Boolean[] wvd = {false, false}; // z1, z2 all continuous
+        int[] vsi = {0, 1, 2}; //Search over z1, z2 
+        Boolean[] wvd = {false, false, true}; // z1, z2 all continuous
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -146,11 +146,15 @@ public class LinearMomentSpecification implements MomentSpecification {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -1);
         beta.set(1, 0, 1);
-        if (zi.get(0, 0) > 0) { // z1
-            beta.set(0, 0, 1);
-            if (zi.get(0, 1) < 0.5) {
-                beta.set(1, 0, -1);
+        if (zi.get(0, 0) > 0) { // if z1 > 0 \beta_0 = 1
+            beta.set(0, 0, 2);
+            if (zi.get(0, 1) < 0.5) { // if also z2<0.5, \beta_1 = -1;
+                beta.set(1, 0, -3);
             }
+        }
+        if (zi.get(0,2) == 1) {
+            beta.set(0, 0, 3);
+            beta.set(1, 0, beta.get(1,0)*1.5);
         }
         return beta;
     }
@@ -220,23 +224,30 @@ public class LinearMomentSpecification implements MomentSpecification {
             }
         } else {
             X = new Jama.Matrix(numObs, 2);
-            Z = new Jama.Matrix(numObs, 2);
+            Z = new Jama.Matrix(numObs, DiscreteVariables.length);
             Y = new Jama.Matrix(numObs, 1);
             Random rng = new Random(321);
             NormalDistribution normal = new NormalDistribution();
             for (int i = 0; i < numObs; i++) {
                 X.set(i, 0, normal.inverse(rng.nextDouble()));
                 X.set(i, 1, rng.nextDouble());
-                
+
                 Z.set(i, 0, normal.inverse(rng.nextDouble()));
                 Z.set(i, 1, rng.nextDouble());
+
+                double draw = rng.nextDouble();
+                if (draw < 0.3) {
+                    Z.set(i, 2, 1);
+                } else if (draw > 0.7) {
+                    Z.set(i, 2, 2);
+                }
                 // Z.set(i, 0, X.get(i, 0));
                 // Z.set(i, 1, X.get(i, 1));
-                Jama.Matrix beta = getBetaTruth(Z.getMatrix(i, i, 0, 1)); // Z1 and Z2 to compute beta
+                Jama.Matrix beta = getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension()-1)); // Z1 and Z2 to compute beta
 //                pmUtility.prettyPrintVector(beta);
                 Jama.Matrix subX = X.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
                 // pmUtility.prettyPrint(subX);
-                Y.set(i, 0, (subX.times(beta)).get(0, 0) + 0.0* normal.inverse(rng.nextDouble()));
+                Y.set(i, 0, (subX.times(beta)).get(0, 0) + 0.0 * normal.inverse(rng.nextDouble()));
             }
         }
 //        pmUtility.prettyPrint(pmUtility.concatMatrix(Y,pmUtility.concatMatrix(X,Z)));
@@ -251,6 +262,9 @@ public class LinearMomentSpecification implements MomentSpecification {
         if (variableIndex == 1) {
             return "Z2";
         }
+        if(variableIndex==2){
+            return "Z3";
+        }
         return "Unknown";
     }
 
@@ -264,19 +278,20 @@ public class LinearMomentSpecification implements MomentSpecification {
         if (beta == null) {
             return "null (shouldn't be here!)";
         }
-        double b = beta.get(0, 0);
-        double se = Math.sqrt(variance.get(0, 0));
-        String stars = "";
-        NormalDistribution normal = new NormalDistribution(0, 1);
-        if (Math.abs(b / se) > Math.abs(normal.inverse(0.90))) {
-            stars = "*";
-        }
-        if (Math.abs(b / se) > Math.abs(normal.inverse(0.95))) {
-            stars = "**";
-        }
-        if (Math.abs(b / se) > Math.abs(normal.inverse(0.99))) {
-            stars = "***";
-        }
-        return String.format("%.2f (%.2f) %s", b, se, stars);
+        // double b = beta.get(0, 0);
+//        double se = Math.sqrt(variance.get(0, 0));
+//        String stars = "";
+//        NormalDistribution normal = new NormalDistribution(0, 1);
+//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.90))) {
+//            stars = "*";
+//        }
+//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.95))) {
+//            stars = "**";
+//        }
+//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.99))) {
+//            stars = "***";
+//        }
+//        return String.format("%.2f (%.2f) %s", b, se, stars);
+        return pmUtility.stringPrettyPrintVector(beta);
     }
 }

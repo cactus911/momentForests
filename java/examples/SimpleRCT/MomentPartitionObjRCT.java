@@ -81,7 +81,7 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
     }
     
     @Override
-    public double getMSE() {
+    public double getSSE() {
         leftMSE = 0;
         rightMSE = 0;
 
@@ -93,8 +93,8 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
         ContainerRCT leftRCT = new ContainerRCT(container.getLeft()); //This object will compute the beta and MSE for the left split
         ContainerRCT rightRCT = new ContainerRCT(container.getRight());
         
-        leftMSE = leftRCT.getMSE();
-        rightMSE = rightRCT.getMSE();
+        leftMSE = leftRCT.getSSE();
+        rightMSE = rightRCT.getSSE();
                 
         // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
         // return (leftMSE + rightMSE) / X.getNumObs();

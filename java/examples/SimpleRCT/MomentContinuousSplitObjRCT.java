@@ -86,8 +86,8 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
         ContainerRCT leftRCT = new ContainerRCT(container.getLeft()); //This object will compute the beta and MSE for the left split
         ContainerRCT rightRCT = new ContainerRCT(container.getRight());
 
-        leftMSE = leftRCT.getMSE();
-        rightMSE = rightRCT.getMSE();
+        leftMSE = leftRCT.getSSE();
+        rightMSE = rightRCT.getSSE();
 
         if (getEffectiveNumObsLeft() < minCount || getEffectiveNumObsRight() < minCount) {
             return Double.POSITIVE_INFINITY;

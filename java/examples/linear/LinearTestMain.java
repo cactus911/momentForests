@@ -54,7 +54,7 @@ public class LinearTestMain {
          */
         DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
-        boolean verbose = true;
+        boolean verbose = false;
         MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
         TreeOptions cvOptions = new TreeOptions(0.01, 100, 1E-1, 20); // k = 1
@@ -64,21 +64,12 @@ public class LinearTestMain {
          */
         myForest.growForest();
 
+        myForest.getTree(0).printTree();
+
         /**
          * Test vectors for assessment
          */
-        Jama.Matrix testX = new Jama.Matrix(4, 2);
-        testX.set(0, 0, -1);
-        testX.set(0, 1, -1);
-
-        testX.set(1, 0, 1);
-        testX.set(1, 1, -1);
-
-        testX.set(2, 0, -1);
-        testX.set(2, 1, 1);
-
-        testX.set(3, 0, 1);
-        testX.set(3, 1, 1);
+        Jama.Matrix testZ = mySpecification.getZ();
 
         boolean computeSE = false;
         /**
@@ -91,17 +82,23 @@ public class LinearTestMain {
             int numberTreesInBootForest = 10;
             BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
 
-            for (int j = 0; j < 4; j++) {
-                Jama.Matrix txj = testX.getMatrix(j, j, 0, 1);
-                Jama.Matrix b = myForest.getEstimatedParameterForest(txj);
-                System.out.println("z1: " + testX.get(j, 0) + " z2: " + testX.get(j, 1) + " beta: " + pmUtility.stringPrettyPrintVector(b) + " se: " + pmUtility.stringPrettyPrintVector(boot.computeStandardErrors(txj)));
+            for (int j = 0; j < testZ.getRowDimension(); j++) {
+                Jama.Matrix zi = testZ.getMatrix(j, j, 0, testZ.getColumnDimension() - 1);
+                Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
+                System.out.println("z: " + pmUtility.stringPrettyPrint(zi)+ " beta: " + pmUtility.stringPrettyPrintVector(b) + " se: " + pmUtility.stringPrettyPrintVector(boot.computeStandardErrors(zi)));
             }
         } else {
-            for (int j = 0; j < 4; j++) {
-                Jama.Matrix txj = testX.getMatrix(j, j, 0, 1);
-                Jama.Matrix b = myForest.getEstimatedParameterForest(txj);
-                System.out.println("z1: " + testX.get(j, 0) + " z2: " + testX.get(j, 1) + " beta: " + pmUtility.stringPrettyPrintVector(b));
+            double inSampleFitSSE = 0;
+            for (int j = 0; j < testZ.getRowDimension(); j++) {
+                Jama.Matrix zi = testZ.getMatrix(j, j, 0, testZ.getColumnDimension() - 1);
+                Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
+                // System.out.println("z: " + pmUtility.stringPrettyPrint(zi)+ " beta: " + pmUtility.stringPrettyPrintVector(b));
+                Jama.Matrix xi = mySpecification.getX().getMatrix(j, j, 0, mySpecification.getX().getColumnDimension() - 1);
+                double fitY = xi.times(b).get(0,0);
+                double error = fitY-mySpecification.getY().get(j,0);
+                inSampleFitSSE += error*error;
             }
+            System.out.println("In-sample SSE: "+inSampleFitSSE);
         }
     }
 

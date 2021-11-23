@@ -70,7 +70,7 @@ public class ContainerLinear extends ContainerMoment {
             }
             mse = sse; // cannot divide by n since we have unbalanced samples in each leaf
             if (debugVerbose) {
-                System.out.format("sse: %g ", +sse);
+                System.out.format("ContainerLinear.computeBetaAndErrors SSE: %g ", +sse);
                 pmUtility.prettyPrintVector(beta);
             }
         } catch (Exception e) {
@@ -89,7 +89,7 @@ public class ContainerLinear extends ContainerMoment {
     }
 
     @Override
-    public double getMSE() {
+    public double getSSE() {
         return mse;
     }
 

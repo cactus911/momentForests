@@ -41,13 +41,13 @@ public abstract class MomentPartitionObj {
     public int numObsLeft;
     public int numObsRight;
 
-    public abstract double getMSE();
+    public abstract double getSSE();
 
-    public double getRightMSE() {
+    public double getRightSSE() {
         return rightMSE;
     }
 
-    public double getLeftMSE() {
+    public double getLeftSSE() {
         return leftMSE;
     }
 
