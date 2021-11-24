@@ -80,12 +80,15 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
             if(debugVerbose) {
                 System.out.println("Not enough n_left = "+getEffectiveNumObsLeft()+" ==> Triggered positive infinity");
             }
-            return Double.POSITIVE_INFINITY;
-        } else if (getEffectiveNumObsRight() < minCount) {
+            leftMSE = Double.POSITIVE_INFINITY;
+            // return Double.POSITIVE_INFINITY;
+        }
+        if (getEffectiveNumObsRight() < minCount) {
             if(debugVerbose) {
                 System.out.println("Not enough n_right = "+getEffectiveNumObsRight()+" ==> Triggered positive infinity");
             }
-            return Double.POSITIVE_INFINITY;
+            rightMSE = Double.POSITIVE_INFINITY;
+            // return Double.POSITIVE_INFINITY;
         }
 
         

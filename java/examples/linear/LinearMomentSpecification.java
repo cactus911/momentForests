@@ -147,13 +147,13 @@ public class LinearMomentSpecification implements MomentSpecification {
         beta.set(0, 0, -1);
         beta.set(1, 0, 1);
         if (zi.get(0, 0) > 0) { // if z1 > 0 \beta_0 = 1
-            beta.set(0, 0, 2);
+            // beta.set(0, 0, 2);
             if (zi.get(0, 1) < 0.5) { // if also z2<0.5, \beta_1 = -1;
                 beta.set(1, 0, -3);
             }
         }
         if (zi.get(0,2) == 1) {
-            beta.set(0, 0, 3);
+            // beta.set(0, 0, 3);
             beta.set(1, 0, beta.get(1,0)*1.5);
         }
         return beta;
@@ -247,7 +247,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 //                pmUtility.prettyPrintVector(beta);
                 Jama.Matrix subX = X.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
                 // pmUtility.prettyPrint(subX);
-                Y.set(i, 0, (subX.times(beta)).get(0, 0) + 0.0 * normal.inverse(rng.nextDouble()));
+                Y.set(i, 0, (subX.times(beta)).get(0, 0) + normal.inverse(rng.nextDouble()));
             }
         }
 //        pmUtility.prettyPrint(pmUtility.concatMatrix(Y,pmUtility.concatMatrix(X,Z)));

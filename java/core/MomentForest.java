@@ -67,7 +67,13 @@ public class MomentForest {
     }
 
     public void growForest() {
-        double proportionObservationsToEstimateTreeStructure = 0.5;
+        /**
+         * Reinitialize the forest in case we are doing a CV (or whatever). Do
+         * not want to be stacking a bunch of trees of various options into the forest
+         * each time we call growForest!
+         */
+        forest = new ArrayList<>();
+        double proportionObservationsToEstimateTreeStructure = 0.35;
 
         Random rng = new Random(forestSeed);
 

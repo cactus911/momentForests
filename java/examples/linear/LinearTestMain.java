@@ -43,10 +43,10 @@ public class LinearTestMain {
     public static void main(String[] args) {
 
         // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
-        MomentSpecification mySpecification = new LinearMomentSpecification(5000);
+        MomentSpecification mySpecification = new LinearMomentSpecification(1500);
         mySpecification.loadData(); // Create data using rng
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 25;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -57,49 +57,68 @@ public class LinearTestMain {
         boolean verbose = false;
         MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
-        TreeOptions cvOptions = new TreeOptions(0.01, 100, 1E-1, 20); // k = 1
-        myForest.setTreeOptions(cvOptions);
-        /**
-         * Grow the moment forest
-         */
-        myForest.growForest();
+        double lowestSSE = 0;
+        boolean first = true;
+        double bestMinImprovement = 0;
+        int bestMinObservationsPerLeaf = 0;
 
-        myForest.getTree(0).printTree();
+        for (double minImprovement = 10; minImprovement <= 1000; minImprovement *= 2) {
+            for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 1000; minObservationsPerLeaf *= 2) {
+                System.out.println("Minimum Improvement Threshold: " + minImprovement);
+                System.out.println("Minimum Observations per Leaf: " + minObservationsPerLeaf);
+                TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, 20); // k = 1
+                myForest.setTreeOptions(cvOptions);
+                /**
+                 * Grow the moment forest
+                 */
+                myForest.growForest();
 
-        /**
-         * Test vectors for assessment
-         */
-        Jama.Matrix testZ = mySpecification.getZ();
+                myForest.getTree(0).printTree();
 
-        boolean computeSE = false;
-        /**
-         * Compute standard errors
-         */
-        if (computeSE) {
-            int numberBootstraps = 50;
-            // System.out.println("Number of bootstraps: " + numberBootstraps);
+                /**
+                 * Test vectors for assessment
+                 */
+                Jama.Matrix testZ = mySpecification.getZ();
 
-            int numberTreesInBootForest = 10;
-            BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
+                boolean computeSE = false;
+                /**
+                 * Compute standard errors
+                 */
+                if (computeSE) {
+                    int numberBootstraps = 50;
+                    // System.out.println("Number of bootstraps: " + numberBootstraps);
 
-            for (int j = 0; j < testZ.getRowDimension(); j++) {
-                Jama.Matrix zi = testZ.getMatrix(j, j, 0, testZ.getColumnDimension() - 1);
-                Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
-                System.out.println("z: " + pmUtility.stringPrettyPrint(zi)+ " beta: " + pmUtility.stringPrettyPrintVector(b) + " se: " + pmUtility.stringPrettyPrintVector(boot.computeStandardErrors(zi)));
+                    int numberTreesInBootForest = 10;
+                    BootstrapForest boot = new BootstrapForest(mySpecification, numberBootstraps, numberTreesInBootForest, 787, cvOptions);
+
+                    for (int j = 0; j < testZ.getRowDimension(); j++) {
+                        Jama.Matrix zi = testZ.getMatrix(j, j, 0, testZ.getColumnDimension() - 1);
+                        Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
+                        System.out.println("z: " + pmUtility.stringPrettyPrint(zi) + " beta: " + pmUtility.stringPrettyPrintVector(b) + " se: " + pmUtility.stringPrettyPrintVector(boot.computeStandardErrors(zi)));
+                    }
+                } else {
+                    double inSampleFitSSE = 0;
+                    for (int j = 0; j < testZ.getRowDimension(); j++) {
+                        Jama.Matrix zi = testZ.getMatrix(j, j, 0, testZ.getColumnDimension() - 1);
+                        Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
+                        // System.out.println("z: " + pmUtility.stringPrettyPrint(zi)+ " beta: " + pmUtility.stringPrettyPrintVector(b));
+                        Jama.Matrix xi = mySpecification.getX().getMatrix(j, j, 0, mySpecification.getX().getColumnDimension() - 1);
+                        double fitY = xi.times(b).get(0, 0);
+                        double error = fitY - mySpecification.getY().get(j, 0);
+                        inSampleFitSSE += error * error;
+                    }
+                    double MSE = inSampleFitSSE / testZ.getRowDimension();
+                    System.out.println("In-sample MSE: " + MSE);
+                    if (MSE < lowestSSE || first) {
+                        lowestSSE = MSE;
+                        first = false;
+                        bestMinImprovement = minImprovement;
+                        bestMinObservationsPerLeaf = minObservationsPerLeaf;
+                    }
+                }
             }
-        } else {
-            double inSampleFitSSE = 0;
-            for (int j = 0; j < testZ.getRowDimension(); j++) {
-                Jama.Matrix zi = testZ.getMatrix(j, j, 0, testZ.getColumnDimension() - 1);
-                Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
-                // System.out.println("z: " + pmUtility.stringPrettyPrint(zi)+ " beta: " + pmUtility.stringPrettyPrintVector(b));
-                Jama.Matrix xi = mySpecification.getX().getMatrix(j, j, 0, mySpecification.getX().getColumnDimension() - 1);
-                double fitY = xi.times(b).get(0,0);
-                double error = fitY-mySpecification.getY().get(j,0);
-                inSampleFitSSE += error*error;
-            }
-            System.out.println("In-sample SSE: "+inSampleFitSSE);
         }
+        System.out.println("Lowest MSE: "+lowestSSE+" at min_N = "+bestMinObservationsPerLeaf+" min_MSE = "+bestMinImprovement);
     }
 
 }

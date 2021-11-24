@@ -330,7 +330,7 @@ public class TreeMoment {
                         int collectionIndex = discreteCollectionIndex.indexOf(indexSplitVariable);
                         ArrayList<Integer> discreteList = discreteCollection.get(collectionIndex);
                         ArrayList<IntegerPartition> partitions = DisjointSet.computeAllDisjointSets(discreteList);
-                        echoLn("Partition size: " + partitions.size() + " discreteList.size(): " + discreteList.size());
+                        // echoLn("Partition size: " + partitions.size() + " discreteList.size(): " + discreteList.size());
                         /**
                          * Need to put in a check here that the
                          * discreteList.size is greater than one element
@@ -347,7 +347,7 @@ public class TreeMoment {
 
                                 double partitionSSE = 0;
                                 if (obj.getEffectiveNumObsLeft() < minCountEachPartition || obj.getEffectiveNumObsRight() < minCountEachPartition) {
-                                    echoLn("IS IT IN? : obj.getNumObsLeft(): " + obj.getEffectiveNumObsLeft() + " minCountEachPartition " + minCountEachPartition + " right obs: " + obj.getEffectiveNumObsRight() + " indexSplitVariable " + indexSplitVariable);
+                                    // echoLn("IS IT IN? : obj.getNumObsLeft(): " + obj.getEffectiveNumObsLeft() + " minCountEachPartition " + minCountEachPartition + " right obs: " + obj.getEffectiveNumObsRight() + " indexSplitVariable " + indexSplitVariable);
                                     if (debugOptimization) {
                                         //   echoLn("\t\tMin K violated: rejecting partition for left obs: " + obj.getNumObsLeft() + " right obs: " + obj.getNumObsRight());
                                     }
