@@ -43,7 +43,7 @@ public class LinearTestMain {
     public static void main(String[] args) {
 
         // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
-        MomentSpecification mySpecification = new LinearMomentSpecification(1500);
+        MomentSpecification mySpecification = new LinearMomentSpecification(5000);
         mySpecification.loadData(); // Create data using rng
 
         double bestMinImprovement = 0;
@@ -53,7 +53,7 @@ public class LinearTestMain {
         double lowestSSE = 0;
         boolean first = true;
 
-        for (double alpha = -3; alpha <= 3; alpha++) {
+        for (double alpha = -1; alpha <= -1; alpha++) {
             mySpecification.setHomogeneousParameters(new Jama.Matrix(1, 1, alpha));
 
             int numberTreesInForest = 25;
@@ -67,8 +67,8 @@ public class LinearTestMain {
             boolean verbose = false;
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
-            for (double minImprovement = 10; minImprovement <= 10; minImprovement *= 2) {
-                for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 10; minObservationsPerLeaf *= 2) {
+            for (double minImprovement = 10; minImprovement <= 100; minImprovement *= 2) {
+                for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
                     System.out.println("Alpha: "+alpha);
                     System.out.println("Minimum Improvement Threshold: " + minImprovement);
                     System.out.println("Minimum Observations per Leaf: " + minObservationsPerLeaf);
@@ -84,7 +84,8 @@ public class LinearTestMain {
                     /**
                      * Test vectors for assessment
                      */
-                    Jama.Matrix testZ = mySpecification.getZ();
+                    DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(250);
+                    Jama.Matrix testZ = oosDataLens.getZ();
 
                     boolean computeSE = false;
                     /**
@@ -108,9 +109,9 @@ public class LinearTestMain {
                             Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
                             Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
                             // System.out.println("z: " + pmUtility.stringPrettyPrint(zi)+ " beta: " + pmUtility.stringPrettyPrintVector(b));
-                            Jama.Matrix xi = mySpecification.getX().getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
-                            double fitY = xi.times(b).get(0, 0) + mySpecification.getHomogeneousComponent(i);
-                            double error = fitY - (mySpecification.getY(false).get(i, 0));
+                            Jama.Matrix xi = oosDataLens.getX().getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
+                            double fitY = xi.times(b).get(0, 0) + mySpecification.getHomogeneousComponent(xi);
+                            double error = fitY - (oosDataLens.getY().get(i, 0));
                             inSampleFitSSE += error * error;
                         }
                         double MSE = inSampleFitSSE / testZ.getRowDimension();

@@ -308,7 +308,7 @@ public class DataLens {
         Jama.Matrix tempZ = new Jama.Matrix(getNumObs(), getColumnDimensionZ());
         for (int i = 0; i < getNumObs(); i++) {
             for (int j = 0; j < getColumnDimensionZ(); j++) {
-                tempZ.set(i, j, originalDataX.get(dataIndex[i], j));
+                tempZ.set(i, j, originalDataZ.get(dataIndex[i], j));
             }
         }
         return tempZ;

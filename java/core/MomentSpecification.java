@@ -24,7 +24,6 @@
 package core;
 
 import Jama.Matrix;
-import java.util.Random;
 
 /**
  *
@@ -63,7 +62,7 @@ public interface MomentSpecification {
      */
     public Matrix getBetaTruth(Matrix zi);
 
-    public Jama.Matrix getOutOfSampleX();
+    public DataLens getOutOfSampleXYZ(int numObsOutOfSample);
 
     public void loadData();
 
@@ -75,6 +74,6 @@ public interface MomentSpecification {
     
     public void setHomogeneousParameters(Jama.Matrix homogeneousParameters);
 
-    public double getHomogeneousComponent(int j);
+    public double getHomogeneousComponent(Jama.Matrix xi);
 
 }

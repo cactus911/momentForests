@@ -137,7 +137,7 @@ public class LinearMomentSpecification implements MomentSpecification {
          * (as opposed to having it be a full length of X with some zeros for
          * non-restrictions)
          */
-        if(!residualizeY) {
+        if (!residualizeY) {
             return Y;
         }
         Jama.Matrix residualizedY = Y.copy();
@@ -155,12 +155,12 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public double getHomogeneousComponent(int i) {
+    public double getHomogeneousComponent(Jama.Matrix xi) {
         double homogeneousComponent = 0;
         int homogeneousParameterIndex = 0;
         for (int k = 0; k < HOMOGENEITY_INDEX.length; k++) {
             if (HOMOGENEITY_INDEX[k]) {
-                homogeneousComponent += X.get(i, k) * HOMOGENEOUS_PARAMETER_VECTOR.get(homogeneousParameterIndex, 0);
+                homogeneousComponent += xi.get(0, k) * HOMOGENEOUS_PARAMETER_VECTOR.get(homogeneousParameterIndex, 0);
 
                 homogeneousParameterIndex++;
             }
@@ -229,8 +229,34 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public Matrix getOutOfSampleX() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    public DataLens getOutOfSampleXYZ(int numObsOOS) {
+        Jama.Matrix oosX = new Jama.Matrix(numObsOOS, 2);
+        Jama.Matrix oosZ = new Jama.Matrix(numObsOOS, DiscreteVariables.length);
+        Jama.Matrix oosY = new Jama.Matrix(numObsOOS, 1);
+        Random rng = new Random(321);
+        NormalDistribution normal = new NormalDistribution();
+        for (int i = 0; i < numObsOOS; i++) {
+            oosX.set(i, 0, normal.inverse(rng.nextDouble()));
+            oosX.set(i, 1, rng.nextDouble());
+
+            oosZ.set(i, 0, normal.inverse(rng.nextDouble()));
+            oosZ.set(i, 1, rng.nextDouble());
+
+            double draw = rng.nextDouble();
+            if (draw < 0.3) {
+                oosZ.set(i, 2, 1);
+            } else if (draw > 0.7) {
+                oosZ.set(i, 2, 2);
+            }
+            // Z.set(i, 0, X.get(i, 0));
+            // Z.set(i, 1, X.get(i, 1));
+            Jama.Matrix beta = getBetaTruth(oosZ.getMatrix(i, i, 0, oosZ.getColumnDimension() - 1)); // Z1 and Z2 to compute beta
+//                pmUtility.prettyPrintVector(beta);
+            Jama.Matrix subX = oosX.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
+            // pmUtility.prettyPrint(subX);
+            oosY.set(i, 0, (subX.times(beta)).get(0, 0) + normal.inverse(rng.nextDouble()));
+        }
+        return new DataLens(oosX, oosY, oosZ, null);
     }
 
     @Override
