@@ -399,7 +399,7 @@ public class TreeMoment {
                     }
                 }
             }
-            
+
             double baseline = currentNodeMoment.getSSE();
 
             // System.out.println("Baseline SSE is computed as: " + baseline);
@@ -467,6 +467,18 @@ public class TreeMoment {
                 // System.out.println(depth + ". Terminal RDD value: " + getRDDEstimate());
             }
         }
+
+        /**
+         * Want to think about testing for parameter equality across splits,
+         * potentially imposing that homogeneity here (and maybe all nodes below
+         * this level?)
+         *
+         * Ok, I think what we are going to do is do a global imposition via a
+         * nested fixed point approach. Outer loop searches over fixed subvector
+         * of parameters. Inside loop has the usual tree. We are going to
+         * partial out (i.e. subtract it out) the global part, just use the tree
+         * for the part where there is (may be) parameter heterogeneity.
+         */
     }
 
 //    public String getParentRule(TreeSet<Integer> indexPreviousSplits) {

@@ -54,10 +54,16 @@ public class LinearMomentSpecification implements MomentSpecification {
     String filename;
     boolean MONTE_CARLO = true;
 
+    /**
+     * We are going to control homogeneous parameters through these variables
+     */
+    boolean[] HOMOGENEITY_INDEX = {true, false};
+    Jama.Matrix HOMOGENEOUS_PARAMETER_VECTOR = null;
+
     public LinearMomentSpecification(int numObs) {
         this.numObs = numObs;
-        int[] vsi = {0, 1, 2}; //Search over z1, z2 
-        Boolean[] wvd = {false, false, true}; // z1, z2 all continuous
+        int[] vsi = {0, 1, 2}; //Search over z1, z2, z3 
+        Boolean[] wvd = {false, false, true}; // z1, z2 continuous, z3 discrete
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -67,12 +73,13 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public Matrix getBalancingVector() {
-        return balancingVector;
+    public void setHomogeneousParameters(Matrix h) {
+        this.HOMOGENEOUS_PARAMETER_VECTOR = h;
     }
 
-    public void SimpleRCTMomentSpecification() {
-        // this.numObs = numObs;
+    @Override
+    public Matrix getBalancingVector() {
+        return balancingVector;
     }
 
     public LinearMomentSpecification(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, int numtrees, int[] variableSearchIndex, Boolean[] DiscreteVariables) {
@@ -87,9 +94,13 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public Double getPredictedY(Matrix xi, Jama.Matrix beta) {
+        /**
+         * This may have to be adjusted when we impose homogeneity, depending on
+         * what this is used for
+         */
         // pmUtility.prettyPrint(xi);
         if (beta != null) {
-            double yhat = (xi.times(beta)).get(0, 0); // There is a single independent variable "treatment" in the simple RCT
+            double yhat = (xi.times(beta)).get(0, 0);
             return yhat;
         }
         return null;
@@ -116,13 +127,65 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public Matrix getY() {
-        return Y;
+    public Matrix getY(boolean residualizeY) {
+        /**
+         * Want to return the residualized Y (taking out the part explained by
+         * the globally-imposed homogeneous subset of parameters)
+         *
+         * I am going to impose the convention that the parameter vector of
+         * homogeneous parameters is only as long as the number of restrictions
+         * (as opposed to having it be a full length of X with some zeros for
+         * non-restrictions)
+         */
+        if(!residualizeY) {
+            return Y;
+        }
+        Jama.Matrix residualizedY = Y.copy();
+
+        int homogeneousParameterIndex = 0;
+        for (int k = 0; k < HOMOGENEITY_INDEX.length; k++) {
+            if (HOMOGENEITY_INDEX[k]) {
+                for (int i = 0; i < Y.getRowDimension(); i++) {
+                    residualizedY.set(i, 0, residualizedY.get(i, 0) - X.get(i, k) * HOMOGENEOUS_PARAMETER_VECTOR.get(homogeneousParameterIndex, 0));
+                }
+                homogeneousParameterIndex++;
+            }
+        }
+        return residualizedY;
+    }
+
+    @Override
+    public double getHomogeneousComponent(int i) {
+        double homogeneousComponent = 0;
+        int homogeneousParameterIndex = 0;
+        for (int k = 0; k < HOMOGENEITY_INDEX.length; k++) {
+            if (HOMOGENEITY_INDEX[k]) {
+                homogeneousComponent += X.get(i, k) * HOMOGENEOUS_PARAMETER_VECTOR.get(homogeneousParameterIndex, 0);
+
+                homogeneousParameterIndex++;
+            }
+        }
+        return homogeneousComponent;
     }
 
     @Override
     public Matrix getX() {
-        return X;
+        /**
+         * We want to return the part of X that is not restricted via a global
+         * parameter homogeneity assumption
+         */
+
+        Jama.Matrix residualizedX = null;
+        for (int k = 0; k < HOMOGENEITY_INDEX.length; k++) {
+            if (!HOMOGENEITY_INDEX[k]) {
+                if (residualizedX == null) {
+                    residualizedX = pmUtility.getColumn(X, k);
+                } else {
+                    residualizedX = pmUtility.concatMatrix(residualizedX, pmUtility.getColumn(X, k));
+                }
+            }
+        }
+        return residualizedX;
     }
 
     @Override
@@ -140,21 +203,27 @@ public class LinearMomentSpecification implements MomentSpecification {
         return DiscreteVariables;
     }
 
-    //Return the true treatment effect for a given observation
+    //Return the true parameter vector for a given observation
     @Override
     public Matrix getBetaTruth(Matrix zi) {
+        boolean imposeUniformBeta1 = true;
+
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -1);
         beta.set(1, 0, 1);
         if (zi.get(0, 0) > 0) { // if z1 > 0 \beta_0 = 1
-            // beta.set(0, 0, 2);
+            if (!imposeUniformBeta1) {
+                beta.set(0, 0, 2);
+            }
             if (zi.get(0, 1) < 0.5) { // if also z2<0.5, \beta_1 = -1;
                 beta.set(1, 0, -3);
             }
         }
-        if (zi.get(0,2) == 1) {
-            // beta.set(0, 0, 3);
-            beta.set(1, 0, beta.get(1,0)*1.5);
+        if (zi.get(0, 2) == 1) {
+            if (!imposeUniformBeta1) {
+                beta.set(0, 0, 3);
+            }
+            beta.set(1, 0, beta.get(1, 0) * 1.5);
         }
         return beta;
     }
@@ -243,7 +312,7 @@ public class LinearMomentSpecification implements MomentSpecification {
                 }
                 // Z.set(i, 0, X.get(i, 0));
                 // Z.set(i, 1, X.get(i, 1));
-                Jama.Matrix beta = getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension()-1)); // Z1 and Z2 to compute beta
+                Jama.Matrix beta = getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1)); // Z1 and Z2 to compute beta
 //                pmUtility.prettyPrintVector(beta);
                 Jama.Matrix subX = X.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
                 // pmUtility.prettyPrint(subX);
@@ -262,7 +331,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         if (variableIndex == 1) {
             return "Z2";
         }
-        if(variableIndex==2){
+        if (variableIndex == 2) {
             return "Z3";
         }
         return "Unknown";

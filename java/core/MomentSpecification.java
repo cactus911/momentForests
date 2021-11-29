@@ -43,7 +43,7 @@ public interface MomentSpecification {
     public ContainerMoment computeOptimalBeta(DataLens lens);
 
     //  public void generateData(int numObs, Random rng, boolean addNoise);
-    public Jama.Matrix getY();
+    public Jama.Matrix getY(boolean residualizeY);
 
     public Jama.Matrix getX();
 
@@ -72,5 +72,9 @@ public interface MomentSpecification {
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex);
 
     public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance);
+    
+    public void setHomogeneousParameters(Jama.Matrix homogeneousParameters);
+
+    public double getHomogeneousComponent(int j);
 
 }
