@@ -67,8 +67,8 @@ public class LinearTestMain {
             boolean verbose = false;
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
-            for (double minImprovement = 10; minImprovement <= 100; minImprovement *= 2) {
-                for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
+            for (double minImprovement = 10; minImprovement <= 10; minImprovement *= 2) {
+                for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 500; minObservationsPerLeaf *= 2) {
                     System.out.println("Alpha: "+alpha);
                     System.out.println("Minimum Improvement Threshold: " + minImprovement);
                     System.out.println("Minimum Observations per Leaf: " + minObservationsPerLeaf);
@@ -84,8 +84,9 @@ public class LinearTestMain {
                     /**
                      * Test vectors for assessment
                      */
-                    DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(250);
+                    DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(100);
                     Jama.Matrix testZ = oosDataLens.getZ();
+                    // pmUtility.prettyPrint(pmUtility.concatMatrix(pmUtility.concatMatrix(oosDataLens.getY(), oosDataLens.getX()), testZ));
 
                     boolean computeSE = false;
                     /**
