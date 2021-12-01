@@ -41,6 +41,11 @@ public class ContainerRCT extends ContainerMoment {
         computeBetaAndErrors(lens);
     }
 
+    @Override
+    public double getObjectiveFunctionImposingHomogeneity(int k, double value) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
     private void computeBetaAndErrors(DataLens lens) {
         double meanTreatment = 0;
         double meanControl = 0;
@@ -89,7 +94,7 @@ public class ContainerRCT extends ContainerMoment {
     }
 
     @Override
-    public double getSSE() {
+    public double getObjectiveFunctionValue() {
         return mse;
     }
 

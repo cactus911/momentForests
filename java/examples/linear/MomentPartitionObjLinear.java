@@ -27,6 +27,7 @@ import core.IntegerPartition;
 import core.MomentPartitionObj;
 import core.DataLens;
 import core.SplitContainer;
+import utility.pmUtility;
 
 /**
  *
@@ -70,11 +71,14 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
          * There is a constant, and we measure the coefficient on the W
          * So in this implementation just use the first column to get OLS fits and errors, etc.
          */
-        ContainerLinear leftRCT = new ContainerLinear(container.getLeft()); //This object will compute the beta and MSE for the left split
-        ContainerLinear rightRCT = new ContainerLinear(container.getRight());
+        ContainerLinear leftLinear = new ContainerLinear(container.getLeft()); //This object will compute the beta and MSE for the left split
+        ContainerLinear rightLinear = new ContainerLinear(container.getRight());
         
-        leftMSE = leftRCT.getSSE();
-        rightMSE = rightRCT.getSSE();
+        // pmUtility.prettyPrintVector(leftLinear.getBeta());
+        // pmUtility.prettyPrintVector(rightLinear.getBeta());
+        
+        leftMSE = leftLinear.getObjectiveFunctionValue();
+        rightMSE = rightLinear.getObjectiveFunctionValue();
                 
         // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
         // return (leftMSE + rightMSE) / X.getNumObs();

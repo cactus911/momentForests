@@ -57,7 +57,7 @@ public class LinearMomentSpecification implements MomentSpecification {
     /**
      * We are going to control homogeneous parameters through these variables
      */
-    boolean[] HOMOGENEITY_INDEX = {true, false};
+    boolean[] HOMOGENEITY_INDEX = {false, false};
     Jama.Matrix HOMOGENEOUS_PARAMETER_VECTOR = null;
 
     public LinearMomentSpecification(int numObs) {
@@ -211,12 +211,20 @@ public class LinearMomentSpecification implements MomentSpecification {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -1);
         beta.set(1, 0, 1);
-        
+
         boolean singleBeta = false;
-        if(singleBeta) {
+        if (singleBeta) {
             return beta;
         }
-        
+
+        boolean simplest = true;
+        if (simplest) {
+            if (zi.get(0, 0) > 0) {
+                beta.set(1, 0, -2);
+            }
+            return beta;
+        }
+
         if (zi.get(0, 0) > 0) { // if z1 > 0 \beta_0 = 1
             if (!imposeUniformBeta1) {
                 beta.set(0, 0, 2);

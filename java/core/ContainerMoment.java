@@ -40,7 +40,9 @@ public abstract class ContainerMoment {
      * Returns the error within this partition.
      * @return
      */
-    public abstract double getSSE();
+    public abstract double getObjectiveFunctionValue();
     public abstract Jama.Matrix getVariance();
+
+    public abstract double getObjectiveFunctionImposingHomogeneity(int k, double value);        
     
 }

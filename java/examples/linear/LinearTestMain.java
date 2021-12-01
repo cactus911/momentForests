@@ -43,7 +43,7 @@ public class LinearTestMain {
     public static void main(String[] args) {
 
         // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
-        MomentSpecification mySpecification = new LinearMomentSpecification(5000);
+        MomentSpecification mySpecification = new LinearMomentSpecification(1500);
         mySpecification.loadData(); // Create data using rng
 
         double bestMinImprovement = 0;
@@ -52,11 +52,18 @@ public class LinearTestMain {
 
         double lowestSSE = 0;
         boolean first = true;
+        
+        /**
+         * Need to figure out how to implement a pre-estimation test to see
+         * which parameters are globally constant. Our first idea is to do a
+         * single split and then test at that first split.
+         */
+        int maxTreeDepth = 25;
 
         for (double alpha = -1; alpha <= -1; alpha++) {
             mySpecification.setHomogeneousParameters(new Jama.Matrix(1, 1, alpha));
 
-            int numberTreesInForest = 25;
+            int numberTreesInForest = 1;
             // System.out.println("numTrees: " + numberTreesInForest);
 
             /**
@@ -64,15 +71,15 @@ public class LinearTestMain {
              */
             DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(true), mySpecification.getZ(), null);
             /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
-            boolean verbose = false;
+            boolean verbose = true;
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
-            for (double minImprovement = 10; minImprovement <= 10; minImprovement *= 2) {
-                for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 500; minObservationsPerLeaf *= 2) {
+            for (double minImprovement = 1E-35; minImprovement <= 1E-35; minImprovement *= 10) {
+                for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
                     System.out.println("Alpha: "+alpha);
                     System.out.println("Minimum Improvement Threshold: " + minImprovement);
                     System.out.println("Minimum Observations per Leaf: " + minObservationsPerLeaf);
-                    TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, 20); // k = 1
+                    TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth); // k = 1
                     myForest.setTreeOptions(cvOptions);
                     /**
                      * Grow the moment forest
@@ -116,7 +123,7 @@ public class LinearTestMain {
                             inSampleFitSSE += error * error;
                         }
                         double MSE = inSampleFitSSE / testZ.getRowDimension();
-                        System.out.println("In-sample MSE: " + MSE);
+                        System.out.println("Out-of-sample MSE: " + MSE);
                         if (MSE < lowestSSE || first) {
                             lowestSSE = MSE;
                             first = false;

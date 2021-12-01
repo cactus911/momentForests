@@ -65,7 +65,7 @@ public interface MomentSpecification {
     public DataLens getOutOfSampleXYZ(int numObsOutOfSample);
 
     public void loadData();
-
+    
     public String getVariableName(int variableIndex);
 
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex);

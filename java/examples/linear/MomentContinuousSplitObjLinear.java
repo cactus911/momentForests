@@ -26,6 +26,7 @@ package examples.linear;
 import core.MomentContinuousSplitObj;
 import core.DataLens;
 import core.SplitContainer;
+import utility.pmUtility;
 
 /**
  *
@@ -66,37 +67,40 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerLinear leftRCT = new ContainerLinear(container.getLeft()); //This object will compute the beta and MSE for the left split
-        ContainerLinear rightRCT = new ContainerLinear(container.getRight());
+        ContainerLinear leftLinear = new ContainerLinear(container.getLeft()); //This object will compute the beta and MSE for the left split
+        ContainerLinear rightLinear = new ContainerLinear(container.getRight());
 
-        leftMSE = leftRCT.getSSE();
-        rightMSE = rightRCT.getSSE();
+        leftMSE = leftLinear.getObjectiveFunctionValue();
+        rightMSE = rightLinear.getObjectiveFunctionValue();
 
-        if(debugVerbose) {
-            System.out.println("MSE = "+(leftMSE+rightMSE)+" n_Left: "+numObsLeft+" n_Right: "+numObsRight+" MSE_Left: "+leftMSE+" MSE_Right: "+rightMSE+" minCount: "+minCount);
+        if (leftLinear.getBeta() != null && rightLinear.getBeta() != null) {
+            pmUtility.prettyPrintVector(leftLinear.getBeta());
+            pmUtility.prettyPrintVector(rightLinear.getBeta());
         }
-        
+
+        if (debugVerbose) {
+            System.out.println("MSE = " + (leftMSE + rightMSE) + " n_Left: " + numObsLeft + " n_Right: " + numObsRight + " MSE_Left: " + leftMSE + " MSE_Right: " + rightMSE + " minCount: " + minCount);
+        }
+
         if (getEffectiveNumObsLeft() < minCount) {
-            if(debugVerbose) {
-                System.out.println("Not enough n_left = "+getEffectiveNumObsLeft()+" ==> Triggered positive infinity");
+            if (debugVerbose) {
+                System.out.println("Not enough n_left = " + getEffectiveNumObsLeft() + " ==> Triggered positive infinity");
             }
             leftMSE = Double.POSITIVE_INFINITY;
             // return Double.POSITIVE_INFINITY;
         }
         if (getEffectiveNumObsRight() < minCount) {
-            if(debugVerbose) {
-                System.out.println("Not enough n_right = "+getEffectiveNumObsRight()+" ==> Triggered positive infinity");
+            if (debugVerbose) {
+                System.out.println("Not enough n_right = " + getEffectiveNumObsRight() + " ==> Triggered positive infinity");
             }
             rightMSE = Double.POSITIVE_INFINITY;
             // return Double.POSITIVE_INFINITY;
         }
 
-        
         // return (leftMSE + rightMSE) / X.getNumObs();
         return (leftMSE + rightMSE);
     }
 
-    
     @Override
     public double f_to_minimize(double splitPoint) {
         container = SplitContainer.getContinuousDataSplit(lens, splitPoint, indexSplitVariable); //This returns the data split into each leaf based on splitpoint and index of split variable

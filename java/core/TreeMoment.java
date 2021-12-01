@@ -23,6 +23,7 @@
  */
 package core;
 
+import JSci.maths.statistics.ChiSqrDistribution;
 import java.util.ArrayList;
 import java.util.TreeSet;
 import optimization.Fmin;
@@ -60,7 +61,9 @@ public class TreeMoment {
 
     boolean verbose;
 
-    boolean debugOptimization = false;
+    boolean debugOptimization = true;
+    private double currentNodeObjectiveFunction;
+    private ContainerMoment currentNodeMoment;
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
             Boolean[] discreteVector, boolean verbose, double minProportionEachPartition,
@@ -156,7 +159,7 @@ public class TreeMoment {
          * Now compute a baseline SSE for comparing the improvement in fit
          */
         // System.out.println("Computing baseline SSE");
-        ContainerMoment currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
+        currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
         setNodeEstimatedVariance(currentNodeMoment.getVariance());
 
@@ -169,9 +172,10 @@ public class TreeMoment {
          * This is the place to set a priori conditions on growing the tree (max
          * depth, etc.)
          */
+        double optimalZ_SSE = 0;
         if (depth < maxDepth) {
             double optimalZ = 0;
-            double optimalZ_SSE = 0;
+            
             double optimalZ_SSE_Left = 0;
             double optimalZ_SSE_Right = 0;
             int numObsLeft = 0;
@@ -400,17 +404,17 @@ public class TreeMoment {
                 }
             }
 
-            double baseline = currentNodeMoment.getSSE();
+            setCurrentNodeObjectiveFunction(currentNodeMoment.getObjectiveFunctionValue());
 
             // System.out.println("Baseline SSE is computed as: " + baseline);
             if (verbose) {
                 echoLn("Number of observations in node: " + lensGrowingTree.getNumObs());
-                echoLn("Improvement from " + baseline + " to " + optimalZ_SSE + " (left: " + optimalZ_SSE_Left + " [" + numObsLeft + "] right: " + optimalZ_SSE_Right + " [" + numObsRight + "])");
-                echoLn("Improvement absolute (to compare against threshold): " + (baseline - optimalZ_SSE));
+                echoLn("Improvement from " + getCurrentNodeObjectiveFunction() + " to " + optimalZ_SSE + " (left: " + optimalZ_SSE_Left + " [" + numObsLeft + "] right: " + optimalZ_SSE_Right + " [" + numObsRight + "])");
+                echoLn("Improvement absolute (to compare against threshold): " + (getCurrentNodeObjectiveFunction() - optimalZ_SSE));
             }
 
             // if (baseline - optimalX_SSE < improvementThreshold) {
-            if ((baseline - optimalZ_SSE) < improvementThreshold || first || baseline == 0) {
+            if ((getCurrentNodeObjectiveFunction() - optimalZ_SSE) < improvementThreshold || first || getCurrentNodeObjectiveFunction() == 0) {
                 setTerminal(true);
                 if (verbose) {
                     echoLn(depth + ". Terminating due to lack of improvement in SSE; rules: " + getParentRuleDescriptive(null) + " beta: " + pmUtility.stringPrettyPrintVector(betaEstimateNode));
@@ -479,6 +483,39 @@ public class TreeMoment {
          * partial out (i.e. subtract it out) the global part, just use the tree
          * for the part where there is (may be) parameter heterogeneity.
          */
+        /**
+         * For the first split (when the parent is null), test parameter by
+         * parameter for homogeneity, then report that
+         */
+        if (parent == null && childLeft != null && childRight != null && 1==1) {
+            // optimalZ_sse is objective value with heterogeneity
+            // test using DM from Newey-McFadden, chi-squared with one degree of freedom
+            ChiSqrDistribution chi = new ChiSqrDistribution(1);
+
+            for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+                // this is a little more tricky than i was thinking. need to rejigger a bit
+                // some quick and dirty idea: take parameter value from left, impose on right fmin, check difference in objective?
+                // versus re-estimating with imposition of equality
+
+                /**
+                 * Quick and dirty method first
+                 */
+                Jama.Matrix betaLeft = childLeft.getNodeEstimatedBeta().copy();
+                Jama.Matrix betaRight = childRight.getNodeEstimatedBeta().copy();
+
+                double fminLeft = childLeft.getCurrentNodeMoment().getObjectiveFunctionValue();
+                double fminRight = childRight.getCurrentNodeMoment().getObjectiveFunctionImposingHomogeneity(k, betaLeft.get(k,0));
+                double homogeneousFmin = fminLeft + fminRight;
+                
+                // check DM test, which is -2*n*[q_constrained - q_unconstrained]
+                double dm = -2.0*lensGrowingTree.getNumObs()*(homogeneousFmin-optimalZ_SSE);
+                System.out.println(chi.inverse(0.95)+" "+chi.inverse(0.05)+" "+dm);
+                if(dm<chi.inverse(0.95)) {
+                    
+                }
+            }
+
+        }
     }
 
 //    public String getParentRule(TreeSet<Integer> indexPreviousSplits) {
@@ -760,5 +797,34 @@ public class TreeMoment {
      */
     public void setRule(SplitRule rule) {
         this.rule = rule;
+    }
+
+    /**
+     * @return the currentNodeObjectiveFunction
+     */
+    public double getCurrentNodeObjectiveFunction() {
+        return currentNodeObjectiveFunction;
+    }
+
+    /**
+     * @param currentNodeObjectiveFunction the currentNodeObjectiveFunction to
+     * set
+     */
+    public void setCurrentNodeObjectiveFunction(double currentNodeObjectiveFunction) {
+        this.currentNodeObjectiveFunction = currentNodeObjectiveFunction;
+    }
+
+    /**
+     * @return the currentNodeMoment
+     */
+    public ContainerMoment getCurrentNodeMoment() {
+        return currentNodeMoment;
+    }
+
+    /**
+     * @param currentNodeMoment the currentNodeMoment to set
+     */
+    public void setCurrentNodeMoment(ContainerMoment currentNodeMoment) {
+        this.currentNodeMoment = currentNodeMoment;
     }
 }
