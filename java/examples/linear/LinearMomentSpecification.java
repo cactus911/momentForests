@@ -338,7 +338,8 @@ public class LinearMomentSpecification implements MomentSpecification {
             Random rng = new Random(321);
             NormalDistribution normal = new NormalDistribution();
             for (int i = 0; i < numObs; i++) {
-                X.set(i, 0, normal.inverse(rng.nextDouble()));
+                // X.set(i, 0, normal.inverse(rng.nextDouble()));
+                X.set(i, 0, 1.0);
                 X.set(i, 1, rng.nextDouble());
 
                 Z.set(i, 0, normal.inverse(rng.nextDouble()));
@@ -356,7 +357,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 //                pmUtility.prettyPrintVector(beta);
                 Jama.Matrix subX = X.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
                 // pmUtility.prettyPrint(subX);
-                Y.set(i, 0, (subX.times(beta)).get(0, 0) + normal.inverse(rng.nextDouble()));
+                Y.set(i, 0, (subX.times(beta)).get(0, 0) + 0*normal.inverse(rng.nextDouble()));
             }
         }
 //        pmUtility.prettyPrint(pmUtility.concatMatrix(Y,pmUtility.concatMatrix(X,Z)));

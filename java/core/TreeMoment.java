@@ -264,8 +264,8 @@ public class TreeMoment {
                         boolean testGridSearch = true;
                         double h = 1E-30;
                         if (testGridSearch) {
-                            double leftZ = minZ;
-                            double rightZ = maxZ;
+                            double leftZ = minZ*0;
+                            double rightZ = maxZ*0;
 
                             double increment = h + (rightZ - leftZ) / 100.0;
 
@@ -287,6 +287,7 @@ public class TreeMoment {
                             if (debugOptimization) {
                                 echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " best " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
                             }
+                            System.exit(0);
 
                             /**
                              * Try a second grid search within the last interval

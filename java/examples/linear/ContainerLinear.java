@@ -64,15 +64,15 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
          *
          * Done that now. Just have to get it working properly again.
          */
-        if (Y.getRowDimension() < 30) {
+        if (Y.getRowDimension() < -30) {
             System.out.println("Too few observations");
             beta = null;
             objectiveFunctionValue = Double.POSITIVE_INFINITY;
         } else {
             try {
-                boolean useUncmin = false;
+                boolean useUncmin = true;
                 if (useUncmin) {
-                    Uncmin_f77 minimizer = new Uncmin_f77(false);
+                    Uncmin_f77 minimizer = new Uncmin_f77(true);
 
                     int numParams = X.getColumnDimension();
 
@@ -89,9 +89,9 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                         typsiz[i] = 1.0;
                     }
 
-                    double[] fscale = {0, 1.0};
+                    double[] fscale = {0, 1.0E-8};
                     int[] method = {0, 3};
-                    int[] iexp = {0, 1};
+                    int[] iexp = {0, 0};
                     int[] msg = {0, 1};
                     int[] ndigit = {0, 8};
                     int[] itnlim = {0, 150};
@@ -105,7 +105,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
                     Jama.Matrix betaUncmin = new Jama.Matrix(X.getColumnDimension(), 1);
                     for (int i = 0; i < guess.length - 1; i++) {
-                        betaUncmin.set(i, 0, guess[i + 1]);
+                        betaUncmin.set(i, 0, xpls[i + 1]);
                     }
 
                     // produce the essentially same answer 
@@ -113,7 +113,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 //            pmUtility.prettyPrintVector(betaUncmin);
 //            System.exit(0);
                     beta = betaUncmin.copy();
-                    objectiveFunctionValue = getMoment(beta);
+                    objectiveFunctionValue = getMoment(beta, true);
                     
                     System.out.print("\t\tFound uncmin beta: ");
                     pmUtility.prettyPrintVector(betaUncmin);
@@ -147,7 +147,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         }
     }
 
-    private double getMoment(Jama.Matrix beta) {
+    private double getMoment(Jama.Matrix beta, boolean debugMoment) {
         /**
          * Let's implement the moment-based version of OLS here (need this for a
          * variety of reasons, also will extend nicely to other models more
@@ -157,14 +157,14 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         Jama.Matrix Y = lens.getY();
         int numMoments = X.getColumnDimension();
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
-        Jama.Matrix fittedY = lens.getX().times(beta);
+        Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
         Jama.Matrix omega = new Jama.Matrix(numMoments, numMoments);
 
         for (int i = 0; i < fittedY.getRowDimension(); i++) {
             Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
             for (int k = 0; k < numMoments; k++) {
-                gi.set(k, 0, e.get(i, 0) * X.get(i, k));
+                gi.set(k, 0, e.get(i, 0) * X.get(i, k));                
                 g.set(k, 0, g.get(k, 0) + gi.get(k, 0));
             }
 //            pmUtility.prettyPrintVector(gi);
@@ -176,7 +176,6 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         // that appears to sometimes generate perverse decreases in fit when splitting (probably due to some numerical instability in inversion, and the confounding of fits versus variance)
         double q = ((g.transpose()).times(g)).get(0, 0); // this is gmm with identity weighting matrix
 
-        boolean debugMoment = false;
         if (debugMoment) {
             System.out.println("beta:");
             pmUtility.prettyPrint(beta);
@@ -186,7 +185,12 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             pmUtility.prettyPrintVector(g);
             System.out.println("omega inverse:");
             pmUtility.prettyPrint(omega.inverse());
-            System.out.println("q: " + q);
+            System.out.println("q: " + q+" norm2: "+e.norm2());
+        }
+        
+        boolean trySSE = false;
+        if(trySSE) {
+            q = e.norm2();
         }
 //        System.exit(0);
         return q;
@@ -211,7 +215,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     public double getObjectiveFunctionImposingHomogeneity(int k, double value) {
         Jama.Matrix betaHomogeneous = beta.copy();
         betaHomogeneous.set(k, 0, value);
-        return getMoment(betaHomogeneous);
+        return getMoment(betaHomogeneous, false);
     }
 
     @Override
@@ -220,7 +224,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         for (int i = 0; i < x.length - 1; i++) {
             b.set(i, 0, x[i + 1]);
         }
-        return getMoment(b);
+        return getMoment(b, false);
     }
 
     @Override

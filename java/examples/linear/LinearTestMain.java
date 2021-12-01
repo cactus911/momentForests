@@ -43,7 +43,7 @@ public class LinearTestMain {
     public static void main(String[] args) {
 
         // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
-        MomentSpecification mySpecification = new LinearMomentSpecification(1500);
+        MomentSpecification mySpecification = new LinearMomentSpecification(500);
         mySpecification.loadData(); // Create data using rng
 
         double bestMinImprovement = 0;
@@ -75,7 +75,7 @@ public class LinearTestMain {
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
             for (double minImprovement = 1E-35; minImprovement <= 1E-35; minImprovement *= 10) {
-                for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
+                for (int minObservationsPerLeaf = 1; minObservationsPerLeaf <= 1; minObservationsPerLeaf *= 2) {
                     System.out.println("Alpha: "+alpha);
                     System.out.println("Minimum Improvement Threshold: " + minImprovement);
                     System.out.println("Minimum Observations per Leaf: " + minObservationsPerLeaf);
