@@ -340,7 +340,7 @@ public class LinearMomentSpecification implements MomentSpecification {
             for (int i = 0; i < numObs; i++) {
                 // X.set(i, 0, normal.inverse(rng.nextDouble()));
                 X.set(i, 0, 1.0);
-                X.set(i, 1, rng.nextDouble());
+                X.set(i, 1, Math.pow(normal.inverse(rng.nextDouble()),2));
 
                 Z.set(i, 0, normal.inverse(rng.nextDouble()));
                 Z.set(i, 1, rng.nextDouble());

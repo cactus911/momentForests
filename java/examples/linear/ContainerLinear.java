@@ -114,7 +114,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 //            System.exit(0);
                     beta = betaUncmin.copy();
                     objectiveFunctionValue = getMoment(beta, true);
-                    
+
                     System.out.print("\t\tFound uncmin beta: ");
                     pmUtility.prettyPrintVector(betaUncmin);
                     Jama.Matrix betaOLS = pmUtility.OLSsvd(X, Y, false);
@@ -155,6 +155,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
          */
         Jama.Matrix X = lens.getX();
         Jama.Matrix Y = lens.getY();
+        Jama.Matrix runningTotal = new Jama.Matrix(X.getRowDimension(), X.getColumnDimension());
         int numMoments = X.getColumnDimension();
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
         Jama.Matrix fittedY = X.times(beta);
@@ -164,8 +165,9 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         for (int i = 0; i < fittedY.getRowDimension(); i++) {
             Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
             for (int k = 0; k < numMoments; k++) {
-                gi.set(k, 0, e.get(i, 0) * X.get(i, k));                
+                gi.set(k, 0, e.get(i, 0) * X.get(i, k));
                 g.set(k, 0, g.get(k, 0) + gi.get(k, 0));
+                runningTotal.set(i, k, g.get(k, 0));
             }
 //            pmUtility.prettyPrintVector(gi);
             omega.plusEquals(gi.times(gi.transpose()));
@@ -181,15 +183,22 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             pmUtility.prettyPrint(beta);
             System.out.println("e:");
             pmUtility.prettyPrintVector(e);
+            for (int k = 0; k < X.getColumnDimension(); k++) {
+                System.out.println("x" + k + ":");
+                pmUtility.prettyPrintVector(pmUtility.getColumn(X, k));
+                System.out.println("running total" + k + ":");
+                pmUtility.prettyPrintVector(pmUtility.getColumn(runningTotal, k));
+                
+            }
             System.out.println("g:");
             pmUtility.prettyPrintVector(g);
             System.out.println("omega inverse:");
             pmUtility.prettyPrint(omega.inverse());
-            System.out.println("q: " + q+" norm2: "+e.norm2());
+            System.out.println("q: " + q + " norm2: " + e.norm2());
         }
-        
+
         boolean trySSE = false;
-        if(trySSE) {
+        if (trySSE) {
             q = e.norm2();
         }
 //        System.exit(0);
