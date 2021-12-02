@@ -71,7 +71,7 @@ public class SimpleRCTMain {
              */
             System.out.println("Need to fix up RCT X's and Z's here");
             System.exit(0);
-            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), pmUtility.getColumn(mySpecification.getX(), 0));
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(false), mySpecification.getZ(), pmUtility.getColumn(mySpecification.getX(), 0));
             boolean verbose = true;
             MomentForest myForest = new MomentForest(mySpecification, numtrees, 314, forestLens, verbose, new TreeOptions());
             

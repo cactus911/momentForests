@@ -77,7 +77,7 @@ public class HayleyTestMain {
                  * Initialize the moment forest
                  */
                 Jama.Matrix rctX1 = mySpecification.getX();
-                Jama.Matrix rctY1 = mySpecification.getY();
+                Jama.Matrix rctY1 = mySpecification.getY(false);
                 Jama.Matrix balancing1 = pmUtility.getColumn(mySpecification.getX(), 0); // Treatment indicators
                 // pmUtility.prettyPrint(rctX);
                 

@@ -82,7 +82,7 @@ public class SplitRule {
     //Returns 1 if the observation is on the left side of the partition, 0 otherwise
     public boolean isLeft(Matrix zi) {
         if (splitOnDiscreteVariable) {
-            Integer xc = new Integer((int) zi.get(0, optimalSplitVariableIndex));
+            Integer xc = (int) zi.get(0, optimalSplitVariableIndex);
             return partition.getLeft().contains(xc);
         } else {
 //            boolean answer = true;

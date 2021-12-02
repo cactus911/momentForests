@@ -111,7 +111,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public Matrix getY() {
+    public Matrix getY(boolean partialOut) {
         return Y;
     }
 
@@ -144,10 +144,7 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
         return beta;
     }
 
-    @Override
-    public Matrix getOutOfSampleX() {
-        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
-    }
+    
 
     @Override
     public void loadData() {
@@ -244,5 +241,21 @@ public class SimpleRCTMomentSpecification implements MomentSpecification {
             stars = "***";
         }
         return String.format("%.2f (%.2f) %s", b, se, stars);
+    }
+
+
+    @Override
+    public DataLens getOutOfSampleXYZ(int numObsOutOfSample) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public void setHomogeneousParameters(Matrix homogeneousParameters) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public double getHomogeneousComponent(Matrix xi) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 }
