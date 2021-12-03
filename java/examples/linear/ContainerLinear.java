@@ -26,9 +26,15 @@ package examples.linear;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
-import optimization.Fmin_methods;
+import java.awt.BorderLayout;
+import javax.swing.JFrame;
 import optimization.Uncmin_f77;
 import optimization.Uncmin_methods;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import utility.pmUtility;
 
 /**
@@ -52,27 +58,15 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         Jama.Matrix X = lens.getX();
         Jama.Matrix Y = lens.getY();
 
-//        pmUtility.prettyPrint(pmUtility.concatMatrix(Y, X));
-//        beta = pmUtility.OLS(X, Y, false);
-//        System.out.print("beta OLS: ");
-//        pmUtility.prettyPrintVector(beta);
-        // System.exit(0);
-        /**
-         * Need to implement filter here to separate X and Z for putting in the
-         * OLS that avoids the whole issue of splitting these matrices over and
-         * over
-         *
-         * Done that now. Just have to get it working properly again.
-         */
-        if (Y.getRowDimension() < -30) {
-            System.out.println("Too few observations");
+        if (Y.getRowDimension() < 30) {
+            // System.out.println("Too few observations");
             beta = null;
             objectiveFunctionValue = Double.POSITIVE_INFINITY;
         } else {
             try {
                 boolean useUncmin = true;
                 if (useUncmin) {
-                    Uncmin_f77 minimizer = new Uncmin_f77(true);
+                    Uncmin_f77 minimizer = new Uncmin_f77(false);
 
                     int numParams = X.getColumnDimension();
 
@@ -113,13 +107,18 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 //            pmUtility.prettyPrintVector(betaUncmin);
 //            System.exit(0);
                     beta = betaUncmin.copy();
-                    objectiveFunctionValue = getMoment(beta, true);
+                    double sse = 0;
+                    Jama.Matrix fit = X.times(beta);
+                    for (int i = 0; i < Y.getRowDimension(); i++) {
+                        sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
+                    }
+                    objectiveFunctionValue = sse;
 
-                    System.out.print("\t\tFound uncmin beta: ");
-                    pmUtility.prettyPrintVector(betaUncmin);
-                    Jama.Matrix betaOLS = pmUtility.OLSsvd(X, Y, false);
-                    System.out.print("\t\tCompared to betaOLS: ");
-                    pmUtility.prettyPrintVector(betaOLS);
+//                    System.out.print("\t\tFound uncmin beta: ");
+//                    pmUtility.prettyPrintVector(betaUncmin);
+//                    Jama.Matrix betaOLS = pmUtility.OLSsvd(X, Y, false);
+//                    System.out.print("\t\tCompared to betaOLS: ");
+//                    pmUtility.prettyPrintVector(betaOLS);
                 } else {
                     Jama.Matrix betaOLS = pmUtility.OLSsvd(X, Y, false);
                     beta = betaOLS.copy();
@@ -137,7 +136,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     pmUtility.prettyPrintVector(beta);
                 }
             } catch (Exception e) {
-                // e.printStackTrace();
+                e.printStackTrace();
                 if (debugVerbose) {
                     System.out.println("Matrix not invertible");
                 }
@@ -183,21 +182,40 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             pmUtility.prettyPrint(beta);
             System.out.println("e:");
             pmUtility.prettyPrintVector(e);
+
+            XYSeries xy = new XYSeries("X1");
+
             for (int k = 0; k < X.getColumnDimension(); k++) {
                 System.out.println("x" + k + ":");
                 pmUtility.prettyPrintVector(pmUtility.getColumn(X, k));
                 System.out.println("running total" + k + ":");
                 pmUtility.prettyPrintVector(pmUtility.getColumn(runningTotal, k));
-                
             }
+
+            for (int i = 0; i < X.getRowDimension(); i++) {
+                xy.add(X.get(i, 1), e.get(i, 0));
+            }
+
             System.out.println("g:");
             pmUtility.prettyPrintVector(g);
             System.out.println("omega inverse:");
             pmUtility.prettyPrint(omega.inverse());
             System.out.println("q: " + q + " norm2: " + e.norm2());
+
+            // let's graph the fit to see what is going on here geometrically
+            XYSeriesCollection xyc = new XYSeriesCollection();
+
+            JFreeChart chart = ChartFactory.createScatterPlot("Fit", "X", "Y", xyc);
+            JFrame f = new JFrame("Fit");
+            f.setBounds(100, 100, 1000, 1000);
+            // f.setVisible(true);
+            f.getContentPane().setLayout(new BorderLayout());
+            f.getContentPane().add(new ChartPanel(chart));
         }
 
-        boolean trySSE = false;
+        // key point here is that we estimate the model using GMM
+        // but we report goodness-of-fit when searching over the splits
+        boolean trySSE = true;
         if (trySSE) {
             q = e.norm2();
         }

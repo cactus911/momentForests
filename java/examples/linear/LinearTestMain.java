@@ -74,8 +74,8 @@ public class LinearTestMain {
             boolean verbose = true;
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, forestLens, verbose, new TreeOptions());
 
-            for (double minImprovement = 1E-35; minImprovement <= 1E-35; minImprovement *= 10) {
-                for (int minObservationsPerLeaf = 1; minObservationsPerLeaf <= 1; minObservationsPerLeaf *= 2) {
+            for (double minImprovement = 1.0; minImprovement <= 1.0; minImprovement *= 10) {
+                for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
                     System.out.println("Alpha: "+alpha);
                     System.out.println("Minimum Improvement Threshold: " + minImprovement);
                     System.out.println("Minimum Observations per Leaf: " + minObservationsPerLeaf);

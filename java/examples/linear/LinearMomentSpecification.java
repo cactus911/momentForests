@@ -357,7 +357,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 //                pmUtility.prettyPrintVector(beta);
                 Jama.Matrix subX = X.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
                 // pmUtility.prettyPrint(subX);
-                Y.set(i, 0, (subX.times(beta)).get(0, 0) + 0*normal.inverse(rng.nextDouble()));
+                Y.set(i, 0, (subX.times(beta)).get(0, 0) + normal.inverse(rng.nextDouble()));
             }
         }
 //        pmUtility.prettyPrint(pmUtility.concatMatrix(Y,pmUtility.concatMatrix(X,Z)));

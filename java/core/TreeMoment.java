@@ -61,7 +61,7 @@ public class TreeMoment {
 
     boolean verbose;
 
-    boolean debugOptimization = true;
+    boolean debugOptimization = false;
     private double currentNodeObjectiveFunction;
     private ContainerMoment currentNodeMoment;
 
@@ -247,6 +247,15 @@ public class TreeMoment {
                         // System.out.println("TreeMoment.java:224 -> min x_1: "+minX+" max x_1: "+maxX);
                         double optimalZ_k;
                         double optimalZ_SSE_k;
+                        
+                        /**
+                         * Problem here is not that the linear moments are giving us the wrong beta for the right split (I verified that it has worked)
+                         * Problem is that the moments are super tiny when the Z is wrong. I really need to figure out why the objective function can be so
+                         * small when the splits are combining two different parameters in one space. That simply should not work!
+                         * 
+                         * Basically, why can the objective function be so small when the errors are much bigger. This feels like an identification problem,
+                         * but that's not quite right.
+                         */
 
                         boolean useFmin = true;
                         if (useFmin) {
@@ -264,8 +273,8 @@ public class TreeMoment {
                         boolean testGridSearch = true;
                         double h = 1E-30;
                         if (testGridSearch) {
-                            double leftZ = minZ*0;
-                            double rightZ = maxZ*0;
+                            double leftZ = minZ;
+                            double rightZ = maxZ;
 
                             double increment = h + (rightZ - leftZ) / 100.0;
 
@@ -287,8 +296,7 @@ public class TreeMoment {
                             if (debugOptimization) {
                                 echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " best " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
                             }
-                            System.exit(0);
-
+                            
                             /**
                              * Try a second grid search within the last interval
                              * to really improve precision of our estimates

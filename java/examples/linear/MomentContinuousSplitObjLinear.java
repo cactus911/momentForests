@@ -73,10 +73,10 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
         leftMSE = leftLinear.getObjectiveFunctionValue();
         rightMSE = rightLinear.getObjectiveFunctionValue();
 
-        if (leftLinear.getBeta() != null && rightLinear.getBeta() != null) {
-            pmUtility.prettyPrintVector(leftLinear.getBeta());
-            pmUtility.prettyPrintVector(rightLinear.getBeta());
-        }
+//        if (leftLinear.getBeta() != null && rightLinear.getBeta() != null) {
+//            pmUtility.prettyPrintVector(leftLinear.getBeta());
+//            pmUtility.prettyPrintVector(rightLinear.getBeta());
+//        }
 
         if (debugVerbose) {
             System.out.println("MSE = " + (leftMSE + rightMSE) + " n_Left: " + numObsLeft + " n_Right: " + numObsRight + " MSE_Left: " + leftMSE + " MSE_Right: " + rightMSE + " minCount: " + minCount);
