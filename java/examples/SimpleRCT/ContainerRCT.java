@@ -42,7 +42,7 @@ public class ContainerRCT extends ContainerMoment {
     }
 
     @Override
-    public double getObjectiveFunctionImposingHomogeneity(int k, double value) {
+    public double getMomentFunctionImposingHomogeneity(int k, double value) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
@@ -94,13 +94,18 @@ public class ContainerRCT extends ContainerMoment {
     }
 
     @Override
-    public double getObjectiveFunctionValue() {
+    public double getGoodnessOfFit() {
         return mse;
     }
 
     @Override
     public Matrix getVariance() {
         return variance;
+    }
+
+    @Override
+    public double getMomentFunctionValue(Matrix beta) {
+        throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
 }

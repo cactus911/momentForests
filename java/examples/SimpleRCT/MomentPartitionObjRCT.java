@@ -93,8 +93,8 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
         ContainerRCT leftRCT = new ContainerRCT(container.getLeft()); //This object will compute the beta and MSE for the left split
         ContainerRCT rightRCT = new ContainerRCT(container.getRight());
         
-        leftMSE = leftRCT.getObjectiveFunctionValue();
-        rightMSE = rightRCT.getObjectiveFunctionValue();
+        leftMSE = leftRCT.getGoodnessOfFit();
+        rightMSE = rightRCT.getGoodnessOfFit();
                 
         // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
         // return (leftMSE + rightMSE) / X.getNumObs();

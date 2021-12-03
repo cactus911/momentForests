@@ -43,7 +43,7 @@ import utility.pmUtility;
  */
 public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
-    double objectiveFunctionValue;
+    double goodnessOfFit;
     Jama.Matrix beta;
     Jama.Matrix variance;
     boolean debugVerbose = false;
@@ -61,7 +61,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         if (Y.getRowDimension() < 30) {
             // System.out.println("Too few observations");
             beta = null;
-            objectiveFunctionValue = Double.POSITIVE_INFINITY;
+            goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {
             try {
                 boolean useUncmin = true;
@@ -112,7 +112,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     for (int i = 0; i < Y.getRowDimension(); i++) {
                         sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
                     }
-                    objectiveFunctionValue = sse;
+                    goodnessOfFit = sse;
 
 //                    System.out.print("\t\tFound uncmin beta: ");
 //                    pmUtility.prettyPrintVector(betaUncmin);
@@ -127,12 +127,12 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     for (int i = 0; i < Y.getRowDimension(); i++) {
                         sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
                     }
-                    objectiveFunctionValue = sse;
+                    goodnessOfFit = sse;
                     // objectiveFunctionValue = getMoment(beta);
                 }
 
                 if (debugVerbose) {
-                    System.out.format("ContainerLinear.computeBetaAndErrors SSE: %g ", +objectiveFunctionValue);
+                    System.out.format("ContainerLinear.computeBetaAndErrors SSE: %g ", +goodnessOfFit);
                     pmUtility.prettyPrintVector(beta);
                 }
             } catch (Exception e) {
@@ -141,7 +141,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     System.out.println("Matrix not invertible");
                 }
                 beta = null;
-                objectiveFunctionValue = Double.POSITIVE_INFINITY;
+                goodnessOfFit = Double.POSITIVE_INFINITY;
             }
         }
     }
@@ -215,10 +215,6 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
         // key point here is that we estimate the model using GMM
         // but we report goodness-of-fit when searching over the splits
-        boolean trySSE = true;
-        if (trySSE) {
-            q = e.norm2();
-        }
 //        System.exit(0);
         return q;
     }
@@ -229,8 +225,8 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     }
 
     @Override
-    public double getObjectiveFunctionValue() {
-        return objectiveFunctionValue;
+    public double getGoodnessOfFit() {
+        return goodnessOfFit;
     }
 
     @Override
@@ -239,7 +235,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     }
 
     @Override
-    public double getObjectiveFunctionImposingHomogeneity(int k, double value) {
+    public double getMomentFunctionImposingHomogeneity(int k, double value) {
         Jama.Matrix betaHomogeneous = beta.copy();
         betaHomogeneous.set(k, 0, value);
         return getMoment(betaHomogeneous, false);
@@ -262,6 +258,11 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     @Override
     public void hessian(double[] x, double[][] h) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public double getMomentFunctionValue(Jama.Matrix b) {
+        return getMoment(b, false);
     }
 
 }

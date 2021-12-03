@@ -43,7 +43,7 @@ public class LinearTestMain {
     public static void main(String[] args) {
 
         // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
-        MomentSpecification mySpecification = new LinearMomentSpecification(500);
+        MomentSpecification mySpecification = new LinearMomentSpecification(15000);
         mySpecification.loadData(); // Create data using rng
 
         double bestMinImprovement = 0;
@@ -58,7 +58,7 @@ public class LinearTestMain {
          * which parameters are globally constant. Our first idea is to do a
          * single split and then test at that first split.
          */
-        int maxTreeDepth = 25;
+        int maxTreeDepth = 1;
 
         for (double alpha = -1; alpha <= -1; alpha++) {
             mySpecification.setHomogeneousParameters(new Jama.Matrix(1, 1, alpha));

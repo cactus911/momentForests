@@ -77,8 +77,8 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
         // pmUtility.prettyPrintVector(leftLinear.getBeta());
         // pmUtility.prettyPrintVector(rightLinear.getBeta());
         
-        leftMSE = leftLinear.getObjectiveFunctionValue();
-        rightMSE = rightLinear.getObjectiveFunctionValue();
+        leftMSE = leftLinear.getGoodnessOfFit();
+        rightMSE = rightLinear.getGoodnessOfFit();
                 
         // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
         // return (leftMSE + rightMSE) / X.getNumObs();

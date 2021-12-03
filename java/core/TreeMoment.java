@@ -175,7 +175,7 @@ public class TreeMoment {
         double optimalZ_SSE = 0;
         if (depth < maxDepth) {
             double optimalZ = 0;
-            
+
             double optimalZ_SSE_Left = 0;
             double optimalZ_SSE_Right = 0;
             int numObsLeft = 0;
@@ -247,16 +247,20 @@ public class TreeMoment {
                         // System.out.println("TreeMoment.java:224 -> min x_1: "+minX+" max x_1: "+maxX);
                         double optimalZ_k;
                         double optimalZ_SSE_k;
-                        
-                        /**
-                         * Problem here is not that the linear moments are giving us the wrong beta for the right split (I verified that it has worked)
-                         * Problem is that the moments are super tiny when the Z is wrong. I really need to figure out why the objective function can be so
-                         * small when the splits are combining two different parameters in one space. That simply should not work!
-                         * 
-                         * Basically, why can the objective function be so small when the errors are much bigger. This feels like an identification problem,
-                         * but that's not quite right.
-                         */
 
+                        /**
+                         * Problem here is not that the linear moments are
+                         * giving us the wrong beta for the right split (I
+                         * verified that it has worked) Problem is that the
+                         * moments are super tiny when the Z is wrong. I really
+                         * need to figure out why the objective function can be
+                         * so small when the splits are combining two different
+                         * parameters in one space. That simply should not work!
+                         *
+                         * Basically, why can the objective function be so small
+                         * when the errors are much bigger. This feels like an
+                         * identification problem, but that's not quite right.
+                         */
                         boolean useFmin = true;
                         if (useFmin) {
                             optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
@@ -296,7 +300,7 @@ public class TreeMoment {
                             if (debugOptimization) {
                                 echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " best " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
                             }
-                            
+
                             /**
                              * Try a second grid search within the last interval
                              * to really improve precision of our estimates
@@ -413,7 +417,7 @@ public class TreeMoment {
                 }
             }
 
-            setCurrentNodeObjectiveFunction(currentNodeMoment.getObjectiveFunctionValue());
+            setCurrentNodeObjectiveFunction(currentNodeMoment.getGoodnessOfFit());
 
             // System.out.println("Baseline SSE is computed as: " + baseline);
             if (verbose) {
@@ -496,7 +500,8 @@ public class TreeMoment {
          * For the first split (when the parent is null), test parameter by
          * parameter for homogeneity, then report that
          */
-        if (parent == null && childLeft != null && childRight != null && 1==1) {
+        // System.out.println("Right before Wald test");
+        if (parent == null && childLeft != null && childRight != null && 1 == 1) {
             // optimalZ_sse is objective value with heterogeneity
             // test using DM from Newey-McFadden, chi-squared with one degree of freedom
             ChiSqrDistribution chi = new ChiSqrDistribution(1);
@@ -512,16 +517,32 @@ public class TreeMoment {
                 Jama.Matrix betaLeft = childLeft.getNodeEstimatedBeta().copy();
                 Jama.Matrix betaRight = childRight.getNodeEstimatedBeta().copy();
 
-                double fminLeft = childLeft.getCurrentNodeMoment().getObjectiveFunctionValue();
-                double fminRight = childRight.getCurrentNodeMoment().getObjectiveFunctionImposingHomogeneity(k, betaLeft.get(k,0));
-                double homogeneousFmin = fminLeft + fminRight;
-                
-                // check DM test, which is -2*n*[q_constrained - q_unconstrained]
-                double dm = -2.0*lensGrowingTree.getNumObs()*(homogeneousFmin-optimalZ_SSE);
-                System.out.println(chi.inverse(0.95)+" "+chi.inverse(0.05)+" "+dm);
-                if(dm<chi.inverse(0.95)) {
-                    
+                double fminRightBaseline = childRight.getCurrentNodeMoment().getMomentFunctionValue(betaRight);
+                // test against -1 just to see what's going on here
+
+                double fminRight = childRight.getCurrentNodeMoment().getMomentFunctionImposingHomogeneity(k, betaLeft.get(k, 0));
+                // double fminRight = childRight.getCurrentNodeMoment().getMomentFunctionImposingHomogeneity(k, -1);
+
+                // check DM test, which is 2*n*[q_constrained - q_unconstrained]
+                double dm = 2.0 * lensGrowingTree.getNumObs() * (fminRight - fminRightBaseline);
+                System.out.println("k = " + k + " chi0.95: " + chi.inverse(0.95) + " unconstrained: " + fminRightBaseline + " (b_k = " + betaRight.get(k, 0) + ") constrained: " + fminRight + " (b_k = " + betaLeft.get(k, 0) + ") dm: " + dm);
+                if (dm < chi.inverse(0.95)) {
+                    System.out.println("Parameter homogeneity detected on k = " + k);
                 }
+                /**
+                 * Still to be done a. make sure this method actually is kosher
+                 * b. kick up any parameters that we detected as homogeneous in
+                 * this step to the outer loop maybe the way to do this is to
+                 * build a tree with a single split, get the homogeneous
+                 * parameters, plus them into the specification, and then go
+                 * from there
+                 * 
+                 * The actual right way of doing this won't be too hard. Just write
+                 * an outer optimization loop with (k-1)*2 + 1 parameters. The objective function
+                 * will be the moment for each split, searching over separate parameters except for
+                 * the one that is restricted to be equal. That should work.
+                 */
+
             }
 
         }

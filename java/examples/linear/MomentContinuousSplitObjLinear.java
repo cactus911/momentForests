@@ -70,8 +70,8 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
         ContainerLinear leftLinear = new ContainerLinear(container.getLeft()); //This object will compute the beta and MSE for the left split
         ContainerLinear rightLinear = new ContainerLinear(container.getRight());
 
-        leftMSE = leftLinear.getObjectiveFunctionValue();
-        rightMSE = rightLinear.getObjectiveFunctionValue();
+        leftMSE = leftLinear.getGoodnessOfFit();
+        rightMSE = rightLinear.getGoodnessOfFit();
 
 //        if (leftLinear.getBeta() != null && rightLinear.getBeta() != null) {
 //            pmUtility.prettyPrintVector(leftLinear.getBeta());
