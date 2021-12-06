@@ -74,13 +74,16 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
         ContainerLinear leftLinear = new ContainerLinear(container.getLeft()); //This object will compute the beta and MSE for the left split
         ContainerLinear rightLinear = new ContainerLinear(container.getRight());
         
+        leftLinear.computeBetaAndErrors();
+        rightLinear.computeBetaAndErrors();
+        
         // pmUtility.prettyPrintVector(leftLinear.getBeta());
         // pmUtility.prettyPrintVector(rightLinear.getBeta());
         
         leftMSE = leftLinear.getGoodnessOfFit();
         rightMSE = rightLinear.getGoodnessOfFit();
                 
-        // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
+        System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
         // return (leftMSE + rightMSE) / X.getNumObs();
         return (leftMSE + rightMSE);
     }

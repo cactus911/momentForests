@@ -72,7 +72,7 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
     }
 
     @Override
-    public double getMSE() {
+    public double getSSE() {
 
         leftMSE = 0;
         rightMSE = 0;
@@ -100,11 +100,11 @@ public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
 
     
     @Override
-    public double f_to_minimize(double splitPoint) {
+    public double getGoodnessOfFitAtSplitPoint(double splitPoint) {
         container = SplitContainer.getContinuousDataSplit(lens, splitPoint, indexSplitVariable); //This returns the data split into each leaf based on splitpoint and index of split variable
         numObsLeft = container.getLeft().getNumObs();
         numObsRight = container.getRight().getNumObs();
-        return getMSE();
+        return getSSE();
     }
 
 }

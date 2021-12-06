@@ -61,7 +61,7 @@ public class TreeMoment {
 
     boolean verbose;
 
-    boolean debugOptimization = false;
+    boolean debugOptimization = true;
     private double currentNodeObjectiveFunction;
     private ContainerMoment currentNodeMoment;
 
@@ -264,7 +264,7 @@ public class TreeMoment {
                         boolean useFmin = true;
                         if (useFmin) {
                             optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
-                            optimalZ_SSE_k = obj.f_to_minimize(optimalZ_k); //Now return the summed SSEs of the optimal split point
+                            optimalZ_SSE_k = obj.getGoodnessOfFitAtSplitPoint(optimalZ_k); //Now return the summed SSEs of the optimal split point
                         } else {
                             optimalZ_k = Double.POSITIVE_INFINITY;
                             optimalZ_SSE_k = Double.POSITIVE_INFINITY;
@@ -287,7 +287,7 @@ public class TreeMoment {
                             }
 
                             for (double z = leftZ; z <= rightZ; z += increment) {
-                                double f = obj.f_to_minimize(z);
+                                double f = obj.getGoodnessOfFitAtSplitPoint(z);
                                 if (debugOptimization) {
                                     echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
                                 }
@@ -314,7 +314,7 @@ public class TreeMoment {
                             }
 
                             for (double z = leftZ; z <= rightZ; z += increment) {
-                                double f = obj.f_to_minimize(z);
+                                double f = obj.getGoodnessOfFitAtSplitPoint(z);
                                 if (debugOptimization) {
                                     echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
                                 }
@@ -332,7 +332,7 @@ public class TreeMoment {
 
                         //If the summed SSE for this variable is smaller than for any other previous variable, or if its the first variable being tested, set it to be the optimal splitting variable
                         if (optimalZ_SSE_k < optimalZ_SSE || first) {
-                            obj.f_to_minimize(optimalZ_k);
+                            obj.getGoodnessOfFitAtSplitPoint(optimalZ_k);
                             optimalZ = optimalZ_k;
                             optimalZ_SSE = optimalZ_SSE_k;
                             optimalSplitVariableIndex = indexSplitVariable;
@@ -450,7 +450,7 @@ public class TreeMoment {
                 } else {
                     MomentContinuousSplitObj obj = momentSpec.getFminObjective(lensGrowingTree, optimalSplitVariableIndex, minProportionEachPartition, minCountEachPartition);
                     if (verbose) {
-                        echoLn(depth + ". Calculated optimal split along " + momentSpec.getVariableName(optimalSplitVariableIndex) + " at " + optimalZ + ", generating SSE of " + obj.f_to_minimize(optimalZ));
+                        echoLn(depth + ". Calculated optimal split along " + momentSpec.getVariableName(optimalSplitVariableIndex) + " at " + optimalZ + ", generating SSE of " + obj.getGoodnessOfFitAtSplitPoint(optimalZ));
                     }
                     setRule(new SplitRule(false, optimalSplitVariableIndex, optimalZ, null, momentSpec));
 
@@ -513,22 +513,23 @@ public class TreeMoment {
 
                 /**
                  * Quick and dirty method first
+                 * Nevermind, look below for the correct way using joint estimation and a constraint
                  */
-                Jama.Matrix betaLeft = childLeft.getNodeEstimatedBeta().copy();
-                Jama.Matrix betaRight = childRight.getNodeEstimatedBeta().copy();
-
-                double fminRightBaseline = childRight.getCurrentNodeMoment().getMomentFunctionValue(betaRight);
-                // test against -1 just to see what's going on here
-
-                double fminRight = childRight.getCurrentNodeMoment().getMomentFunctionImposingHomogeneity(k, betaLeft.get(k, 0));
-                // double fminRight = childRight.getCurrentNodeMoment().getMomentFunctionImposingHomogeneity(k, -1);
-
-                // check DM test, which is 2*n*[q_constrained - q_unconstrained]
-                double dm = 2.0 * lensGrowingTree.getNumObs() * (fminRight - fminRightBaseline);
-                System.out.println("k = " + k + " chi0.95: " + chi.inverse(0.95) + " unconstrained: " + fminRightBaseline + " (b_k = " + betaRight.get(k, 0) + ") constrained: " + fminRight + " (b_k = " + betaLeft.get(k, 0) + ") dm: " + dm);
-                if (dm < chi.inverse(0.95)) {
-                    System.out.println("Parameter homogeneity detected on k = " + k);
-                }
+//                Jama.Matrix betaLeft = childLeft.getNodeEstimatedBeta().copy();
+//                Jama.Matrix betaRight = childRight.getNodeEstimatedBeta().copy();
+//
+//                double fminRightBaseline = childRight.getCurrentNodeMoment().getMomentFunctionValue(betaRight);
+//                // test against -1 just to see what's going on here
+//
+//                double fminRight = childRight.getCurrentNodeMoment().getMomentFunctionImposingHomogeneity(k, betaLeft.get(k, 0));
+//                // double fminRight = childRight.getCurrentNodeMoment().getMomentFunctionImposingHomogeneity(k, -1);
+//
+//                // check DM test, which is 2*n*[q_constrained - q_unconstrained]
+//                double dm = 2.0 * lensGrowingTree.getNumObs() * (fminRight - fminRightBaseline);
+//                System.out.println("k = " + k + " chi0.95: " + chi.inverse(0.95) + " unconstrained: " + fminRightBaseline + " (b_k = " + betaRight.get(k, 0) + ") constrained: " + fminRight + " (b_k = " + betaLeft.get(k, 0) + ") dm: " + dm);
+//                if (dm < chi.inverse(0.95)) {
+//                    System.out.println("Parameter homogeneity detected on k = " + k);
+//                }
                 /**
                  * Still to be done a. make sure this method actually is kosher
                  * b. kick up any parameters that we detected as homogeneous in
@@ -542,6 +543,13 @@ public class TreeMoment {
                  * will be the moment for each split, searching over separate parameters except for
                  * the one that is restricted to be equal. That should work.
                  */
+                
+                // doing the actual test now
+                DistanceMetricTest wald = new DistanceMetricTest(childLeft.lensGrowingTree.getX(), childRight.lensGrowingTree.getX(), childLeft.lensGrowingTree.getY(), childRight.lensGrowingTree.getY());
+                double dm2 = wald.computeStatistic(k);
+                if(dm2<chi.inverse(0.95)) {
+                    System.out.println("Parameter homogeneity detected on k = " + k);
+                }
 
             }
 

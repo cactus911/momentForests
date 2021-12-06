@@ -26,7 +26,7 @@ package examples.linear;
 import core.MomentContinuousSplitObj;
 import core.DataLens;
 import core.SplitContainer;
-import utility.pmUtility;
+import optimization.Uncmin_methods;
 
 /**
  *
@@ -62,13 +62,15 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
     }
 
     @Override
-    public double getMSE() {
+    public double getSSE() {
 
         leftMSE = 0;
         rightMSE = 0;
 
         ContainerLinear leftLinear = new ContainerLinear(container.getLeft()); //This object will compute the beta and MSE for the left split
         ContainerLinear rightLinear = new ContainerLinear(container.getRight());
+        leftLinear.computeBetaAndErrors();
+        rightLinear.computeBetaAndErrors();
 
         leftMSE = leftLinear.getGoodnessOfFit();
         rightMSE = rightLinear.getGoodnessOfFit();
@@ -77,7 +79,6 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
 //            pmUtility.prettyPrintVector(leftLinear.getBeta());
 //            pmUtility.prettyPrintVector(rightLinear.getBeta());
 //        }
-
         if (debugVerbose) {
             System.out.println("MSE = " + (leftMSE + rightMSE) + " n_Left: " + numObsLeft + " n_Right: " + numObsRight + " MSE_Left: " + leftMSE + " MSE_Right: " + rightMSE + " minCount: " + minCount);
         }
@@ -102,11 +103,13 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
     }
 
     @Override
-    public double f_to_minimize(double splitPoint) {
+    public double getGoodnessOfFitAtSplitPoint(double splitPoint) {
         container = SplitContainer.getContinuousDataSplit(lens, splitPoint, indexSplitVariable); //This returns the data split into each leaf based on splitpoint and index of split variable
         numObsLeft = container.getLeft().getNumObs();
         numObsRight = container.getRight().getNumObs();
-        return getMSE();
+        return getSSE();
     }
+
+    
 
 }

@@ -123,7 +123,9 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens) {
-        return new ContainerLinear(lens);
+        ContainerLinear l = new ContainerLinear(lens);
+        l.computeBetaAndErrors();
+        return l;
     }
 
     @Override
