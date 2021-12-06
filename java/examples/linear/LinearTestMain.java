@@ -43,7 +43,7 @@ public class LinearTestMain {
     public static void main(String[] args) {
 
         // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
-        MomentSpecification mySpecification = new LinearMomentSpecification(500);
+        MomentSpecification mySpecification = new LinearMomentSpecification(2000);
         mySpecification.loadData(); // Create data using rng
 
         double bestMinImprovement = 0;
