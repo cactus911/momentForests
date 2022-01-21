@@ -33,16 +33,27 @@ public class TreeOptions {
     private int minCount = 5;
     private double minMSEImprovement = 0.01;
     private int maxDepth = 100;
+    private boolean testParameterHomogeneity = false;
 
     public TreeOptions() {
     }
 
-    public TreeOptions(double minProportion, int minCount, double minMSEImprovement, int maxDepth) {
+    public TreeOptions(double minProportion, int minCount, double minMSEImprovement, int maxDepth, boolean testParameterHomogeneity) {
         this.maxDepth = maxDepth;
         this.minMSEImprovement = minMSEImprovement;
         this.minCount = minCount;
         this.minProportion = minProportion;
+        this.testParameterHomogeneity = testParameterHomogeneity;
     }
+
+    public void setTestParameterHomogeneity(boolean testParameterHomogeneity) {
+        this.testParameterHomogeneity = testParameterHomogeneity;
+    }
+
+    public boolean isTestParameterHomogeneity() {
+        return testParameterHomogeneity;
+    }    
+    
 
     /**
      * @return the minProportion

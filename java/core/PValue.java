@@ -36,12 +36,19 @@ class PValue implements Comparable<PValue> {
     @Override
     public int compareTo(PValue pComp) {
         if(pComp.getP()<getP()) {
-            return -1;
+            return 1;
         }
         if(pComp.getP()==getP()) {
             return 0;
         }
-        return 1;
+        return -1;
     }
+
+    @Override
+    public String toString() {
+        return k+" "+p;
+    }
+    
+    
     
 }

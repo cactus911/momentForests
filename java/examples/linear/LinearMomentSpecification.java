@@ -57,8 +57,8 @@ public class LinearMomentSpecification implements MomentSpecification {
     /**
      * We are going to control homogeneous parameters through these variables
      */
-    boolean[] HOMOGENEITY_INDEX = {false, false};
-    Jama.Matrix HOMOGENEOUS_PARAMETER_VECTOR = null;
+    private boolean[] homogeneityIndex = {false, false};
+    Jama.Matrix homogeneousParameterVector = null; // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
 
     public LinearMomentSpecification(int numObs) {
         this.numObs = numObs;
@@ -74,7 +74,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public void setHomogeneousParameters(Matrix h) {
-        this.HOMOGENEOUS_PARAMETER_VECTOR = h;
+        this.homogeneousParameterVector = h;
     }
 
     @Override
@@ -145,10 +145,10 @@ public class LinearMomentSpecification implements MomentSpecification {
         Jama.Matrix residualizedY = Y.copy();
 
         int homogeneousParameterIndex = 0;
-        for (int k = 0; k < HOMOGENEITY_INDEX.length; k++) {
-            if (HOMOGENEITY_INDEX[k]) {
+        for (int k = 0; k < homogeneityIndex.length; k++) {
+            if (homogeneityIndex[k]) {
                 for (int i = 0; i < Y.getRowDimension(); i++) {
-                    residualizedY.set(i, 0, residualizedY.get(i, 0) - X.get(i, k) * HOMOGENEOUS_PARAMETER_VECTOR.get(homogeneousParameterIndex, 0));
+                    residualizedY.set(i, 0, residualizedY.get(i, 0) - X.get(i, k) * homogeneousParameterVector.get(homogeneousParameterIndex, 0));
                 }
                 homogeneousParameterIndex++;
             }
@@ -160,9 +160,9 @@ public class LinearMomentSpecification implements MomentSpecification {
     public double getHomogeneousComponent(Jama.Matrix xi) {
         double homogeneousComponent = 0;
         int homogeneousParameterIndex = 0;
-        for (int k = 0; k < HOMOGENEITY_INDEX.length; k++) {
-            if (HOMOGENEITY_INDEX[k]) {
-                homogeneousComponent += xi.get(0, k) * HOMOGENEOUS_PARAMETER_VECTOR.get(homogeneousParameterIndex, 0);
+        for (int k = 0; k < homogeneityIndex.length; k++) {
+            if (homogeneityIndex[k]) {
+                homogeneousComponent += xi.get(0, k) * homogeneousParameterVector.get(homogeneousParameterIndex, 0);
 
                 homogeneousParameterIndex++;
             }
@@ -178,12 +178,26 @@ public class LinearMomentSpecification implements MomentSpecification {
          */
 
         Jama.Matrix residualizedX = null;
-        for (int k = 0; k < HOMOGENEITY_INDEX.length; k++) {
-            if (!HOMOGENEITY_INDEX[k]) {
+        for (int k = 0; k < homogeneityIndex.length; k++) {
+            if (!homogeneityIndex[k]) {
                 if (residualizedX == null) {
                     residualizedX = pmUtility.getColumn(X, k);
                 } else {
                     residualizedX = pmUtility.concatMatrix(residualizedX, pmUtility.getColumn(X, k));
+                }
+            }
+        }
+        return residualizedX;
+    }
+    
+    public Jama.Matrix residualizeX(Jama.Matrix Xp) {
+        Jama.Matrix residualizedX = null;
+        for (int k = 0; k < homogeneityIndex.length; k++) {
+            if (!homogeneityIndex[k]) {
+                if (residualizedX == null) {
+                    residualizedX = pmUtility.getColumn(Xp, k);
+                } else {
+                    residualizedX = pmUtility.concatMatrix(residualizedX, pmUtility.getColumn(Xp, k));
                 }
             }
         }
@@ -208,8 +222,6 @@ public class LinearMomentSpecification implements MomentSpecification {
     //Return the true parameter vector for a given observation
     @Override
     public Matrix getBetaTruth(Matrix zi) {
-        boolean imposeUniformBeta1 = true;
-
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -1);
         beta.set(1, 0, 1);
@@ -227,6 +239,7 @@ public class LinearMomentSpecification implements MomentSpecification {
             return beta;
         }
 
+        boolean imposeUniformBeta1 = true;
         if (zi.get(0, 0) > 0) { // if z1 > 0 \beta_0 = 1
             if (!imposeUniformBeta1) {
                 beta.set(0, 0, 2);
@@ -246,33 +259,8 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public DataLens getOutOfSampleXYZ(int numObsOOS) {
-        Jama.Matrix oosX = new Jama.Matrix(numObsOOS, 2);
-        Jama.Matrix oosZ = new Jama.Matrix(numObsOOS, DiscreteVariables.length);
-        Jama.Matrix oosY = new Jama.Matrix(numObsOOS, 1);
-        Random rng = new Random(321);
-        NormalDistribution normal = new NormalDistribution();
-        for (int i = 0; i < numObsOOS; i++) {
-            oosX.set(i, 0, normal.inverse(rng.nextDouble()));
-            oosX.set(i, 1, rng.nextDouble());
-
-            oosZ.set(i, 0, normal.inverse(rng.nextDouble()));
-            oosZ.set(i, 1, rng.nextDouble());
-
-            double draw = rng.nextDouble();
-            if (draw < 0.3) {
-                oosZ.set(i, 2, 1);
-            } else if (draw > 0.7) {
-                oosZ.set(i, 2, 2);
-            }
-            // Z.set(i, 0, X.get(i, 0));
-            // Z.set(i, 1, X.get(i, 1));
-            Jama.Matrix beta = getBetaTruth(oosZ.getMatrix(i, i, 0, oosZ.getColumnDimension() - 1)); // Z1 and Z2 to compute beta
-//                pmUtility.prettyPrintVector(beta);
-            Jama.Matrix subX = oosX.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
-            // pmUtility.prettyPrint(subX);
-            oosY.set(i, 0, (subX.times(beta)).get(0, 0) + normal.inverse(rng.nextDouble()));
-        }
-        return new DataLens(oosX, oosY, oosZ, null);
+        LinearDataGenerator xyz = new LinearDataGenerator(numObsOOS,this, 779);        
+        return new DataLens(xyz.getX(), xyz.getY(), xyz.getZ(), null);
     }
 
     @Override
@@ -334,33 +322,12 @@ public class LinearMomentSpecification implements MomentSpecification {
                 e.printStackTrace();
             }
         } else {
-            X = new Jama.Matrix(numObs, 2);
-            Z = new Jama.Matrix(numObs, DiscreteVariables.length);
-            Y = new Jama.Matrix(numObs, 1);
-            Random rng = new Random(321);
-            NormalDistribution normal = new NormalDistribution();
-            for (int i = 0; i < numObs; i++) {
-                // X.set(i, 0, normal.inverse(rng.nextDouble()));
-                X.set(i, 0, 1.0);
-                X.set(i, 1, Math.pow(normal.inverse(rng.nextDouble()),2));
 
-                Z.set(i, 0, normal.inverse(rng.nextDouble()));
-                Z.set(i, 1, rng.nextDouble());
+            LinearDataGenerator xyz = new LinearDataGenerator(numObs, this, 321);
+            X = xyz.getX();
+            Y = xyz.getY();
+            Z = xyz.getZ();
 
-                double draw = rng.nextDouble();
-                if (draw < 0.3) {
-                    Z.set(i, 2, 1);
-                } else if (draw > 0.7) {
-                    Z.set(i, 2, 2);
-                }
-                // Z.set(i, 0, X.get(i, 0));
-                // Z.set(i, 1, X.get(i, 1));
-                Jama.Matrix beta = getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1)); // Z1 and Z2 to compute beta
-//                pmUtility.prettyPrintVector(beta);
-                Jama.Matrix subX = X.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
-                // pmUtility.prettyPrint(subX);
-                Y.set(i, 0, (subX.times(beta)).get(0, 0) + normal.inverse(rng.nextDouble()));
-            }
         }
 //        pmUtility.prettyPrint(pmUtility.concatMatrix(Y,pmUtility.concatMatrix(X,Z)));
 //        System.exit(0);
@@ -406,4 +373,24 @@ public class LinearMomentSpecification implements MomentSpecification {
 //        return String.format("%.2f (%.2f) %s", b, se, stars);
         return pmUtility.stringPrettyPrintVector(beta);
     }
+
+    /**
+     * @return the homogeneityIndex
+     */
+    public boolean[] getHomogeneityIndex() {
+        return homogeneityIndex;
+    }
+
+    @Override
+    public void resetHomogeneityIndex() {
+        for (int i = 0; i < homogeneityIndex.length; i++) {
+            homogeneityIndex[i] = false;
+        }
+    }
+
+    @Override
+    public void setHomogeneousIndex(Integer i) {
+        homogeneityIndex[i] = true;
+    }
+
 }

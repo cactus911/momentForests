@@ -94,7 +94,7 @@ public class MomentForest {
 
             forest.add(new TreeMoment(null, spec, lensGrow,
                     spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
-                    lensHonest));
+                    lensHonest, treeOptions.isTestParameterHomogeneity()));
         }
 
         boolean useParallel = true;

@@ -25,6 +25,7 @@ package core;
 
 import JSci.maths.statistics.ChiSqrDistribution;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.TreeSet;
 import optimization.Fmin;
 import utility.pmUtility;
@@ -65,10 +66,14 @@ public class TreeMoment {
     private double currentNodeObjectiveFunction;
     private ContainerMoment currentNodeMoment;
 
+    private ArrayList<Integer> indexHomogeneousParameters = new ArrayList<>();
+    
+    private boolean testParameterHomogeneity;
+
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
             Boolean[] discreteVector, boolean verbose, double minProportionEachPartition,
             int minCountEachPartition, double improvementThreshold, boolean isLeft, int maxDepth,
-            DataLens lensHonest) {
+            DataLens lensHonest, boolean testParameterHomogeneity) {
         this.momentSpec = spec;
         this.parent = parent;
         this.lensHonest = lensHonest;
@@ -80,6 +85,7 @@ public class TreeMoment {
         this.improvementThreshold = improvementThreshold;
         this.isLeftNode = isLeft;
         this.maxDepth = maxDepth;
+        this.testParameterHomogeneity = testParameterHomogeneity;
 
         if (parent == null) {
             depth = 0;
@@ -248,19 +254,6 @@ public class TreeMoment {
                         double optimalZ_k;
                         double optimalZ_SSE_k;
 
-                        /**
-                         * Problem here is not that the linear moments are
-                         * giving us the wrong beta for the right split (I
-                         * verified that it has worked) Problem is that the
-                         * moments are super tiny when the Z is wrong. I really
-                         * need to figure out why the objective function can be
-                         * so small when the splits are combining two different
-                         * parameters in one space. That simply should not work!
-                         *
-                         * Basically, why can the objective function be so small
-                         * when the errors are much bigger. This feels like an
-                         * identification problem, but that's not quite right.
-                         */
                         boolean useFmin = true;
                         if (useFmin) {
                             optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
@@ -444,9 +437,9 @@ public class TreeMoment {
                     }
                     setRule(new SplitRule(true, optimalSplitVariableIndex, optimalZ, partitions.get((int) optimalZ), momentSpec));
                     childLeft = new TreeMoment(this, momentSpec, obj.getDataSplit().getLeft(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            true, maxDepth, null);
+                            true, maxDepth, null, testParameterHomogeneity);
                     childRight = new TreeMoment(this, momentSpec, obj.getDataSplit().getRight(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            false, maxDepth, null);
+                            false, maxDepth, null, testParameterHomogeneity);
                 } else {
                     MomentContinuousSplitObj obj = momentSpec.getFminObjective(lensGrowingTree, optimalSplitVariableIndex, minProportionEachPartition, minCountEachPartition);
                     if (verbose) {
@@ -459,9 +452,9 @@ public class TreeMoment {
                     // System.out.println("Max left: "+pmUtility.max(childLeftX, 1));
                     // System.out.println("Min right: "+pmUtility.min(childRightX, 1));
                     childLeft = new TreeMoment(this, momentSpec, left, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            true, maxDepth, null);
+                            true, maxDepth, null, testParameterHomogeneity);
                     childRight = new TreeMoment(this, momentSpec, right, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            false, maxDepth, null);
+                            false, maxDepth, null, testParameterHomogeneity);
                 }
                 childLeft.determineSplit(); //Prioritizes splits to the left
                 childRight.determineSplit(); //Once we find a terminal node, split to the right
@@ -485,38 +478,40 @@ public class TreeMoment {
             }
         }
 
-        /**
-         * Want to think about testing for parameter equality across splits,
-         * potentially imposing that homogeneity here (and maybe all nodes below
-         * this level?)
-         *
-         * Ok, I think what we are going to do is do a global imposition via a
-         * nested fixed point approach. Outer loop searches over fixed subvector
-         * of parameters. Inside loop has the usual tree. We are going to
-         * partial out (i.e. subtract it out) the global part, just use the tree
-         * for the part where there is (may be) parameter heterogeneity.
-         */
-        /**
-         * For the first split (when the parent is null), test parameter by
-         * parameter for homogeneity, then report that
-         */
-        // System.out.println("Right before Wald test");
-        if (parent == null && childLeft != null && childRight != null && 1 == 1) {
-            // optimalZ_sse is objective value with heterogeneity
-            // test using DM from Newey-McFadden, chi-squared with one degree of freedom
-            ChiSqrDistribution chi = new ChiSqrDistribution(1);
+        if (testParameterHomogeneity) {
+            /**
+             * Want to think about testing for parameter equality across splits,
+             * potentially imposing that homogeneity here (and maybe all nodes
+             * below this level?)
+             *
+             * Ok, I think what we are going to do is do a global imposition via
+             * a nested fixed point approach. Outer loop searches over fixed
+             * subvector of parameters. Inside loop has the usual tree. We are
+             * going to partial out (i.e. subtract it out) the global part, just
+             * use the tree for the part where there is (may be) parameter
+             * heterogeneity.
+             */
+            /**
+             * For the first split (when the parent is null), test parameter by
+             * parameter for homogeneity, then report that
+             */
+            // System.out.println("Right before Wald test");
+            if (parent == null && childLeft != null && childRight != null && 1 == 1) {
+                // optimalZ_sse is objective value with heterogeneity
+                // test using DM from Newey-McFadden, chi-squared with one degree of freedom
+                ChiSqrDistribution chi = new ChiSqrDistribution(1);
 
-            ArrayList<PValue> pList = new ArrayList<>();
+                ArrayList<PValue> pList = new ArrayList<>();
 
-            for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
-                // this is a little more tricky than i was thinking. need to rejigger a bit
-                // some quick and dirty idea: take parameter value from left, impose on right fmin, check difference in objective?
-                // versus re-estimating with imposition of equality
+                for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+                    // this is a little more tricky than i was thinking. need to rejigger a bit
+                    // some quick and dirty idea: take parameter value from left, impose on right fmin, check difference in objective?
+                    // versus re-estimating with imposition of equality
 
-                /**
-                 * Quick and dirty method first Nevermind, look below for the
-                 * correct way using joint estimation and a constraint
-                 */
+                    /**
+                     * Quick and dirty method first Nevermind, look below for
+                     * the correct way using joint estimation and a constraint
+                     */
 //                Jama.Matrix betaLeft = childLeft.getNodeEstimatedBeta().copy();
 //                Jama.Matrix betaRight = childRight.getNodeEstimatedBeta().copy();
 //
@@ -532,32 +527,47 @@ public class TreeMoment {
 //                if (dm < chi.inverse(0.95)) {
 //                    System.out.println("Parameter homogeneity detected on k = " + k);
 //                }
-                /**
-                 * Still to be done a. make sure this method actually is kosher
-                 * b. kick up any parameters that we detected as homogeneous in
-                 * this step to the outer loop maybe the way to do this is to
-                 * build a tree with a single split, get the homogeneous
-                 * parameters, plus them into the specification, and then go
-                 * from there
-                 *
-                 * The actual right way of doing this won't be too hard. Just
-                 * write an outer optimization loop with (k-1)*2 + 1 parameters.
-                 * The objective function will be the moment for each split,
-                 * searching over separate parameters except for the one that is
-                 * restricted to be equal. That should work.
-                 */
-                // doing the actual test now
-                DistanceMetricTest wald = new DistanceMetricTest(childLeft.lensGrowingTree.getX(), childRight.lensGrowingTree.getX(), childLeft.lensGrowingTree.getY(), childRight.lensGrowingTree.getY());
-                double dm2 = wald.computeStatistic(k);
-                double pval = 1.0 - chi.cumulative(dm2);
-                System.out.println("p-value: "+pval);
-                pList.add(new PValue(k, pval));
-                if (dm2 < chi.inverse(0.95)) {
-                    System.out.println("Parameter homogeneity detected on k = " + k);
+                    /**
+                     * Still to be done a. make sure this method actually is
+                     * kosher b. kick up any parameters that we detected as
+                     * homogeneous in this step to the outer loop maybe the way
+                     * to do this is to build a tree with a single split, get
+                     * the homogeneous parameters, plus them into the
+                     * specification, and then go from there
+                     *
+                     * The actual right way of doing this won't be too hard.
+                     * Just write an outer optimization loop with (k-1)*2 + 1
+                     * parameters. The objective function will be the moment for
+                     * each split, searching over separate parameters except for
+                     * the one that is restricted to be equal. That should work.
+                     */
+                    // doing the actual test now
+                    DistanceMetricTest wald = new DistanceMetricTest(childLeft.lensGrowingTree.getX(), childRight.lensGrowingTree.getX(), childLeft.lensGrowingTree.getY(), childRight.lensGrowingTree.getY());
+                    double dm2 = wald.computeStatistic(k);
+                    double pval = 1.0 - chi.cumulative(dm2);
+                    System.out.println("p-value: " + pval);
+                    pList.add(new PValue(k, pval));
+                    if (dm2 < chi.inverse(0.95)) {
+                        System.out.println("Parameter homogeneity detected on k = " + k);
+                    }
+
                 }
+                // now sort the p-values from lowest to highest
+                Collections.sort(pList);
 
+                for (int k = 0; k < pList.size(); k++) {
+                    PValue d = pList.get(k);
+                    System.out.println(d);
+                    double criticalValue = 0.05 / (pList.size() - k);
+                    System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
+                    if (d.getP() > criticalValue) {
+                        System.out.println("Accepting null; terminating test sequence. Adding parameter index " + d.getK() + " to homogeneity list.");
+                        indexHomogeneousParameters.add(d.getK());
+                    } else {
+                        System.out.println("Rejecting null; continuing test sequence. Retaining parameter index " + d.getK() + " in moment forest.");
+                    }
+                }
             }
-
         }
     }
 
@@ -869,5 +879,19 @@ public class TreeMoment {
      */
     public void setCurrentNodeMoment(ContainerMoment currentNodeMoment) {
         this.currentNodeMoment = currentNodeMoment;
+    }
+
+    /**
+     * @return the indexHomogeneousParameters
+     */
+    public ArrayList<Integer> getIndexHomogeneousParameters() {
+        return indexHomogeneousParameters;
+    }
+
+    /**
+     * @param testParameterHomogeneity the testParameterHomogeneity to set
+     */
+    public void setTestParameterHomogeneity(boolean testParameterHomogeneity) {
+        this.testParameterHomogeneity = testParameterHomogeneity;
     }
 }
