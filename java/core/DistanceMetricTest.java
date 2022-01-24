@@ -6,6 +6,7 @@
 package core;
 
 import Jama.Matrix;
+import mcmc.gibbsLTEGeneralized;
 import optimization.Uncmin_f77;
 import optimization.Uncmin_methods;
 import utility.pmUtility;
@@ -14,13 +15,15 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class DistanceMetricTest implements Uncmin_methods {
+public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
 
     Jama.Matrix leftX;
     Jama.Matrix rightX;
     Jama.Matrix leftY;
     Jama.Matrix rightY;
     int indexConstrainedParameter = -1;
+    
+    Jama.Matrix omega; // weighting matrix in GMM
 
     public DistanceMetricTest(Matrix leftX, Matrix rightX, Matrix leftY, Matrix rightY) {
         this.leftX = leftX;
@@ -111,7 +114,7 @@ public class DistanceMetricTest implements Uncmin_methods {
         }
 
         double[] fscale = {0, 1.0E-8};
-        int[] method = {0, 3};
+        int[] method = {0, 1};
         int[] iexp = {0, 0};
         int[] msg = {0, 1};
         int[] ndigit = {0, 8};
@@ -122,7 +125,26 @@ public class DistanceMetricTest implements Uncmin_methods {
         double[] gradtl = {0, 1E-8};
         double[] stepmx = {0, 1E8};
         double[] steptl = {0, 1E-8};
+        
+        // with identity weighting matrix (Step 1)
+        int numMoments = leftX.getColumnDimension()*2;
+        omega = Jama.Matrix.identity(numMoments, numMoments);
         minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        for(int i=0;i<guess.length;i++) {
+            guess[i] = xpls[i];
+        }
+        System.out.print("after first step: ");
+        pmUtility.prettyPrint(new Jama.Matrix(xpls,1));
+        
+        // with optimal weighting matrix (Step 2)
+        computeOptimalOmega(xpls);
+        minimizer = new Uncmin_f77(false);
+        minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        System.out.print("after second step: ");
+        pmUtility.prettyPrint(new Jama.Matrix(xpls,1));
+        
+        // mcmc.gibbsLTEGeneralized lte = new  gibbsLTEGeneralized(this, 1000, 1000, guess, true);
+        // xpls = lte.getLowestPoint();
 
         return xpls;
     }
@@ -173,8 +195,6 @@ public class DistanceMetricTest implements Uncmin_methods {
         Jama.Matrix rightFittedY = rightX.times(rightBeta);
         Jama.Matrix rightError = rightFittedY.minus(rightY);
 
-        Jama.Matrix omega = new Jama.Matrix(numMoments, numMoments);
-
         int K = leftX.getColumnDimension();
 
         /**
@@ -187,7 +207,6 @@ public class DistanceMetricTest implements Uncmin_methods {
                 // g.set(k, 0, g.get(k,0) + gi.get(k,0));
             }
             g.plusEquals(gi);
-            omega.plusEquals(gi.times(gi.transpose()));
         }
 
         /**
@@ -200,15 +219,86 @@ public class DistanceMetricTest implements Uncmin_methods {
                 // g.set(k, 0, g.get(k,0) + gi.get(k,0));
             }
             g.plusEquals(gi);
+        }
+
+        g.timesEquals(1.0 / (leftY.getRowDimension() + rightY.getRowDimension()));
+        
+        // omega may be messing this up
+        // try just using the identity weighting matrix to see if it fixes things up
+        
+
+        double q = 0.5*(((g.transpose()).times(omega.inverse())).times(g)).get(0, 0); // this is the continuous updating estimator (CUE)
+
+        return q;
+    }
+    
+    private void computeOptimalOmega(double[] x) {
+        int numParamsEachSplit = leftX.getColumnDimension();
+        Jama.Matrix leftBeta = new Jama.Matrix(numParamsEachSplit, 1);
+        Jama.Matrix rightBeta = new Jama.Matrix(numParamsEachSplit, 1);
+
+        if (indexConstrainedParameter < 0) {
+            // this is the unconstrained case
+            for (int i = 0; i < numParamsEachSplit; i++) {
+                leftBeta.set(i, 0, x[i + 1]);
+                rightBeta.set(i, 0, x[i + 1 + numParamsEachSplit]);
+            }
+        } else {
+            // with a constraint
+            for (int i = 0; i < numParamsEachSplit; i++) {
+                leftBeta.set(i, 0, x[i + 1]);
+            }
+            int counter = 0;
+            for (int i = 0; i < numParamsEachSplit; i++) {
+                if (i != indexConstrainedParameter) {
+                    rightBeta.set(i, 0, x[counter + 1 + numParamsEachSplit]);
+                    counter++;
+                } else {
+                    rightBeta.set(i, 0, leftBeta.get(i, 0));
+                }
+            }
+//            pmUtility.prettyPrint(new Jama.Matrix(x, 1));
+//            pmUtility.prettyPrintVector(leftBeta);
+//            pmUtility.prettyPrintVector(rightBeta);
+        }
+
+        int numMoments = 2 * leftX.getColumnDimension();
+        
+        Jama.Matrix leftFittedY = leftX.times(leftBeta);
+        Jama.Matrix leftError = leftFittedY.minus(leftY);
+
+        Jama.Matrix rightFittedY = rightX.times(rightBeta);
+        Jama.Matrix rightError = rightFittedY.minus(rightY);
+
+        omega = new Jama.Matrix(numMoments, numMoments);
+
+        int K = leftX.getColumnDimension();
+
+        /**
+         * Left split
+         */
+        for (int i = 0; i < leftX.getRowDimension(); i++) {
+            Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
+            for (int k = 0; k < K; k++) {
+                gi.set(k, 0, leftError.get(i, 0) * leftX.get(i, k));
+                // g.set(k, 0, g.get(k,0) + gi.get(k,0));
+            }
+            omega.plusEquals(gi.times(gi.transpose()));
+        }
+
+        /**
+         * Right split
+         */
+        for (int i = 0; i < rightX.getRowDimension(); i++) {
+            Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
+            for (int k = 0; k < K; k++) {
+                gi.set(k + K, 0, rightError.get(i, 0) * rightX.get(i, k));
+                // g.set(k, 0, g.get(k,0) + gi.get(k,0));
+            }
             omega.plusEquals(gi.times(gi.transpose()));
         }
 
         omega.timesEquals(1.0 / (leftY.getRowDimension() + rightY.getRowDimension()));
-        g.timesEquals(1.0 / (leftY.getRowDimension() + rightY.getRowDimension()));
-
-        double q = (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0); // this is the continuous updating estimator (CUE)
-
-        return q;
     }
 
     @Override
@@ -219,6 +309,16 @@ public class DistanceMetricTest implements Uncmin_methods {
     @Override
     public void hessian(double[] x, double[][] h) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
+    }
+
+    @Override
+    public double objectiveFunction(double[] x) {
+        return -f_to_minimize(x);
+    }
+
+    @Override
+    public double pi(double[] x) {
+        return 1.0;
     }
 
 }

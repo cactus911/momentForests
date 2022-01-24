@@ -24,7 +24,6 @@
 package examples.linear;
 
 // import JSci.maths.statistics.NormalDistribution;
-import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
@@ -53,7 +52,7 @@ public class LinearMomentSpecification implements MomentSpecification {
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean MONTE_CARLO = true;
-
+    
     /**
      * We are going to control homogeneous parameters through these variables
      */
@@ -258,13 +257,13 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public DataLens getOutOfSampleXYZ(int numObsOOS) {
-        LinearDataGenerator xyz = new LinearDataGenerator(numObsOOS,this, 779);        
+    public DataLens getOutOfSampleXYZ(int numObsOOS, long rngSeed) {
+        LinearDataGenerator xyz = new LinearDataGenerator(numObsOOS,this, rngSeed);        
         return new DataLens(xyz.getX(), xyz.getY(), xyz.getZ(), null);
     }
 
     @Override
-    public void loadData() {
+    public void loadData(long rngSeed) {
         if (!MONTE_CARLO) {
             int numObsFile = 0;
             try {
@@ -323,7 +322,7 @@ public class LinearMomentSpecification implements MomentSpecification {
             }
         } else {
 
-            LinearDataGenerator xyz = new LinearDataGenerator(numObs, this, 321);
+            LinearDataGenerator xyz = new LinearDataGenerator(numObs, this, rngSeed);
             X = xyz.getX();
             Y = xyz.getY();
             Z = xyz.getZ();

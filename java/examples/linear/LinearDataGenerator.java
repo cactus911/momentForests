@@ -20,7 +20,7 @@ public class LinearDataGenerator {
     private Jama.Matrix Y;
     private Jama.Matrix Z;
 
-    public LinearDataGenerator(int numObs, MomentSpecification mySpecification, int randSeed) {
+    public LinearDataGenerator(int numObs, MomentSpecification mySpecification, long randSeed) {
         X = new Jama.Matrix(numObs, 2);
         Z = new Jama.Matrix(numObs, mySpecification.getDiscreteVector().length);
         Y = new Jama.Matrix(numObs, 1);

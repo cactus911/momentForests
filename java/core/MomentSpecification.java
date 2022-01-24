@@ -62,9 +62,9 @@ public interface MomentSpecification {
      */
     public Matrix getBetaTruth(Matrix zi);
 
-    public DataLens getOutOfSampleXYZ(int numObsOutOfSample);
+    public DataLens getOutOfSampleXYZ(int numObsOutOfSample, long rngSeed);
 
-    public void loadData();
+    public void loadData(long rngSeed);
     
     public String getVariableName(int variableIndex);
 

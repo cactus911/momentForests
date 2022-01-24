@@ -29,10 +29,12 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
     int minObservationsPerLeaf;
     int maxTreeDepth;
     int numParams;
+    long rngSeedBaseMomentForest;
+    long rngSeedBaseOutOfSample;
 
     private Jama.Matrix estimatedHomogeneousParameters;
 
-    public HomogeneousSearchContainer(MomentSpecification mySpecification, int numberTreesInForest, boolean verbose, double minImprovement, int minObservationsPerLeaf, int maxTreeDepth, int numParams) {
+    public HomogeneousSearchContainer(MomentSpecification mySpecification, int numberTreesInForest, boolean verbose, double minImprovement, int minObservationsPerLeaf, int maxTreeDepth, int numParams, long rngSeedBaseMomentForest, long rngSeedBaseOutOfSample) {
         this.mySpecification = mySpecification;
         this.numberTreesInForest = numberTreesInForest;
         this.verbose = verbose;
@@ -40,6 +42,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
         this.minObservationsPerLeaf = minObservationsPerLeaf;
         this.maxTreeDepth = maxTreeDepth;
         this.numParams = numParams;
+        this.rngSeedBaseMomentForest = rngSeedBaseMomentForest;
+        this.rngSeedBaseOutOfSample = rngSeedBaseOutOfSample;
     }
 
     public void executeSearch() {
@@ -129,7 +133,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
          */
         DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(true), mySpecification.getZ(), null);
 
-        MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, 314, homogenizedForestLens, verbose, new TreeOptions());
+        MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngSeedBaseMomentForest, homogenizedForestLens, verbose, new TreeOptions());
         TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
         myForest.setTreeOptions(cvOptions);
         /**
@@ -140,7 +144,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
         /**
          * Test vectors for assessment
          */
-        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(100); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngSeedBaseOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
         Jama.Matrix testZ = oosDataLens.getZ();
         Jama.Matrix residualizedX = mySpecification.residualizeX(oosDataLens.getX());
         // pmUtility.prettyPrint(pmUtility.concatMatrix(pmUtility.concatMatrix(oosDataLens.getY(), oosDataLens.getX()), testZ));
@@ -152,11 +156,10 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
         for (int i = 0; i < testZ.getRowDimension(); i++) {
             Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
             Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
-            System.out.print("z: " + pmUtility.stringPrettyPrint(zi) + " beta: " + pmUtility.stringPrettyPrintVector(b));
+
             Jama.Matrix residualizedXi = residualizedX.getMatrix(i, i, 0, residualizedX.getColumnDimension() - 1);
             Jama.Matrix fullXi = oosDataLens.getX().getMatrix(i, i, 0, oosDataLens.getX().getColumnDimension() - 1);
 
-            System.out.print(" x: " + pmUtility.stringPrettyPrint(fullXi));
             // note, xi is part of x that is not homogeneous
             // for the homogeneous component below, need to find the other parts of x not contained in xi
             // not only that, the way that that method is specified is that it takes the ENTIRE xi to get the homogeneous part, where I have pulled out the subset of X already in xi
@@ -164,10 +167,17 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
             // i am going to do two things here: one, remove residualization from getOutOfSampleXYZ
             // added a new method to residualize an X matrix
             double fitY = residualizedXi.times(b).get(0, 0) + mySpecification.getHomogeneousComponent(fullXi);
-            System.out.print(" residualizedXb: " + residualizedXi.times(b).get(0, 0) + " hc: " + mySpecification.getHomogeneousComponent(fullXi));
             double error = fitY - (oosDataLens.getY().get(i, 0));
-            System.out.println(" fitY: " + fitY + " Y: " + oosDataLens.getY().get(i, 0) + " SE: " + error * error);
+
             outOfSampleFit += error * error;
+
+            boolean outputFits = false;
+            if (outputFits) {
+                System.out.print("z: " + pmUtility.stringPrettyPrint(zi) + " beta: " + pmUtility.stringPrettyPrintVector(b));
+                System.out.print(" x: " + pmUtility.stringPrettyPrint(fullXi));
+                System.out.print(" residualizedXb: " + residualizedXi.times(b).get(0, 0) + " hc: " + mySpecification.getHomogeneousComponent(fullXi));
+                System.out.println(" fitY: " + fitY + " Y: " + oosDataLens.getY().get(i, 0) + " SE: " + error * error);
+            }
         }
         double MSE = outOfSampleFit / testZ.getRowDimension();
         System.out.println("Out-of-sample MSE: " + MSE);

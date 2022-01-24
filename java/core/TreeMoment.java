@@ -67,7 +67,7 @@ public class TreeMoment {
     private ContainerMoment currentNodeMoment;
 
     private ArrayList<Integer> indexHomogeneousParameters = new ArrayList<>();
-    
+
     private boolean testParameterHomogeneity;
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
@@ -478,97 +478,6 @@ public class TreeMoment {
             }
         }
 
-        if (testParameterHomogeneity) {
-            /**
-             * Want to think about testing for parameter equality across splits,
-             * potentially imposing that homogeneity here (and maybe all nodes
-             * below this level?)
-             *
-             * Ok, I think what we are going to do is do a global imposition via
-             * a nested fixed point approach. Outer loop searches over fixed
-             * subvector of parameters. Inside loop has the usual tree. We are
-             * going to partial out (i.e. subtract it out) the global part, just
-             * use the tree for the part where there is (may be) parameter
-             * heterogeneity.
-             */
-            /**
-             * For the first split (when the parent is null), test parameter by
-             * parameter for homogeneity, then report that
-             */
-            // System.out.println("Right before Wald test");
-            if (parent == null && childLeft != null && childRight != null && 1 == 1) {
-                // optimalZ_sse is objective value with heterogeneity
-                // test using DM from Newey-McFadden, chi-squared with one degree of freedom
-                ChiSqrDistribution chi = new ChiSqrDistribution(1);
-
-                ArrayList<PValue> pList = new ArrayList<>();
-
-                for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
-                    // this is a little more tricky than i was thinking. need to rejigger a bit
-                    // some quick and dirty idea: take parameter value from left, impose on right fmin, check difference in objective?
-                    // versus re-estimating with imposition of equality
-
-                    /**
-                     * Quick and dirty method first Nevermind, look below for
-                     * the correct way using joint estimation and a constraint
-                     */
-//                Jama.Matrix betaLeft = childLeft.getNodeEstimatedBeta().copy();
-//                Jama.Matrix betaRight = childRight.getNodeEstimatedBeta().copy();
-//
-//                double fminRightBaseline = childRight.getCurrentNodeMoment().getMomentFunctionValue(betaRight);
-//                // test against -1 just to see what's going on here
-//
-//                double fminRight = childRight.getCurrentNodeMoment().getMomentFunctionImposingHomogeneity(k, betaLeft.get(k, 0));
-//                // double fminRight = childRight.getCurrentNodeMoment().getMomentFunctionImposingHomogeneity(k, -1);
-//
-//                // check DM test, which is 2*n*[q_constrained - q_unconstrained]
-//                double dm = 2.0 * lensGrowingTree.getNumObs() * (fminRight - fminRightBaseline);
-//                System.out.println("k = " + k + " chi0.95: " + chi.inverse(0.95) + " unconstrained: " + fminRightBaseline + " (b_k = " + betaRight.get(k, 0) + ") constrained: " + fminRight + " (b_k = " + betaLeft.get(k, 0) + ") dm: " + dm);
-//                if (dm < chi.inverse(0.95)) {
-//                    System.out.println("Parameter homogeneity detected on k = " + k);
-//                }
-                    /**
-                     * Still to be done a. make sure this method actually is
-                     * kosher b. kick up any parameters that we detected as
-                     * homogeneous in this step to the outer loop maybe the way
-                     * to do this is to build a tree with a single split, get
-                     * the homogeneous parameters, plus them into the
-                     * specification, and then go from there
-                     *
-                     * The actual right way of doing this won't be too hard.
-                     * Just write an outer optimization loop with (k-1)*2 + 1
-                     * parameters. The objective function will be the moment for
-                     * each split, searching over separate parameters except for
-                     * the one that is restricted to be equal. That should work.
-                     */
-                    // doing the actual test now
-                    DistanceMetricTest wald = new DistanceMetricTest(childLeft.lensGrowingTree.getX(), childRight.lensGrowingTree.getX(), childLeft.lensGrowingTree.getY(), childRight.lensGrowingTree.getY());
-                    double dm2 = wald.computeStatistic(k);
-                    double pval = 1.0 - chi.cumulative(dm2);
-                    System.out.println("p-value: " + pval);
-                    pList.add(new PValue(k, pval));
-                    if (dm2 < chi.inverse(0.95)) {
-                        System.out.println("Parameter homogeneity detected on k = " + k);
-                    }
-
-                }
-                // now sort the p-values from lowest to highest
-                Collections.sort(pList);
-
-                for (int k = 0; k < pList.size(); k++) {
-                    PValue d = pList.get(k);
-                    System.out.println(d);
-                    double criticalValue = 0.05 / (pList.size() - k);
-                    System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
-                    if (d.getP() > criticalValue) {
-                        System.out.println("Accepting null; terminating test sequence. Adding parameter index " + d.getK() + " to homogeneity list.");
-                        indexHomogeneousParameters.add(d.getK());
-                    } else {
-                        System.out.println("Rejecting null; continuing test sequence. Retaining parameter index " + d.getK() + " in moment forest.");
-                    }
-                }
-            }
-        }
     }
 
 //    public String getParentRule(TreeSet<Integer> indexPreviousSplits) {
@@ -704,6 +613,70 @@ public class TreeMoment {
          */
         if (parent == null) {
             distributeHonestObservations(lensHonest);
+
+            if (testParameterHomogeneity) {
+                /**
+                 * 1/24/2022: one thought here is that i am not running this on
+                 * the honest tree data, but rather the data used to grow the
+                 * tree structure. i think this should be done on honest data,
+                 * right?
+                 */
+
+                /**
+                 * Want to think about testing for parameter equality across
+                 * splits, potentially imposing that homogeneity here (and maybe
+                 * all nodes below this level?)
+                 *
+                 * Ok, I think what we are going to do is do a global imposition
+                 * via a nested fixed point approach. Outer loop searches over
+                 * fixed subvector of parameters. Inside loop has the usual
+                 * tree. We are going to partial out (i.e. subtract it out) the
+                 * global part, just use the tree for the part where there is
+                 * (may be) parameter heterogeneity.
+                 */
+                /**
+                 * For the first split (when the parent is null), test parameter
+                 * by parameter for homogeneity, then report that
+                 */
+                // System.out.println("Right before Wald test");
+                if (parent == null && childLeft != null && childRight != null && 1 == 1) {
+                    // optimalZ_sse is objective value with heterogeneity
+                    // test using DM from Newey-McFadden, chi-squared with one degree of freedom
+                    ChiSqrDistribution chi = new ChiSqrDistribution(1);
+
+                    ArrayList<PValue> pList = new ArrayList<>();
+
+                    for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+                        DistanceMetricTest wald = new DistanceMetricTest(childLeft.lensHonest.getX(), childRight.lensHonest.getX(), childLeft.lensHonest.getY(), childRight.lensHonest.getY());
+                        double dm2 = wald.computeStatistic(k);
+                        double pval = 1.0 - chi.cumulative(dm2);
+                        System.out.println("p-value: " + pval);
+                        pList.add(new PValue(k, pval));
+                        if (dm2 < chi.inverse(0.95)) {
+                            System.out.println("Parameter homogeneity detected on k = " + k);
+                        }
+
+                    }
+                    // now sort the p-values from lowest to highest
+                    Collections.sort(pList);
+
+                    for (int k = 0; k < pList.size(); k++) {
+                        PValue d = pList.get(k);
+                        System.out.println(d);
+                        double criticalValue = 0.05 / (pList.size() - k);
+                        System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
+                        if (d.getP() > criticalValue) {
+                            System.out.println("Accepting null; terminating test sequence. Adding parameter index " + d.getK() + " to homogeneity list.");
+                            indexHomogeneousParameters.add(d.getK());
+                            // should i terminate this for loop here?
+                            break;
+                        } else {
+                            System.out.println("Rejecting null; continuing test sequence. Retaining parameter index " + d.getK() + " in moment forest.");
+                        }
+                    }
+                }
+            }
+
         }
 
         if (terminal) {
