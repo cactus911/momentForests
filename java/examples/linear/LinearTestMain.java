@@ -58,11 +58,11 @@ public class LinearTestMain {
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setVisible(true);
         
-        for (int numObs = 250; numObs < 500 * 2 * 2 * 2 * 2 * 2 * 2; numObs *= 2) {
+        for (int numObs = 5000; numObs < 5000 * 2 * 2 * 2 * 2 * 2 * 2; numObs *= 2) {
             Random rng = new Random(22);
             
             double[] homogeneousClassificationRate = new double[2];
-            int numMonteCarlos = 500;
+            int numMonteCarlos = 20;
 
             ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 

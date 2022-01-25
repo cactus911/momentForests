@@ -22,8 +22,9 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
     Jama.Matrix leftY;
     Jama.Matrix rightY;
     int indexConstrainedParameter = -1;
-    
+
     Jama.Matrix omega; // weighting matrix in GMM
+    boolean useCUE = false; // utilize continuously-updated weighting matrix
 
     public DistanceMetricTest(Matrix leftX, Matrix rightX, Matrix leftY, Matrix rightY) {
         this.leftX = leftX;
@@ -34,8 +35,8 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
 
     public double computeStatistic(int indexConstrainedParameter) {
 
-        System.out.println("------------------------ Testing parameter k = "+indexConstrainedParameter+" ------------------------");
-        
+        System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameter + " ------------------------");
+
         double dm = 0;
 
         // let's test this unconstrained first to make sure that we get the same parameters back
@@ -50,7 +51,7 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
             betaLeft.set(i, 0, unconstrainedX[i + 1]);
             betaRight.set(i, 0, unconstrainedX[i + 1 + numParamsEachSplit]);
         }
-        
+
         System.out.println("Unconstrained Estimates");
         System.out.print(" \tbeta left: ");
         pmUtility.prettyPrintVector(betaLeft);
@@ -84,15 +85,6 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
 
         dm = 2.0 * (leftY.getRowDimension() + rightY.getRowDimension()) * (fminConstrained - fminUnconstrained);
         System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " dm: " + dm);
-        
-        /**
-         * Next two steps:
-         * 
-         * 1. Implement multiple testing controls that Denis suggested
-         * 2. Kick the selected homogeneous parameters back up automagically to outer loop
-         * 3. Run again with nested fixed loop given those homogeneous parameters
-         * 4. Done
-         */
 
         return dm;
     }
@@ -125,27 +117,38 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
         double[] gradtl = {0, 1E-8};
         double[] stepmx = {0, 1E8};
         double[] steptl = {0, 1E-8};
-        
+
         // with identity weighting matrix (Step 1)
-        int numMoments = leftX.getColumnDimension()*2;
+        int numMoments = leftX.getColumnDimension() * 2;
         omega = Jama.Matrix.identity(numMoments, numMoments);
         minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-        for(int i=0;i<guess.length;i++) {
+        for (int i = 0; i < guess.length; i++) {
             guess[i] = xpls[i];
         }
         System.out.print("after first step: ");
-        pmUtility.prettyPrint(new Jama.Matrix(xpls,1));
+        pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
         
-        // with optimal weighting matrix (Step 2)
-        computeOptimalOmega(xpls);
-        minimizer = new Uncmin_f77(false);
-        minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-        System.out.print("after second step: ");
-        pmUtility.prettyPrint(new Jama.Matrix(xpls,1));
-        
+        boolean useCUEInSecondStep = true;
+        if(useCUEInSecondStep) {
+            useCUE = true;
+            minimizer = new Uncmin_f77(false);
+            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+            System.out.print("after second step with CUE: ");
+            pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+        }
+
+        boolean useOptimalTwoStepWeightingMatrix = false;
+        if (useOptimalTwoStepWeightingMatrix) {
+            // with optimal weighting matrix (Step 2)
+            computeOptimalOmega(xpls);
+            minimizer = new Uncmin_f77(false);
+            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+            System.out.print("after second step with fixed Omega: ");
+            pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+        }
+
         // mcmc.gibbsLTEGeneralized lte = new  gibbsLTEGeneralized(this, 1000, 1000, guess, true);
         // xpls = lte.getLowestPoint();
-
         return xpls;
     }
 
@@ -222,16 +225,19 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         g.timesEquals(1.0 / (leftY.getRowDimension() + rightY.getRowDimension()));
-        
+
         // omega may be messing this up
         // try just using the identity weighting matrix to see if it fixes things up
         
-
-        double q = 0.5*(((g.transpose()).times(omega.inverse())).times(g)).get(0, 0); // this is the continuous updating estimator (CUE)
+        if(useCUE) {
+            computeOptimalOmega(x);
+        }
+        
+        double q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0); // this is the continuous updating estimator (CUE)
 
         return q;
     }
-    
+
     private void computeOptimalOmega(double[] x) {
         int numParamsEachSplit = leftX.getColumnDimension();
         Jama.Matrix leftBeta = new Jama.Matrix(numParamsEachSplit, 1);
@@ -263,7 +269,7 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         int numMoments = 2 * leftX.getColumnDimension();
-        
+
         Jama.Matrix leftFittedY = leftX.times(leftBeta);
         Jama.Matrix leftError = leftFittedY.minus(leftY);
 

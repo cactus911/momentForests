@@ -46,7 +46,7 @@ class PValue implements Comparable<PValue> {
 
     @Override
     public String toString() {
-        return k+" "+p;
+        return "parameter index: "+k+" p-value: "+p;
     }
     
     

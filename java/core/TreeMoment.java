@@ -653,27 +653,47 @@ public class TreeMoment {
                         System.out.println("p-value: " + pval);
                         pList.add(new PValue(k, pval));
                         if (dm2 < chi.inverse(0.95)) {
-                            System.out.println("Parameter homogeneity detected on k = " + k);
+                            System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k);
                         }
 
                     }
                     // now sort the p-values from lowest to highest
                     Collections.sort(pList);
 
-                    for (int k = 0; k < pList.size(); k++) {
-                        PValue d = pList.get(k);
-                        System.out.println(d);
-                        double criticalValue = 0.05 / (pList.size() - k);
-                        System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
-                        if (d.getP() > criticalValue) {
-                            System.out.println("Accepting null; terminating test sequence. Adding parameter index " + d.getK() + " to homogeneity list.");
-                            indexHomogeneousParameters.add(d.getK());
-                            // should i terminate this for loop here?
-                            break;
-                        } else {
-                            System.out.println("Rejecting null; continuing test sequence. Retaining parameter index " + d.getK() + " in moment forest.");
+                    // holm-bonferroni procedure below
+                    boolean useHolmBonferroni = false;
+                    if (useHolmBonferroni) {
+                        for (int k = 0; k < pList.size(); k++) {
+                            PValue d = pList.get(k);
+                            System.out.println(d);
+                            double criticalValue = 0.05 / (pList.size() - k);
+                            System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
+                            if (d.getP() > criticalValue) {
+                                System.out.println("Holm-Bonferroni -> Accepting null; terminating test sequence. Adding parameter index " + d.getK() + " to homogeneity list.");
+                                indexHomogeneousParameters.add(d.getK());
+                                // should i terminate this for loop here?
+                                // i think i am supposed to fail to reject all the other hypotheses if this happens (add them to homogeneity list?)
+                                break;
+                            } else {
+                                System.out.println("Holm-Bonferroni -> Rejecting null; continuing test sequence. Retaining parameter index " + d.getK() + " in moment forest.");
+                            }
+                        }
+                    } else {
+                        // easier bonferroni procedure (for checking what's going on here)
+                        for (int k = 0; k < pList.size(); k++) {
+                            PValue d = pList.get(k);
+                            System.out.println(d);
+                            double criticalValue = 0.05 / (0.0+pList.size());
+                            System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
+                            if (d.getP() > criticalValue) {
+                                System.out.println("Straight Bonferroni -> Accepting null; adding parameter index " + d.getK() + " to homogeneity list.");
+                                indexHomogeneousParameters.add(d.getK());
+                            } else {
+                                System.out.println("Straight Bonferroni -> Rejecting null; retaining parameter index " + d.getK() + " in moment forest.");
+                            }
                         }
                     }
+
                 }
             }
 
