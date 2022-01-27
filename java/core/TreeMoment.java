@@ -54,7 +54,6 @@ public class TreeMoment {
     private DataLens lensHonest;
     int numHonestXObservations;
 
-    // private final static double improvementThreshold = 0.01;
     int maxDepth = 100;
     double minProportionEachPartition;
     int minCountEachPartition;
@@ -596,109 +595,12 @@ public class TreeMoment {
 
     public void estimateHonestTree() {
         /**
-         * This is the place to put some rules on what are acceptable numbers of
-         * observations in order to replace the first stage estimates.
-         *
-         * This is also the place to put the functionality to prune the children
-         * nodes if their estimates are null. That preserves that every X will
-         * get an estimate.
-         *
-         * TODO: implement pruning if children nodes have null estimates
-         */
-
-        /**
          * At the top of the tree, start the sorting of honest observations to
          * branches. DataLens should just be able to split on the basis of the
          * rule!
          */
         if (parent == null) {
             distributeHonestObservations(lensHonest);
-
-            if (testParameterHomogeneity) {
-                /**
-                 * 1/24/2022: one thought here is that i am not running this on
-                 * the honest tree data, but rather the data used to grow the
-                 * tree structure. i think this should be done on honest data,
-                 * right?
-                 */
-
-                /**
-                 * Want to think about testing for parameter equality across
-                 * splits, potentially imposing that homogeneity here (and maybe
-                 * all nodes below this level?)
-                 *
-                 * Ok, I think what we are going to do is do a global imposition
-                 * via a nested fixed point approach. Outer loop searches over
-                 * fixed subvector of parameters. Inside loop has the usual
-                 * tree. We are going to partial out (i.e. subtract it out) the
-                 * global part, just use the tree for the part where there is
-                 * (may be) parameter heterogeneity.
-                 */
-                /**
-                 * For the first split (when the parent is null), test parameter
-                 * by parameter for homogeneity, then report that
-                 */
-                // System.out.println("Right before Wald test");
-                if (parent == null && childLeft != null && childRight != null && 1 == 1) {
-                    // optimalZ_sse is objective value with heterogeneity
-                    // test using DM from Newey-McFadden, chi-squared with one degree of freedom
-                    ChiSqrDistribution chi = new ChiSqrDistribution(1);
-
-                    ArrayList<PValue> pList = new ArrayList<>();
-
-                    for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
-                        DistanceMetricTest wald = new DistanceMetricTest(childLeft.lensHonest.getX(), childRight.lensHonest.getX(), childLeft.lensHonest.getY(), childRight.lensHonest.getY());
-                        double dm2 = wald.computeStatistic(k);
-                        double pval = 1.0 - chi.cumulative(dm2);
-                        System.out.println("p-value: " + pval);
-                        pList.add(new PValue(k, pval));
-                        if (dm2 < chi.inverse(0.95)) {
-                            System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k);
-                        }
-
-                    }
-                    // now sort the p-values from lowest to highest
-                    Collections.sort(pList);
-
-                    // holm-bonferroni procedure below
-                    boolean useHolmBonferroni = true;
-                    if (useHolmBonferroni) {
-                        boolean addSuccessiveParameters = false; // need this since i kind of constructed this loop backwards in terms of testing the null hypothesis (which is that there is parameter homogeneity)
-                        for (int k = 0; k < pList.size(); k++) {
-                            PValue d = pList.get(k);
-                            System.out.println(d);
-                            double adjustedPValue = 0.05 / (pList.size() - k);
-                            System.out.println("p: " + d.getP() + " adjusted P-value: " + adjustedPValue);
-                            if (d.getP() > adjustedPValue || addSuccessiveParameters) {
-                                System.out.println("Holm-Bonferroni -> Accepting null; Adding parameter index " + d.getK() + " to homogeneity list.");
-                                indexHomogeneousParameters.add(d.getK());
-                                // should i terminate this for loop here?
-                                // i think i am supposed to fail to reject all the other hypotheses if this happens (add them to homogeneity list?)
-                                // yes, i sort of wrote this backwards; should be adding parameters to HETEROGENEOUS index
-                                addSuccessiveParameters = true;
-                            } else {
-                                System.out.println("Holm-Bonferroni -> Rejecting null; Retaining parameter index " + d.getK() + " in moment forest.");
-                            }
-                        }
-                    } else {
-                        // easier bonferroni procedure (for checking what's going on here)
-                        for (int k = 0; k < pList.size(); k++) {
-                            PValue d = pList.get(k);
-                            System.out.println(d);
-                            double criticalValue = 0.05 / (0.0+pList.size());
-                            System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
-                            if (d.getP() > criticalValue) {
-                                System.out.println("Straight Bonferroni -> Accepting null; adding parameter index " + d.getK() + " to homogeneity list.");
-                                indexHomogeneousParameters.add(d.getK());
-                            } else {
-                                System.out.println("Straight Bonferroni -> Rejecting null; retaining parameter index " + d.getK() + " in moment forest.");
-                            }
-                        }
-                    }
-
-                }
-            }
-
         }
 
         if (terminal) {
@@ -766,6 +668,88 @@ public class TreeMoment {
                 }
             }
         }
+
+        if (testParameterHomogeneity) {
+System.out.println("DEBUG: Entering testParameterHomogeneity");
+            /**
+             * Want to think about testing for parameter equality across splits,
+             * potentially imposing that homogeneity here (and maybe all nodes
+             * below this level?)
+             *
+             * Ok, I think what we are going to do is do a global imposition via
+             * a nested fixed point approach. Outer loop searches over fixed
+             * subvector of parameters. Inside loop has the usual tree. We are
+             * going to partial out (i.e. subtract it out) the global part, just
+             * use the tree for the part where there is (may be) parameter
+             * heterogeneity.
+             */
+            /**
+             * For the first split (when the parent is null), test parameter by
+             * parameter for homogeneity, then report that
+             */
+            // System.out.println("Right before Wald test");
+            if (parent == null && childLeft != null && childRight != null && 1 == 1) {
+                // optimalZ_sse is objective value with heterogeneity
+                // test using DM from Newey-McFadden, chi-squared with one degree of freedom
+                ChiSqrDistribution chi = new ChiSqrDistribution(1);
+
+                ArrayList<PValue> pList = new ArrayList<>();
+
+                for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+                    DistanceMetricTest wald = new DistanceMetricTest(childLeft.lensHonest.getX(), childRight.lensHonest.getX(), childLeft.lensHonest.getY(), childRight.lensHonest.getY());
+                    double dm2 = wald.computeStatistic(k);
+                    double pval = 1.0 - chi.cumulative(dm2);
+                    System.out.println("p-value: " + pval);
+                    pList.add(new PValue(k, pval));
+                    if (dm2 < chi.inverse(0.95)) {
+                        System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k);
+                    }
+
+                }
+                // now sort the p-values from lowest to highest
+                Collections.sort(pList);
+
+                // holm-bonferroni procedure below
+                boolean useHolmBonferroni = true;
+                if (useHolmBonferroni) {
+                    boolean addSuccessiveParameters = false; // need this since i kind of constructed this loop backwards in terms of testing the null hypothesis (which is that there is parameter homogeneity)
+                    for (int k = 0; k < pList.size(); k++) {
+                        PValue d = pList.get(k);
+                        System.out.println(d);
+                        double adjustedPValue = 0.05 / (pList.size() - k);
+                        System.out.println("p: " + d.getP() + " adjusted P-value: " + adjustedPValue);
+                        if (d.getP() > adjustedPValue || addSuccessiveParameters) {
+                            System.out.println("Holm-Bonferroni -> Accepting null; Adding parameter index " + d.getK() + " to homogeneity list.");
+                            indexHomogeneousParameters.add(d.getK());
+                            // should i terminate this for loop here?
+                            // i think i am supposed to fail to reject all the other hypotheses if this happens (add them to homogeneity list?)
+                            // yes, i sort of wrote this backwards; should be adding parameters to HETEROGENEOUS index
+                            addSuccessiveParameters = true;
+                        } else {
+                            System.out.println("Holm-Bonferroni -> Rejecting null; Retaining parameter index " + d.getK() + " in moment forest.");
+                        }
+                    }
+                    System.out.println("DEBUG: ending Holm Bonferroni method");
+                } else {
+                    // easier bonferroni procedure (for checking what's going on here)
+                    for (int k = 0; k < pList.size(); k++) {
+                        PValue d = pList.get(k);
+                        System.out.println(d);
+                        double criticalValue = 0.05 / (0.0 + pList.size());
+                        System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
+                        if (d.getP() > criticalValue) {
+                            System.out.println("Straight Bonferroni -> Accepting null; adding parameter index " + d.getK() + " to homogeneity list.");
+                            indexHomogeneousParameters.add(d.getK());
+                        } else {
+                            System.out.println("Straight Bonferroni -> Rejecting null; retaining parameter index " + d.getK() + " in moment forest.");
+                        }
+                    }
+                }
+
+            }
+            System.out.println("DEBUG: Exiting testParameterHomogeneity");
+        }
+        System.out.println("DEBUG: Exiting estimateHonestTree()");
     }
 
     public void clearEstimationData() {

@@ -147,18 +147,21 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
         }
 
-        double start = f_to_minimize(xpls);
-        mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 1000, 1000, xpls, false);
-        guess = lte.getLowestPoint();
-        double end = f_to_minimize(guess);
-        System.out.print("After LTE: ");
-        pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
-        if (end < start) {
-            // hmm, this is sometimes finding a lower point, which is really important here since we relying on these f_min values to compute test statistics
-            System.out.println("LTE made an improvement start: " + start + " end: " + end);
-            // System.exit(0);
-            for (int i = 0; i < guess.length; i++) {
-                xpls[i] = guess[i];
+        boolean useLTE = false;
+        if (useLTE) {
+            double start = f_to_minimize(xpls);
+            mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 1000, 1000, xpls, false);
+            guess = lte.getLowestPoint();
+            double end = f_to_minimize(guess);
+            System.out.print("After LTE: ");
+            pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+            if (end < start) {
+                // hmm, this is sometimes finding a lower point, which is really important here since we relying on these f_min values to compute test statistics
+                System.out.println("LTE made an improvement start: " + start + " end: " + end);
+                // System.exit(0);
+                for (int i = 0; i < guess.length; i++) {
+                    xpls[i] = guess[i];
+                }
             }
         }
 
