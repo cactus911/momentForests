@@ -661,21 +661,23 @@ public class TreeMoment {
                     Collections.sort(pList);
 
                     // holm-bonferroni procedure below
-                    boolean useHolmBonferroni = false;
+                    boolean useHolmBonferroni = true;
                     if (useHolmBonferroni) {
+                        boolean addSuccessiveParameters = false; // need this since i kind of constructed this loop backwards in terms of testing the null hypothesis (which is that there is parameter homogeneity)
                         for (int k = 0; k < pList.size(); k++) {
                             PValue d = pList.get(k);
                             System.out.println(d);
-                            double criticalValue = 0.05 / (pList.size() - k);
-                            System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
-                            if (d.getP() > criticalValue) {
-                                System.out.println("Holm-Bonferroni -> Accepting null; terminating test sequence. Adding parameter index " + d.getK() + " to homogeneity list.");
+                            double adjustedPValue = 0.05 / (pList.size() - k);
+                            System.out.println("p: " + d.getP() + " adjusted P-value: " + adjustedPValue);
+                            if (d.getP() > adjustedPValue || addSuccessiveParameters) {
+                                System.out.println("Holm-Bonferroni -> Accepting null; Adding parameter index " + d.getK() + " to homogeneity list.");
                                 indexHomogeneousParameters.add(d.getK());
                                 // should i terminate this for loop here?
                                 // i think i am supposed to fail to reject all the other hypotheses if this happens (add them to homogeneity list?)
-                                break;
+                                // yes, i sort of wrote this backwards; should be adding parameters to HETEROGENEOUS index
+                                addSuccessiveParameters = true;
                             } else {
-                                System.out.println("Holm-Bonferroni -> Rejecting null; continuing test sequence. Retaining parameter index " + d.getK() + " in moment forest.");
+                                System.out.println("Holm-Bonferroni -> Rejecting null; Retaining parameter index " + d.getK() + " in moment forest.");
                             }
                         }
                     } else {

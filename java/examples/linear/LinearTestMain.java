@@ -58,11 +58,16 @@ public class LinearTestMain {
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setVisible(true);
         
-        for (int numObs = 5000; numObs < 5000 * 2 * 2 * 2 * 2 * 2 * 2; numObs *= 2) {
+        /**
+         * It appears that we get classification basically correct
+         * What do we want to put into the Monte Carlo?
+         */
+        
+        for (int numObs = 500; numObs < 5000; numObs *= 2) {
             Random rng = new Random(22);
             
             double[] homogeneousClassificationRate = new double[2];
-            int numMonteCarlos = 20;
+            int numMonteCarlos = 48;
 
             ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 

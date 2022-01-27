@@ -127,9 +127,9 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
         }
         System.out.print("after first step: ");
         pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
-        
+
         boolean useCUEInSecondStep = true;
-        if(useCUEInSecondStep) {
+        if (useCUEInSecondStep) {
             useCUE = true;
             minimizer = new Uncmin_f77(false);
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
@@ -147,8 +147,21 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
         }
 
-        // mcmc.gibbsLTEGeneralized lte = new  gibbsLTEGeneralized(this, 1000, 1000, guess, true);
-        // xpls = lte.getLowestPoint();
+        double start = f_to_minimize(xpls);
+        mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 1000, 1000, xpls, false);
+        guess = lte.getLowestPoint();
+        double end = f_to_minimize(guess);
+        System.out.print("After LTE: ");
+        pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+        if (end < start) {
+            // hmm, this is sometimes finding a lower point, which is really important here since we relying on these f_min values to compute test statistics
+            System.out.println("LTE made an improvement start: " + start + " end: " + end);
+            // System.exit(0);
+            for (int i = 0; i < guess.length; i++) {
+                xpls[i] = guess[i];
+            }
+        }
+
         return xpls;
     }
 
@@ -207,7 +220,6 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
             Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
             for (int k = 0; k < K; k++) {
                 gi.set(k, 0, leftError.get(i, 0) * leftX.get(i, k));
-                // g.set(k, 0, g.get(k,0) + gi.get(k,0));
             }
             g.plusEquals(gi);
         }
@@ -219,7 +231,6 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
             Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
             for (int k = 0; k < K; k++) {
                 gi.set(k + K, 0, rightError.get(i, 0) * rightX.get(i, k));
-                // g.set(k, 0, g.get(k,0) + gi.get(k,0));
             }
             g.plusEquals(gi);
         }
@@ -228,12 +239,12 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
 
         // omega may be messing this up
         // try just using the identity weighting matrix to see if it fixes things up
-        
-        if(useCUE) {
+        // can turn off CUE using the boolean here
+        if (useCUE) {
             computeOptimalOmega(x);
         }
-        
-        double q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0); // this is the continuous updating estimator (CUE)
+
+        double q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
 
         return q;
     }

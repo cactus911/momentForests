@@ -225,7 +225,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         beta.set(0, 0, -1);
         beta.set(1, 0, 1);
 
-        boolean singleBeta = true;
+        boolean singleBeta = false;
         if (singleBeta) {
             return beta;
         }
@@ -233,7 +233,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         boolean simplest = true;
         if (simplest) {
             if (zi.get(0, 0) > 0) {
-                beta.set(1, 0, -2);
+                beta.set(1, 0, -1.05);
             }
             return beta;
         }
