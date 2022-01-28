@@ -5,6 +5,7 @@
  */
 package core;
 
+import java.util.ArrayList;
 import optimization.Uncmin_f77;
 import optimization.Uncmin_methods;
 import utility.pmUtility;
@@ -24,28 +25,32 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
     int numParams;
     long rngSeedBaseMomentForest;
     long rngSeedBaseOutOfSample;
+    ArrayList<Integer> homogeneousParameterIndex;
 
     private Jama.Matrix estimatedHomogeneousParameters;
 
-    public HomogeneousSearchContainer(MomentSpecification mySpecification, int numberTreesInForest, boolean verbose, double minImprovement, int minObservationsPerLeaf, int maxTreeDepth, int numParams, long rngSeedBaseMomentForest, long rngSeedBaseOutOfSample) {
+    public HomogeneousSearchContainer(MomentSpecification mySpecification, int numberTreesInForest, boolean verbose, double minImprovement, int minObservationsPerLeaf, int maxTreeDepth, ArrayList<Integer> homogeneousParameterIndex, long rngSeedBaseMomentForest, long rngSeedBaseOutOfSample) {
         this.mySpecification = mySpecification;
         this.numberTreesInForest = numberTreesInForest;
         this.verbose = verbose;
         this.minImprovement = minImprovement;
         this.minObservationsPerLeaf = minObservationsPerLeaf;
         this.maxTreeDepth = maxTreeDepth;
-        this.numParams = numParams;
+        this.numParams = homogeneousParameterIndex.size();
         this.rngSeedBaseMomentForest = rngSeedBaseMomentForest;
         this.rngSeedBaseOutOfSample = rngSeedBaseOutOfSample;
+        this.homogeneousParameterIndex = homogeneousParameterIndex;
     }
 
     public void executeSearch() {
-        System.out.println("Inside executeSearch");
+        // System.out.println("Inside executeSearch");
 
         boolean useGridSearch = true;
+        
+        // is this blowing up because i'm calling this even when there are zero parameters to search over?!?
 
         if (useGridSearch && numParams == 1) {
-            System.out.println("Starting grid search");
+            // System.out.println("Starting grid search");
 //            XYSeries xy = new XYSeries("Parameter 1");
 //            XYSeriesCollection xyc = new XYSeriesCollection(xy);
 //            boolean showGUI = false;
@@ -65,7 +70,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
             for (double x = -2.0; x <= -0.0; x += 0.1) {
                 double[] xp = new double[2];
                 xp[1] = x;
-                System.out.println("Calling f_to_minimize");
+                // System.out.println("Calling f_to_minimize");
                 double f = f_to_minimize(xp);
                 System.out.println("x = " + x + " f_to_minimize: " + f);
 //                xy.add(x, f);
@@ -122,10 +127,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
         Jama.Matrix homogeneousParameterVector = new Jama.Matrix(numParams, 1);
         for (int i = 0; i < numParams; i++) {
             homogeneousParameterVector.set(i, 0, x[i + 1]);
+            mySpecification.setHomogeneousParameter(homogeneousParameterIndex.get(i), x[i+1]);
         }
-        System.out.println("Setting homogeneous parameters");
-        mySpecification.setHomogeneousParameters(homogeneousParameterVector);
-        System.out.println("Calling computeOutOfSampleMSE");
         return computeOutOfSampleMSE();
     }
 
@@ -135,19 +138,19 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
          * imposed; also, getY depends on guess of homogeneous parameters, so
          * need to regenerate for each guess of X here
          */
-        System.out.println("Initializing lens");
+        // System.out.println("Initializing lens");
         DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(true), mySpecification.getZ(), null);
 
         boolean testParameterHomogeneity = false;
-        System.out.println("Initializing forest");
+        // System.out.println("Initializing forest");
         MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngSeedBaseMomentForest, homogenizedForestLens, verbose, new TreeOptions());
         TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, testParameterHomogeneity); // k = 1
-        System.out.println("Setting options");
+        // System.out.println("Setting options");
         myForest.setTreeOptions(cvOptions);
         /**
          * Grow the moment forest
          */
-        System.out.println("Growing forest");
+        // System.out.println("Growing forest");
         myForest.growForest();
 
         /**
@@ -161,7 +164,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
         /**
          * Compute out-of-sample fit at current homogeneous parameter vector
          */
-        System.out.println("Computing out of sample fits");
+        // System.out.println("Computing out of sample fits");
         double outOfSampleFit = 0;
         for (int i = 0; i < testZ.getRowDimension(); i++) {
             Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
@@ -190,7 +193,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
             }
         }
         double MSE = outOfSampleFit / testZ.getRowDimension();
-        System.out.println("Out-of-sample MSE: " + MSE);
+        // System.out.println("Out-of-sample MSE: " + MSE);
         return MSE;
     }
 

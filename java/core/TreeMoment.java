@@ -670,7 +670,7 @@ public class TreeMoment {
         }
 
         if (testParameterHomogeneity) {
-System.out.println("DEBUG: Entering testParameterHomogeneity");
+// System.out.println("DEBUG: Entering testParameterHomogeneity");
             /**
              * Want to think about testing for parameter equality across splits,
              * potentially imposing that homogeneity here (and maybe all nodes
@@ -729,7 +729,7 @@ System.out.println("DEBUG: Entering testParameterHomogeneity");
                             System.out.println("Holm-Bonferroni -> Rejecting null; Retaining parameter index " + d.getK() + " in moment forest.");
                         }
                     }
-                    System.out.println("DEBUG: ending Holm Bonferroni method");
+//                    System.out.println("DEBUG: ending Holm Bonferroni method");
                 } else {
                     // easier bonferroni procedure (for checking what's going on here)
                     for (int k = 0; k < pList.size(); k++) {
@@ -747,9 +747,9 @@ System.out.println("DEBUG: Entering testParameterHomogeneity");
                 }
 
             }
-            System.out.println("DEBUG: Exiting testParameterHomogeneity");
+//            System.out.println("DEBUG: Exiting testParameterHomogeneity");
         }
-        System.out.println("DEBUG: Exiting estimateHonestTree()");
+//        System.out.println("DEBUG: Exiting estimateHonestTree()");
     }
 
     public void clearEstimationData() {

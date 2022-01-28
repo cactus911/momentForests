@@ -83,7 +83,7 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
         leftMSE = leftLinear.getGoodnessOfFit();
         rightMSE = rightLinear.getGoodnessOfFit();
                 
-        System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
+        // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
         // return (leftMSE + rightMSE) / X.getNumObs();
         return (leftMSE + rightMSE);
     }

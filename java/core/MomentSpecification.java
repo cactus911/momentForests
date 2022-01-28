@@ -72,13 +72,15 @@ public interface MomentSpecification {
 
     public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance);
     
-    public void setHomogeneousParameters(Jama.Matrix homogeneousParameters);
+    public void setHomogeneousParameter(int parameterIndex, double value);
+    public double getHomogeneousParameter(int parameterIndex);
 
     public double getHomogeneousComponent(Jama.Matrix xi);
 
     public void resetHomogeneityIndex();
 
     public void setHomogeneousIndex(Integer i);
+    public boolean[] getHomogeneousIndex();
     
     public Jama.Matrix residualizeX(Jama.Matrix Xp);
 

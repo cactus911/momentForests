@@ -34,7 +34,7 @@ import optimization.Uncmin_methods;
  */
 public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
 
-    SplitContainer container;
+    SplitContainer container; 
     DataLens lens;
     int minCount;
     double minProportion;
@@ -109,7 +109,5 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
         numObsRight = container.getRight().getNumObs();
         return getSSE();
     }
-
-    
 
 }

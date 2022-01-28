@@ -55,6 +55,6 @@ public abstract class MomentContinuousSplitObj implements Fmin_methods {
 
     public int getEffectiveNumObsRight() {
         return numObsRight;
-    }
+    } 
 
 }

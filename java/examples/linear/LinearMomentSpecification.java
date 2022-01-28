@@ -52,15 +52,21 @@ public class LinearMomentSpecification implements MomentSpecification {
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean MONTE_CARLO = true;
-    
+
     /**
      * We are going to control homogeneous parameters through these variables
      */
-    private boolean[] homogeneityIndex = {false, false};
-    Jama.Matrix homogeneousParameterVector = null; // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
+    private boolean[] homogeneityIndex; // = new boolean[X.getColumnDimension()];
+    Jama.Matrix homogeneousParameterVector; // = new Jama.Matrix(X.getColumnDimension(), 1); // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
+    // i'm going to change that, since that sounds like a recipe for disaster as the set of parameters that gets the homogeneous label shifts around
+    // how to keep everything straight--easier way is to just to make it the size of the parameter vector and go from there (and never read elements that aren't labeled as homogeneous)
 
     public LinearMomentSpecification(int numObs) {
         this.numObs = numObs;
+        // all these indices are hard-coded; want to change that down the road!
+        homogeneityIndex = new boolean[2];
+        homogeneousParameterVector = new Jama.Matrix(2,1);
+        resetHomogeneityIndex();
         int[] vsi = {0, 1, 2}; //Search over z1, z2, z3 
         Boolean[] wvd = {false, false, true}; // z1, z2 continuous, z3 discrete
         variableSearchIndex = vsi;
@@ -72,8 +78,20 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public void setHomogeneousParameters(Matrix h) {
-        this.homogeneousParameterVector = h;
+    public boolean[] getHomogeneousIndex() {
+        return homogeneityIndex;
+    }
+
+    @Override
+    public double getHomogeneousParameter(int parameterIndex) {
+        return homogeneousParameterVector.get(parameterIndex,0);
+    }
+
+    
+    
+    @Override
+    public void setHomogeneousParameter(int parameterIndex, double value) {
+        homogeneousParameterVector.set(parameterIndex, 0, value);
     }
 
     @Override
@@ -143,13 +161,11 @@ public class LinearMomentSpecification implements MomentSpecification {
         }
         Jama.Matrix residualizedY = Y.copy();
 
-        int homogeneousParameterIndex = 0;
         for (int k = 0; k < homogeneityIndex.length; k++) {
             if (homogeneityIndex[k]) {
                 for (int i = 0; i < Y.getRowDimension(); i++) {
-                    residualizedY.set(i, 0, residualizedY.get(i, 0) - X.get(i, k) * homogeneousParameterVector.get(homogeneousParameterIndex, 0));
+                    residualizedY.set(i, 0, residualizedY.get(i, 0) - X.get(i, k) * homogeneousParameterVector.get(k, 0));
                 }
-                homogeneousParameterIndex++;
             }
         }
         return residualizedY;
@@ -158,13 +174,11 @@ public class LinearMomentSpecification implements MomentSpecification {
     @Override
     public double getHomogeneousComponent(Jama.Matrix xi) {
         double homogeneousComponent = 0;
-        int homogeneousParameterIndex = 0;
+        
         for (int k = 0; k < homogeneityIndex.length; k++) {
             if (homogeneityIndex[k]) {
-                homogeneousComponent += xi.get(0, k) * homogeneousParameterVector.get(homogeneousParameterIndex, 0);
-
-                homogeneousParameterIndex++;
-            }
+                homogeneousComponent += xi.get(0, k) * homogeneousParameterVector.get(k, 0);
+    }
         }
         return homogeneousComponent;
     }
@@ -188,7 +202,8 @@ public class LinearMomentSpecification implements MomentSpecification {
         }
         return residualizedX;
     }
-    
+
+    @Override
     public Jama.Matrix residualizeX(Jama.Matrix Xp) {
         Jama.Matrix residualizedX = null;
         for (int k = 0; k < homogeneityIndex.length; k++) {
@@ -258,7 +273,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public DataLens getOutOfSampleXYZ(int numObsOOS, long rngSeed) {
-        LinearDataGenerator xyz = new LinearDataGenerator(numObsOOS,this, rngSeed);        
+        LinearDataGenerator xyz = new LinearDataGenerator(numObsOOS, this, rngSeed);
         return new DataLens(xyz.getX(), xyz.getY(), xyz.getZ(), null);
     }
 
