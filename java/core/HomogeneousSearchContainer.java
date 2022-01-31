@@ -139,6 +139,11 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
          * need to regenerate for each guess of X here
          */
         // System.out.println("Initializing lens");
+        
+        // if whole model is homogeneous this doens't work since it pulls nulls and grows a null tree
+        // just skip directly to evaluating fit using completely specified homogeneous model (COME BACK TO THIS)
+        
+        
         DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(true), mySpecification.getZ(), null);
 
         boolean testParameterHomogeneity = false;

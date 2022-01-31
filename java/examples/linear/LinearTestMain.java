@@ -23,6 +23,7 @@
  */
 package examples.linear;
 
+import Jama.Matrix;
 import core.BootstrapForest;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
@@ -48,7 +49,7 @@ public class LinearTestMain {
     private final int numObs;
     private double outOfSampleYMSE;
     private double estimatedBetaVersusTruthMSE;
-    private double estimateHomogeneousParameter;
+    private Jama.Matrix estimatedHomogeneousParameters;
     private final boolean detectHomogeneity;
 
     /**
@@ -81,7 +82,8 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        boolean[] d = {false, true};
+        // boolean[] d = {false, true};
+        boolean[] d = {true};
         for (boolean detectHomogeneity : d) {
             // boolean detectHomogeneity = !true;
             if (detectHomogeneity) {
@@ -93,15 +95,16 @@ public class LinearTestMain {
             for (int numObs = 500; numObs <= 4000; numObs *= 2) {
                 Random rng = new Random(22);
 
-                double[] homogeneousClassificationRate = new double[2];
+                int numParameters = 2;
+
+                double[] homogeneousClassificationRate = new double[numParameters];
+                double[] avgParameter = new double[numParameters];
                 double Y_MSE = 0;
                 double Y_MSE_var = 0;
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
-                double meanHomogeneousParameter = 0; // this is going to be a little weird since this may be a vector, and that vector may change size across runs!
-                double varHomogeneousParameter = 0;
 
-                int numMonteCarlos = 50;
+                int numMonteCarlos = 5;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -115,11 +118,20 @@ public class LinearTestMain {
                 });
 
                 // for (int m = 0; m < numMonteCarlos; m++) {
+                int[] counts = new int[numParameters];
                 for (LinearTestMain m : parallelLTM) {
                     if (detectHomogeneity) {
                         ArrayList<Integer> hList = m.getHomogeneousParameterList();
-                        for (Integer h : hList) {
-                            homogeneousClassificationRate[h] = homogeneousClassificationRate[h] + 1.0;
+                        if (hList.size() > 0) {
+                            for (Integer h : hList) {
+                                homogeneousClassificationRate[h] = homogeneousClassificationRate[h] + 1.0;
+                                for (int i = 0; i < numParameters; i++) {
+                                    if (h == i) {
+                                        counts[i]++; // this is counting how many times this parameter is chosen as homogeneous
+                                        avgParameter[i] += m.getEstimatedHomogeneousParameters().get(i, 0);
+                                    }
+                                }
+                            }
                         }
                         // we'll figure out mean homogeneous parameter here when i get back (how to to deal with it sometimes not showing up?)
                     }
@@ -140,7 +152,12 @@ public class LinearTestMain {
                 jt.append("Y_MSE: " + Y_MSE + " (" + Y_MSE_var + ")\n");
                 jt.append("beta_MSE: " + beta_MSE + " (" + beta_MSE_var + ")\n");
                 if (detectHomogeneity) {
-                    jt.append("mean homogeneous parameter: " + meanHomogeneousParameter + " (" + varHomogeneousParameter + ")\n");
+                    for (int i = 0; i < numParameters; i++) {
+                        if(counts[i]>0) {
+                            avgParameter[i] = avgParameter[i] / counts[i];
+                        }
+                        jt.append("Parameter " + i + " mean: " + avgParameter[i]+" ["+counts[i]+"]\n");
+                    }
                 }
                 jt.append("---------------------------------------------------------\n");
             }
@@ -289,6 +306,7 @@ public class LinearTestMain {
                     Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
                     // System.out.println("Estimated homogeneous parameters: ");
                     pmUtility.prettyPrintVector(homogeneousParameters);
+                    setEstimatedHomogeneousParameters(homogeneousParameters);
                 }
             }
         }
@@ -463,8 +481,12 @@ public class LinearTestMain {
     /**
      * @return the estimateHomogeneousParameter
      */
-    public double getEstimateHomogeneousParameter() {
-        return estimateHomogeneousParameter;
+    public Jama.Matrix getEstimatedHomogeneousParameters() {
+        return estimatedHomogeneousParameters;
+    }
+
+    public void setEstimatedHomogeneousParameters(Matrix estimatedHomogeneousParameters) {
+        this.estimatedHomogeneousParameters = estimatedHomogeneousParameters;
     }
 
 }
