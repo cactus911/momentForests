@@ -57,7 +57,7 @@ public class LinearMomentSpecification implements MomentSpecification {
      * We are going to control homogeneous parameters through these variables
      */
     private boolean[] homogeneityIndex; // = new boolean[X.getColumnDimension()];
-    Jama.Matrix homogeneousParameterVector; // = new Jama.Matrix(X.getColumnDimension(), 1); // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
+    private Jama.Matrix homogeneousParameterVector; // = new Jama.Matrix(X.getColumnDimension(), 1); // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
     // i'm going to change that, since that sounds like a recipe for disaster as the set of parameters that gets the homogeneous label shifts around
     // how to keep everything straight--easier way is to just to make it the size of the parameter vector and go from there (and never read elements that aren't labeled as homogeneous)
 
@@ -405,6 +405,13 @@ public class LinearMomentSpecification implements MomentSpecification {
     @Override
     public void setHomogeneousIndex(Integer i) {
         homogeneityIndex[i] = true;
+    }
+
+    /**
+     * @return the homogeneousParameterVector
+     */
+    public Jama.Matrix getHomogeneousParameterVector() {
+        return homogeneousParameterVector;
     }
 
 }

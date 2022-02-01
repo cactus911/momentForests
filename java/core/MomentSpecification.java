@@ -81,6 +81,7 @@ public interface MomentSpecification {
 
     public void setHomogeneousIndex(Integer i);
     public boolean[] getHomogeneousIndex();
+    public Jama.Matrix getHomogeneousParameterVector();
     
     public Jama.Matrix residualizeX(Jama.Matrix Xp);
 
