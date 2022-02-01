@@ -24,7 +24,6 @@
 package examples.linear;
 
 import Jama.Matrix;
-import core.BootstrapForest;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
@@ -36,6 +35,7 @@ import java.util.Collections;
 import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
+import javax.swing.JTextArea;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -52,7 +52,7 @@ public class LinearTestMain {
     private double estimatedBetaVersusTruthMSE;
     private Jama.Matrix estimatedHomogeneousParameters;
     private final boolean detectHomogeneity;
-    JTextAreaAutoscroll jt;
+    JTextArea jt;
 
     /**
      * @param args the command line arguments
@@ -61,7 +61,7 @@ public class LinearTestMain {
         JFrame f = new JFrame("Monte Carlo");
         f.setBounds(300, 300, 1500, 500);
         f.getContentPane().setLayout(new BorderLayout());
-        JTextAreaAutoscroll jt = new JTextAreaAutoscroll();
+        JTextArea jt = new JTextAreaAutoscroll();
         f.getContentPane().add(new JScrollPane(jt), BorderLayout.CENTER);
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setVisible(true);
@@ -84,8 +84,8 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        // boolean[] d = {false, true};
-        boolean[] d = {true};
+        boolean[] d = {false, true};
+        // boolean[] d = {!true};
         for (boolean detectHomogeneity : d) {
             // boolean detectHomogeneity = !true;
             if (detectHomogeneity) {
@@ -106,7 +106,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 8;
+                int numMonteCarlos = 100;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -192,7 +192,9 @@ public class LinearTestMain {
                 jt.append("beta_MSE: " + beta_MSE + " (" + beta_MSE_var + ")\n");
                 if (detectHomogeneity) {
                     for (int i = 0; i < numParameters; i++) {
-                        jt.append("Parameter " + i + " mean: " + avgParameter[i] + " se: " + standardErrors[i] + " [" + counts[i] + "]\n");
+                        String s = String.format("x[%d]: mean: %g se: %g [%d]\n", i, avgParameter[i], standardErrors[i], counts[i]);
+                        // jt.append("Parameter " + i + " mean: " + avgParameter[i] + " se: " + standardErrors[i] + " [" + counts[i] + "]\n");
+                        jt.append(s);
                     }
                 }
                 jt.append("---------------------------------------------------------\n");
@@ -200,7 +202,7 @@ public class LinearTestMain {
         }
     }
 
-    public LinearTestMain(long rngSeed, int numObs, boolean detectHomogeneity, JTextAreaAutoscroll jt) {
+    public LinearTestMain(long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt) {
         this.rngSeed = rngSeed;
         this.jt = jt;
         this.numObs = numObs;

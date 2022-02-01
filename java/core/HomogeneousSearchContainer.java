@@ -46,46 +46,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     public void executeSearch() {
         // System.out.println("Inside executeSearch");
 
-        boolean useGridSearch = false;
-
-        // is this blowing up because i'm calling this even when there are zero parameters to search over?!?
-        if (useGridSearch && numParams == 1) {
-            // System.out.println("Starting grid search");
-//            XYSeries xy = new XYSeries("Parameter 1");
-//            XYSeriesCollection xyc = new XYSeriesCollection(xy);
-//            boolean showGUI = false;
-//            if (showGUI) {
-//                JFrame fr = new JFrame("Grid Search");
-//                fr.setBounds(200, 200, 500, 500);
-//                fr.getContentPane().setLayout(new BorderLayout());
-//                JFreeChart chart = ChartFactory.createXYLineChart("Grid Search Homogeneous Parameter", "Theta", "MSE", xyc);
-//                fr.getContentPane().add(new ChartPanel(chart));
-//                fr.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-//                fr.setVisible(true);
-//            }
-
-            boolean first = true;
-            double bestF = 0;
-            double bestX = 0;
-            for (double x = -2.0; x <= -0.0; x += 0.1) {
-                double[] xp = new double[2];
-                xp[1] = x;
-                // System.out.println("Calling f_to_minimize");
-                double f = f_to_minimize(xp);
-                System.out.println("x = " + x + " f_to_minimize: " + f);
-//                xy.add(x, f);
-                if (f < bestF || first) {
-                    bestF = f;
-                    bestX = x;
-                    first = false;
-                }
-            }
-            System.out.println("Optimal x = " + bestX);
-
-            setCompactEstimatedHomogeneousParameters(new Jama.Matrix(1, 1, bestX));
-
-        } else {
-            Uncmin_f77 minimizer = new Uncmin_f77(true);
+            Uncmin_f77 minimizer = new Uncmin_f77(false);
 
             double[] guess = new double[numParams + 1];
             
@@ -133,7 +94,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
                 compactHomogeneousParameterVector.set(i, 0, xpls[i + 1]);
             }
             setCompactEstimatedHomogeneousParameters(compactHomogeneousParameterVector); // need to account for the fact that this is potentially a shorter vector
-        }
+        
     }
 
     @Override
