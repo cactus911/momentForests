@@ -6,6 +6,7 @@
 package core;
 
 import java.util.ArrayList;
+import mcmc.gibbsLTEGeneralized;
 import optimization.Uncmin_f77;
 import optimization.Uncmin_methods;
 import utility.pmUtility;
@@ -14,7 +15,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class HomogeneousSearchContainer implements Uncmin_methods {
+public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunction  {
 
     MomentSpecification mySpecification;
     int numberTreesInForest;
@@ -81,12 +82,18 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
             }
             System.out.println("Optimal x = " + bestX);
 
-            setEstimatedHomogeneousParameters(new Jama.Matrix(1, 1, bestX));
+            setCompactEstimatedHomogeneousParameters(new Jama.Matrix(1, 1, bestX));
 
         } else {
-            Uncmin_f77 minimizer = new Uncmin_f77(false);
+            Uncmin_f77 minimizer = new Uncmin_f77(true);
 
             double[] guess = new double[numParams + 1];
+            
+            // cheat this for speeding up testing purposes
+            double[] truth = {-1,1};
+            for(int k=0;k<homogeneousParameterIndex.size();k++) {
+                guess[k] = truth[homogeneousParameterIndex.get(k)];
+            }
 
             double[] xpls = new double[numParams + 1];
             double[] fpls = new double[2];
@@ -111,13 +118,21 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
             double[] gradtl = {0, 1E-8};
             double[] stepmx = {0, 1E8};
             double[] steptl = {0, 1E-8};
+            
+            // good for robustness, way too slow to actually use
+//            long t1 = System.currentTimeMillis();
+//            mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 10, 0, guess, false);
+//            guess = lte.getLowestPoint();
+//            long t2 = System.currentTimeMillis();
+//            System.out.println("===================================== "+(t2-t1)+" ms to starting value: "+pmUtility.stringPrettyPrint(new Jama.Matrix(guess,1)));
+            
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
 
-            Jama.Matrix homogeneousParameterVector = new Jama.Matrix(numParams, 1);
+            Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numParams, 1);
             for (int i = 0; i < numParams; i++) {
-                homogeneousParameterVector.set(i, 0, xpls[i + 1]);
+                compactHomogeneousParameterVector.set(i, 0, xpls[i + 1]);
             }
-            setEstimatedHomogeneousParameters(homogeneousParameterVector); // need to account for the fact that this is potentially a shorter vector
+            setCompactEstimatedHomogeneousParameters(compactHomogeneousParameterVector); // need to account for the fact that this is potentially a shorter vector
         }
     }
 
@@ -228,8 +243,18 @@ public class HomogeneousSearchContainer implements Uncmin_methods {
      * @param estimatedHomogeneousParameters the estimatedHomogeneousParameters
      * to set
      */
-    public void setEstimatedHomogeneousParameters(Jama.Matrix estimatedHomogeneousParameters) {
+    public void setCompactEstimatedHomogeneousParameters(Jama.Matrix estimatedHomogeneousParameters) {
         this.estimatedHomogeneousParameters = estimatedHomogeneousParameters;
+    }
+
+    @Override
+    public double objectiveFunction(double[] x) {
+        return -f_to_minimize(x);
+    }
+
+    @Override
+    public double pi(double[] x) {
+        return 1.0;
     }
 
 }

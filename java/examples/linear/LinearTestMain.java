@@ -106,7 +106,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 50;
+                int numMonteCarlos = 8;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -115,12 +115,13 @@ public class LinearTestMain {
                     parallelLTM.add(go);
                 }
                 parallelLTM.parallelStream().forEach(e -> {
-                //    parallelLTM.stream().forEach(e -> {
+                    //    parallelLTM.stream().forEach(e -> {
                     e.execute();
                 });
 
                 // for (int m = 0; m < numMonteCarlos; m++) {
                 int[] counts = new int[numParameters];
+                double[] standardErrors = new double[numParameters];
                 for (LinearTestMain m : parallelLTM) {
                     if (detectHomogeneity) {
                         ArrayList<Integer> hList = m.getHomogeneousParameterList();
@@ -143,6 +144,39 @@ public class LinearTestMain {
                     Y_MSE += m.getOutOfSampleYMSE();
                     beta_MSE += m.getEstimatedBetaVersusTruthMSE();
                 }
+                
+                if (detectHomogeneity) {
+                    for (int i = 0; i < numParameters; i++) {
+                        if (counts[i] > 0) {
+                            avgParameter[i] = avgParameter[i] / counts[i];
+                        }
+                    }
+                }
+
+                // needed average to compute standard errors (kind of clunky, but whatever)
+                for (LinearTestMain m : parallelLTM) {
+                    if (detectHomogeneity) {
+                        ArrayList<Integer> hList = m.getHomogeneousParameterList();
+                        if (hList.size() > 0) {
+                            for (Integer h : hList) {
+                                for (int i = 0; i < numParameters; i++) {
+                                    if (h == i) {
+                                        standardErrors[i] += Math.pow(m.getEstimatedHomogeneousParameters().get(i, 0) - avgParameter[i],2);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+                if (detectHomogeneity) {
+                    for (int i = 0; i < numParameters; i++) {
+                        if (counts[i] > 0) {
+                            standardErrors[i] = Math.sqrt(standardErrors[i] / counts[i]);
+                        }
+                    }
+                }
+                
+
                 Y_MSE /= parallelLTM.size();
                 beta_MSE /= parallelLTM.size();
                 for (LinearTestMain m : parallelLTM) {
@@ -158,10 +192,7 @@ public class LinearTestMain {
                 jt.append("beta_MSE: " + beta_MSE + " (" + beta_MSE_var + ")\n");
                 if (detectHomogeneity) {
                     for (int i = 0; i < numParameters; i++) {
-                        if (counts[i] > 0) {
-                            avgParameter[i] = avgParameter[i] / counts[i];
-                        }
-                        jt.append("Parameter " + i + " mean: " + avgParameter[i] + " [" + counts[i] + "]\n");
+                        jt.append("Parameter " + i + " mean: " + avgParameter[i] + " se: " + standardErrors[i] + " [" + counts[i] + "]\n");
                     }
                 }
                 jt.append("---------------------------------------------------------\n");
@@ -226,7 +257,7 @@ public class LinearTestMain {
          * MommentSpecification
          */
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
-        boolean verbose = true;
+        boolean verbose = false;
         boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
@@ -382,7 +413,7 @@ public class LinearTestMain {
         /**
          * Test vectors for assessment
          */
-        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(10, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
         Jama.Matrix testZ = oosDataLens.getZ();
         Jama.Matrix residualizedX = mySpecification.residualizeX(oosDataLens.getX());
         // pmUtility.prettyPrint(pmUtility.concatMatrix(pmUtility.concatMatrix(oosDataLens.getY(), oosDataLens.getX()), testZ));
@@ -412,7 +443,7 @@ public class LinearTestMain {
 
             outOfSampleFit += error * error;
 
-            boolean outputFits = true;
+            boolean outputFits = false;
             if (outputFits) {
                 Jama.Matrix bTruth = mySpecification.getBetaTruth(zi);
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
@@ -454,7 +485,7 @@ public class LinearTestMain {
                 allParametersHomogeneous = false;
             }
         }
-        
+
         MomentForest myForest = null;
         if (!allParametersHomogeneous) {
             DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(true), mySpecification.getZ(), null);
@@ -473,7 +504,7 @@ public class LinearTestMain {
         /**
          * Test vectors for assessment
          */
-        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(100, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
         Jama.Matrix testZ = oosDataLens.getZ();
 
         /**
@@ -489,7 +520,7 @@ public class LinearTestMain {
             // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
             int heterogeneousCounter = 0;
             Jama.Matrix compositeEstimatedBeta = new Jama.Matrix(bTruth.getRowDimension(), 1);
-            
+
             for (int k = 0; k < bTruth.getRowDimension(); k++) {
                 if (mySpecification.getHomogeneousIndex()[k]) {
                     compositeEstimatedBeta.set(k, 0, mySpecification.getHomogeneousParameter(k));
@@ -499,17 +530,17 @@ public class LinearTestMain {
                     heterogeneousCounter++;
                 }
             }
-            if(i==0) {
+            if (i == 0) {
                 String hString = "[ ";
                 for (int k = 0; k < bTruth.getRowDimension(); k++) {
-                if (mySpecification.getHomogeneousIndex()[k]) {
-                    hString = hString + "X ";
-                } else {
-                    hString = hString + "O ";
-                }
+                    if (mySpecification.getHomogeneousIndex()[k]) {
+                        hString = hString + "X ";
+                    } else {
+                        hString = hString + "O ";
+                    }
                 }
                 hString = hString + "]";
-                jt.append("Composite estimated beta: "+pmUtility.stringPrettyPrintVector(compositeEstimatedBeta)+" "+hString+"\n");
+                jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
             }
             //pmUtility.prettyPrintVector(compositeEstimatedBeta);
 
