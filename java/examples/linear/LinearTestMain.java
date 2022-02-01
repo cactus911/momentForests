@@ -144,7 +144,7 @@ public class LinearTestMain {
                     Y_MSE += m.getOutOfSampleYMSE();
                     beta_MSE += m.getEstimatedBetaVersusTruthMSE();
                 }
-                
+
                 if (detectHomogeneity) {
                     for (int i = 0; i < numParameters; i++) {
                         if (counts[i] > 0) {
@@ -161,7 +161,7 @@ public class LinearTestMain {
                             for (Integer h : hList) {
                                 for (int i = 0; i < numParameters; i++) {
                                     if (h == i) {
-                                        standardErrors[i] += Math.pow(m.getEstimatedHomogeneousParameters().get(i, 0) - avgParameter[i],2);
+                                        standardErrors[i] += Math.pow(m.getEstimatedHomogeneousParameters().get(i, 0) - avgParameter[i], 2);
                                     }
                                 }
                             }
@@ -175,7 +175,6 @@ public class LinearTestMain {
                         }
                     }
                 }
-                
 
                 Y_MSE /= parallelLTM.size();
                 beta_MSE /= parallelLTM.size();
@@ -185,8 +184,10 @@ public class LinearTestMain {
                 }
                 jt.append("---------------------------------------------------------\n");
                 jt.append("n = " + numObs + " Classification Rate by Parameter\n");
-                for (int i = 0; i < homogeneousClassificationRate.length; i++) {
-                    jt.append(i + ". " + (homogeneousClassificationRate[i] / (0.0 + numMonteCarlos)) + "\n");
+                if (detectHomogeneity) {
+                    for (int i = 0; i < homogeneousClassificationRate.length; i++) {
+                        jt.append(i + ". " + (homogeneousClassificationRate[i] / (0.0 + numMonteCarlos)) + "\n");
+                    }
                 }
                 jt.append("Y_MSE: " + Y_MSE + " (" + Y_MSE_var + ")\n");
                 jt.append("beta_MSE: " + beta_MSE + " (" + beta_MSE_var + ")\n");
@@ -542,7 +543,7 @@ public class LinearTestMain {
                     }
                 }
                 hString = hString + "]";
-                jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
+                // jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
             }
             //pmUtility.prettyPrintVector(compositeEstimatedBeta);
 
