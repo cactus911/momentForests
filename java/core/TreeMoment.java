@@ -256,7 +256,7 @@ public class TreeMoment {
                         boolean useFmin = true;
                         if (useFmin) {
                             optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
-                            optimalZ_SSE_k = obj.getGoodnessOfFitAtSplitPoint(optimalZ_k); //Now return the summed SSEs of the optimal split point
+                            optimalZ_SSE_k = obj.f_to_minimize(optimalZ_k); //Now return the summed SSEs of the optimal split point
                         } else {
                             optimalZ_k = Double.POSITIVE_INFINITY;
                             optimalZ_SSE_k = Double.POSITIVE_INFINITY;
@@ -279,7 +279,7 @@ public class TreeMoment {
                             }
 
                             for (double z = leftZ; z <= rightZ; z += increment) {
-                                double f = obj.getGoodnessOfFitAtSplitPoint(z);
+                                double f = obj.f_to_minimize(z);
                                 if (debugOptimization) {
                                     echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
                                 }
@@ -306,7 +306,7 @@ public class TreeMoment {
                             }
 
                             for (double z = leftZ; z <= rightZ; z += increment) {
-                                double f = obj.getGoodnessOfFitAtSplitPoint(z);
+                                double f = obj.f_to_minimize(z);
                                 if (debugOptimization) {
                                     echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
                                 }
@@ -324,7 +324,7 @@ public class TreeMoment {
 
                         //If the summed SSE for this variable is smaller than for any other previous variable, or if its the first variable being tested, set it to be the optimal splitting variable
                         if (optimalZ_SSE_k < optimalZ_SSE || first) {
-                            obj.getGoodnessOfFitAtSplitPoint(optimalZ_k);
+                            obj.f_to_minimize(optimalZ_k);
                             optimalZ = optimalZ_k;
                             optimalZ_SSE = optimalZ_SSE_k;
                             optimalSplitVariableIndex = indexSplitVariable;
@@ -442,7 +442,7 @@ public class TreeMoment {
                 } else {
                     MomentContinuousSplitObj obj = momentSpec.getFminObjective(lensGrowingTree, optimalSplitVariableIndex, minProportionEachPartition, minCountEachPartition);
                     if (verbose) {
-                        echoLn(depth + ". Calculated optimal split along " + momentSpec.getVariableName(optimalSplitVariableIndex) + " at " + optimalZ + ", generating SSE of " + obj.getGoodnessOfFitAtSplitPoint(optimalZ));
+                        echoLn(depth + ". Calculated optimal split along " + momentSpec.getVariableName(optimalSplitVariableIndex) + " at " + optimalZ + ", generating SSE of " + obj.f_to_minimize(optimalZ));
                     }
                     setRule(new SplitRule(false, optimalSplitVariableIndex, optimalZ, null, momentSpec));
 
