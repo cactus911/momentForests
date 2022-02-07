@@ -22,6 +22,7 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
     Jama.Matrix leftY;
     Jama.Matrix rightY;
     int indexConstrainedParameter = -1;
+    private double valueConstrainedParameter;
 
     Jama.Matrix omega; // weighting matrix in GMM
     boolean useCUE = false; // utilize continuously-updated weighting matrix
@@ -75,6 +76,7 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
                 counter++;
             } else {
                 betaRightC.set(i, 0, betaLeftC.get(i, 0));
+                valueConstrainedParameter = betaLeftC.get(i,0);
             }
         }
 
@@ -361,6 +363,13 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
     @Override
     public double pi(double[] x) {
         return 1.0;
+    }
+
+    /**
+     * @return the valueConstrainedParameter
+     */
+    public double getValueConstrainedParameter() {
+        return valueConstrainedParameter;
     }
 
 }

@@ -66,6 +66,7 @@ public class TreeMoment {
     private ContainerMoment currentNodeMoment;
 
     private ArrayList<Integer> indexHomogeneousParameters = new ArrayList<>();
+    private ArrayList<Double> valueHomogeneousParameters = new ArrayList<>();
 
     private boolean testParameterHomogeneity;
 
@@ -693,7 +694,8 @@ public class TreeMoment {
                 // test using DM from Newey-McFadden, chi-squared with one degree of freedom
                 ChiSqrDistribution chi = new ChiSqrDistribution(1);
 
-                ArrayList<PValue> pList = new ArrayList<>();
+                ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
+                ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
 
                 for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
                     DistanceMetricTest wald = new DistanceMetricTest(childLeft.lensHonest.getX(), childRight.lensHonest.getX(), childLeft.lensHonest.getY(), childRight.lensHonest.getY());
@@ -701,8 +703,9 @@ public class TreeMoment {
                     double pval = 1.0 - chi.cumulative(dm2);
                     System.out.println("p-value: " + pval);
                     pList.add(new PValue(k, pval));
+                    constrainedParameterList.add(new PValue(k, wald.getValueConstrainedParameter()));
                     if (dm2 < chi.inverse(0.95)) {
-                        System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k);
+                        System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k + " constrained parameter guess: " + wald.getValueConstrainedParameter());
                     }
 
                 }
@@ -721,6 +724,13 @@ public class TreeMoment {
                         if (d.getP() > adjustedPValue || addSuccessiveParameters) {
                             System.out.println("Holm-Bonferroni -> Accepting null; Adding parameter index " + d.getK() + " to homogeneity list.");
                             indexHomogeneousParameters.add(d.getK());
+
+                            for (PValue cp : constrainedParameterList) {
+                                if (cp.getK() == d.getK()) {
+                                    valueHomogeneousParameters.add(cp.getP());
+                                }
+                            }
+
                             // should i terminate this for loop here?
                             // i think i am supposed to fail to reject all the other hypotheses if this happens (add them to homogeneity list?)
                             // yes, i sort of wrote this backwards; should be adding parameters to HETEROGENEOUS index
@@ -872,5 +882,12 @@ public class TreeMoment {
      */
     public void setTestParameterHomogeneity(boolean testParameterHomogeneity) {
         this.testParameterHomogeneity = testParameterHomogeneity;
+    }
+
+    /**
+     * @return the valueHomogeneousParameters
+     */
+    public ArrayList<Double> getValueHomogeneousParameters() {
+        return valueHomogeneousParameters;
     }
 }

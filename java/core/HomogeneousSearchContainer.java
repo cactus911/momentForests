@@ -15,7 +15,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunction  {
+public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunction {
 
     MomentSpecification mySpecification;
     int numberTreesInForest;
@@ -46,55 +46,71 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     public void executeSearch() {
         // System.out.println("Inside executeSearch");
 
-            Uncmin_f77 minimizer = new Uncmin_f77(false);
+        Uncmin_f77 minimizer = new Uncmin_f77(false);
 
-            double[] guess = new double[numParams + 1];
-            
-            // cheat this for speeding up testing purposes
+        double[] guess = new double[numParams + 1];
+
+        // cheat this for speeding up testing purposes
 //            double[] truth = {-1,1};
 //            for(int k=0;k<homogeneousParameterIndex.size();k++) {
 //                guess[k] = truth[homogeneousParameterIndex.get(k)];
 //            }
 
-            double[] xpls = new double[numParams + 1];
-            double[] fpls = new double[2];
-            double[] gpls = new double[numParams + 1];
-            int[] itrmcd = new int[2];
-            double[][] a = new double[numParams + 1][numParams + 1];
-            double[] udiag = new double[numParams + 1];
-            double[] typsiz = new double[numParams + 1];
-            for (int i = 1; i <= numParams; i++) {
-                typsiz[i] = 1.0;
-            }
+        // use the starting values from the DM test
+        for (int k = 0; k < homogeneousParameterIndex.size(); k++) {
+            guess[k+1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
+        }
+        System.out.print("Starting values taken from DM test: ");
+        pmUtility.prettyPrint(new Jama.Matrix(guess,1));
 
-            double[] fscale = {0, 1.0E-8};
-            int[] method = {0, 3};
-            int[] iexp = {0, 0};
-            int[] msg = {0, 1};
-            int[] ndigit = {0, 8};
-            int[] itnlim = {0, 150};
-            int[] iagflg = {0, 0};
-            int[] iahflg = {0, 0};
-            double[] dlt = {0, 1};
-            double[] gradtl = {0, 1E-8};
-            double[] stepmx = {0, 1E8};
-            double[] steptl = {0, 1E-8};
-            
-            // good for robustness, way too slow to actually use
+        double[] xpls = new double[numParams + 1];
+        double[] fpls = new double[2];
+        double[] gpls = new double[numParams + 1];
+        int[] itrmcd = new int[2];
+        double[][] a = new double[numParams + 1][numParams + 1];
+        double[] udiag = new double[numParams + 1];
+        double[] typsiz = new double[numParams + 1];
+        for (int i = 1; i <= numParams; i++) {
+            typsiz[i] = 1.0;
+        }
+
+        double[] fscale = {0, 1.0E-8};
+        int[] method = {0, 3};
+        int[] iexp = {0, 0};
+        int[] msg = {0, 1};
+        int[] ndigit = {0, 8};
+        int[] itnlim = {0, 150};
+        int[] iagflg = {0, 0};
+        int[] iahflg = {0, 0};
+        double[] dlt = {0, 1};
+        double[] gradtl = {0, 1E-8};
+        double[] stepmx = {0, 1E8};
+        double[] steptl = {0, 1E-8};
+
+        // good for robustness, way too slow to actually use
 //            long t1 = System.currentTimeMillis();
 //            mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 10, 0, guess, false);
 //            guess = lte.getLowestPoint();
 //            long t2 = System.currentTimeMillis();
 //            System.out.println("===================================== "+(t2-t1)+" ms to starting value: "+pmUtility.stringPrettyPrint(new Jama.Matrix(guess,1)));
-            
-            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+long t1 = System.currentTimeMillis();
+        minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        long t2 = System.currentTimeMillis();
 
-            Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numParams, 1);
-            for (int i = 0; i < numParams; i++) {
-                compactHomogeneousParameterVector.set(i, 0, xpls[i + 1]);
+        boolean allParametersHomogeneous = true;
+        for (boolean b : mySpecification.getHomogeneousIndex()) {
+            if (!b) {
+                allParametersHomogeneous = false;
             }
-            setCompactEstimatedHomogeneousParameters(compactHomogeneousParameterVector); // need to account for the fact that this is potentially a shorter vector
+        }
+        System.out.println("All parameters homogeneous: "+allParametersHomogeneous+" time elapsed: "+(t2-t1));
         
+        Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numParams, 1);
+        for (int i = 0; i < numParams; i++) {
+            compactHomogeneousParameterVector.set(i, 0, xpls[i + 1]);
+        }
+        setCompactEstimatedHomogeneousParameters(compactHomogeneousParameterVector); // need to account for the fact that this is potentially a shorter vector
+
     }
 
     @Override
@@ -104,6 +120,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             homogeneousParameterVector.set(i, 0, x[i + 1]);
             mySpecification.setHomogeneousParameter(homogeneousParameterIndex.get(i), x[i + 1]);
         }
+
+        // i should seed this in some way with the estimates from the DistanceMetricTest results
         return computeOutOfSampleMSE();
     }
 
@@ -177,6 +195,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             double error = fitY - (oosDataLens.getY().get(i, 0));
 
             outOfSampleFit += error * error;
+
+            // in principle, we could actually use something like GMM in here
         }
         double MSE = outOfSampleFit / testZ.getRowDimension();
         // System.out.println("Out-of-sample MSE: " + MSE);

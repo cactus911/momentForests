@@ -33,6 +33,7 @@ import java.awt.BorderLayout;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -106,7 +107,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 8;
+                int numMonteCarlos = 56;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -120,9 +121,14 @@ public class LinearTestMain {
                     }
                     parallelLTM.add(go);
                 }
+                
+                AtomicInteger bomb = new AtomicInteger();
+                
                 parallelLTM.parallelStream().forEach(e -> {
-                //    parallelLTM.stream().forEach(e -> {
+                // parallelLTM.stream().forEach(e -> {
                     e.execute();
+                    bomb.incrementAndGet();
+                    System.out.println("Finished "+bomb.get()+" iterations.");
                 });
 
                 // for (int m = 0; m < numMonteCarlos; m++) {
@@ -323,12 +329,25 @@ public class LinearTestMain {
             myForest.growForest();
             // System.out.println("Done with growforest");
             ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
+            ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
             // System.out.println("Post get homogeneous parameters");
 
             // tell the specification that these parameters have been determined to be homogeneous
+//            System.out.println("Unsorted");            
+//                System.out.print(hpl+" ");
+//                System.out.println(hplStartingValues);
+            
             Collections.sort(hpl); // ensure that indices are ascending (this can cause some weird problems elsewhere due to my bad coding skills if not)
-            for (Integer i : hpl) {
-                mySpecification.setHomogeneousIndex(i);
+            Collections.sort(hplStartingValues);
+//            System.out.println("Sorted");
+//            System.out.print(hpl+" ");
+//            System.out.println(hplStartingValues);
+            
+            
+            
+            for (int i=0;i<hpl.size();i++) {
+                mySpecification.setHomogeneousIndex(hpl.get(i));
+                mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
                 // System.out.println(i);
             }
             setHomogeneousParameterList(hpl);
