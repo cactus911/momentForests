@@ -84,8 +84,8 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        boolean[] d = {false, true};
-        // boolean[] d = {!true};
+        // boolean[] d = {false, true};
+        boolean[] d = {true};
         for (boolean detectHomogeneity : d) {
             // boolean detectHomogeneity = !true;
             if (detectHomogeneity) {
@@ -106,16 +106,22 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 100;
+                int numMonteCarlos = 8;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
                 for (int m = 0; m < numMonteCarlos; m++) {
-                    LinearTestMain go = new LinearTestMain(rng.nextLong(), numObs, detectHomogeneity, jt);
+                    LinearTestMain go;
+                    if(numMonteCarlos==1) {
+                        go = new LinearTestMain(5275223538819738276L, numObs, detectHomogeneity, jt);
+                    }
+                    else {
+                        go = new LinearTestMain(rng.nextLong(), numObs, detectHomogeneity, jt);
+                    }
                     parallelLTM.add(go);
                 }
                 parallelLTM.parallelStream().forEach(e -> {
-                    //    parallelLTM.stream().forEach(e -> {
+                //    parallelLTM.stream().forEach(e -> {
                     e.execute();
                 });
 
@@ -211,6 +217,7 @@ public class LinearTestMain {
     }
 
     private void execute() {
+        System.out.println("**************** rngSeed = "+rngSeed+" ****************");
         Random rng = new Random(rngSeed);
 
         // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
@@ -501,7 +508,7 @@ public class LinearTestMain {
              */
             myForest.growForest();
 
-            myForest.getTree(0).printTree();
+            // myForest.getTree(0).printTree();
         }
 
         /**

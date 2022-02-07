@@ -25,6 +25,7 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
 
     Jama.Matrix omega; // weighting matrix in GMM
     boolean useCUE = false; // utilize continuously-updated weighting matrix
+    boolean useSumOfSquaredErrors = false; // use SSE to get a starting value for GMM, which can be sensitive in small samples
 
     public DistanceMetricTest(Matrix leftX, Matrix rightX, Matrix leftY, Matrix rightY) {
         this.leftX = leftX;
@@ -121,12 +122,46 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
         // with identity weighting matrix (Step 1)
         int numMoments = leftX.getColumnDimension() * 2;
         omega = Jama.Matrix.identity(numMoments, numMoments);
-        minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-        for (int i = 0; i < guess.length; i++) {
-            guess[i] = xpls[i];
+
+        boolean minimizeSSEFirst = true;
+        if (minimizeSSEFirst) {
+            useSumOfSquaredErrors = true;
+            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+            for (int i = 0; i < guess.length; i++) {
+                guess[i] = xpls[i];
+            }
+            System.out.print("After using SSE+Uncmin: ");
+            pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+            useSumOfSquaredErrors = false;
         }
-        System.out.print("after first step: ");
-        pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+        
+        boolean useUncminFirst = true;
+        if (useUncminFirst) {
+            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+            for (int i = 0; i < guess.length; i++) {
+                guess[i] = xpls[i];
+            }
+            System.out.print("After using GMM+Uncmin: ");
+            pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+        }
+
+        boolean useLTE = true;
+        if (useLTE) {
+            double start = f_to_minimize(xpls);
+            mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 1000, 1000, xpls, false);
+            guess = lte.getLowestPoint();
+            double end = f_to_minimize(guess);
+            System.out.print("After LTE: ");
+            pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+            if (end < start) {
+                // hmm, this is sometimes finding a lower point, which is really important here since we relying on these f_min values to compute test statistics
+                System.out.println("LTE made an improvement start: " + start + " end: " + end);
+                // System.exit(0);
+                for (int i = 0; i < guess.length; i++) {
+                    xpls[i] = guess[i];
+                }
+            }
+        }
 
         boolean useCUEInSecondStep = true;
         if (useCUEInSecondStep) {
@@ -145,24 +180,6 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             System.out.print("after second step with fixed Omega: ");
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
-        }
-
-        boolean useLTE = false;
-        if (useLTE) {
-            double start = f_to_minimize(xpls);
-            mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 1000, 1000, xpls, false);
-            guess = lte.getLowestPoint();
-            double end = f_to_minimize(guess);
-            System.out.print("After LTE: ");
-            pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
-            if (end < start) {
-                // hmm, this is sometimes finding a lower point, which is really important here since we relying on these f_min values to compute test statistics
-                System.out.println("LTE made an improvement start: " + start + " end: " + end);
-                // System.exit(0);
-                for (int i = 0; i < guess.length; i++) {
-                    xpls[i] = guess[i];
-                }
-            }
         }
 
         return xpls;
@@ -248,6 +265,11 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         double q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
+        
+        
+        if(useSumOfSquaredErrors) {
+            return leftError.norm2() + rightError.norm2();
+        }
 
         return q;
     }

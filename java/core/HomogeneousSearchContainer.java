@@ -51,10 +51,10 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             double[] guess = new double[numParams + 1];
             
             // cheat this for speeding up testing purposes
-            double[] truth = {-1,1};
-            for(int k=0;k<homogeneousParameterIndex.size();k++) {
-                guess[k] = truth[homogeneousParameterIndex.get(k)];
-            }
+//            double[] truth = {-1,1};
+//            for(int k=0;k<homogeneousParameterIndex.size();k++) {
+//                guess[k] = truth[homogeneousParameterIndex.get(k)];
+//            }
 
             double[] xpls = new double[numParams + 1];
             double[] fpls = new double[2];
