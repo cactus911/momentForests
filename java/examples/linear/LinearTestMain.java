@@ -107,7 +107,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 4;
+                int numMonteCarlos = 40;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
