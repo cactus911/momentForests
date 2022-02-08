@@ -29,6 +29,12 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     ArrayList<Integer> homogeneousParameterIndex;
 
     private Jama.Matrix estimatedHomogeneousParameters;
+    
+    DataLens oosDataLens;
+    Jama.Matrix testZ;
+    Jama.Matrix residualizedX;
+    Jama.Matrix testX;
+    Jama.Matrix testY;
 
     public HomogeneousSearchContainer(MomentSpecification mySpecification, int numberTreesInForest, boolean verbose, double minImprovement, int minObservationsPerLeaf, int maxTreeDepth, ArrayList<Integer> homogeneousParameterIndex, long rngSeedBaseMomentForest, long rngSeedBaseOutOfSample) {
         this.mySpecification = mySpecification;
@@ -41,6 +47,12 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         this.rngSeedBaseMomentForest = rngSeedBaseMomentForest;
         this.rngSeedBaseOutOfSample = rngSeedBaseOutOfSample;
         this.homogeneousParameterIndex = homogeneousParameterIndex;
+        
+        oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngSeedBaseOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        testZ = oosDataLens.getZ();
+        testX = oosDataLens.getX();
+        residualizedX = mySpecification.residualizeX(testX);        
+        testY = oosDataLens.getY();
     }
 
     public void executeSearch() {
@@ -55,13 +67,12 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 //            for(int k=0;k<homogeneousParameterIndex.size();k++) {
 //                guess[k] = truth[homogeneousParameterIndex.get(k)];
 //            }
-
         // use the starting values from the DM test
         for (int k = 0; k < homogeneousParameterIndex.size(); k++) {
-            guess[k+1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
+            guess[k + 1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
         }
         System.out.print("Starting values taken from DM test: ");
-        pmUtility.prettyPrint(new Jama.Matrix(guess,1));
+        pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
 
         double[] xpls = new double[numParams + 1];
         double[] fpls = new double[2];
@@ -93,7 +104,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 //            guess = lte.getLowestPoint();
 //            long t2 = System.currentTimeMillis();
 //            System.out.println("===================================== "+(t2-t1)+" ms to starting value: "+pmUtility.stringPrettyPrint(new Jama.Matrix(guess,1)));
-long t1 = System.currentTimeMillis();
+        long t1 = System.currentTimeMillis();
         minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
         long t2 = System.currentTimeMillis();
 
@@ -103,8 +114,8 @@ long t1 = System.currentTimeMillis();
                 allParametersHomogeneous = false;
             }
         }
-        System.out.println("All parameters homogeneous: "+allParametersHomogeneous+" time elapsed: "+(t2-t1));
-        
+        System.out.println("All parameters homogeneous: " + allParametersHomogeneous + " time elapsed: " + (t2 - t1));
+
         Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numParams, 1);
         for (int i = 0; i < numParams; i++) {
             compactHomogeneousParameterVector.set(i, 0, xpls[i + 1]);
@@ -122,10 +133,12 @@ long t1 = System.currentTimeMillis();
         }
 
         // i should seed this in some way with the estimates from the DistanceMetricTest results
-        return computeOutOfSampleMSE();
+        double v= computeOutOfSampleMSE();
+        return v;
     }
 
     public double computeOutOfSampleMSE() {
+        // long t1 = System.currentTimeMillis();
         /**
          * Need to regenerate a new DataLens with the homogeneity restrictions
          * imposed; also, getY depends on guess of homogeneous parameters, so
@@ -135,6 +148,7 @@ long t1 = System.currentTimeMillis();
 
         // if whole model is homogeneous this doens't work since it pulls nulls and grows a null tree
         // just skip directly to evaluating fit using completely specified homogeneous model (COME BACK TO THIS)
+        // some mystery here as to why this isn't essentially instant when we have a fully saturated model (at least in the OLS case)
         MomentForest myForest = null;
         boolean allParametersHomogeneous = true;
         for (boolean b : mySpecification.getHomogeneousIndex()) {
@@ -163,10 +177,10 @@ long t1 = System.currentTimeMillis();
         /**
          * Test vectors for assessment
          */
-        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngSeedBaseOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
-        Jama.Matrix testZ = oosDataLens.getZ();
-        Jama.Matrix residualizedX = mySpecification.residualizeX(oosDataLens.getX());
-        // pmUtility.prettyPrint(pmUtility.concatMatrix(pmUtility.concatMatrix(oosDataLens.getY(), oosDataLens.getX()), testZ));
+//        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngSeedBaseOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+//        Jama.Matrix testZ = oosDataLens.getZ();
+//        Jama.Matrix residualizedX = mySpecification.residualizeX(oosDataLens.getX());
+//        // pmUtility.prettyPrint(pmUtility.concatMatrix(pmUtility.concatMatrix(oosDataLens.getY(), oosDataLens.getX()), testZ));
 
         /**
          * Compute out-of-sample fit at current homogeneous parameter vector
@@ -174,7 +188,7 @@ long t1 = System.currentTimeMillis();
         // System.out.println("Computing out of sample fits");
         double outOfSampleFit = 0;
         for (int i = 0; i < testZ.getRowDimension(); i++) {
-            Jama.Matrix fullXi = oosDataLens.getX().getMatrix(i, i, 0, oosDataLens.getX().getColumnDimension() - 1);
+            Jama.Matrix fullXi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
 
             double fitY = mySpecification.getHomogeneousComponent(fullXi);
             if (!allParametersHomogeneous) {
@@ -188,11 +202,11 @@ long t1 = System.currentTimeMillis();
                     System.out.print("z: " + pmUtility.stringPrettyPrint(zi) + " beta: " + pmUtility.stringPrettyPrintVector(b));
                     System.out.print(" x: " + pmUtility.stringPrettyPrint(fullXi));
                     System.out.print(" residualizedXb: " + residualizedXi.times(b).get(0, 0) + " hc: " + mySpecification.getHomogeneousComponent(fullXi));
-                    double error = fitY - (oosDataLens.getY().get(i, 0));
-                    System.out.println(" fitY: " + fitY + " Y: " + oosDataLens.getY().get(i, 0) + " sqErr: " + error * error);
+                    double error = fitY - (testY.get(i, 0));
+                    System.out.println(" fitY: " + fitY + " Y: " + testY.get(i, 0) + " sqErr: " + error * error);
                 }
             }
-            double error = fitY - (oosDataLens.getY().get(i, 0));
+            double error = fitY - (testY.get(i, 0));
 
             outOfSampleFit += error * error;
 
@@ -200,6 +214,12 @@ long t1 = System.currentTimeMillis();
         }
         double MSE = outOfSampleFit / testZ.getRowDimension();
         // System.out.println("Out-of-sample MSE: " + MSE);
+        // long t2 = System.currentTimeMillis();
+        // System.out.println("All parameter homogeneous: " + allParametersHomogeneous + " time: " + (t2 - t1));
+        // is this slow because it keeps regenerating the data to fit each time? i bet it would be a LOT faster
+        // to do that once and just pull that
+        // OK something super weird happening here. The run time is increasing higher and higher as the program runs
+        // something is leaking in here
         return MSE;
     }
 
