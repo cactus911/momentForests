@@ -118,7 +118,7 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
         int[] iahflg = {0, 0};
         double[] dlt = {0, 1};
         double[] gradtl = {0, 1E-8};
-        double[] stepmx = {0, 1E8};
+        double[] stepmx = {0, 1.0}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
         double[] steptl = {0, 1E-8};
 
         // with identity weighting matrix (Step 1)

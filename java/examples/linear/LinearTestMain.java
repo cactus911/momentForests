@@ -107,7 +107,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 50;
+                int numMonteCarlos = 500;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -124,8 +124,8 @@ public class LinearTestMain {
                 
                 AtomicInteger bomb = new AtomicInteger();
                 
-                // parallelLTM.parallelStream().forEach(e -> {
-                parallelLTM.stream().forEach(e -> {
+                parallelLTM.parallelStream().forEach(e -> {
+                // parallelLTM.stream().forEach(e -> {
                     e.execute();
                     bomb.incrementAndGet();
                     System.out.println("Finished "+bomb.get()+" iterations.");

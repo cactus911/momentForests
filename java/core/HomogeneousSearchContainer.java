@@ -35,6 +35,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     Jama.Matrix residualizedX;
     Jama.Matrix testX;
     Jama.Matrix testY;
+    long t1 = System.currentTimeMillis();
 
     public HomogeneousSearchContainer(MomentSpecification mySpecification, int numberTreesInForest, boolean verbose, double minImprovement, int minObservationsPerLeaf, int maxTreeDepth, ArrayList<Integer> homogeneousParameterIndex, long rngSeedBaseMomentForest, long rngSeedBaseOutOfSample) {
         this.mySpecification = mySpecification;
@@ -86,7 +87,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         }
 
         double[] fscale = {0, 1.0E-8};
-        int[] method = {0, 3};
+        int[] method = {0, 1};
         int[] iexp = {0, 0};
         int[] msg = {0, 1};
         int[] ndigit = {0, 8};
@@ -95,7 +96,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         int[] iahflg = {0, 0};
         double[] dlt = {0, 1};
         double[] gradtl = {0, 1E-8};
-        double[] stepmx = {0, 1E8};
+        double[] stepmx = {0, 1.0}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
         double[] steptl = {0, 1E-8};
 
         // good for robustness, way too slow to actually use
@@ -104,6 +105,9 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 //            guess = lte.getLowestPoint();
 //            long t2 = System.currentTimeMillis();
 //            System.out.println("===================================== "+(t2-t1)+" ms to starting value: "+pmUtility.stringPrettyPrint(new Jama.Matrix(guess,1)));
+
+// it is getting stuck internally (not even calling f_to_minimize!)
+
         long t1 = System.currentTimeMillis();
         minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
         long t2 = System.currentTimeMillis();
@@ -134,6 +138,11 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 
         // i should seed this in some way with the estimates from the DistanceMetricTest results
         double v= computeOutOfSampleMSE();
+        long t2 = System.currentTimeMillis();
+        if(t2-t1>60000) { // if longer than a minute
+            System.out.print("f: "+v+" x: ");
+            pmUtility.prettyPrint(new Jama.Matrix(x,1));
+        }
         return v;
     }
 
@@ -220,6 +229,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         // to do that once and just pull that
         // OK something super weird happening here. The run time is increasing higher and higher as the program runs
         // something is leaking in here
+        
+        
         return MSE;
     }
 
