@@ -129,6 +129,10 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             boolean converged = false;
             int r = 0;
             boolean first = true;
+            
+            // see how well this works
+            goldenRatioSearch(left, right);
+            
             while (!converged) {
                 double[] v = gridSearch(left, right, increment);
                 System.out.println("r = " + r + " Grid search produced best x = " + v[0] + " f(x) = " + v[1] + " [" + (2.0 * increment) + "]");
@@ -150,7 +154,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 
             // two additional ideas: iterate on this until we get some stability? did the first
             // second: use the golden ratio approach
-            goldenRatioSearch(left, right);
+            
 
             // plotFunction(left, right, numEvals);
             // System.exit(0);
@@ -374,12 +378,11 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         double f2 = f_to_minimize(fx2);
         boolean go = true;
         while (go) {
-            System.out.println(xLower+" "+x1+" "+x2+" "+xUpper+" f1: "+f1+" f2: "+f2);
             if (f1 < f2) {
                 xLower = x2;
                 x2 = x1;
                 f2 = f1;
-                x1 = x1 + gold * (xUpper - xLower);
+                x1 = xLower + gold * (xUpper - xLower);
                 fx1[1] = x1;
                 f1 = f_to_minimize(fx1);
             } else {
@@ -390,6 +393,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
                 fx2[1] = x2;
                 f2 = f_to_minimize(fx2);
             }
+            System.out.println(xLower+" "+x1+" "+x2+" "+xUpper+" f1: "+f1+" f2: "+f2+" interval length: "+(xUpper-xLower));
             if (xUpper - xLower < tol) {
                 go = false;
             }
