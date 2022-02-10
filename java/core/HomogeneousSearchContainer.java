@@ -5,10 +5,15 @@
  */
 package core;
 
+import java.awt.BorderLayout;
 import java.util.ArrayList;
-import mcmc.gibbsLTEGeneralized;
+import javax.swing.JFrame;
 import optimization.Uncmin_f77;
 import optimization.Uncmin_methods;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import utility.pmUtility;
 
 /**
@@ -29,7 +34,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     ArrayList<Integer> homogeneousParameterIndex;
 
     private Jama.Matrix estimatedHomogeneousParameters;
-    
+
     DataLens oosDataLens;
     Jama.Matrix testZ;
     Jama.Matrix residualizedX;
@@ -48,18 +53,18 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         this.rngSeedBaseMomentForest = rngSeedBaseMomentForest;
         this.rngSeedBaseOutOfSample = rngSeedBaseOutOfSample;
         this.homogeneousParameterIndex = homogeneousParameterIndex;
-        
+
         oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngSeedBaseOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
         testZ = oosDataLens.getZ();
         testX = oosDataLens.getX();
-        residualizedX = mySpecification.residualizeX(testX);        
+        residualizedX = mySpecification.residualizeX(testX);
         testY = oosDataLens.getY();
     }
 
     public void executeSearch() {
         // System.out.println("Inside executeSearch");
 
-        Uncmin_f77 minimizer = new Uncmin_f77(false);
+        Uncmin_f77 minimizer = new Uncmin_f77(true);
 
         double[] guess = new double[numParams + 1];
 
@@ -99,26 +104,76 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         double[] stepmx = {0, 1.0}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
         double[] steptl = {0, 1E-8};
 
-        // good for robustness, way too slow to actually use
+        if (numParams == 1) {
+            // plot this function (is there something goofy going on here?)
+            // there are kink points and nonconvexities in that function, that may be why things go off the rails very rarely
+            // plotFunction(-2, 0, 50);
+            // try using secant method
+            // guess = secant(guess);
+
+            // do a grid search (successively bracketing smaller intervals)
+            // could make this adaptive so that if it picks the endpoints we move the endpoint and start over
+            // good starting values should hopefully fix that issue
+            // put a flag in here though if that's the case (maybe a system.exit) since that's no good
+            // this appears to work
+            // however, in more general cases this could be an issue with more parameters that we are searching over (in the mixed case)
+            // cannot do a grid search in so many dimensions
+            // the objective function looks like it has kinks and nonconvex parts, so that makes optimization a challenge (although min is nicely behaved)
+            t1 = System.currentTimeMillis();
+            int numEvals = 9; // number evaluations within each bracket (MIN: 3)
+            int R = 5; // number of times to bracket grid search
+            double left = guess[1] - 1.0;
+            double right = guess[1] + 1.0;
+            double increment = (right - left) / numEvals;
+            // for (int r = 0; r < R; r++) {
+            boolean converged = false;
+            int r = 0;
+            boolean first = true;
+            while (!converged) {
+                double[] v = gridSearch(left, right, increment);
+                System.out.println("r = " + r + " Grid search produced best x = " + v[0] + " f(x) = " + v[1] + " [" + (2.0 * increment) + "]");
+                if (Math.abs(guess[1] - v[0]) < 1E-4) { // this criterion really just checks the length of the search interval, which is probably fine for now
+                    if (first) {
+                        first = false;
+                    } else {
+                        converged = true;
+                    }
+                }
+                guess[1] = v[0];
+                left = guess[1] - increment;
+                right = guess[1] + increment;
+                increment = (right - left) / numEvals;
+                r++;
+            }
+            long t2 = System.currentTimeMillis();
+            System.out.println("Grid search with numEvals: " + numEvals + " R: " + R + " time: " + (t2 - t1) + " f: " + f_to_minimize(guess));
+
+            // two additional ideas: iterate on this until we get some stability? did the first
+            // second: use the golden ratio approach
+            goldenRatioSearch(left, right);
+
+            // plotFunction(left, right, numEvals);
+            // System.exit(0);
+            xpls[1] = guess[1];
+
+            // try one newton step after this?
+            // doesn't look like it is necessary
+            // itnlim[1] = 2;
+            // minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        } else {
+
+            // good for robustness, way too slow to actually use
 //            long t1 = System.currentTimeMillis();
 //            mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 10, 0, guess, false);
 //            guess = lte.getLowestPoint();
 //            long t2 = System.currentTimeMillis();
 //            System.out.println("===================================== "+(t2-t1)+" ms to starting value: "+pmUtility.stringPrettyPrint(new Jama.Matrix(guess,1)));
-
 // it is getting stuck internally (not even calling f_to_minimize!)
+            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
 
-        long t1 = System.currentTimeMillis();
-        minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-        long t2 = System.currentTimeMillis();
-
-        boolean allParametersHomogeneous = true;
-        for (boolean b : mySpecification.getHomogeneousIndex()) {
-            if (!b) {
-                allParametersHomogeneous = false;
-            }
+            // System.out.print("Post-uncmin f: " + fpls[1] + " x = ");
+            // pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
         }
-        System.out.println("All parameters homogeneous: " + allParametersHomogeneous + " time elapsed: " + (t2 - t1));
 
         Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numParams, 1);
         for (int i = 0; i < numParams; i++) {
@@ -126,6 +181,31 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         }
         setCompactEstimatedHomogeneousParameters(compactHomogeneousParameterVector); // need to account for the fact that this is potentially a shorter vector
 
+    }
+
+    private double[] gridSearch(double leftEnd, double rightEnd, double interval) {
+        double bestF = 0;
+        double bestX = leftEnd;
+
+        boolean first = true;
+        double h = 1E-5;
+        // look in a bracket around starting value that came from DM test
+        for (double xp = leftEnd; xp <= rightEnd + h; xp += interval) {
+            double[] tfx = {0, xp};
+            double f = f_to_minimize(tfx);
+            if (first) {
+                first = false;
+                bestX = xp;
+                bestF = f;
+            }
+            if (f < bestF) {
+                bestF = f;
+                bestX = xp;
+            }
+            // System.out.println("xp: " + xp + " f(xp): " + f);
+        }
+        double[] v = {bestX, bestF};
+        return v;
     }
 
     @Override
@@ -137,12 +217,12 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         }
 
         // i should seed this in some way with the estimates from the DistanceMetricTest results
-        double v= computeOutOfSampleMSE();
-        long t2 = System.currentTimeMillis();
-        if(t2-t1>60000) { // if longer than a minute
-            System.out.print("f: "+v+" x: ");
-            pmUtility.prettyPrint(new Jama.Matrix(x,1));
-        }
+        double v = computeOutOfSampleMSE();
+//        long t2 = System.currentTimeMillis();
+//        if(t2-t1>60000) { // if longer than a minute
+//            System.out.print("f: "+v+" x: ");
+//            pmUtility.prettyPrint(new Jama.Matrix(x,1));
+//        }
         return v;
     }
 
@@ -190,7 +270,6 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 //        Jama.Matrix testZ = oosDataLens.getZ();
 //        Jama.Matrix residualizedX = mySpecification.residualizeX(oosDataLens.getX());
 //        // pmUtility.prettyPrint(pmUtility.concatMatrix(pmUtility.concatMatrix(oosDataLens.getY(), oosDataLens.getX()), testZ));
-
         /**
          * Compute out-of-sample fit at current homogeneous parameter vector
          */
@@ -229,8 +308,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         // to do that once and just pull that
         // OK something super weird happening here. The run time is increasing higher and higher as the program runs
         // something is leaking in here
-        
-        
+
         return MSE;
     }
 
@@ -267,6 +345,57 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     @Override
     public double pi(double[] x) {
         return 1.0;
+    }
+
+    private void plotFunction(double left, double right, int numEvals) {
+        JFrame f = new JFrame("Function Plot");
+        f.setBounds(100, 100, 500, 500);
+        f.getContentPane().setLayout(new BorderLayout());
+        XYSeries xy = new XYSeries("f");
+        ChartPanel panel = new ChartPanel(ChartFactory.createXYLineChart("F", "x", "F", new XYSeriesCollection(xy)));
+        f.getContentPane().add(panel);
+        f.setVisible(true);
+
+        for (double x = left; x <= right; x += (right - left) / numEvals) {
+            double[] fx = {0, x};
+            xy.add(x, f_to_minimize(fx));
+        }
+    }
+
+    private double[] goldenRatioSearch(double xLower, double xUpper) {
+        double tol = 1E-5;
+        double gold = ((Math.sqrt(5.0) - 1) / 2.0);
+        double d = gold * (xUpper - xLower);
+        double x1 = xLower + d;
+        double x2 = xUpper - d;
+        double[] fx1 = {0, x1};
+        double[] fx2 = {0, x2};
+        double f1 = f_to_minimize(fx1);
+        double f2 = f_to_minimize(fx2);
+        boolean go = true;
+        while (go) {
+            System.out.println(xLower+" "+x1+" "+x2+" "+xUpper+" f1: "+f1+" f2: "+f2);
+            if (f1 < f2) {
+                xLower = x2;
+                x2 = x1;
+                f2 = f1;
+                x1 = x1 + gold * (xUpper - xLower);
+                fx1[1] = x1;
+                f1 = f_to_minimize(fx1);
+            } else {
+                xUpper = x1;
+                x1 = x2;
+                f1 = f2;
+                x2 = xUpper - gold * (xUpper - xLower);
+                fx2[1] = x2;
+                f2 = f_to_minimize(fx2);
+            }
+            if (xUpper - xLower < tol) {
+                go = false;
+            }
+        }
+        double[] v = {xLower, xUpper}; // interval containing minimum
+        return v;
     }
 
 }

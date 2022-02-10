@@ -254,6 +254,8 @@ public class TreeMoment {
                         double optimalZ_k;
                         double optimalZ_SSE_k;
 
+                        // there is a bracketing nth-order Brent optimizer that I should experiment with (someday perhaps; it is set up for root finding, not minimization)
+                        
                         boolean useFmin = true;
                         if (useFmin) {
                             optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
@@ -262,7 +264,7 @@ public class TreeMoment {
                             optimalZ_k = Double.POSITIVE_INFINITY;
                             optimalZ_SSE_k = Double.POSITIVE_INFINITY;
                         }
-
+                        
                         if (debugOptimization) {
                             echoLn("\tFmin search on z_" + indexSplitVariable + " found x = " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
                         }

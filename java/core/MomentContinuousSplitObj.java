@@ -24,12 +24,13 @@
 package core;
 
 import optimization.Fmin_methods;
+import org.apache.commons.math3.analysis.UnivariateFunction;
 
 /**
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public abstract class MomentContinuousSplitObj implements Fmin_methods {
+public abstract class MomentContinuousSplitObj implements Fmin_methods, UnivariateFunction {
 
     public int indexSplitVariable;
     
@@ -56,5 +57,10 @@ public abstract class MomentContinuousSplitObj implements Fmin_methods {
     public int getEffectiveNumObsRight() {
         return numObsRight;
     } 
+    
+    @Override
+    public double value(double splitPoint) {
+        return f_to_minimize(splitPoint);
+    }
 
 }
