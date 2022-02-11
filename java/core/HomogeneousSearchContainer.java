@@ -129,32 +129,33 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             boolean converged = false;
             int r = 0;
             boolean first = true;
-            
-            // see how well this works
-            goldenRatioSearch(left, right);
-            
-            while (!converged) {
-                double[] v = gridSearch(left, right, increment);
-                System.out.println("r = " + r + " Grid search produced best x = " + v[0] + " f(x) = " + v[1] + " [" + (2.0 * increment) + "]");
-                if (Math.abs(guess[1] - v[0]) < 1E-4) { // this criterion really just checks the length of the search interval, which is probably fine for now
-                    if (first) {
-                        first = false;
-                    } else {
-                        converged = true;
-                    }
-                }
-                guess[1] = v[0];
-                left = guess[1] - increment;
-                right = guess[1] + increment;
-                increment = (right - left) / numEvals;
-                r++;
-            }
-            long t2 = System.currentTimeMillis();
-            System.out.println("Grid search with numEvals: " + numEvals + " R: " + R + " time: " + (t2 - t1) + " f: " + f_to_minimize(guess));
 
-            // two additional ideas: iterate on this until we get some stability? did the first
-            // second: use the golden ratio approach
-            
+            // see how well this works
+            guess[1] = goldenRatioSearch(left, right)[1];
+            // this appears to work incredibly well
+
+            boolean useGridSearch = false;
+
+            if (useGridSearch) {
+                while (!converged) {
+                    double[] v = gridSearch(left, right, increment);
+                    System.out.println("r = " + r + " Grid search produced best x = " + v[0] + " f(x) = " + v[1] + " [" + (2.0 * increment) + "]");
+                    if (Math.abs(guess[1] - v[0]) < 1E-4) { // this criterion really just checks the length of the search interval, which is probably fine for now
+                        if (first) {
+                            first = false;
+                        } else {
+                            converged = true;
+                        }
+                    }
+                    guess[1] = v[0];
+                    left = guess[1] - increment;
+                    right = guess[1] + increment;
+                    increment = (right - left) / numEvals;
+                    r++;
+                }
+                long t2 = System.currentTimeMillis();
+                System.out.println("Grid search with numEvals: " + numEvals + " R: " + R + " time: " + (t2 - t1) + " f: " + f_to_minimize(guess));
+            }
 
             // plotFunction(left, right, numEvals);
             // System.exit(0);
@@ -393,7 +394,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
                 fx2[1] = x2;
                 f2 = f_to_minimize(fx2);
             }
-            System.out.println(xLower+" "+x1+" "+x2+" "+xUpper+" f1: "+f1+" f2: "+f2+" interval length: "+(xUpper-xLower));
+            System.out.println(xLower + " " + x1 + " " + x2 + " " + xUpper + " f1: " + f1 + " f2: " + f2 + " interval length: " + (xUpper - xLower));
             if (xUpper - xLower < tol) {
                 go = false;
             }

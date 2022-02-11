@@ -60,7 +60,7 @@ public class LinearTestMain {
      */
     public static void main(String[] args) {
         JFrame f = new JFrame("Monte Carlo");
-        f.setBounds(300, 300, 1500, 500);
+        f.setBounds(100, 100, 1500, 500);
         f.getContentPane().setLayout(new BorderLayout());
         JTextArea jt = new JTextAreaAutoscroll();
         f.getContentPane().add(new JScrollPane(jt), BorderLayout.CENTER);
@@ -95,7 +95,7 @@ public class LinearTestMain {
                 jt.append("***** UNRESTRICTED MODEL *****\n");
             }
 
-            for (int numObs = 500; numObs <= 4000; numObs *= 2) {
+            for (int numObs = 2000; numObs <= 4000; numObs *= 2) {
                 Random rng = new Random(22);
 
                 int numParameters = 2;
@@ -107,7 +107,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 1;
+                int numMonteCarlos = 50;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
