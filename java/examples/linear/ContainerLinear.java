@@ -64,7 +64,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {
             try {
-                boolean useUncmin = true;
+                boolean useUncmin = false;
                 if (useUncmin) {
                     Uncmin_f77 minimizer = new Uncmin_f77(false);
 
