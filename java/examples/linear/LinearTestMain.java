@@ -86,7 +86,7 @@ public class LinearTestMain {
          * really nicely.
          */
         // boolean[] d = {false, true};
-        boolean[] d = {true};
+        boolean[] d = {false};
         for (boolean detectHomogeneity : d) {
             // boolean detectHomogeneity = !true;
             if (detectHomogeneity) {
@@ -95,7 +95,7 @@ public class LinearTestMain {
                 jt.append("***** UNRESTRICTED MODEL *****\n");
             }
 
-            for (int numObs = 2000; numObs <= 4000; numObs *= 2) {
+            for (int numObs = 500; numObs <= 4000; numObs *= 2) {
                 Random rng = new Random(22);
 
                 int numParameters = 2;
