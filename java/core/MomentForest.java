@@ -121,13 +121,14 @@ public class MomentForest {
      */
     public Jama.Matrix getEstimatedParameterForest(Jama.Matrix zi) {
         Jama.Matrix estimatedParameters = forest.get(0).getEstimatedBeta(zi);
-        // String s = "[ " + forest.get(0).getEstimatedBeta(x).get(0, 0) + " "; //Assuming beta is 1 by 1?
+//        String s = "[ " + forest.get(0).getEstimatedBeta(zi).get(0, 0) + " "; //Assuming beta is 1 by 1?
         for (int i = 1; i < forest.size(); i++) {
             estimatedParameters = estimatedParameters.plus(forest.get(i).getEstimatedBeta(zi));
-            // s = s.concat(forest.get(i).getEstimatedBeta(x).get(0, 0) + " ");
+//            s = s.concat(forest.get(i).getEstimatedBeta(zi).get(0, 0) + " ");
         }
-        // s = s.concat("]");
-        // System.out.println(s);
+//        s = s.concat("]");
+//        System.out.println(s);
+//        System.exit(0);
         estimatedParameters.timesEquals(1.0 / forest.size());
         return estimatedParameters;
     }

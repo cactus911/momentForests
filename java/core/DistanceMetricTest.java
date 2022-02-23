@@ -147,7 +147,7 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
         }
 
-        boolean useLTE = true;
+        boolean useLTE = false;
         if (useLTE) {
             double start = f_to_minimize(xpls);
             mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 1000, 1000, xpls, false);

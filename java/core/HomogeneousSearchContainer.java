@@ -394,7 +394,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
                 fx2[1] = x2;
                 f2 = f_to_minimize(fx2);
             }
-            System.out.println(xLower + " " + x1 + " " + x2 + " " + xUpper + " f1: " + f1 + " f2: " + f2 + " interval length: " + (xUpper - xLower));
+            System.out.println(xLower + " " + x1 + " " + x2 + " " + xUpper + " f(x1): " + f1 + " f(x2): " + f2 + " interval length: " + (xUpper - xLower));
             if (xUpper - xLower < tol) {
                 go = false;
             }
