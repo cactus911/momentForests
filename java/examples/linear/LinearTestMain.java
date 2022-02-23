@@ -398,17 +398,17 @@ public class LinearTestMain {
              * Estimate values of those homogeneous parameters
              */
             maxTreeDepth = 1;
-            boolean cheatToVerifyWorking = false;
+            boolean cheatToVerifyWorking = true;
             if (cheatToVerifyWorking) {
                 // this is here to verify that the code is working in that we should get a lower OOS MSE when the truth is imposed (it works)
                 hpl.clear();
                 hpl.add(0);
-                hpl.add(1);
+                // hpl.add(1);
                 mySpecification.resetHomogeneityIndex();
                 mySpecification.setHomogeneousIndex(0);
                 mySpecification.setHomogeneousParameter(0, -1.0);
-                mySpecification.setHomogeneousIndex(1);
-                mySpecification.setHomogeneousParameter(1, 1.0);
+                // mySpecification.setHomogeneousIndex(1);
+                // mySpecification.setHomogeneousParameter(1, 1.0);
                 setEstimatedHomogeneousParameters(mySpecification.getHomogeneousParameterVector());
             } else {
                 if (!hpl.isEmpty()) {
