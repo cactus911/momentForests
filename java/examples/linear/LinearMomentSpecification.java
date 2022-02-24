@@ -239,12 +239,12 @@ public class LinearMomentSpecification implements MomentSpecification {
         beta.set(0, 0, -1);
         beta.set(1, 0, 1);
 
-        boolean singleBeta = true;
+        boolean singleBeta = false;
         if (singleBeta) {
             return beta;
         }
 
-        boolean oneDimensionHeterogeneity = false;
+        boolean oneDimensionHeterogeneity = true;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
                 beta.set(1, 0, -1.05);

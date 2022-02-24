@@ -30,6 +30,7 @@ import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeOptions;
 import java.awt.BorderLayout;
+import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Random;
@@ -53,7 +54,7 @@ public class LinearTestMain {
     private double estimatedBetaVersusTruthMSE;
     private Jama.Matrix estimatedHomogeneousParameters;
     private final boolean detectHomogeneity;
-    JTextArea jt;
+    private JTextArea jt;
 
     /**
      * @param args the command line arguments
@@ -61,9 +62,11 @@ public class LinearTestMain {
     public static void main(String[] args) {
         JFrame f = new JFrame("Monte Carlo");
         f.setBounds(100, 100, 1500, 500);
-        f.getContentPane().setLayout(new BorderLayout());
-        JTextArea jt = new JTextAreaAutoscroll();
-        f.getContentPane().add(new JScrollPane(jt), BorderLayout.CENTER);
+        f.getContentPane().setLayout(new GridLayout(1,2));
+        JTextAreaAutoscroll jt1 = new JTextAreaAutoscroll();
+        f.getContentPane().add(new JScrollPane(jt1));
+        JTextAreaAutoscroll jt2 = new JTextAreaAutoscroll();
+        f.getContentPane().add(new JScrollPane(jt2));
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setVisible(true);
 
@@ -85,7 +88,7 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 500; numObs <= 4000; numObs *= 2) {
+        for (int numObs = 500; numObs <= 500; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -105,14 +108,18 @@ public class LinearTestMain {
             double classificationRate1 = 0;
             double classificationRate2 = 0;
 
+            JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
+            
             boolean[] d = {false, true};
             // boolean[] d = {true};
             for (boolean detectHomogeneity : d) {
                 // boolean detectHomogeneity = !true;
                 if (detectHomogeneity) {
-                    // jt.append("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
+                    jam = jt1;
+                    jam.append("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
                 } else {
-                    // jt.append("***** UNRESTRICTED MODEL *****\n");
+                    jam = jt2;
+                    jam.append("***** UNRESTRICTED MODEL *****\n");
                 }
 
                 Random rng = new Random(22);
@@ -126,24 +133,24 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 500;
+                int numMonteCarlos = 1;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
                 for (int m = 0; m < numMonteCarlos; m++) {
                     LinearTestMain go;
                     if (numMonteCarlos == 1) {
-                        go = new LinearTestMain(2734607635320235488L, numObs, detectHomogeneity, jt);
+                        go = new LinearTestMain(4606544446801080638L, numObs, detectHomogeneity, jam);
                     } else {
-                        go = new LinearTestMain(rng.nextLong(), numObs, detectHomogeneity, jt);
+                        go = new LinearTestMain(rng.nextLong(), numObs, detectHomogeneity, jam);
                     }
                     parallelLTM.add(go);
                 }
 
                 AtomicInteger bomb = new AtomicInteger();
 
-                parallelLTM.parallelStream().forEach(e -> {
-                    // parallelLTM.stream().forEach(e -> {
+                // parallelLTM.parallelStream().forEach(e -> {
+                   parallelLTM.stream().forEach(e -> {
                     e.execute();
                     bomb.incrementAndGet();
                     System.out.println("Finished " + bomb.get() + " iterations.");
@@ -252,7 +259,7 @@ public class LinearTestMain {
                 }
             }
             LinearMonteCarloTable tf = new LinearMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted, betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta1_mean, beta1_SD, beta2_mean, beta2_SD, classificationRate1, classificationRate2);
-            jt.append(tf.toString());
+            jam.append(tf.toString());
         }
     }
 
@@ -398,7 +405,7 @@ public class LinearTestMain {
              * Estimate values of those homogeneous parameters
              */
             maxTreeDepth = 1;
-            boolean cheatToVerifyWorking = true;
+            boolean cheatToVerifyWorking = false;
             if (cheatToVerifyWorking) {
                 // this is here to verify that the code is working in that we should get a lower OOS MSE when the truth is imposed (it works)
                 hpl.clear();
@@ -602,7 +609,10 @@ public class LinearTestMain {
                     heterogeneousCounter++;
                 }
             }
-            if (i == 0) {
+            if(i==-1) {
+                jt.append("Next model\n");
+            }
+            if (i < 10) {
                 String hString = "[ ";
                 for (int k = 0; k < bTruth.getRowDimension(); k++) {
                     if (mySpecification.getHomogeneousIndex()[k]) {
@@ -612,12 +622,13 @@ public class LinearTestMain {
                     }
                 }
                 hString = hString + "]";
-                // jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
+                jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
             }
             //pmUtility.prettyPrintVector(compositeEstimatedBeta);
 
             outOfSampleFit += (compositeEstimatedBeta.minus(bTruth)).norm2();
         }
+        jt.append("betaMSE: "+(outOfSampleFit/testZ.getRowDimension())+" \t ["+rngSeed+"]\n");
 
         return outOfSampleFit / testZ.getRowDimension(); // mse
     }
