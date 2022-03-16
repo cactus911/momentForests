@@ -161,6 +161,36 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         return gi;
     }
 
+    @Override
+    public Jama.Matrix getMomentG(Jama.Matrix beta) {
+        /**
+         * Let's implement the moment-based version of OLS here (need this for a
+         * variety of reasons, also will extend nicely to other models more
+         * directly this way)
+         */
+        Jama.Matrix X = lens.getX();
+        Jama.Matrix Y = lens.getY();
+        // Jama.Matrix runningTotal = new Jama.Matrix(X.getRowDimension(), X.getColumnDimension());
+        int numMoments = X.getColumnDimension();
+        Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
+        Jama.Matrix fittedY = X.times(beta);
+        Jama.Matrix e = fittedY.minus(Y);
+
+        // turns out using gi method here is crazy slow!        
+        for (int i = 0; i < X.getRowDimension(); i++) {
+            Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
+            for (int k = 0; k < numMoments; k++) {
+                gi.set(k, 0, e.get(i, 0) * X.get(i, k));
+                // runningTotal.set(i, k, g.get(k, 0));
+            }
+//            pmUtility.prettyPrintVector(gi);
+            g.plusEquals(gi);
+
+        }
+        g.timesEquals(1.0 / Y.getRowDimension());
+        return g;
+    }
+
     private double getMoment(Jama.Matrix beta, boolean debugMoment) {
         /**
          * Let's implement the moment-based version of OLS here (need this for a
@@ -180,7 +210,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         for (int i = 0; i < X.getRowDimension(); i++) {
             Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
             for (int k = 0; k < numMoments; k++) {
-                gi.set(k, 0, e.get(i, 0) * X.get(i, k));                
+                gi.set(k, 0, e.get(i, 0) * X.get(i, k));
                 // runningTotal.set(i, k, g.get(k, 0));
             }
 //            pmUtility.prettyPrintVector(gi);
@@ -251,16 +281,14 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     }
 
     @Override
-    public double getMomentFunctionImposingHomogeneity(int k, double value
-    ) {
+    public double getMomentFunctionImposingHomogeneity(int k, double value) {
         Jama.Matrix betaHomogeneous = beta.copy();
         betaHomogeneous.set(k, 0, value);
         return getMoment(betaHomogeneous, false);
     }
 
     @Override
-    public double f_to_minimize(double[] x
-    ) {
+    public double f_to_minimize(double[] x) {
         Jama.Matrix b = new Jama.Matrix(x.length - 1, 1);
         for (int i = 0; i < x.length - 1; i++) {
             b.set(i, 0, x[i + 1]);
@@ -269,20 +297,17 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     }
 
     @Override
-    public void gradient(double[] x, double[] g
-    ) {
+    public void gradient(double[] x, double[] g) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public void hessian(double[] x, double[][] h
-    ) {
+    public void hessian(double[] x, double[][] h) {
         throw new UnsupportedOperationException("Not supported yet."); //To change body of generated methods, choose Tools | Templates.
     }
 
     @Override
-    public double getMomentFunctionValue(Jama.Matrix b
-    ) {
+    public double getMomentFunctionValue(Jama.Matrix b) {
         return getMoment(b, false);
     }
 

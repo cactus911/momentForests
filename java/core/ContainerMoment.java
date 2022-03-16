@@ -43,7 +43,7 @@ public abstract class ContainerMoment {
     public abstract double getGoodnessOfFit();
     public abstract Jama.Matrix getVariance();
     public abstract double getMomentFunctionValue(Jama.Matrix beta);
-
     public abstract double getMomentFunctionImposingHomogeneity(int k, double value);        
+    public abstract Jama.Matrix getMomentG(Jama.Matrix beta);
     
 }

@@ -53,6 +53,7 @@ public class TreeMoment {
     final private DataLens lensGrowingTree;
     private DataLens lensHonest;
     int numHonestXObservations;
+    boolean largestNode = false;
 
     int maxDepth = 100;
     double minProportionEachPartition;
@@ -255,7 +256,6 @@ public class TreeMoment {
                         double optimalZ_SSE_k;
 
                         // there is a bracketing nth-order Brent optimizer that I should experiment with (someday perhaps; it is set up for root finding, not minimization)
-                        
                         boolean useFmin = true;
                         if (useFmin) {
                             optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
@@ -264,7 +264,7 @@ public class TreeMoment {
                             optimalZ_k = Double.POSITIVE_INFINITY;
                             optimalZ_SSE_k = Double.POSITIVE_INFINITY;
                         }
-                        
+
                         if (debugOptimization) {
                             echoLn("\tFmin search on z_" + indexSplitVariable + " found x = " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
                         }
@@ -530,7 +530,7 @@ public class TreeMoment {
         // System.out.println("this node's parent rule: " + r);
         String s = "";
         if (terminal) {
-            s = "{ ";
+            s = depth+". { ";
         }
         if (r.isSplitOnDiscreteVariable()) {
             if (isLeftNode) {
@@ -546,11 +546,11 @@ public class TreeMoment {
         if (indexPreviousSplits == null) {
             indexPreviousSplits = new TreeSet<>();
         }
-        if (indexPreviousSplits.contains(r.getOptimalSplitVariableIndex())) {
-            s = "";
-        } else if (parent.parent != null) {
+        //if (indexPreviousSplits.contains(r.getOptimalSplitVariableIndex())) {
+        //    s = "";
+        //} else if (parent.parent != null) {
             s = s + ", ";
-        }
+        //}
 
         indexPreviousSplits.add(r.getOptimalSplitVariableIndex());
         //System.out.println("Current s = " + s + " parent descriptive: " + parent.getParentRuleDescriptive(indexPreviousSplits));
@@ -583,7 +583,11 @@ public class TreeMoment {
             childRight.printTree();
         } else {
             // System.out.println(getParentRuleDescriptive(null) + " " + pmUtility.stringPrettyPrintVector(betaEstimateNode) + " (" + pmUtility.stringPrettyPrintVector(varianceMatrix) + ")");
-            echoLn(getParentRuleDescriptive(null) + " [" + lensHonest.getNumObs() + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix));
+            String star = "";
+            if(parent.largestNode) {
+                star = "***";
+            }
+            echoLn(getParentRuleDescriptive(null) + " [" + lensHonest.getNumObs() + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix)+" "+star);
         }
     }
 
@@ -604,6 +608,10 @@ public class TreeMoment {
          */
         if (parent == null) {
             distributeHonestObservations(lensHonest);
+            int largestNodeSize = determineLargestTerminalNodeSize();
+            System.out.println("Setting largest node size to "+largestNodeSize);
+            setLargestTerminalNodeIndicator(largestNodeSize);
+            printTree();
         }
 
         if (terminal) {
@@ -671,9 +679,14 @@ public class TreeMoment {
                 }
             }
         }
-
+        
         if (testParameterHomogeneity) {
-// System.out.println("DEBUG: Entering testParameterHomogeneity");
+
+            /**
+             * March 15: find the final node with the most observations,
+             * test equality in that final node (not at the first split)
+             */
+
             /**
              * Want to think about testing for parameter equality across splits,
              * potentially imposing that homogeneity here (and maybe all nodes
@@ -689,9 +702,19 @@ public class TreeMoment {
             /**
              * For the first split (when the parent is null), test parameter by
              * parameter for homogeneity, then report that
+             * 
+             * UPDATE 3/15/2002: now we do our testing in the largest FINAL node in the tree
              */
             // System.out.println("Right before Wald test");
-            if (parent == null && childLeft != null && childRight != null && 1 == 1) {
+            if (largestNode) {
+                
+                System.out.println("Testing is being done at following split of the tree:");
+                System.out.println(getRule());
+                System.out.print("Honest estimate left: ");
+                pmUtility.prettyPrintVector(childLeft.getNodeEstimatedBeta());
+                System.out.print("Honest estimate right: ");
+                pmUtility.prettyPrintVector(childRight.getNodeEstimatedBeta());
+                
                 // optimalZ_sse is objective value with heterogeneity
                 // test using DM from Newey-McFadden, chi-squared with one degree of freedom
                 ChiSqrDistribution chi = new ChiSqrDistribution(1);
@@ -782,6 +805,16 @@ public class TreeMoment {
         if (!terminal) {
             childLeft.clearHonestyData();
             childRight.clearHonestyData();
+        }
+    }
+    
+    public void collectAllTerminalDataLens(ArrayList<DataLens> v) {         
+        if(terminal) {
+            v.add(lensHonest);
+        }
+        else {
+            childLeft.collectAllTerminalDataLens(v);
+            childRight.collectAllTerminalDataLens(v);
         }
     }
 
@@ -891,5 +924,42 @@ public class TreeMoment {
      */
     public ArrayList<Double> getValueHomogeneousParameters() {
         return valueHomogeneousParameters;
+    }
+
+    private int determineLargestTerminalNodeSize() {
+        if(parent==null) {
+            printTree();
+        }
+        
+        if (childLeft.terminal && childRight.terminal) {
+            System.out.println("Returning "+lensHonest.getNumObs());
+            return lensHonest.getNumObs();
+        } 
+        if(!childLeft.terminal) {
+            System.out.println("Returning "+childLeft.determineLargestTerminalNodeSize());
+            return childLeft.determineLargestTerminalNodeSize();
+        }        
+        if(!childRight.terminal) {
+            System.out.println("Returning "+childRight.determineLargestTerminalNodeSize());
+            return childRight.determineLargestTerminalNodeSize();
+        }
+        System.out.println("Don't think you should ever see this");
+        return -1;
+    }
+
+    private void setLargestTerminalNodeIndicator(int sizeLargestNode) {
+        if (childLeft.terminal && childRight.terminal) {
+            if(lensHonest.getNumObs()==sizeLargestNode) {
+                largestNode = true;
+                System.out.println("Largest node has "+lensHonest.getNumObs()+" observations in it");
+            }
+        } 
+        if(!childLeft.terminal) {
+            childLeft.setLargestTerminalNodeIndicator(sizeLargestNode);
+        }        
+        if(!childRight.terminal) {
+            childRight.setLargestTerminalNodeIndicator(sizeLargestNode);
+        }
+
     }
 }
