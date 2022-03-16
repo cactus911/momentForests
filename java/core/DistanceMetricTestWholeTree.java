@@ -42,49 +42,44 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         double[] unconstrainedX = computeParameters(numParamsEachSplit * v.size());
         double fminUnconstrained = f_to_minimize(unconstrainedX);
 
-        System.out.println("Unconstrained Estimates");
-        pmUtility.prettyPrintVector(new Jama.Matrix(unconstrainedX, 1));
-        System.exit(0);
-        
+        System.out.print("Unconstrained Estimates: ");
+        pmUtility.prettyPrint(new Jama.Matrix(unconstrainedX, 1));
+        for(Jama.Matrix beta : convertToBetaList(unconstrainedX)) {
+            pmUtility.prettyPrintVector(beta);
+        }
+        System.out.println("SSE (unconstrained): "+computeSSE(unconstrainedX));
+
         // then impose constraint on indexParameterConstrain, report twice the difference
         this.indexConstrainedParameter = indexConstrainedParameter;
-        double[] constrainedX = computeParameters(numParamsEachSplit * 2 - 1);
+        double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1);
         double fminConstrained = f_to_minimize(constrainedX);
 
-        Jama.Matrix betaLeftC = new Jama.Matrix(numParamsEachSplit, 1);
-        Jama.Matrix betaRightC = new Jama.Matrix(numParamsEachSplit, 1);
-        for (int i = 0; i < numParamsEachSplit; i++) {
-            betaLeftC.set(i, 0, constrainedX[i + 1]);
-        }
-        int counter = 0;
-        for (int i = 0; i < numParamsEachSplit; i++) {
-            if (i != indexConstrainedParameter) {
-                betaRightC.set(i, 0, constrainedX[counter + 1 + numParamsEachSplit]);
-                counter++;
-            } else {
-                betaRightC.set(i, 0, betaLeftC.get(i, 0));
-                valueConstrainedParameter = betaLeftC.get(i, 0);
-            }
+        int numObs = 0;
+        for (DataLens h : v) {
+            numObs += h.getNumObs();
         }
 
-        System.out.println("Constrained Estimates");
-        System.out.print(" \tbeta left: ");
-        pmUtility.prettyPrintVector(betaLeftC);
-        System.out.print("\tbeta right: ");
-        pmUtility.prettyPrintVector(betaRightC);
+        System.out.print("Constrained Estimates: ");
+        pmUtility.prettyPrint(new Jama.Matrix(constrainedX, 1));
+        
+        valueConstrainedParameter = constrainedX[1];
+        
+        for(Jama.Matrix beta : convertToBetaList(constrainedX)) {
+            pmUtility.prettyPrintVector(beta);
+        }
+        System.out.println("SSE (constrained): "+computeSSE(constrainedX));
 
-        System.out.println("Need to get right number of observations here");
-        dm = -666; // 2.0 * (leftY.getRowDimension() + rightY.getRowDimension()) * (fminConstrained - fminUnconstrained);
-        System.exit(0);
+        dm = 2.0 * numObs * (fminConstrained - fminUnconstrained);
+
         System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " dm: " + dm);
 
         return dm;
     }
 
     private double[] computeParameters(int numParams) {
-        
-        System.out.println("Number of parameters: "+numParams);
-        
+
+        System.out.println("Number of parameters: " + numParams);
+
         Uncmin_f77 minimizer = new Uncmin_f77(false);
 
         double[] guess = new double[numParams + 1];
@@ -157,19 +152,24 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             }
         }
 
-        boolean useCUEInSecondStep = true;
+        boolean useCUEInSecondStep = false;
         if (useCUEInSecondStep) {
+            System.out.println("Recomputing with CUE...");
             useCUE = true;
-            minimizer = new Uncmin_f77(false);
+            minimizer = new Uncmin_f77(true);
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             System.out.print("after second step with CUE: ");
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
         }
 
-        boolean useOptimalTwoStepWeightingMatrix = false;
+        boolean useOptimalTwoStepWeightingMatrix = true;
         if (useOptimalTwoStepWeightingMatrix) {
             // with optimal weighting matrix (Step 2)
-            computeOptimalOmega(xpls);
+            omega = computeOptimalOmega(xpls);
+            
+            System.out.println("With optimal weighting matrix:");
+            pmUtility.prettyPrint(omega);
+            
             minimizer = new Uncmin_f77(false);
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             System.out.print("after second step with fixed Omega: ");
@@ -188,39 +188,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
      */
     @Override
     public double f_to_minimize(double[] x) {
-        ArrayList<Jama.Matrix> cellBetaList = new ArrayList<>();
-        int numParamsEachLeaf = v.get(0).getX().getColumnDimension();
-
-        /**
-         * Fill up a list with betas that will match the moments in each cell
-         */
-        int counter = 1;
-        for (int leaf = 0; leaf < v.size(); leaf++) {
-            Jama.Matrix beta = new Jama.Matrix(numParamsEachLeaf, 1);
-
-            if (indexConstrainedParameter < 0) {
-                // this is the unconstrained case
-                for (int i = 0; i < numParamsEachLeaf; i++) {
-                    // System.out.println(i+" "+leaf+" "+v.size());
-                    beta.set(i, 0, x[(leaf * numParamsEachLeaf) + i + 1]);
-                }
-            } else {
-                // with a constraint
-                for (int i = 0; i < numParamsEachLeaf; i++) {
-                    if (i == indexConstrainedParameter) {
-                        beta.set(i, 0, x[1]); // we are going to use the convention that the first parameter is the constrained one
-
-                    } else {
-                        beta.set(i, 0, x[counter + 1]);
-                        counter++;
-                    }
-                }
-//            pmUtility.prettyPrint(new Jama.Matrix(x, 1));
-//            pmUtility.prettyPrintVector(leftBeta);
-//            pmUtility.prettyPrintVector(rightBeta);
-            }
-            cellBetaList.add(beta);
-        }
+        ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
 
         /**
          * This is the number of moments in each cell (this is hardwired right
@@ -255,12 +223,44 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         // try just using the identity weighting matrix to see if it fixes things up
         // can turn off CUE using the boolean here
         if (useCUE) {
-            computeOptimalOmega(x);
+            omega = computeOptimalOmega(x);
         }
 
         double q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
 
+        if (useCUE) {
+            System.out.println("-----------");
+            System.out.print("f: " + q + " ");
+            pmUtility.prettyPrint(new Jama.Matrix(x, 1));
+            pmUtility.prettyPrint(omega);
+        }
+
         return q;
+    }
+    
+    public double computeSSE(double[] x) {
+        ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
+
+        /**
+         * This is the number of moments in each cell (this is hardwired right
+         * now for the linear case, need to come back to this and figure this
+         * out in general when we have broader cases)
+         */
+        int K = v.get(0).getX().getColumnDimension();
+
+        double SSE = 0;
+        
+        /**
+         * Go leaf by leaf and stack moments
+         */
+        int numObs = 0;
+        for (int leaf = 0; leaf < v.size(); leaf++) {
+            DataLens lens = v.get(leaf);
+            numObs += lens.getNumObs();
+            ContainerLinear c = new ContainerLinear(lens);
+            SSE += c.getSSE(cellBetaList.get(leaf));
+        }
+        return SSE;
     }
 
     @Override
@@ -290,8 +290,80 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         return valueConstrainedParameter;
     }
 
-    private void computeOptimalOmega(double[] x) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    private ArrayList<Jama.Matrix> convertToBetaList(double[] x) {
+        ArrayList<Jama.Matrix> cellBetaList = new ArrayList<>();
+        int numParamsEachLeaf = v.get(0).getX().getColumnDimension();
+
+        /**
+         * Fill up a list with betas that will match the moments in each cell
+         */
+        int counter = 1;
+        for (int leaf = 0; leaf < v.size(); leaf++) {
+            Jama.Matrix beta = new Jama.Matrix(numParamsEachLeaf, 1);
+
+            if (indexConstrainedParameter < 0) {
+                // this is the unconstrained case
+                for (int i = 0; i < numParamsEachLeaf; i++) {
+                    // System.out.println(i+" "+leaf+" "+v.size());
+                    beta.set(i, 0, x[(leaf * numParamsEachLeaf) + i + 1]);
+                }
+            } else {
+                // with a constraint
+                for (int i = 0; i < numParamsEachLeaf; i++) {
+                    if (i == indexConstrainedParameter) {
+                        beta.set(i, 0, x[1]); // we are going to use the convention that the first parameter is the constrained one
+
+                    } else {
+                        beta.set(i, 0, x[counter + 1]);
+                        counter++;
+                    }
+                }
+            }
+            cellBetaList.add(beta);
+        }
+        return cellBetaList;
+    }
+
+    private Jama.Matrix computeOptimalOmega(double[] x) {
+        ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
+
+        /**
+         * This is the number of moments in each cell (this is hardwired right
+         * now for the linear case, need to come back to this and figure this
+         * out in general when we have broader cases)
+         */
+        int K = v.get(0).getX().getColumnDimension();
+
+        /**
+         * The total size of the stacked moment vector is the dimensionality of
+         * moments in each cell times number of cells
+         */
+        int numMoments = v.size() * K;
+        Jama.Matrix W = new Jama.Matrix(numMoments, numMoments);
+
+        /**
+         * Go leaf by leaf and stack moments
+         */
+        int numObs = 0;
+        for (int leaf = 0; leaf < v.size(); leaf++) {
+            // need to get gi, which is a little weird here
+
+            DataLens lens = v.get(leaf);
+            numObs += lens.getNumObs();
+            ContainerLinear c = new ContainerLinear(lens);
+            for (int i = 0; i < lens.getNumObs(); i++) {
+                Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
+                Jama.Matrix leafGi = c.getGi(cellBetaList.get(leaf), i);
+                for (int j = 0; j < leafGi.getRowDimension(); j++) {
+                    gi.set(leaf * K + j, 0, leafGi.get(j, 0));
+                }
+                W.plusEquals(gi.times(gi.transpose()));
+            }
+
+        }
+        W.timesEquals(1.0 / numObs);
+
+        return W;
     }
 
 }

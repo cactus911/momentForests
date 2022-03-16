@@ -190,6 +190,16 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         g.timesEquals(1.0 / Y.getRowDimension());
         return g;
     }
+    
+    public double getSSE(Jama.Matrix beta) {
+        Jama.Matrix X = lens.getX();
+        Jama.Matrix Y = lens.getY();        
+        Jama.Matrix fittedY = X.times(beta);
+        Jama.Matrix e = fittedY.minus(Y);
+
+        return ((e.transpose()).times(e)).get(0,0);
+    }
+    
 
     private double getMoment(Jama.Matrix beta, boolean debugMoment) {
         /**

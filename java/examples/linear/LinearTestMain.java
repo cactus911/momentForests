@@ -91,7 +91,7 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 10000; numObs <= 10000; numObs *= 2) {
+        for (int numObs = 5000; numObs <= 5000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -367,7 +367,7 @@ public class LinearTestMain {
                 bestMaxDepth = 9;
             }
         }
-        bestMaxDepth = 2;
+        bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -400,11 +400,7 @@ public class LinearTestMain {
              * Q: how to compute the variances needed in the t-test? The average seems straightforward enough
              */
             TreeMoment loblolly = myForest.getTree(0);
-            ArrayList<DataLens> v = new ArrayList<>();
-            loblolly.collectAllTerminalDataLens(v);
-            System.out.println(v.size());
-            DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v);
-            big.computeStatistic(0);
+            loblolly.testHomogeneity();
             System.exit(0);
             
             

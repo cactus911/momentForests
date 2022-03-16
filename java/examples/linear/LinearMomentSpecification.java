@@ -237,15 +237,14 @@ public class LinearMomentSpecification implements MomentSpecification {
     public Matrix getBetaTruth(Matrix zi) {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -1);
-        beta.set(1, 0, 1);
+        beta.set(1, 0, 5.0);
         
-        boolean partiallyLinearModel = true;
+        boolean partiallyLinearModel = false;
         if(partiallyLinearModel) {
             // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
             beta.set(0, 0, 2.5*Math.sin(zi.get(0,0)) + 0.25*Math.pow(zi.get(0,0),2));
             return beta;
-        }
-        
+        }        
 
         boolean singleBeta = false;
         if (singleBeta) {
@@ -255,7 +254,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         boolean oneDimensionHeterogeneity = true;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
-                beta.set(1, 0, -1.05);
+                beta.set(1, 0, -5.0);
             }
             return beta;
         }

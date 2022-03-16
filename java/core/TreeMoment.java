@@ -53,7 +53,6 @@ public class TreeMoment {
     final private DataLens lensGrowingTree;
     private DataLens lensHonest;
     int numHonestXObservations;
-    boolean largestNode = false;
 
     int maxDepth = 100;
     double minProportionEachPartition;
@@ -530,7 +529,7 @@ public class TreeMoment {
         // System.out.println("this node's parent rule: " + r);
         String s = "";
         if (terminal) {
-            s = depth+". { ";
+            s = depth + ". { ";
         }
         if (r.isSplitOnDiscreteVariable()) {
             if (isLeftNode) {
@@ -549,7 +548,7 @@ public class TreeMoment {
         //if (indexPreviousSplits.contains(r.getOptimalSplitVariableIndex())) {
         //    s = "";
         //} else if (parent.parent != null) {
-            s = s + ", ";
+        s = s + ", ";
         //}
 
         indexPreviousSplits.add(r.getOptimalSplitVariableIndex());
@@ -583,11 +582,7 @@ public class TreeMoment {
             childRight.printTree();
         } else {
             // System.out.println(getParentRuleDescriptive(null) + " " + pmUtility.stringPrettyPrintVector(betaEstimateNode) + " (" + pmUtility.stringPrettyPrintVector(varianceMatrix) + ")");
-            String star = "";
-            if(parent.largestNode) {
-                star = "***";
-            }
-            echoLn(getParentRuleDescriptive(null) + " [" + lensHonest.getNumObs() + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix)+" "+star);
+            echoLn(getParentRuleDescriptive(null) + " [" + lensHonest.getNumObs() + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix));
         }
     }
 
@@ -608,10 +603,6 @@ public class TreeMoment {
          */
         if (parent == null) {
             distributeHonestObservations(lensHonest);
-            int largestNodeSize = determineLargestTerminalNodeSize();
-            System.out.println("Setting largest node size to "+largestNodeSize);
-            setLargestTerminalNodeIndicator(largestNodeSize);
-            printTree();
         }
 
         if (terminal) {
@@ -679,14 +670,13 @@ public class TreeMoment {
                 }
             }
         }
-        
+
         if (testParameterHomogeneity) {
 
             /**
-             * March 15: find the final node with the most observations,
-             * test equality in that final node (not at the first split)
+             * March 15: find the final node with the most observations, test
+             * equality in that final node (not at the first split)
              */
-
             /**
              * Want to think about testing for parameter equality across splits,
              * potentially imposing that homogeneity here (and maybe all nodes
@@ -702,19 +692,25 @@ public class TreeMoment {
             /**
              * For the first split (when the parent is null), test parameter by
              * parameter for homogeneity, then report that
-             * 
-             * UPDATE 3/15/2002: now we do our testing in the largest FINAL node in the tree
+             *
+             * UPDATE 3/15/2002: now we do our testing in the largest FINAL node
+             * in the tree
+             *
+             * UPDATE 3/16/2022: scrapping that because we need uniform tests,
+             * not local ones I am going to try to do a tree-wide constrained
+             * minimization, wish me luck (like the final node version of what
+             * we had below for the stump)
              */
             // System.out.println("Right before Wald test");
-            if (largestNode) {
-                
+            if (1 == 2) {
+
                 System.out.println("Testing is being done at following split of the tree:");
                 System.out.println(getRule());
                 System.out.print("Honest estimate left: ");
                 pmUtility.prettyPrintVector(childLeft.getNodeEstimatedBeta());
                 System.out.print("Honest estimate right: ");
                 pmUtility.prettyPrintVector(childRight.getNodeEstimatedBeta());
-                
+
                 // optimalZ_sse is objective value with heterogeneity
                 // test using DM from Newey-McFadden, chi-squared with one degree of freedom
                 ChiSqrDistribution chi = new ChiSqrDistribution(1);
@@ -787,6 +783,77 @@ public class TreeMoment {
 //        System.out.println("DEBUG: Exiting estimateHonestTree()");
     }
 
+    public void testHomogeneity() {
+        ArrayList<DataLens> v = new ArrayList<>();
+        collectAllTerminalDataLens(v);
+        printTree();
+        System.out.println("Number of leaves: " + v.size());
+
+        ChiSqrDistribution chi = new ChiSqrDistribution(1);
+
+        ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
+        ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
+
+        for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+            DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v);
+            double dm2 = big.computeStatistic(k);
+            double pval = 1.0 - chi.cumulative(dm2);
+            System.out.println("p-value: " + pval);
+            pList.add(new PValue(k, pval));
+            constrainedParameterList.add(new PValue(k, big.getValueConstrainedParameter()));
+            if (dm2 < chi.inverse(0.95)) {
+                System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k + " constrained parameter guess: " + big.getValueConstrainedParameter());
+            }
+        }
+
+        // now sort the p-values from lowest to highest
+        Collections.sort(pList);
+
+        // holm-bonferroni procedure below
+        boolean useHolmBonferroni = true;
+        if (useHolmBonferroni) {
+            boolean addSuccessiveParameters = false; // need this since i kind of constructed this loop backwards in terms of testing the null hypothesis (which is that there is parameter homogeneity)
+            for (int k = 0; k < pList.size(); k++) {
+                PValue d = pList.get(k);
+                System.out.println(d);
+                double adjustedPValue = 0.05 / (pList.size() - k);
+                System.out.println("p: " + d.getP() + " adjusted P-value: " + adjustedPValue);
+                if (d.getP() > adjustedPValue || addSuccessiveParameters) {
+                    System.out.println("Holm-Bonferroni -> Accepting null; Adding parameter index " + d.getK() + " to homogeneity list.");
+                    indexHomogeneousParameters.add(d.getK());
+
+                    for (PValue cp : constrainedParameterList) {
+                        if (cp.getK() == d.getK()) {
+                            valueHomogeneousParameters.add(cp.getP());
+                        }
+                    }
+
+                    // should i terminate this for loop here?
+                    // i think i am supposed to fail to reject all the other hypotheses if this happens (add them to homogeneity list?)
+                    // yes, i sort of wrote this backwards; should be adding parameters to HETEROGENEOUS index
+                    addSuccessiveParameters = true;
+                } else {
+                    System.out.println("Holm-Bonferroni -> Rejecting null; Retaining parameter index " + d.getK() + " in moment forest.");
+                }
+            }
+//                    System.out.println("DEBUG: ending Holm Bonferroni method");
+        } else {
+            // easier bonferroni procedure (for checking what's going on here)
+            for (int k = 0; k < pList.size(); k++) {
+                PValue d = pList.get(k);
+                System.out.println(d);
+                double criticalValue = 0.05 / (0.0 + pList.size());
+                System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
+                if (d.getP() > criticalValue) {
+                    System.out.println("Straight Bonferroni -> Accepting null; adding parameter index " + d.getK() + " to homogeneity list.");
+                    indexHomogeneousParameters.add(d.getK());
+                } else {
+                    System.out.println("Straight Bonferroni -> Rejecting null; retaining parameter index " + d.getK() + " in moment forest.");
+                }
+            }
+        }
+    }
+
     public void clearEstimationData() {
         /**
          * I am not nulling out the grow lens now because hopefully it is not
@@ -807,12 +874,11 @@ public class TreeMoment {
             childRight.clearHonestyData();
         }
     }
-    
-    public void collectAllTerminalDataLens(ArrayList<DataLens> v) {         
-        if(terminal) {
+
+    public void collectAllTerminalDataLens(ArrayList<DataLens> v) {
+        if (terminal) {
             v.add(lensHonest);
-        }
-        else {
+        } else {
             childLeft.collectAllTerminalDataLens(v);
             childRight.collectAllTerminalDataLens(v);
         }
@@ -924,42 +990,5 @@ public class TreeMoment {
      */
     public ArrayList<Double> getValueHomogeneousParameters() {
         return valueHomogeneousParameters;
-    }
-
-    private int determineLargestTerminalNodeSize() {
-        if(parent==null) {
-            printTree();
-        }
-        
-        if (childLeft.terminal && childRight.terminal) {
-            System.out.println("Returning "+lensHonest.getNumObs());
-            return lensHonest.getNumObs();
-        } 
-        if(!childLeft.terminal) {
-            System.out.println("Returning "+childLeft.determineLargestTerminalNodeSize());
-            return childLeft.determineLargestTerminalNodeSize();
-        }        
-        if(!childRight.terminal) {
-            System.out.println("Returning "+childRight.determineLargestTerminalNodeSize());
-            return childRight.determineLargestTerminalNodeSize();
-        }
-        System.out.println("Don't think you should ever see this");
-        return -1;
-    }
-
-    private void setLargestTerminalNodeIndicator(int sizeLargestNode) {
-        if (childLeft.terminal && childRight.terminal) {
-            if(lensHonest.getNumObs()==sizeLargestNode) {
-                largestNode = true;
-                System.out.println("Largest node has "+lensHonest.getNumObs()+" observations in it");
-            }
-        } 
-        if(!childLeft.terminal) {
-            childLeft.setLargestTerminalNodeIndicator(sizeLargestNode);
-        }        
-        if(!childRight.terminal) {
-            childRight.setLargestTerminalNodeIndicator(sizeLargestNode);
-        }
-
     }
 }
