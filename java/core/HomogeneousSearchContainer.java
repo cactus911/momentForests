@@ -80,6 +80,10 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         System.out.print("Starting values taken from DM test: ");
         pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
         System.out.println("F_min(x): "+f_to_minimize(guess));
+        
+        System.out.println("If using true beta:");
+        guess[1] = -1;
+        System.out.println("F_min(x): "+f_to_minimize(guess));
 
         double[] xpls = new double[numParams + 1];
         double[] fpls = new double[2];

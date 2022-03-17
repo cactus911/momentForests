@@ -162,7 +162,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     }
 
     @Override
-    public Jama.Matrix getMomentG(Jama.Matrix beta) {
+    public Jama.Matrix getMomentGWithoutDivision(Jama.Matrix beta) {
         /**
          * Let's implement the moment-based version of OLS here (need this for a
          * variety of reasons, also will extend nicely to other models more
@@ -187,7 +187,8 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             g.plusEquals(gi);
 
         }
-        g.timesEquals(1.0 / Y.getRowDimension());
+        // cannot have this here since we divide by different n in different places!
+        // g.timesEquals(1.0 / Y.getRowDimension());
         return g;
     }
     

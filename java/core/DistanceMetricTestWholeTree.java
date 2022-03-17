@@ -212,7 +212,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             DataLens lens = v.get(leaf);
             numObs += lens.getNumObs();
             ContainerLinear c = new ContainerLinear(lens);
-            Jama.Matrix leafG = c.getMomentG(cellBetaList.get(leaf));
+            Jama.Matrix leafG = c.getMomentGWithoutDivision(cellBetaList.get(leaf));
             for (int j = 0; j < leafG.getRowDimension(); j++) {
                 g.set(leaf * K + j, 0, leafG.get(j, 0));
             }
@@ -254,12 +254,19 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
          * Go leaf by leaf and stack moments
          */
         int numObs = 0;
+        Jama.Matrix g = new Jama.Matrix(0,1);
         for (int leaf = 0; leaf < v.size(); leaf++) {
             DataLens lens = v.get(leaf);
             numObs += lens.getNumObs();
             ContainerLinear c = new ContainerLinear(lens);
+            g = pmUtility.stackMatrix(g, c.getMomentGWithoutDivision(cellBetaList.get(leaf)));
             SSE += c.getSSE(cellBetaList.get(leaf));
         }
+        g.timesEquals(1.0/numObs);
+        System.out.println("Moment Vector:");
+        pmUtility.prettyPrint(g);
+        System.out.println("g'g: "+((g.transpose()).times(g)).get(0,0));
+        
         return SSE;
     }
 

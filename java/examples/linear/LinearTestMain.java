@@ -367,7 +367,7 @@ public class LinearTestMain {
                 bestMaxDepth = 9;
             }
         }
-        bestMaxDepth = 1;
+        bestMaxDepth = 2;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
