@@ -786,7 +786,7 @@ public class TreeMoment {
     public void testHomogeneity() {
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);
-        printTree();
+        // printTree();
         System.out.println("Number of leaves: " + v.size());
 
         ChiSqrDistribution chi = new ChiSqrDistribution(1);
