@@ -81,10 +81,6 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
         System.out.println("F_min(x): "+f_to_minimize(guess));
         
-        System.out.println("If using true beta:");
-        guess[1] = -1;
-        System.out.println("F_min(x): "+f_to_minimize(guess));
-
         double[] xpls = new double[numParams + 1];
         double[] fpls = new double[2];
         double[] gpls = new double[numParams + 1];
@@ -110,20 +106,6 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         double[] steptl = {0, 1E-8};
 
         if (numParams == 1) {
-            // plot this function (is there something goofy going on here?)
-            // there are kink points and nonconvexities in that function, that may be why things go off the rails very rarely
-            // plotFunction(-2, 0, 50);
-            // try using secant method
-            // guess = secant(guess);
-
-            // do a grid search (successively bracketing smaller intervals)
-            // could make this adaptive so that if it picks the endpoints we move the endpoint and start over
-            // good starting values should hopefully fix that issue
-            // put a flag in here though if that's the case (maybe a system.exit) since that's no good
-            // this appears to work
-            // however, in more general cases this could be an issue with more parameters that we are searching over (in the mixed case)
-            // cannot do a grid search in so many dimensions
-            // the objective function looks like it has kinks and nonconvex parts, so that makes optimization a challenge (although min is nicely behaved)
             t1 = System.currentTimeMillis();
             int numEvals = 9; // number evaluations within each bracket (MIN: 3)
             int R = 5; // number of times to bracket grid search
@@ -220,9 +202,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 
     @Override
     public double f_to_minimize(double[] x) {
-        Jama.Matrix homogeneousParameterVector = new Jama.Matrix(numParams, 1);
         for (int i = 0; i < numParams; i++) {
-            homogeneousParameterVector.set(i, 0, x[i + 1]);
             mySpecification.setHomogeneousParameter(homogeneousParameterIndex.get(i), x[i + 1]);
         }
 

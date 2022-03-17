@@ -796,7 +796,7 @@ public class TreeMoment {
 
         for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
             DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v);
-            double dm2 = big.computeStatistic(k);
+            double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
             double pval = 1.0 - chi.cumulative(dm2);
             System.out.println("p-value: " + pval);
             pList.add(new PValue(k, pval));

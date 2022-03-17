@@ -91,7 +91,7 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 5000; numObs <= 5000; numObs *= 2) {
+        for (int numObs = 500; numObs <= 4000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -152,8 +152,8 @@ public class LinearTestMain {
 
                 AtomicInteger bomb = new AtomicInteger();
 
-                // parallelLTM.parallelStream().forEach(e -> {
-                parallelLTM.stream().forEach(e -> {
+                parallelLTM.parallelStream().forEach(e -> {
+                // parallelLTM.stream().forEach(e -> {
                     e.execute();
                     bomb.incrementAndGet();
                     System.out.println("Finished " + bomb.get() + " iterations.");
@@ -367,7 +367,6 @@ public class LinearTestMain {
                 bestMaxDepth = 9;
             }
         }
-        bestMaxDepth = 2;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -398,12 +397,12 @@ public class LinearTestMain {
              * Then test using a t-test
              * 
              * Q: how to compute the variances needed in the t-test? The average seems straightforward enough
+             * 
+             * A: Just going back to my "naive" idea of testing across ALL of the terminal leaves; seems to work!
              */
             TreeMoment loblolly = myForest.getTree(0);
             loblolly.testHomogeneity();
-            System.exit(0);
-            
-            
+                        
             // System.out.println("Done with growforest");
             ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
             ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
@@ -511,7 +510,9 @@ public class LinearTestMain {
              * Grow the moment forest
              */
             myForest.growForest();
-        }
+            // myForest.getTree(0).printTree();
+        }       
+        
 
         /**
          * Test vectors for assessment
