@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.linear;
+package examples.logit;
 
 import Jama.Matrix;
 import core.DataLens;
@@ -47,7 +47,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class LinearTestMain {
+public class LogitTestMain {
 
     private ArrayList<Integer> homogeneousParameterList;
     private final long rngSeed;
@@ -90,7 +90,7 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 500; numObs <= 4000; numObs *= 2) {
+        for (int numObs = 1500; numObs <= 150000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -113,7 +113,7 @@ public class LinearTestMain {
             JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
             boolean[] d = {false, true};
-            // boolean[] d = {true};
+            // boolean[] d = {!true};
             for (boolean detectHomogeneity : d) {
                 // boolean detectHomogeneity = !true;
                 if (detectHomogeneity) {
@@ -137,14 +137,14 @@ public class LinearTestMain {
 
                 int numMonteCarlos = 1;
 
-                ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
+                ArrayList<LogitTestMain> parallelLTM = new ArrayList<>();
 
                 for (int m = 0; m < numMonteCarlos; m++) {
-                    LinearTestMain go;
+                    LogitTestMain go;
                     if (numMonteCarlos == 1) {
-                        go = new LinearTestMain(4606544446801080638L, numObs, detectHomogeneity, jam);
+                        go = new LogitTestMain(4606544446801080638L, numObs, detectHomogeneity, jam);
                     } else {
-                        go = new LinearTestMain(rng.nextLong(), numObs, detectHomogeneity, jam);
+                        go = new LogitTestMain(rng.nextLong(), numObs, detectHomogeneity, jam);
                     }
                     parallelLTM.add(go);
                 }
@@ -161,7 +161,7 @@ public class LinearTestMain {
                 // for (int m = 0; m < numMonteCarlos; m++) {
                 int[] counts = new int[numParameters];
                 double[] standardErrors = new double[numParameters];
-                for (LinearTestMain m : parallelLTM) {
+                for (LogitTestMain m : parallelLTM) {
                     if (detectHomogeneity) {
                         ArrayList<Integer> hList = m.getHomogeneousParameterList();
                         if (!hList.isEmpty()) {
@@ -193,7 +193,7 @@ public class LinearTestMain {
                 }
 
                 // needed average to compute standard errors (kind of clunky, but whatever)
-                for (LinearTestMain m : parallelLTM) {
+                for (LogitTestMain m : parallelLTM) {
                     if (detectHomogeneity) {
                         ArrayList<Integer> hList = m.getHomogeneousParameterList();
                         if (hList.size() > 0) {
@@ -217,7 +217,7 @@ public class LinearTestMain {
 
                 Y_MSE /= parallelLTM.size();
                 beta_MSE /= parallelLTM.size();
-                for (LinearTestMain m : parallelLTM) {
+                for (LogitTestMain m : parallelLTM) {
                     Y_MSE_var += Math.pow(Y_MSE - m.getOutOfSampleYMSE(), 2);
                     beta_MSE_var += Math.pow(beta_MSE - m.getEstimatedBetaVersusTruthMSE(), 2);
                 }
@@ -260,12 +260,12 @@ public class LinearTestMain {
                     betaMSE_unrestricted = beta_MSE;
                 }
             }
-            LinearMonteCarloTable tf = new LinearMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted, betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta1_mean, beta1_SD, beta2_mean, beta2_SD, classificationRate1, classificationRate2);
+            LogitMonteCarloTable tf = new LogitMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted, betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta1_mean, beta1_SD, beta2_mean, beta2_SD, classificationRate1, classificationRate2);
             jam.append(tf.toString());
         }
     }
 
-    public LinearTestMain(long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt) {
+    public LogitTestMain(long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt) {
         this.rngSeed = rngSeed;
         this.jt = jt;
         this.numObs = numObs;
@@ -276,8 +276,7 @@ public class LinearTestMain {
         System.out.println("**************** rngSeed = " + rngSeed + " ****************");
         Random rng = new Random(rngSeed);
 
-        // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
-        MomentSpecification mySpecification = new LinearMomentSpecification(numObs);
+        MomentSpecification mySpecification = new LogitMomentSpecification(numObs);
         mySpecification.loadData(rng.nextLong()); // Create data using rng
 
         double bestMinImprovement = 4.0;
@@ -287,18 +286,6 @@ public class LinearTestMain {
         double lowestSSE = 0;
         boolean first = true;
 
-        /**
-         * January 21, 2022: there is a question here about how to estimate the
-         * set of homogeneous parameters in that should we do so after running
-         * cross validation? I think the answer to that is probably yes since it
-         * is primarily an issue of imposing a constraint for efficiency
-         * reasons.
-         *
-         * Probably do this:
-         *
-         * 1. Run cross validation on unrestricted model 2. Run test of
-         * homogeneity 3. Impose homogeneity and re-estimate
-         */
         /**
          * Make sure that cross-validation is run on completely unrestricted
          * model; set all parameters to heterogeneous
@@ -316,7 +303,7 @@ public class LinearTestMain {
          * MommentSpecification
          */
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
-        boolean verbose = false;
+        boolean verbose = true;
         boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
@@ -366,6 +353,7 @@ public class LinearTestMain {
                 bestMaxDepth = 9;
             }
         }
+        bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -442,13 +430,13 @@ public class LinearTestMain {
                 setEstimatedHomogeneousParameters(mySpecification.getHomogeneousParameterVector());
             } else {
                 if (!hpl.isEmpty()) {
-                    // System.out.println("Initializing search container");
-                    numberTreesInForest = 8;
+                    System.out.println("Initializing search container");
+                    numberTreesInForest = 1;
                     HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                             getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
-                    // System.out.println("Calling execute search");
+                    System.out.println("Calling execute search");
                     con.executeSearch();
-                    // System.out.println("Post search");
+                    System.out.println("Post search");
                     Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
                     System.out.print("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
                     pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
@@ -471,8 +459,9 @@ public class LinearTestMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         numberTreesInForest = 1;
-        outOfSampleYMSE = computeOutOfSampleMSE(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
-                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample);
+        // this isn't set up to work correctly (hardwired for linear case right now)
+        // also, these two methods should be combined (it is dumb to grow the exact same set of trees multiple times)
+        outOfSampleYMSE = -666; // computeOutOfSampleMSE(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample);
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
     }
@@ -524,6 +513,9 @@ public class LinearTestMain {
         /**
          * Compute out-of-sample fit at current homogeneous parameter vector
          */
+        
+        System.out.println("TODO: This doesn't work for logit right now (it is set to the linear case)");
+        
         double outOfSampleFit = 0;
         for (int i = 0; i < testZ.getRowDimension(); i++) {
 
@@ -542,6 +534,7 @@ public class LinearTestMain {
                 Jama.Matrix residualizedXi = residualizedX.getMatrix(i, i, 0, residualizedX.getColumnDimension() - 1);
                 fitY += residualizedXi.times(b).get(0, 0);
             }
+            
             double error = fitY - (oosDataLens.getY().get(i, 0));
 
             outOfSampleFit += error * error;
@@ -679,9 +672,9 @@ public class LinearTestMain {
      * @return the MSE
      */
     public double getOutOfSampleYMSE() {
-        if (outOfSampleYMSE > 3) {
-            jt.append("MSPE: " + outOfSampleYMSE + " seed: " + rngSeed + "\n");
-        }
+        // if (outOfSampleYMSE > 3) {
+            // jt.append("MSPE: " + outOfSampleYMSE + " seed: " + rngSeed + "\n");
+        // }
         return outOfSampleYMSE;
     }
 

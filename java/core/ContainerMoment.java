@@ -35,15 +35,12 @@ public abstract class ContainerMoment {
      * @return
      */
     public abstract Jama.Matrix getBeta();
-
-    /**
-     * Returns the error within this partition.
-     * @return
-     */
+    public abstract double computeMeasureOfFit(Jama.Matrix beta);
     public abstract double getGoodnessOfFit();
     public abstract Jama.Matrix getVariance();
     public abstract double getMomentFunctionValue(Jama.Matrix beta);
     public abstract double getMomentFunctionImposingHomogeneity(int k, double value);        
     public abstract Jama.Matrix getMomentGWithoutDivision(Jama.Matrix beta);
+    public abstract Jama.Matrix getGi(Jama.Matrix beta, int observationIndex);
     
 }

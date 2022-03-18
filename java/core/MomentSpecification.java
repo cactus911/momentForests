@@ -85,4 +85,7 @@ public interface MomentSpecification {
     
     public Jama.Matrix residualizeX(Jama.Matrix Xp);
 
+    public ContainerMoment getContainerMoment(DataLens lens);
+    public abstract int getNumMoments();
+
 }

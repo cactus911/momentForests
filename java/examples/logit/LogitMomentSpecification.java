@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.linear;
+package examples.logit;
 
 // import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
@@ -39,7 +39,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class LinearMomentSpecification implements MomentSpecification {
+public class LogitMomentSpecification implements MomentSpecification {
 
     Jama.Matrix X;
     Jama.Matrix Y;
@@ -56,15 +56,13 @@ public class LinearMomentSpecification implements MomentSpecification {
      * We are going to control homogeneous parameters through these variables
      */
     private boolean[] homogeneityIndex; // = new boolean[X.getColumnDimension()];
-    private Jama.Matrix homogeneousParameterVector; // = new Jama.Matrix(X.getColumnDimension(), 1); // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
-    // i'm going to change that, since that sounds like a recipe for disaster as the set of parameters that gets the homogeneous label shifts around
-    // how to keep everything straight--easier way is to just to make it the size of the parameter vector and go from there (and never read elements that aren't labeled as homogeneous)
+    private Jama.Matrix homogeneousParameterVector; // how to keep everything straight--easier way is to just to make it the size of the parameter vector and go from there (and never read elements that aren't labeled as homogeneous)
 
-    public LinearMomentSpecification(int numObs) {
+    public LogitMomentSpecification(int numObs) {
         this.numObs = numObs;
         // all these indices are hard-coded; want to change that down the road!
         homogeneityIndex = new boolean[2];
-        homogeneousParameterVector = new Jama.Matrix(2,1);
+        homogeneousParameterVector = new Jama.Matrix(2, 1);
         resetHomogeneityIndex();
         int[] vsi = {0, 1, 2}; //Search over z1, z2, z3 
         Boolean[] wvd = {false, false, true}; // z1, z2 continuous, z3 discrete
@@ -72,7 +70,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         DiscreteVariables = wvd;
     }
 
-    public LinearMomentSpecification(String filename) {
+    public LogitMomentSpecification(String filename) {
         this.filename = filename;
     }
 
@@ -83,14 +81,9 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public double getHomogeneousParameter(int parameterIndex) {
-        return homogeneousParameterVector.get(parameterIndex,0);
+        return homogeneousParameterVector.get(parameterIndex, 0);
     }
 
-    @Override
-    public int getNumMoments() {
-        return 2;
-    }
-    
     @Override
     public void setHomogeneousParameter(int parameterIndex, double value) {
         homogeneousParameterVector.set(parameterIndex, 0, value);
@@ -101,7 +94,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         return balancingVector;
     }
 
-    public LinearMomentSpecification(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, int numtrees, int[] variableSearchIndex, Boolean[] DiscreteVariables) {
+    public LogitMomentSpecification(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, int numtrees, int[] variableSearchIndex, Boolean[] DiscreteVariables) {
         this.X = X;
         this.Y = Y;
         this.Z = Z;
@@ -113,15 +106,8 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public Double getPredictedY(Matrix xi, Jama.Matrix beta) {
-        /**
-         * This may have to be adjusted when we impose homogeneity, depending on
-         * what this is used for
-         */
-        // pmUtility.prettyPrint(xi);
-        if (beta != null) {
-            double yhat = (xi.times(beta)).get(0, 0);
-            return yhat;
-        }
+        System.out.println("Should never see this method (getPredictedY)");
+        System.exit(0);
         return null;
     }
 
@@ -132,17 +118,17 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-        return new MomentContinuousSplitObjLinear(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition);
+        return new MomentContinuousSplitObjLogit(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition);
     }
 
     @Override
     public MomentPartitionObj getMomentPartitionObj(DataLens lens, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjLinear(partition, indexSplitVariable, lens);
+        return new MomentPartitionObjLogit(partition, indexSplitVariable, lens);
     }
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens) {
-        ContainerLinear l = new ContainerLinear(lens);
+        ContainerLogit l = new ContainerLogit(lens);
         l.computeBetaAndErrors();
         return l;
     }
@@ -176,11 +162,11 @@ public class LinearMomentSpecification implements MomentSpecification {
     @Override
     public double getHomogeneousComponent(Jama.Matrix xi) {
         double homogeneousComponent = 0;
-        
+
         for (int k = 0; k < homogeneityIndex.length; k++) {
             if (homogeneityIndex[k]) {
                 homogeneousComponent += xi.get(0, k) * homogeneousParameterVector.get(k, 0);
-    }
+            }
         }
         return homogeneousComponent;
     }
@@ -239,29 +225,29 @@ public class LinearMomentSpecification implements MomentSpecification {
     @Override
     public Matrix getBetaTruth(Matrix zi) {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
-        beta.set(0, 0, -1);
-        beta.set(1, 0, 1.0);
-        
-        boolean partiallyLinearModel = false;
-        if(partiallyLinearModel) {
-            // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
-            beta.set(0, 0, 2.5*Math.sin(zi.get(0,0)) + 0.25*Math.pow(zi.get(0,0),2));
-            return beta;
-        }        
+        beta.set(0, 0, -2.0);
+        beta.set(1, 0, 2.0);
 
         boolean singleBeta = false;
         if (singleBeta) {
             return beta;
         }
 
+        boolean partiallyLinearModel = false;
+        if (partiallyLinearModel) {
+            // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
+            beta.set(0, 0, 2.5 * Math.sin(zi.get(0, 0)) + 0.25 * Math.pow(zi.get(0, 0), 2));
+            return beta;
+        }
+
         boolean oneDimensionHeterogeneity = true;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
-                beta.set(1, 0, -5.0);
+                beta.set(1, 0, -1.0);
             }
             return beta;
         }
-        
+
         boolean twoDimensionHeterogeneity = false;
         if (twoDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
@@ -291,7 +277,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public DataLens getOutOfSampleXYZ(int numObsOOS, long rngSeed) {
-        LinearDataGenerator xyz = new LinearDataGenerator(numObsOOS, this, rngSeed);
+        LogitDataGenerator xyz = new LogitDataGenerator(numObsOOS, this, rngSeed);
         return new DataLens(xyz.getX(), xyz.getY(), xyz.getZ(), null);
     }
 
@@ -355,7 +341,7 @@ public class LinearMomentSpecification implements MomentSpecification {
             }
         } else {
 
-            LinearDataGenerator xyz = new LinearDataGenerator(numObs, this, rngSeed);
+            LogitDataGenerator xyz = new LogitDataGenerator(numObs, this, rngSeed);
             X = xyz.getX();
             Y = xyz.getY();
             Z = xyz.getZ();
@@ -428,13 +414,21 @@ public class LinearMomentSpecification implements MomentSpecification {
     /**
      * @return the homogeneousParameterVector
      */
+    @Override
     public Jama.Matrix getHomogeneousParameterVector() {
         return homogeneousParameterVector;
     }
 
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerLinear(lens);
+        return new ContainerLogit(lens);
     }
+
+    @Override
+    public int getNumMoments() {
+        return 2;
+    }
+    
+    
 
 }

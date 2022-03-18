@@ -48,15 +48,17 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     Jama.Matrix variance;
     boolean debugVerbose = false;
     DataLens lens;
+    Jama.Matrix X;
+        Jama.Matrix Y;
 
     public ContainerLinear(DataLens lens) {
         this.lens = lens;
         // computeBetaAndErrors();
+        X = lens.getX();
+        Y = lens.getY();
     }
 
     public void computeBetaAndErrors() {
-        Jama.Matrix X = lens.getX();
-        Jama.Matrix Y = lens.getY();
 
         if (Y.getRowDimension() < 30) {
             // System.out.println("Too few observations");
@@ -146,9 +148,8 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         }
     }
 
+    @Override
     public Jama.Matrix getGi(Jama.Matrix beta, int i) {
-        Jama.Matrix X = lens.getX();
-        Jama.Matrix Y = lens.getY();
         int numMoments = X.getColumnDimension();
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
@@ -168,8 +169,6 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
          * variety of reasons, also will extend nicely to other models more
          * directly this way)
          */
-        Jama.Matrix X = lens.getX();
-        Jama.Matrix Y = lens.getY();
         // Jama.Matrix runningTotal = new Jama.Matrix(X.getRowDimension(), X.getColumnDimension());
         int numMoments = X.getColumnDimension();
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
@@ -178,12 +177,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
         // turns out using gi method here is crazy slow!        
         for (int i = 0; i < X.getRowDimension(); i++) {
-            Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
-            for (int k = 0; k < numMoments; k++) {
-                gi.set(k, 0, e.get(i, 0) * X.get(i, k));
-                // runningTotal.set(i, k, g.get(k, 0));
-            }
-//            pmUtility.prettyPrintVector(gi);
+            Jama.Matrix gi = getGi(beta,i);
             g.plusEquals(gi);
 
         }
@@ -192,9 +186,8 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         return g;
     }
     
-    public double getSSE(Jama.Matrix beta) {
-        Jama.Matrix X = lens.getX();
-        Jama.Matrix Y = lens.getY();        
+    @Override
+    public double computeMeasureOfFit(Jama.Matrix beta) {
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
 
@@ -208,8 +201,6 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
          * variety of reasons, also will extend nicely to other models more
          * directly this way)
          */
-        Jama.Matrix X = lens.getX();
-        Jama.Matrix Y = lens.getY();
         // Jama.Matrix runningTotal = new Jama.Matrix(X.getRowDimension(), X.getColumnDimension());
         int numMoments = X.getColumnDimension();
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
@@ -219,11 +210,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
         // turns out using gi method here is crazy slow!        
         for (int i = 0; i < X.getRowDimension(); i++) {
-            Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
-            for (int k = 0; k < numMoments; k++) {
-                gi.set(k, 0, e.get(i, 0) * X.get(i, k));
-                // runningTotal.set(i, k, g.get(k, 0));
-            }
+            Jama.Matrix gi = getGi(beta, i);
 //            pmUtility.prettyPrintVector(gi);
             g.plusEquals(gi);
             omega.plusEquals(gi.times(gi.transpose()));
@@ -321,5 +308,6 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     public double getMomentFunctionValue(Jama.Matrix b) {
         return getMoment(b, false);
     }
+
 
 }

@@ -5,7 +5,6 @@
  */
 package core;
 
-import examples.linear.ContainerLinear;
 import java.util.ArrayList;
 import mcmc.gibbsLTEGeneralized;
 import optimization.Uncmin_f77;
@@ -25,9 +24,11 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
     Jama.Matrix omega; // weighting matrix in GMM
     boolean useCUE = false; // utilize continuously-updated weighting matrix
     boolean useSumOfSquaredErrors = false; // use SSE to get a starting value for GMM, which can be sensitive in small samples
+    private final MomentSpecification spec;
 
-    public DistanceMetricTestWholeTree(ArrayList<DataLens> v) {
+    public DistanceMetricTestWholeTree(ArrayList<DataLens> v, MomentSpecification spec) {
         this.v = v;
+        this.spec = spec;
     }
 
     public double computeStatistic(int indexConstrainedParameter) {
@@ -211,7 +212,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         for (int leaf = 0; leaf < v.size(); leaf++) {
             DataLens lens = v.get(leaf);
             numObs += lens.getNumObs();
-            ContainerLinear c = new ContainerLinear(lens);
+            ContainerMoment c = spec.getContainerMoment(lens);
             Jama.Matrix leafG = c.getMomentGWithoutDivision(cellBetaList.get(leaf));
             for (int j = 0; j < leafG.getRowDimension(); j++) {
                 g.set(leaf * K + j, 0, leafG.get(j, 0));
@@ -258,9 +259,9 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         for (int leaf = 0; leaf < v.size(); leaf++) {
             DataLens lens = v.get(leaf);
             numObs += lens.getNumObs();
-            ContainerLinear c = new ContainerLinear(lens);
+            ContainerMoment c = spec.getContainerMoment(lens);
             g = pmUtility.stackMatrix(g, c.getMomentGWithoutDivision(cellBetaList.get(leaf)));
-            SSE += c.getSSE(cellBetaList.get(leaf));
+            SSE += c.computeMeasureOfFit(cellBetaList.get(leaf));
         }
         g.timesEquals(1.0/numObs);
         System.out.println("Moment Vector:");
@@ -339,7 +340,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
          * now for the linear case, need to come back to this and figure this
          * out in general when we have broader cases)
          */
-        int K = v.get(0).getX().getColumnDimension();
+        int K = spec.getNumMoments();
 
         /**
          * The total size of the stacked moment vector is the dimensionality of
@@ -357,7 +358,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
 
             DataLens lens = v.get(leaf);
             numObs += lens.getNumObs();
-            ContainerLinear c = new ContainerLinear(lens);
+            ContainerMoment c = spec.getContainerMoment(lens);
             for (int i = 0; i < lens.getNumObs(); i++) {
                 Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
                 Jama.Matrix leafGi = c.getGi(cellBetaList.get(leaf), i);

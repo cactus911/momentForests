@@ -108,23 +108,6 @@ public class TreeMoment {
         }
     }
 
-    /**
-     * Return tree's prediction of treatment effect on the basis of x_i and z_i.
-     *
-     * @param xi Covariates going into the moment function
-     * @param zi Covariates that determine the parameter split
-     * @return
-     */
-    public Double getPredictedY(Jama.Matrix xi, Jama.Matrix zi) {
-        if (terminal) {
-            // return the treatment effect for this x_i, not the predicted y_i
-            return momentSpec.getPredictedY(xi, betaEstimateNode);
-        } else if (getRule().isLeft(zi)) {
-            return childLeft.getPredictedY(xi, zi);
-        } else {
-            return childRight.getPredictedY(xi, zi);
-        }
-    }
 
     public void setDepth(int depth) {
         this.depth = depth;
@@ -250,11 +233,12 @@ public class TreeMoment {
                         MomentContinuousSplitObj obj = momentSpec.getFminObjective(lensGrowingTree, indexSplitVariable, minProportionEachPartition, minCountEachPartition);
                         double minZ = lensGrowingTree.getMinimumValue(indexSplitVariable);
                         double maxZ = lensGrowingTree.getMaximumValue(indexSplitVariable);
-                        // System.out.println("TreeMoment.java:224 -> min x_1: "+minX+" max x_1: "+maxX);
+                        if(debugOptimization) {
+                            System.out.println("TreeMoment.java:224 -> min x_1: "+minZ+" max x_1: "+maxZ);
+                        }
                         double optimalZ_k;
                         double optimalZ_SSE_k;
 
-                        // there is a bracketing nth-order Brent optimizer that I should experiment with (someday perhaps; it is set up for root finding, not minimization)
                         boolean useFmin = true;
                         if (useFmin) {
                             optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
@@ -266,6 +250,7 @@ public class TreeMoment {
 
                         if (debugOptimization) {
                             echoLn("\tFmin search on z_" + indexSplitVariable + " found x = " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
+                            System.out.println("TreeMoment.java:253 -> min x_1: "+minZ+" max x_1: "+maxZ);
                         }
 
                         boolean testGridSearch = true;
@@ -795,7 +780,7 @@ public class TreeMoment {
         ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
 
         for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
-            DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v);
+            DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
             double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
             double pval = 1.0 - chi.cumulative(dm2);
             System.out.println("p-value: " + pval);
