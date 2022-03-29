@@ -25,7 +25,7 @@ package examples.linear;
 
 // import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
-import core.ContainerMoment;
+import core.ContainerMoment; 
 import core.DataLens;
 import core.IntegerPartition;
 import core.MomentContinuousSplitObj;
@@ -33,6 +33,7 @@ import core.MomentPartitionObj;
 import core.MomentSpecification;
 import java.io.FileReader;
 import java.io.BufferedReader;
+import java.util.Random;
 import utility.pmUtility;
 
 /**
@@ -112,7 +113,17 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public Double getPredictedY(Matrix xi, Jama.Matrix beta) {
+    public double getGoodnessOfFit(double yi, Matrix xi, Matrix beta) {
+        double fit = (xi.times(beta)).get(0,0);
+        double error = yi-fit;
+        // System.out.println(fit+" "+yi);
+        return error*error;
+    }
+    
+    
+
+    @Override
+    public Double getPredictedY(Matrix xi, Jama.Matrix beta, Random rng) {
         /**
          * This may have to be adjusted when we impose homogeneity, depending on
          * what this is used for
@@ -132,92 +143,29 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-        return new MomentContinuousSplitObjLinear(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition);
+        return new MomentContinuousSplitObjLinear(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition, this);
     }
 
     @Override
     public MomentPartitionObj getMomentPartitionObj(DataLens lens, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjLinear(partition, indexSplitVariable, lens);
+        return new MomentPartitionObjLinear(partition, indexSplitVariable, lens, this);
     }
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens) {
-        ContainerLinear l = new ContainerLinear(lens);
+        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector);
         l.computeBetaAndErrors();
         return l;
     }
 
     @Override
-    public Matrix getY(boolean residualizeY) {
-        /**
-         * Want to return the residualized Y (taking out the part explained by
-         * the globally-imposed homogeneous subset of parameters)
-         *
-         * I am going to impose the convention that the parameter vector of
-         * homogeneous parameters is only as long as the number of restrictions
-         * (as opposed to having it be a full length of X with some zeros for
-         * non-restrictions)
-         */
-        if (!residualizeY) {
+    public Matrix getY() {
             return Y;
-        }
-        Jama.Matrix residualizedY = Y.copy();
-
-        for (int k = 0; k < homogeneityIndex.length; k++) {
-            if (homogeneityIndex[k]) {
-                for (int i = 0; i < Y.getRowDimension(); i++) {
-                    residualizedY.set(i, 0, residualizedY.get(i, 0) - X.get(i, k) * homogeneousParameterVector.get(k, 0));
-                }
-            }
-        }
-        return residualizedY;
-    }
-
-    @Override
-    public double getHomogeneousComponent(Jama.Matrix xi) {
-        double homogeneousComponent = 0;
-        
-        for (int k = 0; k < homogeneityIndex.length; k++) {
-            if (homogeneityIndex[k]) {
-                homogeneousComponent += xi.get(0, k) * homogeneousParameterVector.get(k, 0);
-    }
-        }
-        return homogeneousComponent;
     }
 
     @Override
     public Matrix getX() {
-        /**
-         * We want to return the part of X that is not restricted via a global
-         * parameter homogeneity assumption
-         */
-
-        Jama.Matrix residualizedX = null;
-        for (int k = 0; k < homogeneityIndex.length; k++) {
-            if (!homogeneityIndex[k]) {
-                if (residualizedX == null) {
-                    residualizedX = pmUtility.getColumn(X, k);
-                } else {
-                    residualizedX = pmUtility.concatMatrix(residualizedX, pmUtility.getColumn(X, k));
-                }
-            }
-        }
-        return residualizedX;
-    }
-
-    @Override
-    public Jama.Matrix residualizeX(Jama.Matrix Xp) {
-        Jama.Matrix residualizedX = null;
-        for (int k = 0; k < homogeneityIndex.length; k++) {
-            if (!homogeneityIndex[k]) {
-                if (residualizedX == null) {
-                    residualizedX = pmUtility.getColumn(Xp, k);
-                } else {
-                    residualizedX = pmUtility.concatMatrix(residualizedX, pmUtility.getColumn(Xp, k));
-                }
-            }
-        }
-        return residualizedX;
+        return X;
     }
 
     @Override
@@ -259,7 +207,7 @@ public class LinearMomentSpecification implements MomentSpecification {
             if (zi.get(0, 0) > 0) {
                 beta.set(1, 0, -5.0);
             }
-            return beta;
+            return beta; 
         }
         
         boolean twoDimensionHeterogeneity = false;
@@ -383,7 +331,7 @@ public class LinearMomentSpecification implements MomentSpecification {
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
         return "Group " + fixedEffectIndex;
     }
-
+ 
     @Override
     public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
         if (beta == null) {
@@ -432,9 +380,9 @@ public class LinearMomentSpecification implements MomentSpecification {
         return homogeneousParameterVector;
     }
 
-    @Override
+    @Override 
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerLinear(lens);
+        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector);
     }
 
 }

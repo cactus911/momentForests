@@ -49,16 +49,25 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     boolean debugVerbose = false;
     DataLens lens;
     Jama.Matrix X;
-        Jama.Matrix Y;
+    Jama.Matrix Y;
+    boolean[] homogeneityIndex;
+    Jama.Matrix homogeneityParameters;
 
-    public ContainerLinear(DataLens lens) {
+    public ContainerLinear(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters) {
         this.lens = lens;
         // computeBetaAndErrors();
         X = lens.getX();
         Y = lens.getY();
+        this.homogeneityIndex = homogeneityIndex;
+        this.homogeneityParameters = homogeneityParameters;
     }
 
     public void computeBetaAndErrors() {
+        /**
+         * This is very slow (nonlinear optimization) compared to OLS formula
+         * this is where I could partial out the fixed components and then run
+         * OLS on the residualized Y and X Would be MUCH, MUCH faster
+         */
 
         if (Y.getRowDimension() < 30) {
             // System.out.println("Too few observations");
@@ -66,73 +75,100 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {
             try {
-                boolean useUncmin = false;
-                if (useUncmin) {
-                    Uncmin_f77 minimizer = new Uncmin_f77(false);
 
-                    int numParams = X.getColumnDimension();
-
-                    double[] guess = new double[numParams + 1];
-
-                    double[] xpls = new double[numParams + 1];
-                    double[] fpls = new double[2];
-                    double[] gpls = new double[numParams + 1];
-                    int[] itrmcd = new int[2];
-                    double[][] a = new double[numParams + 1][numParams + 1];
-                    double[] udiag = new double[numParams + 1];
-                    double[] typsiz = new double[numParams + 1];
-                    for (int i = 1; i <= numParams; i++) {
-                        typsiz[i] = 1.0;
+                int numParams = X.getColumnDimension();
+                for (boolean b : homogeneityIndex) {
+                    if (b) {
+                        numParams = numParams - 1; // homogeneous parameter imposed externally
                     }
+                }
 
-                    double[] fscale = {0, 1.0E-8};
-                    int[] method = {0, 3};
-                    int[] iexp = {0, 0};
-                    int[] msg = {0, 1};
-                    int[] ndigit = {0, 8};
-                    int[] itnlim = {0, 150};
-                    int[] iagflg = {0, 0};
-                    int[] iahflg = {0, 0};
-                    double[] dlt = {0, 1};
-                    double[] gradtl = {0, 1E-8};
-                    double[] stepmx = {0, 1E8};
-                    double[] steptl = {0, 1E-8};
-                    minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                Uncmin_f77 minimizer = new Uncmin_f77(false);
+                double[] guess = new double[numParams + 1];
 
-                    Jama.Matrix betaUncmin = new Jama.Matrix(X.getColumnDimension(), 1);
-                    for (int i = 0; i < guess.length - 1; i++) {
-                        betaUncmin.set(i, 0, xpls[i + 1]);
+                double[] xpls = new double[numParams + 1];
+                double[] fpls = new double[2];
+                double[] gpls = new double[numParams + 1];
+                int[] itrmcd = new int[2];
+                double[][] a = new double[numParams + 1][numParams + 1];
+                double[] udiag = new double[numParams + 1];
+                double[] typsiz = new double[numParams + 1];
+                for (int i = 1; i <= numParams; i++) {
+                    typsiz[i] = 1.0;
+                }
+
+                double[] fscale = {0, 1.0E-8};
+                int[] method = {0, 1};
+                int[] iexp = {0, 0};
+                int[] msg = {0, 1};
+                int[] ndigit = {0, 8};
+                int[] itnlim = {0, 150};
+                int[] iagflg = {0, 0};
+                int[] iahflg = {0, 0};
+                double[] dlt = {0, 1};
+                double[] gradtl = {0, 1E-8};
+                double[] stepmx = {0, 1E8};
+                double[] steptl = {0, 1E-8};
+
+                if (numParams > 0) {
+                    boolean tryResidualizing = true;
+                    if (tryResidualizing) {
+                        Jama.Matrix Yres = Y.copy();
+                        Jama.Matrix Xres = null;
+                        boolean first = true;
+                        for (int k = 0; k < X.getColumnDimension(); k++) {
+                            if (homogeneityIndex[k]) {
+                                for (int i = 0; i < Y.getRowDimension(); i++) {
+                                    Yres.set(i, 0, Yres.get(i, 0) - X.get(i, k) * homogeneityParameters.get(k, 0));
+                                }
+                            } else {
+                                if (first) {
+                                    first = false;
+                                    Xres = pmUtility.getColumn(X, k);
+                                } else {
+                                    Xres = pmUtility.concatMatrix(Xres, pmUtility.getColumn(X, k));
+                                }
+                            }
+                        }
+                        Jama.Matrix olsBeta = pmUtility.OLSsvd(Xres, Yres, false);
+
+                        for (int i = 0; i < olsBeta.getRowDimension(); i++) {
+                            xpls[i + 1] = olsBeta.get(i, 0);
+                        }
+                    } else {
+                        minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
                     }
+                }
 
-                    // produce the essentially same answer 
+                Jama.Matrix betaUncmin = new Jama.Matrix(X.getColumnDimension(), 1);
+                int counter = 0;
+
+                for (int i = 0; i < X.getColumnDimension(); i++) {
+                    if (homogeneityIndex[i]) {
+                        betaUncmin.set(i, 0, homogeneityParameters.get(i, 0));
+                    } else {
+                        betaUncmin.set(i, 0, xpls[counter + 1]);
+                        counter++;
+                    }
+                }
+
+                // produce the essentially same answer 
 //            pmUtility.prettyPrintVector(betaOLS);
 //            pmUtility.prettyPrintVector(betaUncmin);
 //            System.exit(0);
-                    beta = betaUncmin.copy();
-                    double sse = 0;
-                    Jama.Matrix fit = X.times(beta);
-                    for (int i = 0; i < Y.getRowDimension(); i++) {
-                        sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
-                    }
-                    goodnessOfFit = sse;
+                beta = betaUncmin.copy();
+                double sse = 0;
+                Jama.Matrix fit = X.times(beta);
+                for (int i = 0; i < Y.getRowDimension(); i++) {
+                    sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
+                }
+                goodnessOfFit = sse;
 
 //                    System.out.print("\t\tFound uncmin beta: ");
 //                    pmUtility.prettyPrintVector(betaUncmin);
 //                    Jama.Matrix betaOLS = pmUtility.OLSsvd(X, Y, false);
 //                    System.out.print("\t\tCompared to betaOLS: ");
 //                    pmUtility.prettyPrintVector(betaOLS);
-                } else {
-                    Jama.Matrix betaOLS = pmUtility.OLSsvd(X, Y, false);
-                    beta = betaOLS.copy();
-                    double sse = 0;
-                    Jama.Matrix fit = X.times(beta);
-                    for (int i = 0; i < Y.getRowDimension(); i++) {
-                        sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
-                    }
-                    goodnessOfFit = sse;
-                    // objectiveFunctionValue = getMoment(beta);
-                }
-
                 if (debugVerbose) {
                     System.out.format("ContainerLinear.computeBetaAndErrors SSE: %g ", +goodnessOfFit);
                     pmUtility.prettyPrintVector(beta);
@@ -177,7 +213,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
         // turns out using gi method here is crazy slow!        
         for (int i = 0; i < X.getRowDimension(); i++) {
-            Jama.Matrix gi = getGi(beta,i);
+            Jama.Matrix gi = getGi(beta, i);
             g.plusEquals(gi);
 
         }
@@ -185,15 +221,14 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         // g.timesEquals(1.0 / Y.getRowDimension());
         return g;
     }
-    
+
     @Override
     public double computeMeasureOfFit(Jama.Matrix beta) {
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
 
-        return ((e.transpose()).times(e)).get(0,0);
+        return ((e.transpose()).times(e)).get(0, 0);
     }
-    
 
     private double getMoment(Jama.Matrix beta, boolean debugMoment) {
         /**
@@ -287,10 +322,18 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public double f_to_minimize(double[] x) {
-        Jama.Matrix b = new Jama.Matrix(x.length - 1, 1);
-        for (int i = 0; i < x.length - 1; i++) {
-            b.set(i, 0, x[i + 1]);
+
+        int counter = 0;
+        Jama.Matrix b = new Jama.Matrix(X.getColumnDimension(), 1);
+        for (int i = 0; i < X.getColumnDimension(); i++) {
+            if (homogeneityIndex[i]) {
+                b.set(i, 0, homogeneityParameters.get(i, 0));
+            } else {
+                b.set(i, 0, x[counter + 1]);
+                counter++;
+            }
         }
+
         return getMoment(b, false);
     }
 
@@ -308,6 +351,5 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     public double getMomentFunctionValue(Jama.Matrix b) {
         return getMoment(b, false);
     }
-
 
 }

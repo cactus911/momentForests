@@ -152,7 +152,7 @@ public class LinearTestMain {
                 AtomicInteger bomb = new AtomicInteger();
 
                 parallelLTM.parallelStream().forEach(e -> {
-                // parallelLTM.stream().forEach(e -> {
+                    // parallelLTM.stream().forEach(e -> {
                     e.execute();
                     bomb.incrementAndGet();
                     System.out.println("Finished " + bomb.get() + " iterations.");
@@ -333,7 +333,8 @@ public class LinearTestMain {
             for (int minObservationsPerLeaf = 20; minObservationsPerLeaf <= 20; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 0.1; minImprovement <= 0.1; minImprovement *= 10) {
                     for (int maxDepth = Math.min(20, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 1; maxDepth--) {
-                        double combinationMSE = computeOutOfSampleMSE(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
+                        computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
+                        double combinationMSE = outOfSampleYMSE;
                         String star = "";
                         if (combinationMSE <= lowestSSE || first) {
                             lowestSSE = combinationMSE;
@@ -366,6 +367,7 @@ public class LinearTestMain {
                 bestMaxDepth = 9;
             }
         }
+        bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -379,7 +381,7 @@ public class LinearTestMain {
              */
             double minProportionInEachLeaf = 0.01;
 
-            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(true), mySpecification.getZ(), null);
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
             testParameterHomogeneity = false;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
@@ -387,21 +389,23 @@ public class LinearTestMain {
 
             myForest.setTreeOptions(cvOptions);
             myForest.growForest();
-            
+
             /**
-             * March 16, 2020: going to try something here, which is to aggregate parameters within two partitions for each parameter we are checking
-             * Find the support of each X, split in half
-             * Find the average parameter in each half
-             * Get the variance across cells (or across the forest?)
-             * Then test using a t-test
-             * 
-             * Q: how to compute the variances needed in the t-test? The average seems straightforward enough
-             * 
-             * A: Just going back to my "naive" idea of testing across ALL of the terminal leaves; seems to work!
+             * March 16, 2020: going to try something here, which is to
+             * aggregate parameters within two partitions for each parameter we
+             * are checking Find the support of each X, split in half Find the
+             * average parameter in each half Get the variance across cells (or
+             * across the forest?) Then test using a t-test
+             *
+             * Q: how to compute the variances needed in the t-test? The average
+             * seems straightforward enough
+             *
+             * A: Just going back to my "naive" idea of testing across ALL of
+             * the terminal leaves; seems to work!
              */
             TreeMoment loblolly = myForest.getTree(0);
             loblolly.testHomogeneity();
-                        
+
             // System.out.println("Done with growforest");
             ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
             ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
@@ -443,7 +447,7 @@ public class LinearTestMain {
             } else {
                 if (!hpl.isEmpty()) {
                     // System.out.println("Initializing search container");
-                    numberTreesInForest = 8;
+                    numberTreesInForest = 1;
                     HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                             getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                     // System.out.println("Calling execute search");
@@ -471,8 +475,6 @@ public class LinearTestMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         numberTreesInForest = 1;
-        outOfSampleYMSE = computeOutOfSampleMSE(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
-                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample);
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
     }
@@ -485,163 +487,46 @@ public class LinearTestMain {
         this.estimatedBetaVersusTruthMSE = estimatedBetaVersusTruthMSE;
     }
 
-    private double computeOutOfSampleMSE(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
-            int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample) {
-
-        boolean allParametersHomogeneous = true;
-        for (boolean b : mySpecification.getHomogeneousIndex()) {
-            if (!b) {
-                allParametersHomogeneous = false;
-            }
-        }
-
-        MomentForest myForest = null;
-        if (!allParametersHomogeneous) {
-            DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(true), mySpecification.getZ(), null);
-
-            // System.out.println("\nComputing OOS MSE\n");
-            // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
-            boolean testParameterHomogeneity = false;
-            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
-            TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, testParameterHomogeneity); // k = 1
-            myForest.setTreeOptions(cvOptions);
-            /**
-             * Grow the moment forest
-             */
-            myForest.growForest();
-            // myForest.getTree(0).printTree();
-        }       
-        
-
-        /**
-         * Test vectors for assessment
-         */
-        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
-        Jama.Matrix testZ = oosDataLens.getZ();
-        Jama.Matrix residualizedX = mySpecification.residualizeX(oosDataLens.getX());
-        // pmUtility.prettyPrint(pmUtility.concatMatrix(pmUtility.concatMatrix(oosDataLens.getY(), oosDataLens.getX()), testZ));
-
-        /**
-         * Compute out-of-sample fit at current homogeneous parameter vector
-         */
-        double outOfSampleFit = 0;
-        for (int i = 0; i < testZ.getRowDimension(); i++) {
-
-            Jama.Matrix fullXi = oosDataLens.getX().getMatrix(i, i, 0, oosDataLens.getX().getColumnDimension() - 1);
-            Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
-
-            // note, xi is part of x that is not homogeneous
-            // for the homogeneous component below, need to find the other parts of x not contained in xi
-            // not only that, the way that that method is specified is that it takes the ENTIRE xi to get the homogeneous part, where I have pulled out the subset of X already in xi
-            // so how to get the whole row?
-            // i am going to do two things here: one, remove residualization from getOutOfSampleXYZ
-            // added a new method to residualize an X matrix
-            double fitY = mySpecification.getHomogeneousComponent(fullXi);
-            if (!allParametersHomogeneous) {
-                Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
-                Jama.Matrix residualizedXi = residualizedX.getMatrix(i, i, 0, residualizedX.getColumnDimension() - 1);
-                fitY += residualizedXi.times(b).get(0, 0);
-            }
-            double error = fitY - (oosDataLens.getY().get(i, 0));
-
-            outOfSampleFit += error * error;
-
-            boolean outputFits = false;
-            if (outputFits || i == -1) {
-                Jama.Matrix bTruth = mySpecification.getBetaTruth(zi);
-                // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
-                int heterogeneousCounter = 0;
-                Jama.Matrix compositeEstimatedBeta = new Jama.Matrix(bTruth.getRowDimension(), 1);
-                for (int k = 0; k < bTruth.getRowDimension(); k++) {
-                    if (mySpecification.getHomogeneousIndex()[k]) {
-                        compositeEstimatedBeta.set(k, 0, mySpecification.getHomogeneousParameter(k));
-                    } else {
-                        Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
-                        compositeEstimatedBeta.set(k, 0, b.get(heterogeneousCounter, 0));
-                        heterogeneousCounter++;
-                    }
-                }
-
-                System.out.print("z: " + pmUtility.stringPrettyPrint(zi) + " beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " trueBeta: " + pmUtility.stringPrettyPrintVector(bTruth));
-                jt.append("z: " + pmUtility.stringPrettyPrint(zi) + " beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " trueBeta: " + pmUtility.stringPrettyPrintVector(bTruth) + "\n");
-                System.out.print(" x: " + pmUtility.stringPrettyPrint(fullXi));
-                if (!allParametersHomogeneous) {
-                    Jama.Matrix residualizedXi = residualizedX.getMatrix(i, i, 0, residualizedX.getColumnDimension() - 1);
-                    Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
-                    System.out.print(" residualizedX'b: " + residualizedXi.times(b).get(0, 0));
-                }
-                System.out.print(" hc: " + mySpecification.getHomogeneousComponent(fullXi));
-                System.out.println(" fitY: " + fitY + " Y: " + oosDataLens.getY().get(i, 0) + " SE: " + error * error);
-            }
-        }
-        return outOfSampleFit / testZ.getRowDimension();
-
-    }
-
     private double computeOutOfSampleMSEInParameterSpace(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
             int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample) {
         // System.out.println("\nComputing OOS In Parameter Space\n");
         // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
 
-        boolean allParametersHomogeneous = true;
-        for (boolean b : mySpecification.getHomogeneousIndex()) {
-            if (!b) {
-                allParametersHomogeneous = false;
-            }
-        }
+        MomentForest myForest;
 
-        MomentForest myForest = null;
-        if (!allParametersHomogeneous) {
-            DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(true), mySpecification.getZ(), null);
+        DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
-            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
-            TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
-            myForest.setTreeOptions(cvOptions);
-            /**
-             * Grow the moment forest
-             */
-            myForest.growForest();
+        myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
+        TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
+        myForest.setTreeOptions(cvOptions);
+        /**
+         * Grow the moment forest
+         */
+        myForest.growForest(); 
 
-            // myForest.getTree(0).printTree();
-        }
-
+        // myForest.getTree(0).printTree();
         /**
          * Test vectors for assessment
          */
         DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
         Jama.Matrix testZ = oosDataLens.getZ();
-
-        /**
-         * Compute out-of-sample fit at current homogeneous parameter vector
-         */
-        XYSeries beta1Est = new XYSeries("Beta1 Estimate");
-        XYSeries beta1Truth = new XYSeries("Beta1 Truth");
-        XYSeriesCollection xyc = new XYSeriesCollection(beta1Truth);
-        xyc.addSeries(beta1Est);
+        Jama.Matrix testX = oosDataLens.getX();
+        Jama.Matrix testY = oosDataLens.getY();
 
         double outOfSampleFit = 0;
+        outOfSampleYMSE = 0;
         for (int i = 0; i < testZ.getRowDimension(); i++) {
             Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
+            Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
+            double yi = testY.get(i, 0);
 
             // going to compare directly to the true parameter vector in this method instead of using fit of Y
             Jama.Matrix bTruth = mySpecification.getBetaTruth(zi);
 
             // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
-            int heterogeneousCounter = 0;
-            Jama.Matrix compositeEstimatedBeta = new Jama.Matrix(bTruth.getRowDimension(), 1);
+            Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+            outOfSampleYMSE += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
 
-            for (int k = 0; k < bTruth.getRowDimension(); k++) {
-                if (mySpecification.getHomogeneousIndex()[k]) {
-                    compositeEstimatedBeta.set(k, 0, mySpecification.getHomogeneousParameter(k));
-                } else {
-                    Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
-                    compositeEstimatedBeta.set(k, 0, b.get(heterogeneousCounter, 0));
-                    heterogeneousCounter++;
-                }
-            }
-            if (i == -1) {
-                jt.append("Next model\n");
-            }
             if (i < 10) {
                 String hString = "[ ";
                 for (int k = 0; k < bTruth.getRowDimension(); k++) {
@@ -652,18 +537,16 @@ public class LinearTestMain {
                     }
                 }
                 hString = hString + "]";
-                // jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
+                jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
             }
             //pmUtility.prettyPrintVector(compositeEstimatedBeta);
 
             outOfSampleFit += (compositeEstimatedBeta.minus(bTruth)).norm2();
-            beta1Est.add(zi.get(0, 0), compositeEstimatedBeta.get(0, 0));
-            beta1Truth.add(zi.get(0, 0), bTruth.get(0, 0));
         }
-        
+
         // ChartGenerator.makeXYScatter(xyc, "Fit Beta", "zi", "beta");
         // jt.append("betaMSE: " + (outOfSampleFit / testZ.getRowDimension()) + " \t [" + rngSeed + "]\n");
-
+        outOfSampleYMSE /= testZ.getRowDimension();
         return outOfSampleFit / testZ.getRowDimension(); // mse
     }
 

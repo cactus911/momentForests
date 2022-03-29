@@ -7,6 +7,7 @@ package core;
 
 import java.awt.BorderLayout;
 import java.util.ArrayList;
+import java.util.Random;
 import javax.swing.JFrame;
 import optimization.Uncmin_f77;
 import optimization.Uncmin_methods;
@@ -37,10 +38,10 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 
     DataLens oosDataLens;
     Jama.Matrix testZ;
-    Jama.Matrix residualizedX;
     Jama.Matrix testX;
     Jama.Matrix testY;
     long t1 = System.currentTimeMillis();
+    DataLens homogenizedForestLens;
 
     public HomogeneousSearchContainer(MomentSpecification mySpecification, int numberTreesInForest, boolean verbose, double minImprovement, int minObservationsPerLeaf, int maxTreeDepth, ArrayList<Integer> homogeneousParameterIndex, long rngSeedBaseMomentForest, long rngSeedBaseOutOfSample) {
         this.mySpecification = mySpecification;
@@ -57,8 +58,9 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngSeedBaseOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
         testZ = oosDataLens.getZ();
         testX = oosDataLens.getX();
-        residualizedX = mySpecification.residualizeX(testX);
         testY = oosDataLens.getY();
+
+        homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
     }
 
     public void executeSearch() {
@@ -79,8 +81,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         }
         System.out.print("Starting values taken from DM test: ");
         pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
-        System.out.println("F_min(x): "+f_to_minimize(guess));
-        
+        System.out.println("F_min(x): " + f_to_minimize(guess));
+
         double[] xpls = new double[numParams + 1];
         double[] fpls = new double[2];
         double[] gpls = new double[numParams + 1];
@@ -116,6 +118,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             boolean converged = false;
             int r = 0;
             boolean first = true;
+
+            // plotFunction(-4, 0, 25);
 
             // see how well this works
             guess[1] = goldenRatioSearch(left, right)[1];
@@ -205,6 +209,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         for (int i = 0; i < numParams; i++) {
             mySpecification.setHomogeneousParameter(homogeneousParameterIndex.get(i), x[i + 1]);
         }
+        // System.out.print("Inside homogeneousSearchContainer f_to_min: ");
+        // pmUtility.prettyPrint(new Jama.Matrix(x, 1));
 
         // i should seed this in some way with the estimates from the DistanceMetricTest results
         double v = computeOutOfSampleMSE();
@@ -217,87 +223,45 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     }
 
     public double computeOutOfSampleMSE() {
-        // long t1 = System.currentTimeMillis();
-        /**
-         * Need to regenerate a new DataLens with the homogeneity restrictions
-         * imposed; also, getY depends on guess of homogeneous parameters, so
-         * need to regenerate for each guess of X here
-         */
-        // System.out.println("Initializing lens");
+        // verbose = true;
 
-        // if whole model is homogeneous this doens't work since it pulls nulls and grows a null tree
-        // just skip directly to evaluating fit using completely specified homogeneous model (COME BACK TO THIS)
-        // some mystery here as to why this isn't essentially instant when we have a fully saturated model (at least in the OLS case)
-        MomentForest myForest = null;
-        boolean allParametersHomogeneous = true;
-        for (boolean b : mySpecification.getHomogeneousIndex()) {
-            if (!b) {
-                allParametersHomogeneous = false;
-            }
-        }
-        if (allParametersHomogeneous) {
-            // don't need to grow tree in this circumstance, obviously
-        } else {
-            DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(true), mySpecification.getZ(), null);
-
-            boolean testParameterHomogeneity = false;
-            // System.out.println("Initializing forest");
-            myForest = new MomentForest(mySpecification, numberTreesInForest, rngSeedBaseMomentForest, homogenizedForestLens, verbose, new TreeOptions());
-            TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, testParameterHomogeneity); // k = 1
-            // System.out.println("Setting options");
-            myForest.setTreeOptions(cvOptions);
-            /**
-             * Grow the moment forest
-             */
-            // System.out.println("Growing forest");
-            myForest.growForest();
-        }
-
+        boolean testParameterHomogeneity = false;
+        // System.out.println("Initializing forest");
+        MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngSeedBaseMomentForest, homogenizedForestLens, verbose, new TreeOptions());
+        TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, testParameterHomogeneity); // k = 1
+        // System.out.println("Setting options");
+        myForest.setTreeOptions(cvOptions);
         /**
-         * Test vectors for assessment
+         * Grow the moment forest
          */
-//        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngSeedBaseOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
-//        Jama.Matrix testZ = oosDataLens.getZ();
-//        Jama.Matrix residualizedX = mySpecification.residualizeX(oosDataLens.getX());
-//        // pmUtility.prettyPrint(pmUtility.concatMatrix(pmUtility.concatMatrix(oosDataLens.getY(), oosDataLens.getX()), testZ));
-        /**
-         * Compute out-of-sample fit at current homogeneous parameter vector
-         */
+        // System.out.println("Growing forest");
+        myForest.growForest();
+
         // System.out.println("Computing out of sample fits");
+        Random rng = new Random(888);
+
         double outOfSampleFit = 0;
         for (int i = 0; i < testZ.getRowDimension(); i++) {
             Jama.Matrix fullXi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
+            Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
 
-            double fitY = mySpecification.getHomogeneousComponent(fullXi);
-            if (!allParametersHomogeneous) {
-                Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
-                Jama.Matrix b = myForest.getEstimatedParameterForest(zi);
-                Jama.Matrix residualizedXi = residualizedX.getMatrix(i, i, 0, residualizedX.getColumnDimension() - 1);
-                fitY += residualizedXi.times(b).get(0, 0);
-
-                boolean outputFits = false;
-                if (outputFits) {
-                    System.out.print("z: " + pmUtility.stringPrettyPrint(zi) + " beta: " + pmUtility.stringPrettyPrintVector(b));
-                    System.out.print(" x: " + pmUtility.stringPrettyPrint(fullXi));
-                    System.out.print(" residualizedXb: " + residualizedXi.times(b).get(0, 0) + " hc: " + mySpecification.getHomogeneousComponent(fullXi));
-                    double error = fitY - (testY.get(i, 0));
-                    System.out.println(" fitY: " + fitY + " Y: " + testY.get(i, 0) + " sqErr: " + error * error);
-                }
-            }
-            double error = fitY - (testY.get(i, 0));
-
-            outOfSampleFit += error * error;
-
+            // old code from the linear case (doesn't work in general)
+//            double fitY = mySpecification.getPredictedY(fullXi, myForest.getEstimatedParameterForest(zi), rng);
+//            boolean outputFits = false;
+//            if (outputFits) {
+//                System.out.print("z: " + pmUtility.stringPrettyPrint(zi) + " beta: " + pmUtility.stringPrettyPrintVector(myForest.getEstimatedParameterForest(zi)));
+//                System.out.print(" x: " + pmUtility.stringPrettyPrint(fullXi));
+//                double error = fitY - (testY.get(i, 0));
+//                System.out.println(" fitY: " + fitY + " Y: " + testY.get(i, 0) + " sqErr: " + error * error);
+//            }
+//            double error = fitY - (testY.get(i, 0));
+//
+//            outOfSampleFit += error * error;
             // in principle, we could actually use something like GMM in here
+            // we are going to!
+            outOfSampleFit += mySpecification.getGoodnessOfFit(testY.get(i,0), fullXi, myForest.getEstimatedParameterForest(zi));
         }
         double MSE = outOfSampleFit / testZ.getRowDimension();
-        // System.out.println("Out-of-sample MSE: " + MSE);
-        // long t2 = System.currentTimeMillis();
-        // System.out.println("All parameter homogeneous: " + allParametersHomogeneous + " time: " + (t2 - t1));
-        // is this slow because it keeps regenerating the data to fit each time? i bet it would be a LOT faster
-        // to do that once and just pull that
-        // OK something super weird happening here. The run time is increasing higher and higher as the program runs
-        // something is leaking in here
 
         return MSE;
     }

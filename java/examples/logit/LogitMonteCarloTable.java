@@ -50,7 +50,7 @@ public class LogitMonteCarloTable {
     @Override
     public String toString() {
         StringBuilder s = new StringBuilder();
-        s.append(String.format("%d & $MSE(Y)$ & %10.3g & (%.3g) & %.3g & (%.3g) \\\\ %n ", n, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted));
+        s.append(String.format("%d & LLH & %10.3g & (%.3g) & %.3g & (%.3g) \\\\ %n ", n, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted));
         s.append(String.format("   & $MSE(\\beta)$ & %.3g & (%.3g) & %.3g & (%.3g) \\\\ %n ", betaMSE_unrestricted, betaMSE_SD_unrestricted, betaMSE_restricted, betaMSE_SD_restricted));
 	s.append(String.format("   & $\\beta_1$ &  &  & %.3g & (%.3g) & %.3g\\%% \\\\ %n ", beta1_mean, beta1_SD, classificationRate1*100.0));
         s.append(String.format("   & $\\beta_2$ &  &  & %.3g & (%.3g) & %.3g\\%% \\\\ %n ", beta2_mean, beta2_SD, classificationRate2*100.0));

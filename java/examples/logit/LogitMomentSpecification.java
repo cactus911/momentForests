@@ -33,6 +33,7 @@ import core.MomentPartitionObj;
 import core.MomentSpecification;
 import java.io.FileReader;
 import java.io.BufferedReader;
+import java.util.Random;
 import utility.pmUtility;
 
 /**
@@ -105,10 +106,8 @@ public class LogitMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public Double getPredictedY(Matrix xi, Jama.Matrix beta) {
-        System.out.println("Should never see this method (getPredictedY)");
-        System.exit(0);
-        return null;
+    public Double getPredictedY(Matrix xi, Jama.Matrix beta, Random rng) {
+        return LogitDataGenerator.getLogitDiscreteOutcome(xi, beta, rng);
     }
 
     @Override
@@ -118,92 +117,29 @@ public class LogitMomentSpecification implements MomentSpecification {
 
     @Override
     public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-        return new MomentContinuousSplitObjLogit(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition);
+        return new MomentContinuousSplitObjLogit(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition, this);
     }
 
     @Override
     public MomentPartitionObj getMomentPartitionObj(DataLens lens, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjLogit(partition, indexSplitVariable, lens);
+        return new MomentPartitionObjLogit(partition, indexSplitVariable, lens, this);
     }
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens) {
-        ContainerLogit l = new ContainerLogit(lens);
+        ContainerLogit l = new ContainerLogit(lens, homogeneityIndex, homogeneousParameterVector);
         l.computeBetaAndErrors();
         return l;
     }
 
     @Override
-    public Matrix getY(boolean residualizeY) {
-        /**
-         * Want to return the residualized Y (taking out the part explained by
-         * the globally-imposed homogeneous subset of parameters)
-         *
-         * I am going to impose the convention that the parameter vector of
-         * homogeneous parameters is only as long as the number of restrictions
-         * (as opposed to having it be a full length of X with some zeros for
-         * non-restrictions)
-         */
-        if (!residualizeY) {
-            return Y;
-        }
-        Jama.Matrix residualizedY = Y.copy();
-
-        for (int k = 0; k < homogeneityIndex.length; k++) {
-            if (homogeneityIndex[k]) {
-                for (int i = 0; i < Y.getRowDimension(); i++) {
-                    residualizedY.set(i, 0, residualizedY.get(i, 0) - X.get(i, k) * homogeneousParameterVector.get(k, 0));
-                }
-            }
-        }
-        return residualizedY;
-    }
-
-    @Override
-    public double getHomogeneousComponent(Jama.Matrix xi) {
-        double homogeneousComponent = 0;
-
-        for (int k = 0; k < homogeneityIndex.length; k++) {
-            if (homogeneityIndex[k]) {
-                homogeneousComponent += xi.get(0, k) * homogeneousParameterVector.get(k, 0);
-            }
-        }
-        return homogeneousComponent;
+    public Matrix getY() {
+        return Y;
     }
 
     @Override
     public Matrix getX() {
-        /**
-         * We want to return the part of X that is not restricted via a global
-         * parameter homogeneity assumption
-         */
-
-        Jama.Matrix residualizedX = null;
-        for (int k = 0; k < homogeneityIndex.length; k++) {
-            if (!homogeneityIndex[k]) {
-                if (residualizedX == null) {
-                    residualizedX = pmUtility.getColumn(X, k);
-                } else {
-                    residualizedX = pmUtility.concatMatrix(residualizedX, pmUtility.getColumn(X, k));
-                }
-            }
-        }
-        return residualizedX;
-    }
-
-    @Override
-    public Jama.Matrix residualizeX(Jama.Matrix Xp) {
-        Jama.Matrix residualizedX = null;
-        for (int k = 0; k < homogeneityIndex.length; k++) {
-            if (!homogeneityIndex[k]) {
-                if (residualizedX == null) {
-                    residualizedX = pmUtility.getColumn(Xp, k);
-                } else {
-                    residualizedX = pmUtility.concatMatrix(residualizedX, pmUtility.getColumn(Xp, k));
-                }
-            }
-        }
-        return residualizedX;
+        return X;
     }
 
     @Override
@@ -220,6 +156,14 @@ public class LogitMomentSpecification implements MomentSpecification {
     public Boolean[] getDiscreteVector() {
         return DiscreteVariables;
     }
+
+    @Override
+    public double getGoodnessOfFit(double yi, Matrix xi, Matrix beta) {
+        // here, let's return the LLH of this observation
+        return ContainerLogit.computeLLHi(yi, xi, beta);
+    }
+    
+    
 
     //Return the true parameter vector for a given observation
     @Override
@@ -421,14 +365,12 @@ public class LogitMomentSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerLogit(lens);
+        return new ContainerLogit(lens, homogeneityIndex, homogeneousParameterVector);
     }
 
     @Override
     public int getNumMoments() {
         return 2;
     }
-    
-    
 
 }

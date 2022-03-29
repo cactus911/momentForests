@@ -25,8 +25,8 @@ package examples.logit;
 
 import core.MomentContinuousSplitObj;
 import core.DataLens;
+import core.MomentSpecification;
 import core.SplitContainer;
-import optimization.Uncmin_methods;
 
 /**
  *
@@ -39,12 +39,14 @@ public class MomentContinuousSplitObjLogit extends MomentContinuousSplitObj {
     int minCount;
     double minProportion;
     boolean debugVerbose = false;
+    MomentSpecification spec;
 
-    public MomentContinuousSplitObjLogit(int indexSplitVariable, DataLens lens, double minProportion, int minCount) {
+    public MomentContinuousSplitObjLogit(int indexSplitVariable, DataLens lens, double minProportion, int minCount, LogitMomentSpecification spec) {
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
         this.minCount = minCount;
         this.minProportion = minProportion;
+        this.spec = spec;
 
         // System.out.println("MomentContinuousSplitObjBart.java:26 -> min/max x_1 = "+pmUtility.min(X, 1)+" "+pmUtility.max(X,1));
     }
@@ -67,10 +69,13 @@ public class MomentContinuousSplitObjLogit extends MomentContinuousSplitObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerLogit leftLogit = new ContainerLogit(container.getLeft()); //This object will compute the beta and MSE for the left split
-        ContainerLogit rightLogit = new ContainerLogit(container.getRight());
+        ContainerLogit leftLogit = new ContainerLogit(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector()); //This object will compute the beta and MSE for the left split
+        ContainerLogit rightLogit = new ContainerLogit(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector());
+        // System.out.println("Compute left");
         leftLogit.computeBetaAndErrors();
+        // System.out.println("Compute right");
         rightLogit.computeBetaAndErrors();
+        // System.out.println("Compute out");
 
         leftMSE = leftLogit.getGoodnessOfFit();
         rightMSE = rightLogit.getGoodnessOfFit();

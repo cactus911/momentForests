@@ -26,8 +26,8 @@ package examples.linear;
 import core.IntegerPartition;
 import core.MomentPartitionObj;
 import core.DataLens;
+import core.MomentSpecification;
 import core.SplitContainer;
-import utility.pmUtility;
 
 /**
  *
@@ -36,11 +36,13 @@ import utility.pmUtility;
 public class MomentPartitionObjLinear extends MomentPartitionObj {
 
     SplitContainer container;
+    MomentSpecification spec;
     
-    public MomentPartitionObjLinear(IntegerPartition partition, int indexSplitVariable, DataLens lens) {
+    public MomentPartitionObjLinear(IntegerPartition partition, int indexSplitVariable, DataLens lens, MomentSpecification spec) {
         this.partition = partition;
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
+        this.spec = spec;
         
         initialize();
     }
@@ -71,8 +73,8 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
          * There is a constant, and we measure the coefficient on the W
          * So in this implementation just use the first column to get OLS fits and errors, etc.
          */
-        ContainerLinear leftLinear = new ContainerLinear(container.getLeft()); //This object will compute the beta and MSE for the left split
-        ContainerLinear rightLinear = new ContainerLinear(container.getRight());
+        ContainerLinear leftLinear = new ContainerLinear(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector()); //This object will compute the beta and MSE for the left split
+        ContainerLinear rightLinear = new ContainerLinear(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector());
         
         leftLinear.computeBetaAndErrors();
         rightLinear.computeBetaAndErrors();

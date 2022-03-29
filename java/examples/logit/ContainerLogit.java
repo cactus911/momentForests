@@ -43,11 +43,15 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
     DataLens lens;
     Jama.Matrix X;
     Jama.Matrix Y;
+    boolean[] homogeneityIndex;
+    Jama.Matrix homogeneityParameters;
 
-    public ContainerLogit(DataLens lens) {
+    public ContainerLogit(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters) {
         this.lens = lens;
         X = lens.getX();
         Y = lens.getY();
+        this.homogeneityIndex = homogeneityIndex;
+        this.homogeneityParameters = homogeneityParameters;
         // computeBetaAndErrors();
     }
 
@@ -61,6 +65,11 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
                 Uncmin_f77 minimizer = new Uncmin_f77(false);
 
                 int numParams = X.getColumnDimension();
+                for (boolean b : homogeneityIndex) {
+                    if (b) {
+                        numParams = numParams - 1; // homogeneous parameter imposed externally
+                    }
+                }
 
                 double[] guess = new double[numParams + 1];
 
@@ -76,7 +85,7 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
                 }
 
                 double[] fscale = {0, 1.0E-8};
-                int[] method = {0, 3};
+                int[] method = {0, 1};
                 int[] iexp = {0, 0};
                 int[] msg = {0, 1};
                 int[] ndigit = {0, 8};
@@ -87,11 +96,21 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
                 double[] gradtl = {0, 1E-8};
                 double[] stepmx = {0, 1.0};
                 double[] steptl = {0, 1E-8};
+                // System.out.println("In uncmin");
                 minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                // System.out.println("Out of uncmin");
 
                 Jama.Matrix betaUncmin = new Jama.Matrix(X.getColumnDimension(), 1);
-                for (int i = 0; i < guess.length - 1; i++) {
-                    betaUncmin.set(i, 0, xpls[i + 1]);
+
+                int counter = 0;
+
+                for (int i = 0; i < X.getColumnDimension(); i++) {
+                    if (homogeneityIndex[i]) {
+                        betaUncmin.set(i, 0, homogeneityParameters.get(i, 0));
+                    } else {
+                        betaUncmin.set(i, 0, xpls[counter + 1]);
+                        counter++;
+                    }
                 }
 
                 containerBeta = betaUncmin.copy();
@@ -216,6 +235,19 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
         }
         return -llh;
     }
+    
+    public static double computeLLHi(double y, Jama.Matrix xi, Jama.Matrix beta) {
+        double llh = 0;        
+            double u = beta.get(0, 0) * xi.get(0, 0) + beta.get(1, 0) * xi.get(0, 1);
+            double insideShare = Math.exp(u) / (1.0 + Math.exp(u));
+            if (y == 1) {
+                llh += Math.log(insideShare);
+            } else {
+                llh += Math.log(1.0 - insideShare);
+            }
+        
+        return -llh;
+    }
 
     @Override
     public Matrix getBeta() {
@@ -241,10 +273,46 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public double f_to_minimize(double[] x) {
-        Jama.Matrix b = new Jama.Matrix(x.length - 1, 1);
-        for (int i = 0; i < x.length - 1; i++) {
-            b.set(i, 0, x[i + 1]);
+        /**
+         * Is this the place to impose homogeneity? Just read off the x[] vector
+         * one at a time (we do this elsewhere when searching over the
+         * homogeneous parameters)
+         */
+        int counter = 0;
+        Jama.Matrix b = new Jama.Matrix(X.getColumnDimension(), 1);
+        for (int i = 0; i < X.getColumnDimension(); i++) {
+            if (homogeneityIndex[i]) {
+                b.set(i, 0, homogeneityParameters.get(i, 0));
+            } else {
+                b.set(i, 0, x[counter + 1]);
+                counter++;
+            }
         }
+
+        boolean debug = true;
+        if (debug) {
+            boolean imposedHomogeneity = false;
+            for (boolean bp : homogeneityIndex) {
+                if (bp) {
+                    imposedHomogeneity = true;
+                }
+            }
+            if (imposedHomogeneity) {
+                // System.out.println("-----");
+                for (boolean bp : homogeneityIndex) {
+//                     System.out.print(bp + " ");
+                }
+//                 System.out.println("");
+//                 pmUtility.prettyPrintVector(homogeneityParameters);
+//                 pmUtility.prettyPrint(new Jama.Matrix(x, 1));
+                // pmUtility.prettyPrintVector(b);
+                // System.out.println("Computing LLH");
+                // double llh = getMomentObjectiveFunctionValue(b);
+                // System.out.println("Back from that");
+                // System.exit(0);
+            }
+        }
+
         return getMomentObjectiveFunctionValue(b);
     }
 

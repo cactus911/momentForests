@@ -26,6 +26,7 @@ package examples.logit;
 import core.IntegerPartition;
 import core.MomentPartitionObj;
 import core.DataLens;
+import core.MomentSpecification;
 import core.SplitContainer;
 
 /**
@@ -35,11 +36,13 @@ import core.SplitContainer;
 public class MomentPartitionObjLogit extends MomentPartitionObj {
 
     SplitContainer container;
+    MomentSpecification spec;
     
-    public MomentPartitionObjLogit(IntegerPartition partition, int indexSplitVariable, DataLens lens) {
+    public MomentPartitionObjLogit(IntegerPartition partition, int indexSplitVariable, DataLens lens, LogitMomentSpecification spec) {
         this.partition = partition;
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
+        this.spec = spec;
         
         initialize();
     }
@@ -65,8 +68,8 @@ public class MomentPartitionObjLogit extends MomentPartitionObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerLogit leftLogit = new ContainerLogit(container.getLeft()); //This object will compute the beta and MSE for the left split
-        ContainerLogit rightLogit = new ContainerLogit(container.getRight());
+        ContainerLogit leftLogit = new ContainerLogit(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector()); //This object will compute the beta and MSE for the left split
+        ContainerLogit rightLogit = new ContainerLogit(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector());
         
         leftLogit.computeBetaAndErrors();
         rightLogit.computeBetaAndErrors();

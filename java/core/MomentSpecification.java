@@ -24,6 +24,7 @@
 package core;
 
 import Jama.Matrix;
+import java.util.Random;
 
 /**
  *
@@ -31,7 +32,7 @@ import Jama.Matrix;
  */
 public interface MomentSpecification {
 
-    public Double getPredictedY(Jama.Matrix xi, Jama.Matrix beta);
+    public Double getPredictedY(Jama.Matrix xi, Jama.Matrix beta, Random rng);
 
     public int[] getVariableIndicesToSearchOver();
 
@@ -42,7 +43,8 @@ public interface MomentSpecification {
     public ContainerMoment computeOptimalBeta(DataLens lens);
 
     //  public void generateData(int numObs, Random rng, boolean addNoise);
-    public Jama.Matrix getY(boolean residualizeY);
+    // public Jama.Matrix getY(boolean residualizeY);
+    public Jama.Matrix getY();
 
     public Jama.Matrix getX();
 
@@ -75,7 +77,7 @@ public interface MomentSpecification {
     public void setHomogeneousParameter(int parameterIndex, double value);
     public double getHomogeneousParameter(int parameterIndex);
 
-    public double getHomogeneousComponent(Jama.Matrix xi);
+    // public double getHomogeneousComponent(Jama.Matrix xi); // this doesn't make sense in general
 
     public void resetHomogeneityIndex();
 
@@ -83,9 +85,11 @@ public interface MomentSpecification {
     public boolean[] getHomogeneousIndex();
     public Jama.Matrix getHomogeneousParameterVector();
     
-    public Jama.Matrix residualizeX(Jama.Matrix Xp);
+    // public Jama.Matrix residualizeX(Jama.Matrix Xp);
 
     public ContainerMoment getContainerMoment(DataLens lens);
     public abstract int getNumMoments();
+    
+    public double getGoodnessOfFit(double yi, Jama.Matrix xi, Jama.Matrix beta);
 
 }
