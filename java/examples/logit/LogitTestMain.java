@@ -434,6 +434,19 @@ public class LogitTestMain {
                     numberTreesInForest = 1;
                     HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                             getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
+                    
+                    /**
+                     * What should happen here is that I call the search and it pulls the moment from the specification
+                     * There should be no residualizing
+                     * It simply imposes the homogeneous parameters, and then the tree grows using the moment with those parameters imposed
+                     * Perhaps the problem here is actually in growing the tree, since it is calling the residualizedX somewhere?
+                     * 
+                     * Who calls that method?
+                     * It is called below to produce the out-of-sample fits
+                     * This shouldn't be too much surgery to fix this
+                     * 
+                     */
+                    
                     System.out.println("Calling execute search");
                     con.executeSearch();
                     System.out.println("Post search");
