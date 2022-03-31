@@ -184,15 +184,38 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         }
     }
 
-    @Override
-    public Jama.Matrix getGi(Jama.Matrix beta, int i) {
-        int numMoments = X.getColumnDimension();
-        Jama.Matrix fittedY = X.times(beta);
-        Jama.Matrix e = fittedY.minus(Y);
+    /**
+     * This is the much faster way of constructing moments, since I am computing
+     * errors once and then passing them. Could still make this faster, I'm
+     * sure, but re-using matrices and so forth.
+     *
+     * @param g Matrix of moments to augment
+     * @param error_i Error of ith observation at the current guess of parameters
+     * @param i Observation to compute the moment
+     */
+    public void addGi(Jama.Matrix g, double error_i, int i) {
+        // Jama.Matrix gi = new Jama.Matrix(X.getColumnDimension(), 1);
+        for (int k = 0; k < X.getColumnDimension(); k++) {
+            g.set(k, 0, g.get(k, 0) + error_i * X.get(i, k));
+        }
+    }
 
-        Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
-        for (int k = 0; k < numMoments; k++) {
-            gi.set(k, 0, e.get(i, 0) * X.get(i, k));
+    /**
+     * This is supremely slow, so use the other approach (passing errors), but
+     * this is what I need to generalize how the covariance matrix is
+     * constructed.
+     *
+     * @param beta Parameter vector
+     * @param i Observation to evaluate
+     * @return
+     */
+    @Override
+    public Matrix getGi(Matrix beta, int i) {
+        Jama.Matrix fit = X.times(beta);
+        Jama.Matrix error = fit.minus(Y);
+        Jama.Matrix gi = new Jama.Matrix(X.getColumnDimension(), 1);
+        for (int k = 0; k < X.getColumnDimension(); k++) {
+            gi.set(k, 0, error.get(i, 0) * X.get(i, k));
         }
 
         return gi;
@@ -211,11 +234,12 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
 
-        // turns out using gi method here is crazy slow!        
+        // turns out using gi method here is crazy slow!
+        // because i was recalculating vectors for individual observations each time; totally unnecessary
         for (int i = 0; i < X.getRowDimension(); i++) {
-            Jama.Matrix gi = getGi(beta, i);
-            g.plusEquals(gi);
-
+            // Jama.Matrix gi = getGi(e.get(i, 0), i);
+            // g.plusEquals(gi);
+            addGi(g, e.get(i,0), i);
         }
         // cannot have this here since we divide by different n in different places!
         // g.timesEquals(1.0 / Y.getRowDimension());
@@ -241,16 +265,17 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
-        Jama.Matrix omega = new Jama.Matrix(numMoments, numMoments);
+        // Jama.Matrix omega = new Jama.Matrix(numMoments, numMoments);
 
         // turns out using gi method here is crazy slow!        
         for (int i = 0; i < X.getRowDimension(); i++) {
-            Jama.Matrix gi = getGi(beta, i);
+            // Jama.Matrix gi = getGi(e.get(i, 0), i);
 //            pmUtility.prettyPrintVector(gi);
-            g.plusEquals(gi);
-            omega.plusEquals(gi.times(gi.transpose()));
+            // g.plusEquals(gi);
+            addGi(g, e.get(i,0), i);
+            // omega.plusEquals(gi.times(gi.transpose()));
         }
-        omega.timesEquals(1.0 / Y.getRowDimension());
+        // omega.timesEquals(1.0 / Y.getRowDimension());
         g.timesEquals(1.0 / Y.getRowDimension());
         // double q = (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0); // this is the continuous updating estimator (CUE)
         // that appears to sometimes generate perverse decreases in fit when splitting (probably due to some numerical instability in inversion, and the confounding of fits versus variance)
@@ -277,8 +302,8 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
             System.out.println("g:");
             pmUtility.prettyPrintVector(g);
-            System.out.println("omega inverse:");
-            pmUtility.prettyPrint(omega.inverse());
+            // System.out.println("omega inverse:");
+            // pmUtility.prettyPrint(omega.inverse());
             System.out.println("q: " + q + " norm2: " + e.norm2());
 
             // let's graph the fit to see what is going on here geometrically

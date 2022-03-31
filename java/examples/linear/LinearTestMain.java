@@ -118,11 +118,12 @@ public class LinearTestMain {
                 // boolean detectHomogeneity = !true;
                 if (detectHomogeneity) {
                     jam = jt1;
-                    jam.append("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
+                    // jam.append("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
                 } else {
                     jam = jt2;
-                    jam.append("***** UNRESTRICTED MODEL *****\n");
+                    // jam.append("***** UNRESTRICTED MODEL *****\n");
                 }
+                jam.append("\\\\ \n");
 
                 Random rng = new Random(22);
 
@@ -135,7 +136,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 1;
+                int numMonteCarlos = 100;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -305,7 +306,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 10;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -367,7 +368,7 @@ public class LinearTestMain {
                 bestMaxDepth = 9;
             }
         }
-        bestMaxDepth = 1;
+        // bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -421,6 +422,7 @@ public class LinearTestMain {
 //            System.out.print(hpl+" ");
 //            System.out.println(hplStartingValues);
 
+            mySpecification.resetHomogeneityIndex();
             for (int i = 0; i < hpl.size(); i++) {
                 mySpecification.setHomogeneousIndex(hpl.get(i));
                 mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
@@ -429,6 +431,17 @@ public class LinearTestMain {
             setHomogeneousParameterList(hpl);
             // System.out.println("After setting hp list");
 
+            // this seems to be working
+            boolean testPostClassificationConvergence = false;
+            if(testPostClassificationConvergence) {
+                hpl.clear();
+                hpl.add(0);
+                mySpecification.resetHomogeneityIndex();
+                mySpecification.setHomogeneousIndex(0);
+                mySpecification.setHomogeneousParameter(0, -1.0);
+            }
+            
+            
             /**
              * Estimate values of those homogeneous parameters
              */
@@ -447,7 +460,7 @@ public class LinearTestMain {
             } else {
                 if (!hpl.isEmpty()) {
                     // System.out.println("Initializing search container");
-                    numberTreesInForest = 1;
+                    numberTreesInForest = 10;
                     HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                             getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                     // System.out.println("Calling execute search");
@@ -474,7 +487,7 @@ public class LinearTestMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        numberTreesInForest = 1;
+        numberTreesInForest = 10;
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
     }
@@ -537,7 +550,7 @@ public class LinearTestMain {
                     }
                 }
                 hString = hString + "]";
-                jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
+                // jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
             }
             //pmUtility.prettyPrintVector(compositeEstimatedBeta);
 

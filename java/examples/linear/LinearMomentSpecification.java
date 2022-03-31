@@ -190,7 +190,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         beta.set(0, 0, -1);
         beta.set(1, 0, 1.0);
         
-        boolean partiallyLinearModel = false;
+        boolean partiallyLinearModel = true;
         if(partiallyLinearModel) {
             // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
             beta.set(0, 0, 2.5*Math.sin(zi.get(0,0)) + 0.25*Math.pow(zi.get(0,0),2));
@@ -202,7 +202,7 @@ public class LinearMomentSpecification implements MomentSpecification {
             return beta;
         }
 
-        boolean oneDimensionHeterogeneity = true;
+        boolean oneDimensionHeterogeneity = false;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
                 beta.set(1, 0, -5.0);
