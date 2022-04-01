@@ -90,7 +90,7 @@ public class LogitTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 500; numObs <= 500; numObs *= 2) {
+        for (int numObs = 15000; numObs <= 15000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -112,8 +112,8 @@ public class LogitTestMain {
 
             JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-            boolean[] d = {false, true};
-            // boolean[] d = {!true};
+            // boolean[] d = {false, true};
+            boolean[] d = {!true};
             for (boolean detectHomogeneity : d) {
                 // boolean detectHomogeneity = !true;
                 if (detectHomogeneity) {
@@ -311,7 +311,7 @@ public class LogitTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = true;
+        boolean runCV = false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -356,6 +356,8 @@ public class LogitTestMain {
                 bestMaxDepth = 9;
             }
         }
+        
+        bestMaxDepth = 2;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
