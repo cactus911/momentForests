@@ -38,8 +38,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -136,7 +134,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 100;
+                int numMonteCarlos = 10;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -525,6 +523,8 @@ public class LinearTestMain {
         Jama.Matrix testZ = oosDataLens.getZ();
         Jama.Matrix testX = oosDataLens.getX();
         Jama.Matrix testY = oosDataLens.getY();
+        
+        Random rng = new Random(rngBaseSeedOutOfSample-3);
 
         double outOfSampleFit = 0;
         outOfSampleYMSE = 0;
@@ -534,7 +534,7 @@ public class LinearTestMain {
             double yi = testY.get(i, 0);
 
             // going to compare directly to the true parameter vector in this method instead of using fit of Y
-            Jama.Matrix bTruth = mySpecification.getBetaTruth(zi);
+            Jama.Matrix bTruth = mySpecification.getBetaTruth(zi, rng);
 
             // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
             Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);

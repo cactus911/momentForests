@@ -33,7 +33,7 @@ import core.MomentPartitionObj;
 import core.MomentSpecification;
 import java.io.FileReader;
 import java.io.BufferedReader;
-import java.util.Random;
+import java.util.Random; 
 import utility.pmUtility;
 
 /**
@@ -152,8 +152,8 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public ContainerMoment computeOptimalBeta(DataLens lens) {
-        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector);
+    public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
+        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
         l.computeBetaAndErrors();
         return l;
     }
@@ -185,7 +185,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     //Return the true parameter vector for a given observation
     @Override
-    public Matrix getBetaTruth(Matrix zi) {
+    public Matrix getBetaTruth(Matrix zi, Random rng) {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -1);
         beta.set(1, 0, 1.0);
@@ -382,7 +382,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override 
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector);
+        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false);
     }
 
 }

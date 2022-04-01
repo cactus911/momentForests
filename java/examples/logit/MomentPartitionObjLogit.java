@@ -68,8 +68,8 @@ public class MomentPartitionObjLogit extends MomentPartitionObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerLogit leftLogit = new ContainerLogit(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector()); //This object will compute the beta and MSE for the left split
-        ContainerLogit rightLogit = new ContainerLogit(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector());
+        ContainerLogit leftLogit = new ContainerLogit(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
+        ContainerLogit rightLogit = new ContainerLogit(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
         
         leftLogit.computeBetaAndErrors();
         rightLogit.computeBetaAndErrors();

@@ -45,13 +45,15 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
     Jama.Matrix Y;
     boolean[] homogeneityIndex;
     Jama.Matrix homogeneityParameters;
+    boolean allParametersHomogeneous;
 
-    public ContainerLogit(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters) {
+    public ContainerLogit(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous) {
         this.lens = lens;
         X = lens.getX();
         Y = lens.getY();
         this.homogeneityIndex = homogeneityIndex;
         this.homogeneityParameters = homogeneityParameters;
+        this.allParametersHomogeneous = allParametersHomogeneous;
         // computeBetaAndErrors();
     }
 
@@ -65,11 +67,14 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
                 Uncmin_f77 minimizer = new Uncmin_f77(false);
 
                 int numParams = X.getColumnDimension();
-                for (boolean b : homogeneityIndex) {
-                    if (b) {
-                        numParams = numParams - 1; // homogeneous parameter imposed externally
+                if (!allParametersHomogeneous) {
+                    for (boolean b : homogeneityIndex) {
+                        if (b) {
+                            numParams = numParams - 1; // homogeneous parameter imposed externally
+                        }
                     }
                 }
+                // System.out.println("numParams: " + numParams);
 
                 double[] guess = new double[numParams + 1];
 
@@ -235,17 +240,17 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
         }
         return -llh;
     }
-    
+
     public static double computeLLHi(double y, Jama.Matrix xi, Jama.Matrix beta) {
-        double llh = 0;        
-            double u = beta.get(0, 0) * xi.get(0, 0) + beta.get(1, 0) * xi.get(0, 1);
-            double insideShare = Math.exp(u) / (1.0 + Math.exp(u));
-            if (y == 1) {
-                llh += Math.log(insideShare);
-            } else {
-                llh += Math.log(1.0 - insideShare);
-            }
-        
+        double llh = 0;
+        double u = beta.get(0, 0) * xi.get(0, 0) + beta.get(1, 0) * xi.get(0, 1);
+        double insideShare = Math.exp(u) / (1.0 + Math.exp(u));
+        if (y == 1) {
+            llh += Math.log(insideShare);
+        } else {
+            llh += Math.log(1.0 - insideShare);
+        }
+
         return -llh;
     }
 

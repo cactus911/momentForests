@@ -60,6 +60,7 @@ public class TreeMoment {
     double improvementThreshold;
 
     boolean verbose;
+    boolean allParametersHomogeneous;
 
     boolean debugOptimization = false;
     private double currentNodeObjectiveFunction;
@@ -92,28 +93,28 @@ public class TreeMoment {
         } else {
             depth = parent.getDepth() + 1;
         }
-        
+
         /**
-         * Impose a stump tree if all the parameters of the moment are homogeneous
-         * This should work nicely with latest implementation of how homogeneous
-         * parameters are imposed.
+         * Impose a stump tree if all the parameters of the moment are
+         * homogeneous This should work nicely with latest implementation of how
+         * homogeneous parameters are imposed.
          */
-        boolean allHomogeneous = true;
-        for(boolean b : spec.getHomogeneousIndex()) {
-            if(b) {
-                allHomogeneous = false;
+        allParametersHomogeneous = true;
+        for (boolean b : spec.getHomogeneousIndex()) {
+            if (!b) {
+                allParametersHomogeneous = false;
             }
         }
-        if(allHomogeneous) {
-            maxDepth = 0;
+        if (allParametersHomogeneous) {
+            this.maxDepth = 0;
+            // System.out.println("Detected all homogeneous");
         }
     }
 
     /**
-     * This will tell us how many treatment effects are estimated in the
-     * subtree.
+     * Counts the number of terminal nodes
      *
-     * @return
+     * @return Number of terminal nodes in tree.
      */
     public int countTerminalNodes() {
         if (terminal) {
@@ -122,7 +123,6 @@ public class TreeMoment {
             return childLeft.countTerminalNodes() + childRight.countTerminalNodes();
         }
     }
-
 
     public void setDepth(int depth) {
         this.depth = depth;
@@ -161,13 +161,28 @@ public class TreeMoment {
 
         /**
          * Now compute a baseline SSE for comparing the improvement in fit
+         *
+         * There is a special case here: if all the parameters are homogeneous,
+         * need to let the solver compute the solution; right now the
+         * implementation is such that if that happens the container solver does
+         * not have any parameters to estimate over (since the tree thinks that
+         * the optimization happens outside of the construction of the tree,
+         * which is a reasonable interpretation but a problem when we are at the
+         * stump)
+         *
+         * So I am going to fix this by temporarily circumventing the
+         * homogeneousParameter mechanism in the specification. This is probably
+         * a dumb way of doing it, but I'm not sure what else I could do easily
+         * to get around this issue.
          */
         // System.out.println("Computing baseline SSE");
-        currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree);
+        currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
+        // System.out.println("Setting beta");
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
+        // System.out.println("Setting variance");
         setNodeEstimatedVariance(currentNodeMoment.getVariance());
 
-//        System.out.println("in this sub-node:");
+        // System.out.println("in this sub-node:");
 //        if (nodeY.getNumObs() > 10) {
 //            pmUtility.prettyPrint(pmUtility.concatMatrix(nodeY, nodeX).getSubsetData(0, 10, 0, nodeX.getColumnDimension()));
 //            System.out.println("TreeMoment.java:152 -> min: "+pmUtility.min(nodeX, 1)+" max: "+pmUtility.max(nodeX, 1));
@@ -177,6 +192,9 @@ public class TreeMoment {
          * depth, etc.)
          */
         double optimalZ_SSE = 0;
+        
+        // System.out.println(depth+" "+maxDepth);
+        
         if (depth < maxDepth) {
             double optimalZ = 0;
 
@@ -248,8 +266,8 @@ public class TreeMoment {
                         MomentContinuousSplitObj obj = momentSpec.getFminObjective(lensGrowingTree, indexSplitVariable, minProportionEachPartition, minCountEachPartition);
                         double minZ = lensGrowingTree.getMinimumValue(indexSplitVariable);
                         double maxZ = lensGrowingTree.getMaximumValue(indexSplitVariable);
-                        if(debugOptimization) {
-                            System.out.println("TreeMoment.java:224 -> min x_1: "+minZ+" max x_1: "+maxZ);
+                        if (debugOptimization) {
+                            System.out.println("TreeMoment.java:224 -> min x_1: " + minZ + " max x_1: " + maxZ);
                         }
                         double optimalZ_k;
                         double optimalZ_SSE_k;
@@ -265,7 +283,7 @@ public class TreeMoment {
 
                         if (debugOptimization) {
                             echoLn("\tFmin search on z_" + indexSplitVariable + " found x = " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
-                            System.out.println("TreeMoment.java:253 -> min x_1: "+minZ+" max x_1: "+maxZ);
+                            System.out.println("TreeMoment.java:253 -> min x_1: " + minZ + " max x_1: " + maxZ);
                         }
 
                         boolean testGridSearch = true;
@@ -282,7 +300,7 @@ public class TreeMoment {
 
                             for (double z = leftZ; z <= rightZ; z += increment) {
                                 double f = obj.f_to_minimize(z);
-                                
+
                                 if (debugOptimization) {
                                     echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
                                 }
@@ -618,7 +636,7 @@ public class TreeMoment {
                     echoLn("honestY null");
                 }
             } else {
-                ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest);
+                ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest, allParametersHomogeneous);
                 Jama.Matrix oldBeta = getNodeEstimatedBeta(); //Not sure I understand why this is here... we don't have a beta estimate until we reach a terminal node? A. this is what it was the tree building sample, not the honest tree sample
                 setNodeEstimatedBeta(c.getBeta());
                 setNodeEstimatedVariance(c.getVariance());
@@ -659,7 +677,7 @@ public class TreeMoment {
                         setNodeEstimatedVariance(null);
                         echoLn("null pruned");
                     } else {
-                        ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest);
+                        ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest, allParametersHomogeneous);
                         setNodeEstimatedBeta(c.getBeta());
                         setNodeEstimatedVariance(c.getVariance());
                         if (verbose) {

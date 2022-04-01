@@ -70,8 +70,8 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerLinear leftLinear = new ContainerLinear(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector()); //This object will compute the beta and MSE for the left split
-        ContainerLinear rightLinear = new ContainerLinear(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector());
+        ContainerLinear leftLinear = new ContainerLinear(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
+        ContainerLinear rightLinear = new ContainerLinear(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
         leftLinear.computeBetaAndErrors();
         rightLinear.computeBetaAndErrors();
 

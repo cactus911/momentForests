@@ -90,7 +90,7 @@ public class LogitTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 5000; numObs <= 5000; numObs *= 2) {
+        for (int numObs = 500; numObs <= 500; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -118,11 +118,13 @@ public class LogitTestMain {
                 // boolean detectHomogeneity = !true;
                 if (detectHomogeneity) {
                     jam = jt1;
-                    jam.append("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
+                    // jam.append("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
+                    
                 } else {
                     jam = jt2;
-                    jam.append("***** UNRESTRICTED MODEL *****\n");
+                    //jam.append("***** UNRESTRICTED MODEL *****\n");
                 }
+                jam.append("\\\\ \n");
 
                 Random rng = new Random(22);
 
@@ -135,7 +137,7 @@ public class LogitTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 10;
+                int numMonteCarlos = 1;
 
                 ArrayList<LogitTestMain> parallelLTM = new ArrayList<>();
 
@@ -292,7 +294,7 @@ public class LogitTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 50;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -303,13 +305,13 @@ public class LogitTestMain {
          * MommentSpecification
          */
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
-        boolean verbose = false;
+        boolean verbose = true;
         boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -318,7 +320,7 @@ public class LogitTestMain {
             }
 
             for (int minObservationsPerLeaf = 20; minObservationsPerLeaf <= 20; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.1; minImprovement <= 0.1; minImprovement *= 10) {
+                for (double minImprovement = 10; minImprovement <= 100; minImprovement *= 2) {
                     for (int maxDepth = Math.min(20, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 1; maxDepth--) {
                         computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
                         double combinationMSE = outOfSampleYMSE;
@@ -354,7 +356,6 @@ public class LogitTestMain {
                 bestMaxDepth = 9;
             }
         }
-        bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -434,24 +435,10 @@ public class LogitTestMain {
             } else {
                 if (!hpl.isEmpty()) {
                     System.out.println("Initializing search container");
-                    numberTreesInForest = 50;
+                    // numberTreesInForest = 1;
                     HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                             getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
 
-                    /**
-                     * What should happen here is that I call the search and it
-                     * pulls the moment from the specification There should be
-                     * no residualizing It simply imposes the homogeneous
-                     * parameters, and then the tree grows using the moment with
-                     * those parameters imposed Perhaps the problem here is
-                     * actually in growing the tree, since it is calling the
-                     * residualizedX somewhere?
-                     *
-                     * Who calls that method? It is called below to produce the
-                     * out-of-sample fits This shouldn't be too much surgery to
-                     * fix this
-                     *
-                     */
                     System.out.println("Calling execute search");
                     con.executeSearch();
                     System.out.println("Post search");
@@ -476,10 +463,8 @@ public class LogitTestMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        numberTreesInForest = 50;
-        // this isn't set up to work correctly (hardwired for linear case right now)
-        // also, these two methods should be combined (it is dumb to grow the exact same set of trees multiple times)
-        // outOfSampleYMSE = -666; // computeOutOfSampleMSE(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample);
+        // numberTreesInForest = 1;
+        
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
     }
@@ -518,13 +503,15 @@ public class LogitTestMain {
         Jama.Matrix testX = oosDataLens.getX();
         Jama.Matrix testY = oosDataLens.getY();
 
+        Random rng = new Random(rngBaseSeedOutOfSample-3);
+        
         double outOfSampleParameterFit = 0;
         for (int i = 0; i < testZ.getRowDimension(); i++) {
             Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
             Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
 
             // going to compare directly to the true parameter vector in this method instead of using fit of Y
-            Jama.Matrix bTruth = mySpecification.getBetaTruth(zi);
+            Jama.Matrix bTruth = mySpecification.getBetaTruth(zi, rng);
 
             Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
 

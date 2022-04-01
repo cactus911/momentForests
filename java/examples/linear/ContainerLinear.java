@@ -52,14 +52,16 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     Jama.Matrix Y;
     boolean[] homogeneityIndex;
     Jama.Matrix homogeneityParameters;
+    boolean allParametersHomogeneous;
 
-    public ContainerLinear(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters) {
+    public ContainerLinear(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous) {
         this.lens = lens;
         // computeBetaAndErrors();
         X = lens.getX();
         Y = lens.getY();
         this.homogeneityIndex = homogeneityIndex;
         this.homogeneityParameters = homogeneityParameters;
+        this.allParametersHomogeneous = allParametersHomogeneous;
     }
 
     public void computeBetaAndErrors() {
@@ -77,9 +79,11 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             try {
 
                 int numParams = X.getColumnDimension();
-                for (boolean b : homogeneityIndex) {
-                    if (b) {
-                        numParams = numParams - 1; // homogeneous parameter imposed externally
+                if (!allParametersHomogeneous) {
+                    for (boolean b : homogeneityIndex) {
+                        if (b) {
+                            numParams = numParams - 1; // homogeneous parameter imposed externally
+                        }
                     }
                 }
 
@@ -190,7 +194,8 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
      * sure, but re-using matrices and so forth.
      *
      * @param g Matrix of moments to augment
-     * @param error_i Error of ith observation at the current guess of parameters
+     * @param error_i Error of ith observation at the current guess of
+     * parameters
      * @param i Observation to compute the moment
      */
     public void addGi(Jama.Matrix g, double error_i, int i) {
@@ -239,7 +244,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         for (int i = 0; i < X.getRowDimension(); i++) {
             // Jama.Matrix gi = getGi(e.get(i, 0), i);
             // g.plusEquals(gi);
-            addGi(g, e.get(i,0), i);
+            addGi(g, e.get(i, 0), i);
         }
         // cannot have this here since we divide by different n in different places!
         // g.timesEquals(1.0 / Y.getRowDimension());
@@ -272,7 +277,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             // Jama.Matrix gi = getGi(e.get(i, 0), i);
 //            pmUtility.prettyPrintVector(gi);
             // g.plusEquals(gi);
-            addGi(g, e.get(i,0), i);
+            addGi(g, e.get(i, 0), i);
             // omega.plusEquals(gi.times(gi.transpose()));
         }
         // omega.timesEquals(1.0 / Y.getRowDimension());

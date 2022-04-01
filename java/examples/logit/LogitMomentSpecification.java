@@ -24,6 +24,7 @@
 package examples.logit;
 
 // import JSci.maths.statistics.NormalDistribution;
+import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
@@ -52,6 +53,7 @@ public class LogitMomentSpecification implements MomentSpecification {
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean MONTE_CARLO = true;
+    NormalDistribution normal = new NormalDistribution();
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -126,8 +128,8 @@ public class LogitMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public ContainerMoment computeOptimalBeta(DataLens lens) {
-        ContainerLogit l = new ContainerLogit(lens, homogeneityIndex, homogeneousParameterVector);
+    public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
+        ContainerLogit l = new ContainerLogit(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
         l.computeBetaAndErrors();
         return l;
     }
@@ -167,7 +169,7 @@ public class LogitMomentSpecification implements MomentSpecification {
 
     //Return the true parameter vector for a given observation
     @Override
-    public Matrix getBetaTruth(Matrix zi) {
+    public Matrix getBetaTruth(Matrix zi, Random rng) {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -2.0);
         beta.set(1, 0, 2.0);
@@ -175,6 +177,13 @@ public class LogitMomentSpecification implements MomentSpecification {
         boolean singleBeta = false;
         if (singleBeta) {
             return beta;
+        }
+        
+        // how to do a random coefficient logit here?
+        // add a random seed/generator in here and draw one from a distribution?
+        boolean randomCoefficients = true;
+        if(randomCoefficients) {
+            beta.set(1, 0, 1.0 + normal.inverse(rng.nextDouble()));
         }
 
         boolean partiallyLinearModel = false;
@@ -184,7 +193,7 @@ public class LogitMomentSpecification implements MomentSpecification {
             return beta;
         }
 
-        boolean oneDimensionHeterogeneity = true;
+        boolean oneDimensionHeterogeneity = false;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
                 beta.set(1, 0, -1.0);
@@ -365,7 +374,14 @@ public class LogitMomentSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerLogit(lens, homogeneityIndex, homogeneousParameterVector);
+        /**
+         * Should this boolean ever be true???
+         * 
+         * I think the answer is no since the only place that calls this is in HomogeneousSearchContainer,
+         * and the reason that I added the boolean (allParametersHomogeneous) is to estimate the stump parameters
+         * when the parameter are already determined to be all homogeneous
+         */
+        return new ContainerLogit(lens, homogeneityIndex, homogeneousParameterVector, false);
     }
 
     @Override

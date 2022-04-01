@@ -40,7 +40,7 @@ public interface MomentSpecification {
 
     public MomentPartitionObj getMomentPartitionObj(DataLens lens, int k, IntegerPartition get);
 
-    public ContainerMoment computeOptimalBeta(DataLens lens);
+    public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous);
 
     //  public void generateData(int numObs, Random rng, boolean addNoise);
     // public Jama.Matrix getY(boolean residualizeY);
@@ -60,9 +60,10 @@ public interface MomentSpecification {
      * Return the true \beta at a given vector z_i
      * 
      * @param zi Observable vector that determines the parameters.
+     * @param rng Random number generator for drawing random coefficients
      * @return 
      */
-    public Matrix getBetaTruth(Matrix zi);
+    public Matrix getBetaTruth(Matrix zi, Random rng);
 
     public DataLens getOutOfSampleXYZ(int numObsOutOfSample, long rngSeed);
 

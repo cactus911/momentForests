@@ -17,7 +17,7 @@ import java.util.Random;
 public class LinearDataGenerator {
 
     private Jama.Matrix X;
-    private Jama.Matrix Y;
+    private Jama.Matrix Y; 
     private Jama.Matrix Z;
 
     public LinearDataGenerator(int numObs, MomentSpecification mySpecification, long randSeed) {
@@ -43,7 +43,7 @@ public class LinearDataGenerator {
             }
             // Z.set(i, 0, X.get(i, 0));
             // Z.set(i, 1, X.get(i, 1));
-            Jama.Matrix beta = mySpecification.getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1)); // Z1 and Z2 to compute beta
+            Jama.Matrix beta = mySpecification.getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1), rng); // Z1 and Z2 to compute beta
 //                pmUtility.prettyPrintVector(beta);
             Jama.Matrix subX = X.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
             // pmUtility.prettyPrint(subX);
