@@ -51,8 +51,12 @@ public class LogitRCDataGenerator {
 
             // for RC logit, want to report the aggregate share (At least to start with)
             // we will start with a dumb way; the betaTruth gets a draw from beta; we will do a stupid Monte Carlo approach to computing shares (should come back to doing quadrature if we can slot that in the framework somehow)
-            Jama.Matrix beta = mySpecification.getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1), rng); // Z1 and Z2 to compute beta
-            Y.set(i, 0, getLogitShare(subX, beta, rng));
+            double numDraws = 1000;
+            for (int k = 0; k < numDraws; k++) {
+                Jama.Matrix beta = mySpecification.getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1), rng); // Z1 and Z2 to compute beta
+                Y.set(i, 0, Y.get(i,0) + getLogitShare(subX, beta, rng));
+            }
+            Y.set(i, 0, Y.get(i,0) / numDraws);
         }
     }
 
