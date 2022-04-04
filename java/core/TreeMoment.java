@@ -62,7 +62,7 @@ public class TreeMoment {
     boolean verbose;
     boolean allParametersHomogeneous;
 
-    boolean debugOptimization = true;
+    boolean debugOptimization = false;
     private double currentNodeObjectiveFunction;
     private ContainerMoment currentNodeMoment;
 
@@ -604,6 +604,26 @@ public class TreeMoment {
             echoLn(getParentRuleDescriptive(null) + " [" + lensHonest.getNumObs() + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix));
         }
     }
+
+    @Override
+    public String toString() {
+        printTree();
+        return treeString("");
+    }
+    
+    private String treeString(String pass) { 
+        System.out.println(pass);
+        if (!terminal) {
+            pass = pass + childLeft.treeString(pass);
+            pass = pass + childRight.treeString(pass);
+        } else {
+            // System.out.println(getParentRuleDescriptive(null) + " " + pmUtility.stringPrettyPrintVector(betaEstimateNode) + " (" + pmUtility.stringPrettyPrintVector(varianceMatrix) + ")");
+            return getParentRuleDescriptive(null) + " [" + lensHonest.getNumObs() + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix)+"\n";
+        }
+        return pass;
+    }
+    
+    
 
     public void distributeHonestObservations(DataLens honest) {
         lensHonest = honest;

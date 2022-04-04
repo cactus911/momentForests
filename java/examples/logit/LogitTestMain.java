@@ -23,6 +23,7 @@
  */
 package examples.logit;
 
+import core.OutOfSampleStatisticsContainer;
 import Jama.Matrix;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
@@ -38,8 +39,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -57,6 +56,7 @@ public class LogitTestMain {
     private Jama.Matrix estimatedHomogeneousParameters;
     private final boolean detectHomogeneity;
     private JTextArea jt;
+    static private JTextArea debugOutputArea = new JTextArea();
 
     /**
      * @param args the command line arguments
@@ -69,6 +69,7 @@ public class LogitTestMain {
         f.getContentPane().add(new JScrollPane(jt1));
         JTextAreaAutoscroll jt2 = new JTextAreaAutoscroll();
         f.getContentPane().add(new JScrollPane(jt2));
+        f.getContentPane().add(new JScrollPane(debugOutputArea));
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setVisible(true);
 
@@ -90,7 +91,7 @@ public class LogitTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 15000; numObs <= 15000; numObs *= 2) {
+        for (int numObs = 1500; numObs <= 15000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -113,13 +114,13 @@ public class LogitTestMain {
             JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
             // boolean[] d = {false, true};
-            boolean[] d = {!true};
+            boolean[] d = {true};
             for (boolean detectHomogeneity : d) {
                 // boolean detectHomogeneity = !true;
                 if (detectHomogeneity) {
                     jam = jt1;
                     // jam.append("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
-                    
+
                 } else {
                     jam = jt2;
                     //jam.append("***** UNRESTRICTED MODEL *****\n");
@@ -137,7 +138,7 @@ public class LogitTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 1;
+                int numMonteCarlos = 500;
 
                 ArrayList<LogitTestMain> parallelLTM = new ArrayList<>();
 
@@ -305,7 +306,7 @@ public class LogitTestMain {
          * MommentSpecification
          */
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
-        boolean verbose = true;
+        boolean verbose = false;
         boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
@@ -322,8 +323,8 @@ public class LogitTestMain {
             for (int minObservationsPerLeaf = 20; minObservationsPerLeaf <= 20; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 10; minImprovement <= 100; minImprovement *= 2) {
                     for (int maxDepth = Math.min(20, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 1; maxDepth--) {
-                        computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
-                        double combinationMSE = outOfSampleYMSE;
+                        OutOfSampleStatisticsContainer cvResults = computeOutOfSampleStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
+                        double combinationMSE = cvResults.getOutOfSampleMeasureY();
                         String star = "";
                         if (combinationMSE <= lowestSSE || first) {
                             lowestSSE = combinationMSE;
@@ -334,6 +335,8 @@ public class LogitTestMain {
                             star = "(*)";
                         }
                         System.out.println("minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
+                        debugOutputArea.append("minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star + "\n");
+
                     }
                 }
             }
@@ -356,8 +359,8 @@ public class LogitTestMain {
                 bestMaxDepth = 9;
             }
         }
-        
-        bestMaxDepth = 2;
+
+        bestMaxDepth = 0;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -466,9 +469,10 @@ public class LogitTestMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         // numberTreesInForest = 1;
-        
-        setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
-                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
+        OutOfSampleStatisticsContainer results = computeOutOfSampleStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
+                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample);
+        setEstimatedBetaVersusTruthMSE(results.getMeanSquaredErrorParameters());
+        setOutOfSampleYMSE(results.getOutOfSampleMeasureY());
     }
 
     public double getEstimatedBetaVersusTruthMSE() {
@@ -479,10 +483,13 @@ public class LogitTestMain {
         this.estimatedBetaVersusTruthMSE = estimatedBetaVersusTruthMSE;
     }
 
-    private double computeOutOfSampleMSEInParameterSpace(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
+    private OutOfSampleStatisticsContainer computeOutOfSampleStatistics(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
             int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample) {
         // System.out.println("\nComputing OOS In Parameter Space\n");
         // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
+
+        double outOfSampleResultsY = 0;
+        double outOfSampleResultsBeta = 0;
 
         MomentForest myForest;
 
@@ -497,6 +504,7 @@ public class LogitTestMain {
         myForest.growForest();
 
         // myForest.getTree(0).printTree();
+        debugOutputArea.append(myForest.getTree(0).toString());
         /**
          * Test vectors for assessment
          */
@@ -505,9 +513,8 @@ public class LogitTestMain {
         Jama.Matrix testX = oosDataLens.getX();
         Jama.Matrix testY = oosDataLens.getY();
 
-        Random rng = new Random(rngBaseSeedOutOfSample-3);
-        
-        double outOfSampleParameterFit = 0;
+        Random rng = new Random(rngBaseSeedOutOfSample - 3);
+
         for (int i = 0; i < testZ.getRowDimension(); i++) {
             Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
             Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
@@ -517,7 +524,7 @@ public class LogitTestMain {
 
             Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
 
-            outOfSampleYMSE += mySpecification.getGoodnessOfFit(testY.get(i, 0), xi, compositeEstimatedBeta);
+            outOfSampleResultsY += mySpecification.getGoodnessOfFit(testY.get(i, 0), xi, compositeEstimatedBeta);
 
             if (i < 10) {
                 String hString = "[ ";
@@ -533,11 +540,14 @@ public class LogitTestMain {
             }
             //pmUtility.prettyPrintVector(compositeEstimatedBeta);
 
-            outOfSampleParameterFit += (compositeEstimatedBeta.minus(bTruth)).norm2();
+            outOfSampleResultsBeta += (compositeEstimatedBeta.minus(bTruth)).norm2();
         }
 
+        outOfSampleResultsBeta /= testZ.getRowDimension();
+        outOfSampleResultsY /= testZ.getRowDimension();
+
         // jt.append("betaMSE: " + (outOfSampleFit / testZ.getRowDimension()) + " \t [" + rngSeed + "]\n");
-        return outOfSampleParameterFit / testZ.getRowDimension(); // mse
+        return new OutOfSampleStatisticsContainer(outOfSampleResultsBeta, outOfSampleResultsY);
     }
 
     private void setHomogeneousParameterList(ArrayList<Integer> homogeneousParameterList) {

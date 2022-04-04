@@ -35,11 +35,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     ArrayList<Integer> homogeneousParameterIndex;
 
     private Jama.Matrix estimatedHomogeneousParameters;
+    boolean allParametersHomogeneous = true;
 
-    DataLens oosDataLens;
-    Jama.Matrix testZ;
-    Jama.Matrix testX;
-    Jama.Matrix testY;
     long t1 = System.currentTimeMillis();
     DataLens homogenizedForestLens;
 
@@ -55,12 +52,13 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         this.rngSeedBaseOutOfSample = rngSeedBaseOutOfSample;
         this.homogeneousParameterIndex = homogeneousParameterIndex;
 
-        oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngSeedBaseOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
-        testZ = oosDataLens.getZ();
-        testX = oosDataLens.getX();
-        testY = oosDataLens.getY();
-
         homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
+
+        for (boolean b : mySpecification.getHomogeneousIndex()) {
+            if (!b) {
+                allParametersHomogeneous = false;
+            }
+        }
     }
 
     public void executeSearch() {
@@ -120,7 +118,6 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             boolean first = true;
 
             // plotFunction(-4, 0, 25);
-
             // see how well this works
             guess[1] = goldenRatioSearch(left, right)[1];
             // this appears to work incredibly well
@@ -213,7 +210,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         // pmUtility.prettyPrint(new Jama.Matrix(x, 1));
 
         // i should seed this in some way with the estimates from the DistanceMetricTest results
-        double v = computeOutOfSampleMSE();
+        double v = computeObjectiveFunction();
 //        long t2 = System.currentTimeMillis();
 //        if(t2-t1>60000) { // if longer than a minute
 //            System.out.print("f: "+v+" x: ");
@@ -222,8 +219,27 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         return v;
     }
 
-    public double computeOutOfSampleMSE() {
+    public double computeObjectiveFunction() {
         // verbose = true;
+
+        /**
+         * Two things: 1. need to be using in-sample Y,X,Z here, not
+         * out-of-sample 2. do not need to grow any trees when all the
+         * parameters are homogeneous
+         */
+        if (allParametersHomogeneous) {
+            Jama.Matrix beta = new Jama.Matrix(mySpecification.getHomogeneousIndex().length, 1);
+            for (int i = 0; i < mySpecification.getHomogeneousIndex().length; i++) {
+                beta.set(i, 0, mySpecification.getHomogeneousParameter(i));
+            }
+            double f = 0;
+            Jama.Matrix Y = mySpecification.getY();
+            Jama.Matrix X = mySpecification.getX();
+            for (int i = 0; i < Y.getRowDimension(); i++) {
+                f += mySpecification.getGoodnessOfFit(Y.get(i, 0), X.getMatrix(i, i, 0, X.getColumnDimension() - 1), beta);
+            }
+            return f;
+        }
 
         boolean testParameterHomogeneity = false;
         // System.out.println("Initializing forest");
@@ -238,12 +254,11 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         myForest.growForest();
 
         // System.out.println("Computing out of sample fits");
-        Random rng = new Random(888);
-
+        // Random rng = new Random(888);
         double outOfSampleFit = 0;
-        for (int i = 0; i < testZ.getRowDimension(); i++) {
-            Jama.Matrix fullXi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
-            Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
+        for (int i = 0; i < mySpecification.getZ().getRowDimension(); i++) {
+            Jama.Matrix fullXi = mySpecification.getX().getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
+            Jama.Matrix zi = mySpecification.getZ().getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
 
             // old code from the linear case (doesn't work in general)
 //            double fitY = mySpecification.getPredictedY(fullXi, myForest.getEstimatedParameterForest(zi), rng);
@@ -259,11 +274,9 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 //            outOfSampleFit += error * error;
             // in principle, we could actually use something like GMM in here
             // we are going to!
-            outOfSampleFit += mySpecification.getGoodnessOfFit(testY.get(i,0), fullXi, myForest.getEstimatedParameterForest(zi));
+            outOfSampleFit += mySpecification.getGoodnessOfFit(mySpecification.getY().get(i, 0), fullXi, myForest.getEstimatedParameterForest(zi));
         }
-        double MSE = outOfSampleFit / testZ.getRowDimension();
-
-        return MSE;
+        return outOfSampleFit / mySpecification.getZ().getRowDimension();
     }
 
     @Override

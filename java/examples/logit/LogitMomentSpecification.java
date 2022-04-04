@@ -174,7 +174,7 @@ public class LogitMomentSpecification implements MomentSpecification {
         beta.set(0, 0, -2.0);
         beta.set(1, 0, 2.0);
 
-        boolean singleBeta = false;
+        boolean singleBeta = true;
         if (singleBeta) {
             return beta;
         }
@@ -300,7 +300,7 @@ public class LogitMomentSpecification implements MomentSpecification {
             Z = xyz.getZ();
 
         }
-//        pmUtility.prettyPrint(pmUtility.concatMatrix(Y,pmUtility.concatMatrix(X,Z)));
+//        pmUtility.prettyPrint(pmUtility.concatMatrix(Y,pmUtility.ooncatMatrix(X,Z)));
 //        System.exit(0);
     }
 
