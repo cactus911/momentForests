@@ -30,10 +30,11 @@ public class LogitDataGenerator {
             // X.set(i, 0, normal.inverse(rng.nextDouble()));
             X.set(i, 0, 1.0);
             X.set(i, 1, Math.pow(normal.inverse(rng.nextDouble()), 2));
+            // X.set(i, 1, -2.0 + 4.0*rng.nextDouble());
 
-            // Z.set(i, 0, normal.inverse(rng.nextDouble()));
-            Z.set(i, 0, -6.0 + 10.0 * rng.nextDouble()); // uniform [-6,4]
-            Z.set(i, 1, rng.nextDouble());
+            Z.set(i, 0, normal.inverse(rng.nextDouble()));
+            // Z.set(i, 0, -6.0 + 10.0 * rng.nextDouble()); // uniform [-6,4]
+            Z.set(i, 1, -1.0 + 2.0*rng.nextDouble());
 
             double draw = rng.nextDouble();
             if (draw < 0.3) {

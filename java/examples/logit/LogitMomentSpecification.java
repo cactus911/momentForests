@@ -164,39 +164,39 @@ public class LogitMomentSpecification implements MomentSpecification {
         // here, let's return the LLH of this observation
         return ContainerLogit.computeLLHi(yi, xi, beta);
     }
-    
-    
 
     //Return the true parameter vector for a given observation
     @Override
     public Matrix getBetaTruth(Matrix zi, Random rng) {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
-        beta.set(0, 0, -2.0);
+        beta.set(0, 0, -1.0);
         beta.set(1, 0, 2.0);
 
-        boolean singleBeta = true;
+        boolean singleBeta = false;
         if (singleBeta) {
             return beta;
         }
-        
+
         // how to do a random coefficient logit here?
         // add a random seed/generator in here and draw one from a distribution?
-        boolean randomCoefficients = true;
-        if(randomCoefficients) {
+        // may need to fork this off into its own specification since i think the objective functions change, not just the beta(Z)
+        boolean randomCoefficients = false;
+        if (randomCoefficients) {
             beta.set(1, 0, 1.0 + normal.inverse(rng.nextDouble()));
+            return beta;
         }
 
-        boolean partiallyLinearModel = false;
+        boolean partiallyLinearModel = true;
         if (partiallyLinearModel) {
             // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
             beta.set(0, 0, 2.5 * Math.sin(zi.get(0, 0)) + 0.25 * Math.pow(zi.get(0, 0), 2));
             return beta;
         }
 
-        boolean oneDimensionHeterogeneity = false;
+        boolean oneDimensionHeterogeneity = true;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
-                beta.set(1, 0, -1.0);
+                beta.set(1, 0, -2.0);
             }
             return beta;
         }
@@ -376,10 +376,11 @@ public class LogitMomentSpecification implements MomentSpecification {
     public ContainerMoment getContainerMoment(DataLens lens) {
         /**
          * Should this boolean ever be true???
-         * 
-         * I think the answer is no since the only place that calls this is in HomogeneousSearchContainer,
-         * and the reason that I added the boolean (allParametersHomogeneous) is to estimate the stump parameters
-         * when the parameter are already determined to be all homogeneous
+         *
+         * I think the answer is no since the only place that calls this is in
+         * HomogeneousSearchContainer, and the reason that I added the boolean
+         * (allParametersHomogeneous) is to estimate the stump parameters when
+         * the parameter are already determined to be all homogeneous
          */
         return new ContainerLogit(lens, homogeneityIndex, homogeneousParameterVector, false);
     }
