@@ -62,7 +62,7 @@ public class TreeMoment {
     boolean verbose;
     boolean allParametersHomogeneous;
 
-    boolean debugOptimization = false;
+    boolean debugOptimization = !true;
     private double currentNodeObjectiveFunction;
     private ContainerMoment currentNodeMoment;
 

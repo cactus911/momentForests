@@ -132,9 +132,14 @@ public class ContainerLogitRC extends ContainerMoment implements Uncmin_methods 
                  * errors. Here, maybe use the LLH, even when the parameters are
                  * estimated using moments? This is ONLY to be used for the
                  * splitting criterion.
+                 *
+                 * For random coefficient with aggregate data, should just be
+                 * the sum of squared errors between fitted shares and true
+                 * shares
                  */
                 // goodnessOfFit = f_to_minimize(xpls);
-                goodnessOfFit = computeLLH(betaUncmin);
+                // goodnessOfFit = computeLLH(betaUncmin);
+                goodnessOfFit = computeSSE(betaUncmin);
 
                 if (debugVerbose) {
                     System.out.format("ContainerLogit.computeBetaAndErrors SSE: %g ", +goodnessOfFit);
@@ -152,13 +157,32 @@ public class ContainerLogitRC extends ContainerMoment implements Uncmin_methods 
         }
     }
 
+    private double computeSSE(Jama.Matrix beta) {
+        double sse = 0;
+        for (int i = 0; i < Y.getRowDimension(); i++) {
+            double utility = X.get(i, 0) * beta.get(0, 0) + X.get(i, 1) * beta.get(1, 0);
+            double shareInside = Math.exp(utility) / (1.0 + Math.exp(utility));
+            double error = Y.get(i, 0) - shareInside;
+            sse += Math.pow(error, 2);
+        }
+        return sse;
+    }
+
+    public static double computeSSEi(double trueYi, Jama.Matrix xi, Jama.Matrix beta) {
+        double utility = xi.get(0, 0) * beta.get(0, 0) + xi.get(0, 1) * beta.get(1, 0);
+        double shareInside = Math.exp(utility) / (1.0 + Math.exp(utility));
+        double error = trueYi - shareInside;
+
+        return Math.pow(error, 2);
+    }
+
     @Override
     public Jama.Matrix getGi(Jama.Matrix beta, int i) {
         int numMoments = X.getColumnDimension();
 
         // try using the derivatives with respect to beta as the moments here (two X's)
         if (numMoments != 2) {
-            System.out.println("Hardwired moments for two parameters in ContainerLogit.java");
+            System.out.println("Hardwired moments for two parameters in ContainerLogitRC.java");
             System.exit(0);
         }
 
@@ -177,7 +201,7 @@ public class ContainerLogitRC extends ContainerMoment implements Uncmin_methods 
                 gi.set(1, 0, -X.get(i, 1) * shareInside);
             }
         } else {
-            double ei = Y.get(i, 0) - shareInside;
+            double ei = Y.get(i, 0) - shareInside; // already using aggregate share on the LHS!
             gi.set(0, 0, X.get(i, 0) * ei);
             gi.set(1, 0, X.get(i, 1) * ei);
         }
@@ -203,7 +227,7 @@ public class ContainerLogitRC extends ContainerMoment implements Uncmin_methods 
 
     private double getMomentObjectiveFunctionValue(Jama.Matrix beta) {
         // LLH is much much faster
-        boolean useGMM = false;
+        boolean useGMM = true; // we will start with GMM since I'd need to think about what the likelihood means in the aggregate case
         if (useGMM) {
             int numMoments = X.getColumnDimension();
             Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
@@ -228,6 +252,8 @@ public class ContainerLogitRC extends ContainerMoment implements Uncmin_methods 
     }
 
     private double computeLLH(Jama.Matrix beta) {
+        System.out.println("ComputeLLH not implemented correctly");
+        System.exit(0);
         double llh = 0;
         for (int i = 0; i < X.getRowDimension(); i++) {
             double u = beta.get(0, 0) * X.get(i, 0) + beta.get(1, 0) * X.get(i, 1);
@@ -242,6 +268,8 @@ public class ContainerLogitRC extends ContainerMoment implements Uncmin_methods 
     }
 
     public static double computeLLHi(double y, Jama.Matrix xi, Jama.Matrix beta) {
+        System.out.println("ComputeLLH not implemented correctly");
+        System.exit(0);
         double llh = 0;
         double u = beta.get(0, 0) * xi.get(0, 0) + beta.get(1, 0) * xi.get(0, 1);
         double insideShare = Math.exp(u) / (1.0 + Math.exp(u));

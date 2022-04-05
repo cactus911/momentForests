@@ -145,7 +145,7 @@ public interface MomentSpecification {
                     }
                 }
                 hString = hString + "]";
-                // jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
+                System.out.print("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + " "+testY.get(i,0)+" "+getPredictedY(xi, compositeEstimatedBeta, rng)+ "\n");
             }
             //pmUtility.prettyPrintVector(compositeEstimatedBeta);
 

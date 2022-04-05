@@ -91,7 +91,7 @@ public class LogitRCTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 500; numObs <= 4000; numObs *= 2) {
+        for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -113,8 +113,8 @@ public class LogitRCTestMain {
 
             JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-            boolean[] d = {false, true};
-            // boolean[] d = {!true};
+            // boolean[] d = {false, true};
+            boolean[] d = {!true};
             for (boolean detectHomogeneity : d) {
                 // boolean detectHomogeneity = !true;
                 if (detectHomogeneity) {
@@ -306,7 +306,7 @@ public class LogitRCTestMain {
          * MommentSpecification
          */
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
-        boolean verbose = false;
+        boolean verbose = true;
         boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
@@ -346,7 +346,7 @@ public class LogitRCTestMain {
             jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
         } else {
             bestMinObservationsPerLeaf = 20;
-            bestMinImprovement = 0.1;
+            bestMinImprovement = 1E-5;
             if (numObs == 500) {
                 bestMaxDepth = 3;
             }
@@ -356,10 +356,11 @@ public class LogitRCTestMain {
             if (numObs == 2000) {
                 bestMaxDepth = 7;
             }
-            if (numObs == 4000) {
+            if (numObs >= 4000) {
                 bestMaxDepth = 9;
             }
         }
+        bestMaxDepth = 3;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {

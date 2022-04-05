@@ -67,8 +67,13 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         homogeneityIndex = new boolean[2];
         homogeneousParameterVector = new Jama.Matrix(2, 1);
         resetHomogeneityIndex();
-        int[] vsi = {0, 1, 2}; //Search over z1, z2, z3 
-        Boolean[] wvd = {false, false, true}; // z1, z2 continuous, z3 discrete
+        
+        /**
+         * Here we are going to search over X (I think this works like this!)
+         */
+        
+        int[] vsi = {1}; //Search over x2 only (x1 is a constant; have to think about what that means)
+        Boolean[] wvd = {false, false}; // x1, x2 continuous (this thing has to be filled out for all the Z's, apparently; the length of this array is used in momentTree!
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -109,7 +114,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
 
     @Override
     public Double getPredictedY(Matrix xi, Jama.Matrix beta, Random rng) {
-        return LogitRCDataGenerator.getLogitShare(xi, beta, rng);
+        return LogitRCDataGenerator.getLogitShare(xi, beta); 
     }
 
     @Override
@@ -146,7 +151,9 @@ public class LogitRCMomentSpecification implements MomentSpecification {
 
     @Override
     public Matrix getZ() {
-        return Z;
+        // do I simply return the X's here?!?!?
+        return X;
+        // return Z;
     }
 
     @Override
@@ -162,7 +169,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
     @Override
     public double getGoodnessOfFit(double yi, Matrix xi, Matrix beta) {
         // here, let's return the LLH of this observation
-        return ContainerLogitRC.computeLLHi(yi, xi, beta);
+        return ContainerLogitRC.computeSSEi(yi, xi, beta);
     }
 
     //Return the true parameter vector for a given observation
@@ -170,68 +177,19 @@ public class LogitRCMomentSpecification implements MomentSpecification {
     public Matrix getBetaTruth(Matrix zi, Random rng) {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -1.0);
-        beta.set(1, 0, 2.0);
+        beta.set(1, 0, 2.3);
 
-        boolean singleBeta = false;
-        if (singleBeta) {
-            return beta;
-        }
-
-        // how to do a random coefficient logit here?
-        // add a random seed/generator in here and draw one from a distribution?
-        // may need to fork this off into its own specification since i think the objective functions change, not just the beta(Z)
-        boolean randomCoefficients = false;
-        if (randomCoefficients) {
-            beta.set(1, 0, 1.0 + normal.inverse(rng.nextDouble()));
-            return beta;
-        }
-
-        boolean partiallyLinearModel = true;
-        if (partiallyLinearModel) {
-            // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
-            beta.set(0, 0, 2.5 * Math.sin(zi.get(0, 0)) + 0.25 * Math.pow(zi.get(0, 0), 2));
-            return beta;
-        }
-
-        boolean oneDimensionHeterogeneity = true;
-        if (oneDimensionHeterogeneity) {
-            if (zi.get(0, 0) > 0) {
-                beta.set(1, 0, -2.0);
-            }
-            return beta;
-        }
-
-        boolean twoDimensionHeterogeneity = false;
-        if (twoDimensionHeterogeneity) {
-            if (zi.get(0, 0) > 0) {
-                beta.set(0, 0, 0.33);
-                beta.set(1, 0, -1.05);
-            }
-            return beta;
-        }
-
-        boolean imposeUniformBeta1 = true;
-        if (zi.get(0, 0) > 0) { // if z1 > 0 \beta_0 = 1
-            if (!imposeUniformBeta1) {
-                beta.set(0, 0, 2);
-            }
-            if (zi.get(0, 1) < 0.5) { // if also z2<0.5, \beta_1 = -1;
-                beta.set(1, 0, -3);
-            }
-        }
-        if (zi.get(0, 2) == 1) {
-            if (!imposeUniformBeta1) {
-                beta.set(0, 0, 3);
-            }
-            beta.set(1, 0, beta.get(1, 0) * 1.5);
-        }
+        // what does this even mean in a RC logit setting?
+        // these the mean parameters of the utility, I guess
+        
         return beta;
     }
 
     @Override
     public DataLens getOutOfSampleXYZ(int numObsOOS, long rngSeed) {
         LogitRCDataGenerator xyz = new LogitRCDataGenerator(numObsOOS, this, rngSeed);
-        return new DataLens(xyz.getX(), xyz.getY(), xyz.getZ(), null);
+        // again, the Z's are X's here
+        return new DataLens(xyz.getX(), xyz.getY(), xyz.getX(), null);
     }
 
     @Override

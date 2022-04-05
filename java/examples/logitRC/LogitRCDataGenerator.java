@@ -9,6 +9,7 @@ import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.MomentSpecification;
 import java.util.Random;
+import utility.pmUtility;
 
 /**
  *
@@ -32,16 +33,16 @@ public class LogitRCDataGenerator {
             X.set(i, 1, Math.pow(normal.inverse(rng.nextDouble()), 2));
             // X.set(i, 1, -2.0 + 4.0*rng.nextDouble());
 
-            Z.set(i, 0, normal.inverse(rng.nextDouble()));
+            // Z.set(i, 0, normal.inverse(rng.nextDouble()));
             // Z.set(i, 0, -6.0 + 10.0 * rng.nextDouble()); // uniform [-6,4]
-            Z.set(i, 1, -1.0 + 2.0 * rng.nextDouble());
+            // Z.set(i, 1, -1.0 + 2.0 * rng.nextDouble());
 
-            double draw = rng.nextDouble();
-            if (draw < 0.3) {
-                Z.set(i, 2, 1);
-            } else if (draw > 0.7) {
-                Z.set(i, 2, 2);
-            }
+//            double draw = rng.nextDouble();
+//            if (draw < 0.3) {
+//                Z.set(i, 2, 1);
+//            } else if (draw > 0.7) {
+//                Z.set(i, 2, 2);
+//            }
             // Z.set(i, 0, X.get(i, 0));
             // Z.set(i, 1, X.get(i, 1));
 
@@ -51,18 +52,30 @@ public class LogitRCDataGenerator {
 
             // for RC logit, want to report the aggregate share (At least to start with)
             // we will start with a dumb way; the betaTruth gets a draw from beta; we will do a stupid Monte Carlo approach to computing shares (should come back to doing quadrature if we can slot that in the framework somehow)
-            double numDraws = 1000;
+            double numDraws = 10000;
+
+            // need to split on X's now
+            
             for (int k = 0; k < numDraws; k++) {
                 Jama.Matrix beta = mySpecification.getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1), rng); // Z1 and Z2 to compute beta
-                Y.set(i, 0, Y.get(i,0) + getLogitShare(subX, beta, rng));
+                // if I don't move the beta around, I have verified that I get +Exactly+ the mean parameters back using GMM, as desired (there is no error anywhere in the DGP)
+                // adding this next line in should result in a nice RC model that should split on the variable which has a random coefficient (I hope)
+                beta.set(1, 0, beta.get(1, 0) + normal.inverse(rng.nextDouble()));
+                Y.set(i, 0, Y.get(i, 0) + getLogitShare(subX, beta));
+                // System.out.println(Y.get(i,0)/(k+1));
             }
-            Y.set(i, 0, Y.get(i,0) / numDraws);
+            Y.set(i, 0, Y.get(i, 0) / numDraws);
         }
+        // pmUtility.prettyPrintVector(Y);
+        // System.exit(0);
     }
 
-    static public double getLogitShare(Jama.Matrix subX, Jama.Matrix beta, Random rng) {
+    static public double getLogitShare(Jama.Matrix subX, Jama.Matrix beta) {
         double u = (subX.times(beta)).get(0, 0);
+        // pmUtility.prettyPrint(subX);
+        // pmUtility.prettyPrintVector(beta);
         double share = Math.exp(u) / (1.0 + Math.exp(u));
+        // System.out.println("Share: "+share+" utility: "+u);
         return share;
     }
 
