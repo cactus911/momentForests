@@ -30,8 +30,11 @@ import core.ContainerMoment;
 import core.DataLens;
 import core.IntegerPartition;
 import core.MomentContinuousSplitObj;
+import core.MomentForest;
 import core.MomentPartitionObj;
 import core.MomentSpecification;
+import core.OutOfSampleStatisticsContainer;
+import core.TreeOptions;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.util.Random;
@@ -67,14 +70,13 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         homogeneityIndex = new boolean[2];
         homogeneousParameterVector = new Jama.Matrix(2, 1);
         resetHomogeneityIndex();
-        
+
         /**
          * Here we are going to search over X (I think this works like this!)
          */
-        
         // int[] vsi = {1}; //Search over x2 only (x1 is a constant; have to think about what that means)
         int[] vsi = {0, 1}; // Going to change this to make X1 also a continuous variable to search over
-        
+
         Boolean[] wvd = {false, false}; // x1, x2 continuous (this thing has to be filled out for all the Z's, apparently; the length of this array is used in momentTree!
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
@@ -116,7 +118,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
 
     @Override
     public Double getPredictedY(Matrix xi, Jama.Matrix beta, Random rng) {
-        return LogitRCDataGenerator.getLogitShare(xi, beta); 
+        return LogitRCDataGenerator.getLogitShare(xi, beta);
     }
 
     @Override
@@ -183,8 +185,131 @@ public class LogitRCMomentSpecification implements MomentSpecification {
 
         // what does this even mean in a RC logit setting?
         // these the mean parameters of the utility, I guess
-        
         return beta;
+    }
+
+    @Override
+    public OutOfSampleStatisticsContainer computeOutOfSampleStatistics(int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
+            int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample) {
+
+        double outOfSampleResultsY = 0;
+        double outOfSampleResultsBeta = 0;
+
+        MomentForest myForest;
+
+        DataLens homogenizedForestLens = new DataLens(getX(), getY(), getZ(), null);
+
+        myForest = new MomentForest(this, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
+        TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
+        myForest.setTreeOptions(cvOptions);
+        /**
+         * Grow the moment forest
+         */
+        myForest.growForest();
+
+        // myForest.getTree(0).printTree();
+        // debugOutputArea.append(myForest.getTree(0).toString());
+        /**
+         * Test vectors for assessment
+         */
+        DataLens oosDataLens = getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        Jama.Matrix testZ = oosDataLens.getZ();
+        Jama.Matrix testX = oosDataLens.getX();
+        Jama.Matrix testY = oosDataLens.getY();
+
+        Random rng = new Random(rngBaseSeedOutOfSample - 3);
+
+        for (int i = 0; i < testZ.getRowDimension(); i++) {
+            Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
+            Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
+
+            // going to compare directly to the true parameter vector in this method instead of using fit of Y
+            Jama.Matrix bTruth = getBetaTruth(zi, rng);
+
+            Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+
+            outOfSampleResultsY += getGoodnessOfFit(testY.get(i, 0), xi, compositeEstimatedBeta);
+
+            if (i < 10) {
+                String hString = "[ ";
+                for (int k = 0; k < bTruth.getRowDimension(); k++) {
+                    if (getHomogeneousIndex()[k]) {
+                        hString = hString + "X ";
+                    } else {
+                        hString = hString + "O ";
+                    }
+                }
+                hString = hString + "]";
+                System.out.print("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + " " + testY.get(i, 0) + " " + getPredictedY(xi, compositeEstimatedBeta, rng) + "\n");
+            }
+            //pmUtility.prettyPrintVector(compositeEstimatedBeta);
+
+            outOfSampleResultsBeta += (compositeEstimatedBeta.minus(bTruth)).norm2();
+        }
+
+        outOfSampleResultsBeta /= testZ.getRowDimension();
+        outOfSampleResultsY /= testZ.getRowDimension();
+
+        boolean manualCheck = false;
+        if (manualCheck) {
+            Jama.Matrix zi = testZ.getMatrix(0, 0, 0, testZ.getColumnDimension() - 1);
+
+            zi.set(0, 0, -1);
+            System.out.print("Forest z1 < 0: ");
+            pmUtility.prettyPrintVector(myForest.getEstimatedParameterForest(zi));
+
+            System.out.print("Forest z1 > 0: ");
+            zi.set(0, 0, 1.0);
+            pmUtility.prettyPrintVector(myForest.getEstimatedParameterForest(zi));
+        }
+
+        /**
+         * Awesome, this works with discrete types where we seed it with the
+         * right set of possible types Need to do several things:
+         *
+         * 1. I am imposing the truth on the homogeneous parameter; need to have
+         * a search over that with FKRB as a nested inside loop (DONE: WORKS)
+         *
+         * 2. Want to impose probability constraints on OLS using Gurobi (after
+         * 2 hours, that isn't going to happen; the Java code for this is
+         * insanely unwieldy) I am going to try some basic barrier constraint
+         * stuff where I successively increase the penalty function on the
+         * constraints and see if that works Looks like the quick and dirty
+         * works; let's do point 4 next and see if it still works The short
+         * answer is that it sort of works. Need a proper constrained optimizer
+         * here in the future.
+         *
+         * 3. Want to extend to using normal distributions instead of point
+         * masses to get smooth CDFs
+         *
+         * 4. Want to add a bunch more points
+         * 
+         * 5. Need to connect the X's that the tree splits on to automate the
+         * RC testing / estimation procedure
+         */
+        DeconvolutionSolver desolve = new DeconvolutionSolver(testY, testX, this);
+        double betaHomogeneous = desolve.solve();
+        double[][] betaList = desolve.getBetaList();
+        double[] betaWeights = desolve.getBetaWeights();
+
+        for (int k = 0; k < betaList.length; k++) {
+            System.out.format("beta1: %.3f beta2: %.3f weight: %.3f %n", betaHomogeneous, betaList[k][1], betaWeights[k]);
+        }
+        // pmUtility.prettyPrintVector(weights);
+        for (int i = 0; i < 10; i++) {
+            Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
+            double fittedShare = 0;
+            for (int k = 0; k < betaList.length; k++) {
+                Jama.Matrix beta = new Jama.Matrix(2, 1);
+                beta.set(0, 0, betaHomogeneous);
+                beta.set(1, 0, betaList[k][1]);
+                fittedShare += betaWeights[k] * LogitRCDataGenerator.getLogitShare(xi, beta);
+            }
+            System.out.format("Y: %.4f Fitted: %.4f %n", testY.get(i,0), fittedShare);
+        }
+
+        // jt.append("betaMSE: " + (outOfSampleFit / testZ.getRowDimension()) + " \t [" + rngSeed + "]\n");
+        return new OutOfSampleStatisticsContainer(outOfSampleResultsBeta, outOfSampleResultsY);
     }
 
     @Override
