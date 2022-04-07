@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import org.jfree.chart.plot.PlotUtilities;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -56,7 +57,7 @@ public class LogitRCTestMain {
     private Jama.Matrix estimatedHomogeneousParameters;
     private final boolean detectHomogeneity;
     private JTextArea jt;
-    static private JTextArea debugOutputArea = new JTextArea();
+    final static private JTextArea debugOutputArea = new JTextArea();
 
     /**
      * @param args the command line arguments
@@ -472,7 +473,57 @@ public class LogitRCTestMain {
         OutOfSampleStatisticsContainer results = mySpecification.computeOutOfSampleStatistics(numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample);
         setEstimatedBetaVersusTruthMSE(results.getMeanSquaredErrorParameters());
-        setOutOfSampleYMSE(results.getOutOfSampleMeasureY());
+        setOutOfSampleYMSE(results.getOutOfSampleMeasureY());    
+        
+        
+        /**
+         * This is where we can do a post-estimation recovery of the distribution of random coefficients.
+         * My initial idea is to use FKBR to this. Each row is X=x. LHS is the share that comes from
+         * estimated parameters at X=x. RHS has columns which each is the estimate of share under each guess of \beta_i. 
+         * We regress LHS on RHS to get weights (possibly imposing constraints). I think this should work.
+         */
+        boolean projectRandomCoefficientDistribution = false;
+        if(projectRandomCoefficientDistribution) {
+            double minProportionInEachLeaf = 0.01;
+
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
+
+            testParameterHomogeneity = false;
+            TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
+            MomentForest myForest = new MomentForest(mySpecification, 1, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
+
+            myForest.setTreeOptions(cvOptions);
+            myForest.growForest();
+            
+            int numPointsX = 100;
+            int numModels = 25;
+            
+            double minimumX = pmUtility.min(mySpecification.getZ(), 0);
+            double maximumX = pmUtility.max(mySpecification.getZ(), 0);
+            double interval = (maximumX-minimumX) / (numPointsX-1);
+            
+            double lowerBeta = -3;
+            double upperBeta = 3;
+            double intervalBeta = (upperBeta-lowerBeta)/(numPointsX-1);
+            
+            Jama.Matrix FKRB_Y = new Jama.Matrix(numPointsX, 1);
+            Jama.Matrix FKRB_X = new Jama.Matrix(numPointsX, numModels);
+            for(int i=0;i<numPointsX;i++) {
+                Jama.Matrix xi = new Jama.Matrix(1,2,1);
+                xi.set(0, 1, minimumX + i*interval);
+                FKRB_Y.set(i, 0, mySpecification.getPredictedY(xi, myForest.getEstimatedParameterForest(xi), null)); // set Y_i as the 
+                for(int j=0;j<numModels;j++) {
+                    Jama.Matrix betaJ = new Jama.Matrix(2,1);
+                    // what do i set beta_1 to? the intercept is truly -1.0. But how do I know that?
+                    betaJ.set(0,0,-1);
+                    betaJ.set(1,0,lowerBeta + j*intervalBeta);
+                    FKRB_X.set(i, j, mySpecification.getPredictedY(xi, betaJ, null));
+                }
+            }
+            Jama.Matrix weights = pmUtility.OLSsvd(FKRB_X, FKRB_Y, false);
+            pmUtility.prettyPrintVector(weights);
+            
+        }
     }
 
     public double getEstimatedBetaVersusTruthMSE() {
