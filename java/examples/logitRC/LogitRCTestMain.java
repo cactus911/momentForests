@@ -360,7 +360,7 @@ public class LogitRCTestMain {
                 bestMaxDepth = 9;
             }
         }
-        bestMaxDepth = 3;
+        bestMaxDepth = 2;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
