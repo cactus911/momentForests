@@ -92,7 +92,7 @@ public class LogitRCTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
+        for (int numObs = 5000; numObs <= 5000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;

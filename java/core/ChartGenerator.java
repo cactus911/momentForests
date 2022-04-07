@@ -27,4 +27,15 @@ public class ChartGenerator {
         f.setVisible(true);
     }
     
+    public static void makeXYLine(XYSeriesCollection xyc, String title, String xAxisLabel, String yAxisLabel) {
+        ChartPanel cp = new ChartPanel(ChartFactory.createXYLineChart(title, xAxisLabel, yAxisLabel, xyc));
+        
+        JFrame f = new JFrame("Plot");
+        f.setBounds(100,100,500,500);
+        f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        f.getContentPane().setLayout(new BorderLayout());
+        f.getContentPane().add(cp, BorderLayout.CENTER);
+        f.setVisible(true);
+    }
+    
 }

@@ -25,7 +25,7 @@ package core;
 
 import java.util.ArrayList;
 import java.util.Random;
-import utility.pmUtility;
+import java.util.TreeSet;
 
 /**
  * Class containing a collection of trees and utility classes for interacting
@@ -135,6 +135,14 @@ public class MomentForest {
 
     public void setTreeOptions(TreeOptions cvOptions) {
         this.treeOptions = cvOptions;
+    }
+
+    public ArrayList<Integer> getIndexSplitVariables() {
+        TreeSet<Integer> splitTree = new TreeSet<>();
+        for(TreeMoment tree : forest) {
+            tree.getIndexSplitVariables(splitTree);
+        }
+        return new ArrayList(splitTree);
     }
 
 }

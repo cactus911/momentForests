@@ -25,6 +25,7 @@ package core;
 
 import JSci.maths.statistics.ChiSqrDistribution;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.TreeSet;
 import optimization.Fmin;
@@ -192,9 +193,8 @@ public class TreeMoment {
          * depth, etc.)
          */
         double optimalZ_SSE = 0;
-        
+
         // System.out.println(depth+" "+maxDepth);
-        
         if (depth < maxDepth) {
             double optimalZ = 0;
 
@@ -610,20 +610,18 @@ public class TreeMoment {
         printTree();
         return treeString("");
     }
-    
-    private String treeString(String pass) { 
+
+    private String treeString(String pass) {
         System.out.println(pass);
         if (!terminal) {
             pass = pass + childLeft.treeString(pass);
             pass = pass + childRight.treeString(pass);
         } else {
             // System.out.println(getParentRuleDescriptive(null) + " " + pmUtility.stringPrettyPrintVector(betaEstimateNode) + " (" + pmUtility.stringPrettyPrintVector(varianceMatrix) + ")");
-            return getParentRuleDescriptive(null) + " [" + lensHonest.getNumObs() + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix)+"\n";
+            return getParentRuleDescriptive(null) + " [" + lensHonest.getNumObs() + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix) + "\n";
         }
         return pass;
     }
-    
-    
 
     public void distributeHonestObservations(DataLens honest) {
         lensHonest = honest;
@@ -919,5 +917,13 @@ public class TreeMoment {
      */
     public ArrayList<Double> getValueHomogeneousParameters() {
         return valueHomogeneousParameters;
+    }
+
+    void getIndexSplitVariables(TreeSet<Integer> splitTree) {
+        if (!terminal) {
+            childLeft.getIndexSplitVariables(splitTree);
+            childRight.getIndexSplitVariables(splitTree);
+            splitTree.add(rule.getOptimalSplitVariableIndex());
+        }
     }
 }

@@ -26,6 +26,7 @@ package examples.logitRC;
 // import JSci.maths.statistics.NormalDistribution;
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
+import core.ChartGenerator;
 import core.ContainerMoment;
 import core.DataLens;
 import core.IntegerPartition;
@@ -37,7 +38,10 @@ import core.OutOfSampleStatisticsContainer;
 import core.TreeOptions;
 import java.io.FileReader;
 import java.io.BufferedReader;
+import java.util.ArrayList;
 import java.util.Random;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import utility.pmUtility;
 
 /**
@@ -183,8 +187,15 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         beta.set(0, 0, -1.0);
         beta.set(1, 0, 2.3);
 
-        // what does this even mean in a RC logit setting?
-        // these the mean parameters of the utility, I guess
+        double draw = rng.nextDouble();
+        if (draw < 0.7) {
+            // beta.set(1, 0, beta.get(1, 0) + normal.inverse(rng.nextDouble()));
+        } else {
+            // beta.set(1, 0, -2.3 + normal.inverse(rng.nextDouble()));
+        }
+
+        // beta.set(0, 0, beta.get(0, 0) + normal.inverse(rng.nextDouble()));
+        
         return beta;
     }
 
@@ -219,48 +230,38 @@ public class LogitRCMomentSpecification implements MomentSpecification {
 
         Random rng = new Random(rngBaseSeedOutOfSample - 3);
 
-        for (int i = 0; i < testZ.getRowDimension(); i++) {
-            Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
-            Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
+        boolean computeBetaAndYFits = false;
+        if (computeBetaAndYFits) {
+            for (int i = 0; i < testZ.getRowDimension(); i++) {
+                Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
+                Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
 
-            // going to compare directly to the true parameter vector in this method instead of using fit of Y
-            Jama.Matrix bTruth = getBetaTruth(zi, rng);
+                // going to compare directly to the true parameter vector in this method instead of using fit of Y
+                Jama.Matrix bTruth = getBetaTruth(zi, rng);
 
-            Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+                Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
 
-            outOfSampleResultsY += getGoodnessOfFit(testY.get(i, 0), xi, compositeEstimatedBeta);
+                outOfSampleResultsY += getGoodnessOfFit(testY.get(i, 0), xi, compositeEstimatedBeta);
 
-            if (i < 10) {
-                String hString = "[ ";
-                for (int k = 0; k < bTruth.getRowDimension(); k++) {
-                    if (getHomogeneousIndex()[k]) {
-                        hString = hString + "X ";
-                    } else {
-                        hString = hString + "O ";
+                if (i < 10) {
+                    String hString = "[ ";
+                    for (int k = 0; k < bTruth.getRowDimension(); k++) {
+                        if (getHomogeneousIndex()[k]) {
+                            hString = hString + "X ";
+                        } else {
+                            hString = hString + "O ";
+                        }
                     }
+                    hString = hString + "]";
+                    System.out.print("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + " " + testY.get(i, 0) + " " + getPredictedY(xi, compositeEstimatedBeta, rng) + "\n");
                 }
-                hString = hString + "]";
-                System.out.print("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + " " + testY.get(i, 0) + " " + getPredictedY(xi, compositeEstimatedBeta, rng) + "\n");
+                //pmUtility.prettyPrintVector(compositeEstimatedBeta);
+
+                outOfSampleResultsBeta += (compositeEstimatedBeta.minus(bTruth)).norm2();
             }
-            //pmUtility.prettyPrintVector(compositeEstimatedBeta);
 
-            outOfSampleResultsBeta += (compositeEstimatedBeta.minus(bTruth)).norm2();
-        }
-
-        outOfSampleResultsBeta /= testZ.getRowDimension();
-        outOfSampleResultsY /= testZ.getRowDimension();
-
-        boolean manualCheck = false;
-        if (manualCheck) {
-            Jama.Matrix zi = testZ.getMatrix(0, 0, 0, testZ.getColumnDimension() - 1);
-
-            zi.set(0, 0, -1);
-            System.out.print("Forest z1 < 0: ");
-            pmUtility.prettyPrintVector(myForest.getEstimatedParameterForest(zi));
-
-            System.out.print("Forest z1 > 0: ");
-            zi.set(0, 0, 1.0);
-            pmUtility.prettyPrintVector(myForest.getEstimatedParameterForest(zi));
+            outOfSampleResultsBeta /= testZ.getRowDimension();
+            outOfSampleResultsY /= testZ.getRowDimension();
         }
 
         /**
@@ -282,15 +283,63 @@ public class LogitRCMomentSpecification implements MomentSpecification {
          * 3. Want to extend to using normal distributions instead of point
          * masses to get smooth CDFs
          *
-         * 4. Want to add a bunch more points
-         * 
-         * 5. Need to connect the X's that the tree splits on to automate the
-         * RC testing / estimation procedure
+         * 4. Want to add a bunch more points; in a single dimension that
+         * doesn't help (without a proper solver anyways) probably due to
+         * collinearity of the predicted models as you add more and more points
+         *
+         * 5. Need to connect the X's that the tree splits on to automate the RC
+         * testing / estimation procedure
          */
+        
+        // to point 5 above, query the moment forest to see which variables
+        // are ever split on
+        ArrayList<Integer> indexSplitVariables = myForest.getIndexSplitVariables();
+        for(Integer i : indexSplitVariables) {
+            System.out.println(i);
+        }
+        System.exit(0);
+        
         DeconvolutionSolver desolve = new DeconvolutionSolver(testY, testX, this);
         double betaHomogeneous = desolve.solve();
         double[][] betaList = desolve.getBetaList();
         double[] betaWeights = desolve.getBetaWeights();
+
+        // let's plot the fitted distribution of F(\beta)
+        XYSeries xy = new XYSeries("Estimated");
+        XYSeries xytruth = new XYSeries("True");
+
+        boolean first = true;
+        double minBetaSupport = 0;
+        double maxBetaSupport = 0;
+
+        for (int i = 0; i < betaList.length; i++) {
+            xy.add(betaList[i][1], betaWeights[i]);
+            if (betaList[i][1] < minBetaSupport || first) {
+                minBetaSupport = betaList[i][1];
+                first = false;
+            }
+            if (betaList[i][1] > maxBetaSupport || first) {
+                maxBetaSupport = betaList[i][1];
+                first = false;
+            }
+        }
+        double numPointsPlot = 100;
+        double plotIncrement = (maxBetaSupport - minBetaSupport) / (numPointsPlot - 1);
+        double numDraws = 100000;
+
+        for (double beta = minBetaSupport; beta < maxBetaSupport; beta += plotIncrement) {
+            double mixtureF = 0;
+
+            for (int k = 0; k < numDraws; k++) {
+                mixtureF += normal.probability(beta - getBetaTruth(null, rng).get(1, 0));
+            }
+            mixtureF /= numDraws;
+            xytruth.add(beta, mixtureF);
+        }
+
+        XYSeriesCollection xyc = new XYSeriesCollection(xy);
+        xyc.addSeries(xytruth);
+        ChartGenerator.makeXYLine(xyc, "Fitted f(\\beta)", "\\beta", "f(\\beta)");
 
         for (int k = 0; k < betaList.length; k++) {
             System.out.format("beta1: %.3f beta2: %.3f weight: %.3f %n", betaHomogeneous, betaList[k][1], betaWeights[k]);
@@ -305,7 +354,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
                 beta.set(1, 0, betaList[k][1]);
                 fittedShare += betaWeights[k] * LogitRCDataGenerator.getLogitShare(xi, beta);
             }
-            System.out.format("Y: %.4f Fitted: %.4f %n", testY.get(i,0), fittedShare);
+            System.out.format("Y: %.4f Fitted: %.4f %n", testY.get(i, 0), fittedShare);
         }
 
         // jt.append("betaMSE: " + (outOfSampleFit / testZ.getRowDimension()) + " \t [" + rngSeed + "]\n");

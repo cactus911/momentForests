@@ -99,14 +99,14 @@ public class FKRBSolver implements Uncmin_methods, mcmc.mcmcFunction {
     public double f_to_minimize(double[] x) {
         // try to impose summing up constraint here programmatically?
         // try that; here are bounds on variables
-//        for (int i = 1; i < x.length; i++) {
-//            if (x[i] > 1.0) {
-//                x[i] = 1.0;
-//            }
-//            if (x[i] < 0.0) {
-//                x[i] = 0.0;
-//            }
-//        }
+        for (int i = 1; i < x.length; i++) {
+            if (x[i] > 1.0) {
+                x[i] = 1.0;
+            }
+            if (x[i] < 0.0) {
+                x[i] = 0.0;
+            }
+        }
 
         double sum = 0;
         Jama.Matrix beta = new Jama.Matrix(x.length, 1);

@@ -152,7 +152,7 @@ public class DeconvolutionSolver implements Uncmin_methods {
         }
 
         Jama.Matrix weights;
-        boolean useSolver = true;
+        boolean useSolver = !true;
         if (useSolver) {
             FKRBSolver fsol = new FKRBSolver(testY, FKRB_X);
             weights = fsol.solve();

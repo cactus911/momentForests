@@ -71,12 +71,7 @@ public class LogitRCDataGenerator {
                 // need to split on X's now
                 for (int k = 0; k < numDraws; k++) {
                     Jama.Matrix beta = mySpecification.getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1), rng); // Z1 and Z2 to compute beta
-                    // if I don't move the beta around, I have verified that I get +Exactly+ the mean parameters back using GMM, as desired (there is no error anywhere in the DGP)
-                    // adding this next line in should result in a nice RC model that should split on the variable which has a random coefficient (I hope)
-                    // beta.set(0, 0, beta.get(0, 0) + normal.inverse(rng.nextDouble()));
-                    beta.set(1, 0, beta.get(1, 0) + normal.inverse(rng.nextDouble()));
                     Y.set(i, 0, Y.get(i, 0) + getLogitShare(subX, beta));
-                    // System.out.println(Y.get(i,0)/(k+1));
                 }
                 Y.set(i, 0, Y.get(i, 0) / numDraws);
             }
