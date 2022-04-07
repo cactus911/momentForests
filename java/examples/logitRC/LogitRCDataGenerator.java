@@ -28,8 +28,8 @@ public class LogitRCDataGenerator {
         Random rng = new Random(randSeed);
         NormalDistribution normal = new NormalDistribution();
         for (int i = 0; i < numObs; i++) {
-            // X.set(i, 0, normal.inverse(rng.nextDouble()));
-            X.set(i, 0, 1.0);
+            X.set(i, 0, normal.inverse(rng.nextDouble()));
+            // X.set(i, 0, 1.0);
             X.set(i, 1, Math.pow(normal.inverse(rng.nextDouble()), 2));
             // X.set(i, 1, -2.0 + 4.0*rng.nextDouble());
 
@@ -60,7 +60,8 @@ public class LogitRCDataGenerator {
                 Jama.Matrix beta = mySpecification.getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1), rng); // Z1 and Z2 to compute beta
                 // if I don't move the beta around, I have verified that I get +Exactly+ the mean parameters back using GMM, as desired (there is no error anywhere in the DGP)
                 // adding this next line in should result in a nice RC model that should split on the variable which has a random coefficient (I hope)
-                beta.set(1, 0, beta.get(1, 0) + normal.inverse(rng.nextDouble()));
+                beta.set(0, 0, beta.get(0, 0) + normal.inverse(rng.nextDouble())); // RC on both
+                // beta.set(1, 0, beta.get(1, 0) + normal.inverse(rng.nextDouble()));
                 Y.set(i, 0, Y.get(i, 0) + getLogitShare(subX, beta));
                 // System.out.println(Y.get(i,0)/(k+1));
             }

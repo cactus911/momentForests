@@ -72,7 +72,9 @@ public class LogitRCMomentSpecification implements MomentSpecification {
          * Here we are going to search over X (I think this works like this!)
          */
         
-        int[] vsi = {1}; //Search over x2 only (x1 is a constant; have to think about what that means)
+        // int[] vsi = {1}; //Search over x2 only (x1 is a constant; have to think about what that means)
+        int[] vsi = {0, 1}; // Going to change this to make X1 also a continuous variable to search over
+        
         Boolean[] wvd = {false, false}; // x1, x2 continuous (this thing has to be filled out for all the Z's, apparently; the length of this array is used in momentTree!
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
@@ -265,13 +267,10 @@ public class LogitRCMomentSpecification implements MomentSpecification {
     @Override
     public String getVariableName(int variableIndex) {
         if (variableIndex == 0) {
-            return "Z1";
+            return "X1";
         }
         if (variableIndex == 1) {
-            return "Z2";
-        }
-        if (variableIndex == 2) {
-            return "Z3";
+            return "X2";
         }
         return "Unknown";
     }
