@@ -46,7 +46,7 @@ public class DeconvolutionSolver implements Uncmin_methods {
                 betaList = b2;
                 numModels = betaList.length;
             } else {
-                numModels = 11;
+                numModels = 21;
                 betaList = new double[numModels][2];
                 double lowerBeta = -5;
                 double upperBeta = 5;

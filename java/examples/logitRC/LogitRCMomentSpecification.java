@@ -296,13 +296,13 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         }
         System.out.println("");
 
-        if (indexSplitVariables.size() > 0) {
+        if (!indexSplitVariables.isEmpty()) {
             DeconvolutionSolver desolve = new DeconvolutionSolver(testY, testX, this, indexSplitVariables);
             desolve.solve();
             double[][] betaList = desolve.getBetaList();
             double[] betaWeights = desolve.getBetaWeights();
 
-            boolean plot = false;
+            boolean plot = true;
 
             if (plot) {
                 // let's plot the fitted distribution of F(\beta)
