@@ -185,7 +185,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
     public Matrix getBetaTruth(Matrix zi, Random rng) {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -1.0 + 0.0 * normal.inverse(rng.nextDouble()));
-        beta.set(1, 0, 1.0 + 0.0 * normal.inverse(rng.nextDouble()));
+        beta.set(1, 0, 1.0 + 1.0 * normal.inverse(rng.nextDouble()));
 
 //        double draw = rng.nextDouble();
 //        if (draw < 0.7) {

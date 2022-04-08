@@ -5,6 +5,8 @@
 package examples.logitRC;
 
 import Jama.Matrix;
+import com.mathworks.engine.MatlabEngine;
+import java.io.StringWriter;
 import mcmc.gibbsLTEGeneralized;
 import optimization.Uncmin_f77;
 import optimization.Uncmin_methods;
@@ -29,6 +31,48 @@ public class FKRBSolver implements Uncmin_methods, mcmc.mcmcFunction {
     }
 
     public Jama.Matrix solve() {
+        boolean useMATLAB = true;
+        if (useMATLAB) {
+            /**
+             * Convert this to use Matlab!
+             */
+            try {
+                MatlabEngine eng;
+                String[] engines = MatlabEngine.findMatlab();
+                if (engines.length > 0) {
+                    eng = MatlabEngine.connectMatlab(engines[0]);
+                } else {
+                    eng = MatlabEngine.startMatlab();
+                }
+                eng.putVariable("X", X.getArray());
+
+                int numParams = X.getColumnDimension();
+
+                // this is so cool!
+                eng.putVariable("Y", Y.getArray());
+                eng.eval("Aeq=ones(1," + numParams + ");");
+                eng.eval("beq=1"); // parameters sum to one
+                eng.eval("lb=zeros(" + numParams + ",1);");
+                eng.eval("ub=ones(" + numParams + ",1);");
+
+                // StringWriter writer = new StringWriter();
+                // eng.eval("size(Aeq)", writer, null);
+                // System.out.println(writer.toString());
+                // System.out.println("X: "+X.getRowDimension()+" by "+X.getColumnDimension());
+                // System.out.println("Y: "+X.getRowDimension()+" by "+Y.getColumnDimension());
+                eng.eval("beta=lsqlin(X,Y,[],[],Aeq,beq,lb,ub)");
+
+                double[] bhat = eng.getVariable("beta");
+                pmUtility.prettyPrint(new Jama.Matrix(bhat, 1));
+
+                eng.close();
+                return new Jama.Matrix(bhat, 1).transpose();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(0);
+            }
+        }
+
         int numParams = X.getColumnDimension() - 1;
 
         Uncmin_f77 minimizer = new Uncmin_f77(false);
