@@ -4,7 +4,10 @@
  */
 package examples.logitRC;
 
+import JSci.maths.statistics.NormalDistribution;
 import core.MomentSpecification;
+import java.util.ArrayList;
+import java.util.Random;
 import optimization.Uncmin_f77;
 import optimization.Uncmin_methods;
 import utility.pmUtility;
@@ -22,82 +25,129 @@ public class DeconvolutionSolver implements Uncmin_methods {
 
     private double[][] betaList;
     private double[] betaWeights;
+    private final ArrayList<Integer> indexRandomCoefficients;
 
-    public DeconvolutionSolver(Jama.Matrix testY, Jama.Matrix testX, MomentSpecification mySpecification) {
+    public DeconvolutionSolver(Jama.Matrix testY, Jama.Matrix testX, MomentSpecification mySpecification, ArrayList<Integer> indexRandomCoefficients) {
         this.testX = testX;
         this.testY = testY;
+        this.indexRandomCoefficients = indexRandomCoefficients;
 
         this.mySpecification = mySpecification;
 
-        boolean simpleTypes = false;
-        if (simpleTypes) {
-            double[][] b2 = {{-1, -1},
-            {-1, 0},
-            {-1, 1},
-            {-1, 2},
-            {-1, 3}};
-            betaList = b2;
-            numModels = betaList.length;
+        boolean testSingleDimension = true;
+        if (testSingleDimension) {
+            boolean simpleTypes = false;
+            if (simpleTypes) {
+                double[][] b2 = {{-1, -1},
+                {-1, 0},
+                {-1, 1},
+                {-1, 2},
+                {-1, 3}};
+                betaList = b2;
+                numModels = betaList.length;
+            } else {
+                numModels = 11;
+                betaList = new double[numModels][2];
+                double lowerBeta = -5;
+                double upperBeta = 5;
+                double increment = (upperBeta - lowerBeta) / (numModels - 1);
+                for (int i = 0; i < numModels; i++) {
+                    betaList[i][1] = lowerBeta + increment * i;
+                }
+            }
         } else {
-            numModels = 10;
-            betaList = new double[numModels][2];
+            /**
+             * Set the candidates according to how many RCs we have
+             */
+            NormalDistribution normal = new NormalDistribution();
+            Random rng = new Random(1444);
+            numModels = (int) Math.pow(10, testX.getColumnDimension() - indexRandomCoefficients.size());
+            betaList = new double[numModels][testX.getColumnDimension()];
+
             double lowerBeta = -5;
             double upperBeta = 5;
             double increment = (upperBeta - lowerBeta) / (numModels - 1);
-            for (int i = 0; i < numModels; i++) {
-                betaList[i][1] = lowerBeta + increment * i;
+
+            for (int i = 0; i < betaList.length; i++) {
+                for (int k = 0; k < testX.getColumnDimension(); k++) {
+                    // betaList[i][k] = normal.inverse(rng.nextDouble()); // could make this more sophisticated at some point in the future (space filling grid or something) this works terribly
+                    betaList[i][k] = lowerBeta + i * increment;
+                }
             }
         }
         betaWeights = new double[betaList.length];
     }
 
-    public double solve() {
-        int numParams = 1;
+    public void solve() {
+        int numParams = testX.getColumnDimension() - indexRandomCoefficients.size();
 
-        Uncmin_f77 minimizer = new Uncmin_f77(true);
-
-        double[] guess = new double[numParams + 1];
-
-        double[] xpls = new double[numParams + 1];
-        double[] fpls = new double[2];
-        double[] gpls = new double[numParams + 1];
-        int[] itrmcd = new int[2];
-        double[][] a = new double[numParams + 1][numParams + 1];
-        double[] udiag = new double[numParams + 1];
-        double[] typsiz = new double[numParams + 1];
-        for (int i = 1; i <= numParams; i++) {
-            typsiz[i] = 1.0;
-        }
-
-        double[] fscale = {0, 1.0E-8};
-        int[] method = {0, 1};
-        int[] iexp = {0, 0};
-        int[] msg = {0, 1};
-        int[] ndigit = {0, 8};
-        int[] itnlim = {0, 150};
-        int[] iagflg = {0, 0};
-        int[] iahflg = {0, 0};
-        double[] dlt = {0, 1};
-        double[] gradtl = {0, 1E-8};
-        double[] stepmx = {0, 1.0}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
-        double[] steptl = {0, 1E-8};
-
-        boolean go = true;
-        if (numParams == 1 && go) {
-            double left = -5.0;
-            double right = 5.0;
-            return goldenRatioSearch(left, right)[1];
+        if (numParams == 0) {
+            // fully RC case
+            f_to_minimize(null);
+            System.out.println("Fully RC case");
         } else {
+            System.out.println("Number of parameters: " + numParams);
+            Uncmin_f77 minimizer = new Uncmin_f77(true);
 
+            double[] guess = new double[numParams + 1];
+
+            double[] xpls = new double[numParams + 1];
+            double[] fpls = new double[2];
+            double[] gpls = new double[numParams + 1];
+            int[] itrmcd = new int[2];
+            double[][] a = new double[numParams + 1][numParams + 1];
+            double[] udiag = new double[numParams + 1];
+            double[] typsiz = new double[numParams + 1];
+            for (int i = 1; i <= numParams; i++) {
+                typsiz[i] = 1.0;
+            }
+
+            double[] fscale = {0, 1.0E-8};
+            int[] method = {0, 1};
+            int[] iexp = {0, 0};
+            int[] msg = {0, 1};
+            int[] ndigit = {0, 8};
+            int[] itnlim = {0, 150};
+            int[] iagflg = {0, 0};
+            int[] iahflg = {0, 0};
+            double[] dlt = {0, 1};
+            double[] gradtl = {0, 1E-8};
+            double[] stepmx = {0, 1.0}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
+            double[] steptl = {0, 1E-8};
+
+            boolean go = true;
+            if (numParams == 1 && go) {
+                double left = -5.0;
+                double right = 5.0;
+                double[] result = goldenRatioSearch(left, right);
+                for (int k = 0; k < testX.getColumnDimension(); k++) {
+                    if (!indexRandomCoefficients.contains(k)) {
+                        // System.out.println("Detecting homogeneous parameter on index "+k);
+                        for (int i = 0; i < numModels; i++) {
+                            betaList[i][k] = result[1];
+                            // System.out.println("setting beta at "+i+" and "+k+" to "+result[1]);
+                        }
+                    }
+                }
+            } else {
 //         guess[1] = -1;
 //        System.out.println("fmin at truth: "+f_to_minimize(guess));
 //        System.exit(0);
-            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+
+                f_to_minimize(xpls);
+
+                int counter = 0;
+                for (int k = 0; k < testX.getColumnDimension(); k++) {
+                    if (!indexRandomCoefficients.contains(k)) {
+                        for (int i = 0; i < numModels; i++) {
+                            betaList[i][k] = xpls[counter + 1];
+                        }
+                        counter++;
+                    }
+                }
+            }
         }
-
-        f_to_minimize(xpls);
-
-        return xpls[1];
     }
 
     private double[] goldenRatioSearch(double xLower, double xUpper) {
@@ -142,12 +192,19 @@ public class DeconvolutionSolver implements Uncmin_methods {
         for (int i = 0; i < testY.getRowDimension(); i++) {
             Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
 
-            for (int j = 0; j < numModels; j++) {
-                Jama.Matrix betaJ = new Jama.Matrix(2, 1);
-
-                betaJ.set(0, 0, x[1]);
-                betaJ.set(1, 0, betaList[j][1]);
-                FKRB_X.set(i, j, mySpecification.getPredictedY(xi, betaJ, null));
+            for (int k = 0; k < numModels; k++) {
+                Jama.Matrix betaJ = new Jama.Matrix(testX.getColumnDimension(), 1);
+                int counter = 0;
+                for (int j = 0; j < testX.getColumnDimension(); j++) {
+                    if (indexRandomCoefficients.contains(j)) {
+                        betaJ.set(j, 0, betaList[k][j]);
+                    } else {
+                        betaJ.set(j, 0, x[counter + 1]);
+                        counter++;
+                    }
+                }
+                // pmUtility.prettyPrintVector(betaJ);
+                FKRB_X.set(i, k, mySpecification.getPredictedY(xi, betaJ, null));
             }
         }
 

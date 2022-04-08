@@ -22,6 +22,7 @@ public class LogitRCDataGenerator {
     private Jama.Matrix Z;
 
     public LogitRCDataGenerator(int numObs, MomentSpecification mySpecification, long randSeed) {
+        System.out.print("Generating data...");
         X = new Jama.Matrix(numObs, 2);
         Z = new Jama.Matrix(numObs, mySpecification.getDiscreteVector().length);
         Y = new Jama.Matrix(numObs, 1);
@@ -78,6 +79,7 @@ public class LogitRCDataGenerator {
         }
         // pmUtility.prettyPrintVector(Y);
         // System.exit(0);
+        System.out.println("done.");
     }
 
     static public double getLogitShare(Jama.Matrix subX, Jama.Matrix beta) {

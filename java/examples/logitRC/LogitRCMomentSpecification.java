@@ -184,18 +184,15 @@ public class LogitRCMomentSpecification implements MomentSpecification {
     @Override
     public Matrix getBetaTruth(Matrix zi, Random rng) {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
-        beta.set(0, 0, -1.0 + normal.inverse(rng.nextDouble()));
-        beta.set(1, 0, 1.0 + normal.inverse(rng.nextDouble()));
+        beta.set(0, 0, -1.0 + 0.0 * normal.inverse(rng.nextDouble()));
+        beta.set(1, 0, 1.0 + 0.0 * normal.inverse(rng.nextDouble()));
 
-        double draw = rng.nextDouble();
-        if (draw < 0.7) {
-            // beta.set(1, 0, beta.get(1, 0) + normal.inverse(rng.nextDouble()));
-        } else {
-            // beta.set(1, 0, -2.3 + normal.inverse(rng.nextDouble()));
-        }
-
-        // beta.set(0, 0, beta.get(0, 0) + normal.inverse(rng.nextDouble()));
-        
+//        double draw = rng.nextDouble();
+//        if (draw < 0.7) {
+//            beta.set(1, 0, beta.get(1, 0) + normal.inverse(rng.nextDouble()));
+//        } else {
+//            beta.set(1, 0, -2.3 + normal.inverse(rng.nextDouble()));
+//        }
         return beta;
     }
 
@@ -223,7 +220,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         /**
          * Test vectors for assessment
          */
-        DataLens oosDataLens = getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        DataLens oosDataLens = getOutOfSampleXYZ(12000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
         Jama.Matrix testZ = oosDataLens.getZ();
         Jama.Matrix testX = oosDataLens.getX();
         Jama.Matrix testY = oosDataLens.getY();
@@ -290,71 +287,78 @@ public class LogitRCMomentSpecification implements MomentSpecification {
          * 5. Need to connect the X's that the tree splits on to automate the RC
          * testing / estimation procedure
          */
-        
         // to point 5 above, query the moment forest to see which variables
         // are ever split on
         ArrayList<Integer> indexSplitVariables = myForest.getIndexSplitVariables();
-        for(Integer i : indexSplitVariables) {
-            System.out.println(i);
+        System.out.print("Detected random coefficients on following X indices: ");
+        for (Integer i : indexSplitVariables) {
+            System.out.print(i + " ");
         }
-        System.exit(0);
-        
-        DeconvolutionSolver desolve = new DeconvolutionSolver(testY, testX, this);
-        double betaHomogeneous = desolve.solve();
-        double[][] betaList = desolve.getBetaList();
-        double[] betaWeights = desolve.getBetaWeights();
+        System.out.println("");
 
-        // let's plot the fitted distribution of F(\beta)
-        XYSeries xy = new XYSeries("Estimated");
-        XYSeries xytruth = new XYSeries("True");
+        if (indexSplitVariables.size() > 0) {
+            DeconvolutionSolver desolve = new DeconvolutionSolver(testY, testX, this, indexSplitVariables);
+            desolve.solve();
+            double[][] betaList = desolve.getBetaList();
+            double[] betaWeights = desolve.getBetaWeights();
 
-        boolean first = true;
-        double minBetaSupport = 0;
-        double maxBetaSupport = 0;
+            boolean plot = false;
 
-        for (int i = 0; i < betaList.length; i++) {
-            xy.add(betaList[i][1], betaWeights[i]);
-            if (betaList[i][1] < minBetaSupport || first) {
-                minBetaSupport = betaList[i][1];
-                first = false;
+            if (plot) {
+                // let's plot the fitted distribution of F(\beta)
+                XYSeries xy = new XYSeries("Estimated");
+                XYSeries xytruth = new XYSeries("True");
+
+                boolean first = true;
+                double minBetaSupport = 0;
+                double maxBetaSupport = 0;
+
+                for (int i = 0; i < betaList.length; i++) {
+                    xy.add(betaList[i][1], betaWeights[i]);
+                    if (betaList[i][1] < minBetaSupport || first) {
+                        minBetaSupport = betaList[i][1];
+                        first = false;
+                    }
+                    if (betaList[i][1] > maxBetaSupport || first) {
+                        maxBetaSupport = betaList[i][1];
+                        first = false;
+                    }
+                }
+                double numPointsPlot = 100;
+                double plotIncrement = (maxBetaSupport - minBetaSupport) / (numPointsPlot - 1);
+                double numDraws = 100000;
+
+                for (double beta = minBetaSupport; beta < maxBetaSupport; beta += plotIncrement) {
+                    double mixtureF = 0;
+
+                    for (int k = 0; k < numDraws; k++) {
+                        mixtureF += normal.probability(beta - getBetaTruth(null, rng).get(1, 0));
+                    }
+                    mixtureF /= numDraws;
+                    xytruth.add(beta, mixtureF);
+                }
+
+                XYSeriesCollection xyc = new XYSeriesCollection(xy);
+                xyc.addSeries(xytruth);
+                ChartGenerator.makeXYLine(xyc, "Fitted f(\\beta)", "\\beta", "f(\\beta)");
             }
-            if (betaList[i][1] > maxBetaSupport || first) {
-                maxBetaSupport = betaList[i][1];
-                first = false;
+
+            for (int r = 0; r < betaList.length; r++) {
+                System.out.format("beta1: %.3f beta2: %.3f weight: %.3f %n", betaList[r][0], betaList[r][1], betaWeights[r]);
             }
-        }
-        double numPointsPlot = 100;
-        double plotIncrement = (maxBetaSupport - minBetaSupport) / (numPointsPlot - 1);
-        double numDraws = 100000;
-
-        for (double beta = minBetaSupport; beta < maxBetaSupport; beta += plotIncrement) {
-            double mixtureF = 0;
-
-            for (int k = 0; k < numDraws; k++) {
-                mixtureF += normal.probability(beta - getBetaTruth(null, rng).get(1, 0));
+            // pmUtility.prettyPrintVector(weights);
+            for (int i = 0; i < 10; i++) {
+                Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
+                double fittedShare = 0;
+                for (int r = 0; r < betaList.length; r++) {
+                    Jama.Matrix beta = new Jama.Matrix(testX.getColumnDimension(), 1);
+                    for (int j = 0; j < testX.getColumnDimension(); j++) {
+                        beta.set(j, 0, betaList[r][j]);
+                    }
+                    fittedShare += betaWeights[r] * LogitRCDataGenerator.getLogitShare(xi, beta);
+                }
+                System.out.format("Y: %.4f Fitted: %.4f %n", testY.get(i, 0), fittedShare);
             }
-            mixtureF /= numDraws;
-            xytruth.add(beta, mixtureF);
-        }
-
-        XYSeriesCollection xyc = new XYSeriesCollection(xy);
-        xyc.addSeries(xytruth);
-        ChartGenerator.makeXYLine(xyc, "Fitted f(\\beta)", "\\beta", "f(\\beta)");
-
-        for (int k = 0; k < betaList.length; k++) {
-            System.out.format("beta1: %.3f beta2: %.3f weight: %.3f %n", betaHomogeneous, betaList[k][1], betaWeights[k]);
-        }
-        // pmUtility.prettyPrintVector(weights);
-        for (int i = 0; i < 10; i++) {
-            Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
-            double fittedShare = 0;
-            for (int k = 0; k < betaList.length; k++) {
-                Jama.Matrix beta = new Jama.Matrix(2, 1);
-                beta.set(0, 0, betaHomogeneous);
-                beta.set(1, 0, betaList[k][1]);
-                fittedShare += betaWeights[k] * LogitRCDataGenerator.getLogitShare(xi, beta);
-            }
-            System.out.format("Y: %.4f Fitted: %.4f %n", testY.get(i, 0), fittedShare);
         }
 
         // jt.append("betaMSE: " + (outOfSampleFit / testZ.getRowDimension()) + " \t [" + rngSeed + "]\n");
