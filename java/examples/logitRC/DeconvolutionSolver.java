@@ -18,12 +18,12 @@ import utility.pmUtility;
  */
 public class DeconvolutionSolver implements Uncmin_methods {
 
-    int numModels;
+    // int numModels;
     MomentSpecification mySpecification;
     Jama.Matrix testX;
     Jama.Matrix testY;
 
-    private double[][] betaList;
+    private ArrayList<double[]> betaList = new ArrayList<>();
     private double[] betaWeights;
     private final ArrayList<Integer> indexRandomCoefficients;
 
@@ -34,8 +34,8 @@ public class DeconvolutionSolver implements Uncmin_methods {
 
         this.mySpecification = mySpecification;
 
-        boolean testSingleDimension = true;
-        if (testSingleDimension) {
+        boolean tests = true;
+        if (tests) {
             boolean simpleTypes = false;
             if (simpleTypes) {
                 double[][] b2 = {{-1, -1},
@@ -43,39 +43,25 @@ public class DeconvolutionSolver implements Uncmin_methods {
                 {-1, 1},
                 {-1, 2},
                 {-1, 3}};
-                betaList = b2;
-                numModels = betaList.length;
+                for(double[] b : b2) {
+                    betaList.add(b);
+                }
             } else {
-                numModels = 21;
-                betaList = new double[numModels][2];
-                double lowerBeta = -5;
-                double upperBeta = 5;
+                int numModels = 6;
+                double lowerBeta = -2;
+                double upperBeta = 3;
                 double increment = (upperBeta - lowerBeta) / (numModels - 1);
                 for (int i = 0; i < numModels; i++) {
-                    betaList[i][1] = lowerBeta + increment * i;
+                    for(int j=0;j<numModels;j++) {
+                        double[] b = new double[testX.getColumnDimension()];
+                        b[0] = lowerBeta + increment * i;
+                        b[1] = lowerBeta + increment * j;
+                        betaList.add(b);
+                    }                    
                 }
             }
-        } else {
-            /**
-             * Set the candidates according to how many RCs we have
-             */
-            NormalDistribution normal = new NormalDistribution();
-            Random rng = new Random(1444);
-            numModels = (int) Math.pow(10, testX.getColumnDimension() - indexRandomCoefficients.size());
-            betaList = new double[numModels][testX.getColumnDimension()];
-
-            double lowerBeta = -5;
-            double upperBeta = 5;
-            double increment = (upperBeta - lowerBeta) / (numModels - 1);
-
-            for (int i = 0; i < betaList.length; i++) {
-                for (int k = 0; k < testX.getColumnDimension(); k++) {
-                    // betaList[i][k] = normal.inverse(rng.nextDouble()); // could make this more sophisticated at some point in the future (space filling grid or something) this works terribly
-                    betaList[i][k] = lowerBeta + i * increment;
-                }
-            }
-        }
-        betaWeights = new double[betaList.length];
+        } 
+        betaWeights = new double[betaList.size()];
     }
 
     public void solve() {
@@ -123,8 +109,8 @@ public class DeconvolutionSolver implements Uncmin_methods {
                 for (int k = 0; k < testX.getColumnDimension(); k++) {
                     if (!indexRandomCoefficients.contains(k)) {
                         // System.out.println("Detecting homogeneous parameter on index "+k);
-                        for (int i = 0; i < numModels; i++) {
-                            betaList[i][k] = result[1];
+                        for (int i = 0; i < betaList.size(); i++) {
+                            betaList.get(i)[k] = result[1];
                             // System.out.println("setting beta at "+i+" and "+k+" to "+result[1]);
                         }
                     }
@@ -140,8 +126,8 @@ public class DeconvolutionSolver implements Uncmin_methods {
                 int counter = 0;
                 for (int k = 0; k < testX.getColumnDimension(); k++) {
                     if (!indexRandomCoefficients.contains(k)) {
-                        for (int i = 0; i < numModels; i++) {
-                            betaList[i][k] = xpls[counter + 1];
+                        for (int i = 0; i < betaList.size(); i++) {
+                            betaList.get(i)[k] = xpls[counter + 1];
                         }
                         counter++;
                     }
@@ -188,23 +174,23 @@ public class DeconvolutionSolver implements Uncmin_methods {
 
     @Override
     public double f_to_minimize(double[] x) {
-        Jama.Matrix FKRB_X = new Jama.Matrix(testY.getRowDimension(), numModels);
+        Jama.Matrix FKRB_X = new Jama.Matrix(testY.getRowDimension(), betaList.size());
         for (int i = 0; i < testY.getRowDimension(); i++) {
             Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
 
-            for (int k = 0; k < numModels; k++) {
+            for (int r = 0; r < betaList.size(); r++) {
                 Jama.Matrix betaJ = new Jama.Matrix(testX.getColumnDimension(), 1);
                 int counter = 0;
                 for (int j = 0; j < testX.getColumnDimension(); j++) {
                     if (indexRandomCoefficients.contains(j)) {
-                        betaJ.set(j, 0, betaList[k][j]);
+                        betaJ.set(j, 0, betaList.get(r)[j]);
                     } else {
                         betaJ.set(j, 0, x[counter + 1]);
                         counter++;
                     }
                 }
                 // pmUtility.prettyPrintVector(betaJ);
-                FKRB_X.set(i, k, mySpecification.getPredictedY(xi, betaJ, null));
+                FKRB_X.set(i, r, mySpecification.getPredictedY(xi, betaJ, null));
             }
         }
 
@@ -246,7 +232,7 @@ public class DeconvolutionSolver implements Uncmin_methods {
     /**
      * @return the betaList
      */
-    public double[][] getBetaList() {
+    public ArrayList<double[]> getBetaList() {
         return betaList;
     }
 

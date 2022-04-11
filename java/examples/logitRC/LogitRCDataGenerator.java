@@ -52,6 +52,7 @@ public class LogitRCDataGenerator {
             // for RC logit, want to report the aggregate share (At least to start with)
             // we will start with a dumb way; the betaTruth gets a draw from beta; we will do a stupid Monte Carlo approach to computing shares (should come back to doing quadrature if we can slot that in the framework somehow)
             boolean simpleDiscreteRC = false;
+            boolean useLetters = true;
             if (simpleDiscreteRC) {
                 double[][] betaList = {{-1, -1},
                 {-1, 0},
@@ -60,6 +61,58 @@ public class LogitRCDataGenerator {
                 {-1, 3}};
                 double[] weights = {0.15, 0.15, 0.3, 0.2, 0.2};
                 // double[] weights = {0, 0, 1, 0, 0};
+                for (int k = 0; k < betaList.length; k++) {
+                    Jama.Matrix beta = new Jama.Matrix(2, 1);
+                    beta.set(0, 0, betaList[k][0]);
+                    beta.set(1, 0, betaList[k][1]);
+                    Y.set(i, 0, Y.get(i, 0) + weights[k] * getLogitShare(subX, beta));
+                }
+            } else if (useLetters) {
+                double[][] betaList = {{-2, -2},
+                {-2, -1},
+                {-2, 0},
+                {-2, 1},
+                {-2, 2},
+                {-1, -2},
+                {-1, -1},
+                {-1, 0},
+                {-1, 1},
+                {-1, 2},
+                {0, -2},
+                {0, -1},
+                {0, 0},
+                {0, 1},
+                {0, 2},
+                {1, -2},
+                {1, -1},
+                {1, 0},
+                {1, 1},
+                {1, 2},
+                {2, -2},
+                {2, -1},
+                {2, 0},
+                {2, 1},
+                {2, 2},
+                {3, -2},
+                {3, -1},
+                {3, 0},
+                {3, 1},
+                {3, 2},};
+                double p = 1.0 / 10;
+//                double[] weights = {0, 0, 0, 0, 0,
+//                    0, p, p, p, 0,
+//                    0, p, 0, p, 0,
+//                    0, p, p, p, 0,
+//                    0, p, 0, 0, 0,
+//                    0, p, 0, 0, 0};                
+                
+                double[] weights = {0, 0, 0, 0, 0,
+                    0, 0, 0, 1.0, 0,
+                    0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0,
+                    0, 0, 0, 0, 0};
+                
                 for (int k = 0; k < betaList.length; k++) {
                     Jama.Matrix beta = new Jama.Matrix(2, 1);
                     beta.set(0, 0, betaList[k][0]);

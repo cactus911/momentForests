@@ -186,7 +186,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -1.0 + 0.0 * normal.inverse(rng.nextDouble()));
         beta.set(1, 0, 1.0 + 1.0 * normal.inverse(rng.nextDouble()));
-
+        
 //        double draw = rng.nextDouble();
 //        if (draw < 0.7) {
 //            beta.set(1, 0, beta.get(1, 0) + normal.inverse(rng.nextDouble()));
@@ -220,7 +220,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         /**
          * Test vectors for assessment
          */
-        DataLens oosDataLens = getOutOfSampleXYZ(12000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        DataLens oosDataLens = getOutOfSampleXYZ(25000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
         Jama.Matrix testZ = oosDataLens.getZ();
         Jama.Matrix testX = oosDataLens.getX();
         Jama.Matrix testY = oosDataLens.getY();
@@ -299,7 +299,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         if (!indexSplitVariables.isEmpty()) {
             DeconvolutionSolver desolve = new DeconvolutionSolver(testY, testX, this, indexSplitVariables);
             desolve.solve();
-            double[][] betaList = desolve.getBetaList();
+            ArrayList<double[]> betaList = desolve.getBetaList();
             double[] betaWeights = desolve.getBetaWeights();
 
             boolean plot = true;
@@ -313,14 +313,14 @@ public class LogitRCMomentSpecification implements MomentSpecification {
                 double minBetaSupport = 0;
                 double maxBetaSupport = 0;
 
-                for (int i = 0; i < betaList.length; i++) {
-                    xy.add(betaList[i][1], betaWeights[i]);
-                    if (betaList[i][1] < minBetaSupport || first) {
-                        minBetaSupport = betaList[i][1];
+                for (int i = 0; i < betaList.size(); i++) {
+                    xy.add(betaList.get(i)[1], betaWeights[i]);
+                    if (betaList.get(i)[1] < minBetaSupport || first) {
+                        minBetaSupport = betaList.get(i)[1];
                         first = false;
                     }
-                    if (betaList[i][1] > maxBetaSupport || first) {
-                        maxBetaSupport = betaList[i][1];
+                    if (betaList.get(i)[1] > maxBetaSupport || first) {
+                        maxBetaSupport = betaList.get(i)[1];
                         first = false;
                     }
                 }
@@ -343,17 +343,17 @@ public class LogitRCMomentSpecification implements MomentSpecification {
                 ChartGenerator.makeXYLine(xyc, "Fitted f(\\beta)", "\\beta", "f(\\beta)");
             }
 
-            for (int r = 0; r < betaList.length; r++) {
-                System.out.format("beta1: %.3f beta2: %.3f weight: %.3f %n", betaList[r][0], betaList[r][1], betaWeights[r]);
+            for (int r = 0; r < betaList.size(); r++) {
+                System.out.format("beta1: %.3f beta2: %.3f weight: %.3f %n", betaList.get(r)[0], betaList.get(r)[1], betaWeights[r]);
             }
             // pmUtility.prettyPrintVector(weights);
             for (int i = 0; i < 10; i++) {
                 Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
                 double fittedShare = 0;
-                for (int r = 0; r < betaList.length; r++) {
+                for (int r = 0; r < betaList.size(); r++) {
                     Jama.Matrix beta = new Jama.Matrix(testX.getColumnDimension(), 1);
                     for (int j = 0; j < testX.getColumnDimension(); j++) {
-                        beta.set(j, 0, betaList[r][j]);
+                        beta.set(j, 0, betaList.get(r)[j]);
                     }
                     fittedShare += betaWeights[r] * LogitRCDataGenerator.getLogitShare(xi, beta);
                 }
