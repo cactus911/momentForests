@@ -99,24 +99,33 @@ public class LogitRCDataGenerator {
                 {3, 1},
                 {3, 2},};
                 double p = 1.0 / 10;
-//                double[] weights = {0, 0, 0, 0, 0,
-//                    0, p, p, p, 0,
-//                    0, p, 0, p, 0,
-//                    0, p, p, p, 0,
-//                    0, p, 0, 0, 0,
-//                    0, p, 0, 0, 0};                
-                
                 double[] weights = {0, 0, 0, 0, 0,
-                    0, 0, 0, 1.0, 0,
-                    0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0,
-                    0, 0, 0, 0, 0};
+                    0, p, p, p, 0,
+                    0, p, 0, p, 0,
+                    0, p, p, p, 0,
+                    0, p, 0, 0, 0,
+                    0, p, 0, 0, 0};                
+
+//                double[] weights = {0, 0.25, 0, 0, 0,
+//                    0, 0, 0, 0, 0,
+//                    0, 0, 0, 0, 0.25,
+//                    0, 0.25, 0, 0, 0,
+//                    0, 0, 0, 0, 0,
+//                    0, 0, 0, 0.25, 0};
                 
+                if(i==0) {
+                    System.out.print("xi: ");
+                    pmUtility.prettyPrint(subX);
+                }
+
                 for (int k = 0; k < betaList.length; k++) {
-                    Jama.Matrix beta = new Jama.Matrix(2, 1);
-                    beta.set(0, 0, betaList[k][0]);
-                    beta.set(1, 0, betaList[k][1]);
+                    Jama.Matrix beta = new Jama.Matrix(betaList[k], 2);
+                    // beta.set(0, 0, betaList[k][0]);
+                    // beta.set(1, 0, betaList[k][1]);
+                    if (i == 0) {
+                        System.out.print(weights[k] + " " + getLogitShare(subX, beta) + " ");
+                        pmUtility.prettyPrintVector(beta);
+                    }
                     Y.set(i, 0, Y.get(i, 0) + weights[k] * getLogitShare(subX, beta));
                 }
             } else {
