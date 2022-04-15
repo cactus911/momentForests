@@ -55,7 +55,7 @@ public class GasolineSpecification implements MomentSpecification {
 
     DataLens outSampleLens;
 
-    String[] varNames = {"logHHSize", "logNumDrivers", "logAge", "urban", "hhfaminc", "census_d", "lif_cyc", "logCost"};
+    String[] varNames = {"constant", "logHHSize", "logNumDrivers", "logAge", "urban", "hhfaminc", "census_d", "lif_cyc", "logCost"};
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -86,9 +86,29 @@ public class GasolineSpecification implements MomentSpecification {
 
         /**
          * These all refer to Z (not X)!!!
+         *
+         * Z =
+         * 
+         * 0.constant
+         * 
+         * 1. logHHSize
+         * 
+         * 2. logNumDrivers
+         * 
+         * 3. logAge
+         * 
+         * 4. urban	
+         * 
+         * 5. hhfaminc	
+         * 
+         * 6. census_d
+         * 
+         * 7. lif_cyc
+         * 
+         * 8. logCost
          */
-        int[] vsi = {1, 2};
-        Boolean[] wvd = {false, false, false, true, true, true, true, false};
+        int[] vsi = {3, 4};
+        Boolean[] wvd = {true, false, false, false, true, true, true, true, false};
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -105,7 +125,7 @@ public class GasolineSpecification implements MomentSpecification {
 
     @Override
     public int getNumMoments() {
-        return 8;
+        return X.getColumnDimension();
     }
 
     @Override
@@ -288,11 +308,11 @@ public class GasolineSpecification implements MomentSpecification {
             Z = dX.copy();
 
             // can split these into in-sample and out-of-sample here
-            int cutoff = (int)Math.round(X.getRowDimension()*0.9);
-            
+            int cutoff = (int) Math.round(X.getRowDimension() * 0.9);
+
             DataLens lens = new DataLens(X, Y, Z, null);
             DataLens inSample = lens.getSubsetData(0, cutoff);
-            outSampleLens = lens.getSubsetData(cutoff, X.getRowDimension()-1);
+            outSampleLens = lens.getSubsetData(cutoff, X.getRowDimension() - 1);
             X = inSample.getX();
             Y = inSample.getY();
             Z = inSample.getZ();
@@ -315,7 +335,8 @@ public class GasolineSpecification implements MomentSpecification {
 
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-        return "Group " + fixedEffectIndex;
+        // return "Group " + fixedEffectIndex;
+        return varNames[variableIndex] + " " + fixedEffectIndex;
     }
 
     @Override

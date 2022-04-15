@@ -75,7 +75,7 @@ public class GasolineDemandMain {
 
     public GasolineDemandMain(JTextArea jt) {
         this.jt = jt;
-        detectHomogeneity = false;
+        detectHomogeneity = true;
     }
 
     private void execute() {
@@ -141,6 +141,8 @@ public class GasolineDemandMain {
             bestMinImprovement = 0.1;
             bestMaxDepth = 2;
         }
+        
+        bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -246,8 +248,9 @@ public class GasolineDemandMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         numberTreesInForest = 1;
-        computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
+        double outOfSampleFit = computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample);
+        System.out.println("Out of sample SSE: "+outOfSampleFit);
     }
 
     private double computeOutOfSampleMSEInParameterSpace(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
@@ -286,7 +289,7 @@ public class GasolineDemandMain {
             Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
             outOfSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
         }
-
+        
         return outOfSampleFit / testZ.getRowDimension(); // mse
     }
 

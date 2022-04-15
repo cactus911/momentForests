@@ -166,7 +166,9 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         boolean useOptimalTwoStepWeightingMatrix = true;
         if (useOptimalTwoStepWeightingMatrix) {
             // with optimal weighting matrix (Step 2)
+            System.out.print("Computing optimal weighting matrix...");
             omega = computeOptimalOmega(xpls);
+            System.out.println("done.");
             
             System.out.println("With optimal weighting matrix:");
             pmUtility.prettyPrint(omega);
