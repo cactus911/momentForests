@@ -8,6 +8,7 @@ import java.awt.BorderLayout;
 import javax.swing.JFrame;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
+import org.jfree.chart.axis.NumberAxis;
 import org.jfree.data.xy.XYSeriesCollection;
 
 /**
@@ -19,6 +20,9 @@ public class ChartGenerator {
     public static void makeXYScatter(XYSeriesCollection xyc, String title, String xAxisLabel, String yAxisLabel) {
         ChartPanel cp = new ChartPanel(ChartFactory.createScatterPlot(title, xAxisLabel, yAxisLabel, xyc));
         
+        NumberAxis axis = (NumberAxis)cp.getChart().getXYPlot().getRangeAxis();
+        axis.setAutoRangeIncludesZero(false);
+        
         JFrame f = new JFrame("Plot");
         f.setBounds(100,100,500,500);
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -29,6 +33,9 @@ public class ChartGenerator {
     
     public static void makeXYLine(XYSeriesCollection xyc, String title, String xAxisLabel, String yAxisLabel) {
         ChartPanel cp = new ChartPanel(ChartFactory.createXYLineChart(title, xAxisLabel, yAxisLabel, xyc));
+        
+        NumberAxis axis = (NumberAxis)cp.getChart().getXYPlot().getRangeAxis();
+        axis.setAutoRangeIncludesZero(false);
         
         JFrame f = new JFrame("Plot");
         f.setBounds(100,100,500,500);

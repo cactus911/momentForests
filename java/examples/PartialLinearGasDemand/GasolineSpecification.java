@@ -24,6 +24,7 @@
 package examples.PartialLinearGasDemand;
 
 // import JSci.maths.statistics.NormalDistribution;
+import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
@@ -88,27 +89,28 @@ public class GasolineSpecification implements MomentSpecification {
          * These all refer to Z (not X)!!!
          *
          * Z =
-         * 
+         *
          * 0.constant
-         * 
+         *
          * 1. logHHSize
-         * 
+         *
          * 2. logNumDrivers
-         * 
+         *
          * 3. logAge
-         * 
-         * 4. urban	
-         * 
-         * 5. hhfaminc	
-         * 
+         *
+         * 4. urban
+         *
+         * 5. hhfaminc
+         *
          * 6. census_d
-         * 
+         *
          * 7. lif_cyc
-         * 
+         *
          * 8. logCost
          */
-        int[] vsi = {3, 4};
-        Boolean[] wvd = {true, false, false, false, true, true, true, true, false};
+        int[] vsi = {3, 5};
+        // Boolean[] wvd = {true, false, false, false, true, true, true, true, false};
+        Boolean[] wvd = {true, false, false, false, true, false, true, true, false};
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -300,11 +302,28 @@ public class GasolineSpecification implements MomentSpecification {
 
             // going to pull a subset of loaded X's to use in base linear model
             X = pmUtility.getColumn(dX, 0); // constant
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // log household size
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // log number drivers
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
+
+            // when this is just a constant, we have the standard regression tree
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // log household size
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // log number drivers
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical family income
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // cost per gallon
             Y = dY;
+
+            boolean runMonteCarlo = false;
+            if (runMonteCarlo) {
+                /**
+                 * Easy Monte Carlo here for testing purposes
+                 */
+                NormalDistribution normal = new NormalDistribution();
+                Random rng = new Random(rngSeed);
+                for (int w = 0; w < Y.getRowDimension(); w++) {
+                    Y.set(w, 0, 6.2 - dX.get(w, 3) + normal.inverse(rng.nextDouble()));
+                }
+            }
+            System.out.println("Mean of Y: "+pmUtility.mean(Y, 0));
+
             Z = dX.copy();
 
             // can split these into in-sample and out-of-sample here
@@ -317,6 +336,10 @@ public class GasolineSpecification implements MomentSpecification {
             Y = inSample.getY();
             Z = inSample.getZ();
 
+//            pmUtility.prettyPrint(dX, 10);
+//            System.out.println("----");
+//            pmUtility.prettyPrint(Z, 10);
+//            System.exit(0);
             in.close();
         } catch (Exception e) {
             e.printStackTrace();

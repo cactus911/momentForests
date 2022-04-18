@@ -313,6 +313,10 @@ public class DataLens {
         }
         return tempZ;
     }
+    
+    public double getZ(int i, int j) {
+        return originalDataZ.get(dataIndex[i], j);
+    }
 
     public Jama.Matrix getY() {
         // generate a new matrix using the dataIndex
@@ -352,9 +356,6 @@ public class DataLens {
         return originalDataX.get(dataIndex[i], j);
     }
 
-    public double getZ(int i, int j) {
-        return originalDataZ.get(dataIndex[i], j);
-    }
 
     public Jama.Matrix getRowX(int row) {
         return originalDataX.getMatrix(dataIndex[row], dataIndex[row], 0, originalDataX.getColumnDimension() - 1);

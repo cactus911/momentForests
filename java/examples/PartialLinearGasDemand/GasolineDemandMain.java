@@ -23,7 +23,9 @@
  */
 package examples.PartialLinearGasDemand;
 
+import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
+import core.ChartGenerator;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
@@ -38,6 +40,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -75,13 +79,13 @@ public class GasolineDemandMain {
 
     public GasolineDemandMain(JTextArea jt) {
         this.jt = jt;
-        detectHomogeneity = true;
+        detectHomogeneity = false;
     }
 
     private void execute() {
         Random rng = new Random(777);
         MomentSpecification mySpecification = new GasolineSpecification("gasolineData.csv");
-        
+
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
         int bestMaxDepth = 5;
@@ -101,8 +105,7 @@ public class GasolineDemandMain {
         /**
          * Initialize the moment forest
          */
-        
-        boolean verbose = true;
+        boolean verbose = !false;
         boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
@@ -116,10 +119,10 @@ public class GasolineDemandMain {
                 System.out.println("************************");
             }
 
-            for (int minObservationsPerLeaf = 20; minObservationsPerLeaf <= 20; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 200; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 0.1; minImprovement <= 0.1; minImprovement *= 10) {
-                    for (int maxDepth = 6; maxDepth >= 1; maxDepth--) {
-                        double combinationMSE = computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
+                    for (int maxDepth = 0; maxDepth <= 10; maxDepth++) {
+                        double combinationMSE = computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false);
                         String star = "";
                         if (combinationMSE <= lowestSSE || first) {
                             lowestSSE = combinationMSE;
@@ -137,12 +140,10 @@ public class GasolineDemandMain {
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
         } else {
-            bestMinObservationsPerLeaf = 20;
+            bestMinObservationsPerLeaf = 200;
             bestMinImprovement = 0.1;
-            bestMaxDepth = 2;
+            bestMaxDepth = 4;
         }
-        
-        bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -249,12 +250,12 @@ public class GasolineDemandMain {
          */
         numberTreesInForest = 1;
         double outOfSampleFit = computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
-                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample);
-        System.out.println("Out of sample SSE: "+outOfSampleFit);
+                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
+        System.out.println("Out of sample SSE: " + outOfSampleFit);
     }
 
     private double computeOutOfSampleMSEInParameterSpace(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
-            int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample) {
+            int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
         // System.out.println("\nComputing OOS In Parameter Space\n");
         // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
 
@@ -289,7 +290,85 @@ public class GasolineDemandMain {
             Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
             outOfSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
         }
-        
+
+        if (generatePlots) {
+            /**
+             * This would be a fine place to make the graph ala Schmalensee and
+             * Stoker
+             *
+             * Nonparametric plot of log total gallons (Y axis) against log age
+             * (X axis)
+             *
+             */
+
+            Jama.Matrix Z = mySpecification.getZ();
+            Jama.Matrix X = mySpecification.getX();
+            Jama.Matrix Y = mySpecification.getY();
+            boolean useOutOfSample = true;
+            if (useOutOfSample) {
+                Z = testZ;
+                X = testX;
+                Y = testY;
+            }
+
+            
+            XYSeriesCollection xyc = new XYSeriesCollection();
+            XYSeriesCollection xycData = new XYSeriesCollection();
+            XYSeriesCollection kernelAge = new XYSeriesCollection();
+
+            NormalDistribution normal = new NormalDistribution(0, 0.01);
+            boolean first = true;
+
+            int[] incomeBinArray = {1, 4, 6, 10};
+            String[] incomeString = {"Less Than $10,000", "$25,000 to $34,999", "$50,000 to $74,999", "$150,000 to $199,999"};
+
+            // for (int incomeBin : incomeBinArray) {
+            for (int jk = 0; jk < incomeBinArray.length; jk++) {
+                int incomeBin = incomeBinArray[jk];
+                XYSeries xy = new XYSeries(incomeString[jk]);
+                XYSeries xy2 = new XYSeries(incomeString[jk]);
+                XYSeries xyKernel = new XYSeries(incomeString[jk]);
+
+                Random rng = new Random(rngBaseSeedOutOfSample);
+                for (double age = 16; age <= 92; age++) {
+                    double avgLogGallonsFit = 0;
+                    double avgLogGallonsData = 0;
+                    double sumNPWeights = 0;
+                    double counter = 0;
+                    for (int i = 0; i < Z.getRowDimension(); i++) {
+                        Jama.Matrix zi = Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1);
+                        Jama.Matrix xi = X.getMatrix(i, i, 0, X.getColumnDimension() - 1);
+
+                        // try a smoothed estimator of the average in this area
+                        if ((int) zi.get(0, 5) == incomeBin) {
+                            double weight = normal.probability(zi.get(0, 3) - Math.log(age));
+                            avgLogGallonsData += Y.get(i, 0) * weight;
+                            sumNPWeights += weight;
+
+                            // we are going to integrate out all the other characteristics, just setting age
+                            zi.set(0, 3, Math.log(age));
+                            Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+                            avgLogGallonsFit += mySpecification.getPredictedY(xi, compositeEstimatedBeta, rng);
+                            counter++;
+                        }
+                    }
+                    avgLogGallonsFit /= counter;
+                    avgLogGallonsData /= sumNPWeights;
+                    xy.add(Math.log(age), avgLogGallonsFit);
+                    xy2.add(Math.log(age), avgLogGallonsData);
+                    xyKernel.add(Math.log(age), sumNPWeights / counter);
+                    // System.out.println("age: "+age+" data: "+avgLogGallonsData+" fit: "+avgLogGallonsFit);
+                }
+                first = false;
+                xyc.addSeries(xy);
+                xycData.addSeries(xy2);
+                kernelAge.addSeries(xyKernel);
+            }
+            ChartGenerator.makeXYLine(xyc, "Fitted Gasoline Consumption", "Log Age", "Log Gallons Gasoline");
+            ChartGenerator.makeXYLine(xycData, "Actual Gasoline Consumption", "Log Age", "Log Gallons Gasoline");
+            ChartGenerator.makeXYLine(kernelAge, "Kernel Density", "Log Age", "Log Age Density");
+        }
+
         return outOfSampleFit / testZ.getRowDimension(); // mse
     }
 

@@ -63,6 +63,7 @@ public class TreeMoment {
     boolean verbose;
     boolean allParametersHomogeneous;
 
+    boolean useRandomForest = false;
     boolean debugOptimization = !true;
     private double currentNodeObjectiveFunction;
     private ContainerMoment currentNodeMoment;
@@ -183,11 +184,6 @@ public class TreeMoment {
         // System.out.println("Setting variance");
         setNodeEstimatedVariance(currentNodeMoment.getVariance());
 
-        // System.out.println("in this sub-node:");
-//        if (nodeY.getNumObs() > 10) {
-//            pmUtility.prettyPrint(pmUtility.concatMatrix(nodeY, nodeX).getSubsetData(0, 10, 0, nodeX.getColumnDimension()));
-//            System.out.println("TreeMoment.java:152 -> min: "+pmUtility.min(nodeX, 1)+" max: "+pmUtility.max(nodeX, 1));
-//        }
         /**
          * This is the place to set a priori conditions on growing the tree (max
          * depth, etc.)
@@ -215,16 +211,29 @@ public class TreeMoment {
              */
             ArrayList<ArrayList<Integer>> discreteCollection = new ArrayList<>();
             ArrayList<Integer> discreteCollectionIndex = new ArrayList<>();
-            // for (int k = 0; k < nodeX.getColumnDimension(); k++) {
+
+            /**
+             * MAJOR POINT: this code only works on dummy variables that are
+             * encoded as INTEGERS I don't see that this is actually necessary,
+             * but that's how we have it set up right now
+             */
             for (int k : momentSpec.getVariableIndicesToSearchOver()) { //The variables Z which we can split on
                 if (discreteVector[k] == true) {
-                    TreeSet<Integer> discreteTreeSet = new TreeSet<>();
+                    TreeSet<Integer> treeSetOfAllDiscreteElementsOfVariableK = new TreeSet<>();
                     for (int i = 0; i < lensGrowingTree.getNumObs(); i++) {
-                        discreteTreeSet.add((int) lensGrowingTree.getZ(i, k));
+                        int element = (int) lensGrowingTree.getZ(i, k);
+//                        if (i < 10) {
+//                            pmUtility.prettyPrint(lensGrowingTree.getRowZ(i));
+//                            System.out.println("element: " + element);
+//                        }
+                        treeSetOfAllDiscreteElementsOfVariableK.add(element);
+//                        if(i<10) {
+//                            System.out.println(lensGrowingTree.getZ(i,k));
+//                        }
                     }
-                    ArrayList<Integer> discreteList = new ArrayList<>(discreteTreeSet);
-                    discreteCollection.add(discreteList); // discreteCollection is the columns of Z which are discrete
-                    // System.out.println("Added list for k = "+k+" of size "+discreteList.size());
+                    ArrayList<Integer> listUniqueElementsVariableK = new ArrayList<>(treeSetOfAllDiscreteElementsOfVariableK);
+                    discreteCollection.add(listUniqueElementsVariableK); // discreteCollection is the columns of Z which are discrete
+                    // System.out.println("Added list for k = "+k+" of size "+listUniqueElementsVariableK.size());
                     discreteCollectionIndex.add(k); // discreteCollectionIndex is the indices of the discrete variables
                 }
             }
@@ -235,15 +244,16 @@ public class TreeMoment {
              * track across branches.
              */
             TreeSet<Integer> randomForestIndex = new TreeSet<>();
-            boolean useRandomForest = false;
+
             if (useRandomForest) { // Randomly choosing a subset of variables to search over with a max of 5 variables to search over
-                int P = Math.min(5, momentSpec.getVariableIndicesToSearchOver().length);
+                int[] varSearchIndex = momentSpec.getVariableIndicesToSearchOver();
+                int P = Math.min(5, varSearchIndex.length);
                 for (int i = 0; i < P; i++) {
-                    int index = (int) Math.floor(Math.random() * momentSpec.getVariableIndicesToSearchOver().length);
-                    while (randomForestIndex.contains(index)) {
-                        index = (int) Math.floor(Math.random() * momentSpec.getVariableIndicesToSearchOver().length);
+                    int draw = (int) Math.floor(Math.random() * momentSpec.getVariableIndicesToSearchOver().length);
+                    while (randomForestIndex.contains(varSearchIndex[draw])) {
+                        draw = (int) Math.floor(Math.random() * momentSpec.getVariableIndicesToSearchOver().length);
                     }
-                    randomForestIndex.add(index);
+                    randomForestIndex.add(varSearchIndex[draw]);
                 }
             } else {
                 for (int index : momentSpec.getVariableIndicesToSearchOver()) {
@@ -266,81 +276,85 @@ public class TreeMoment {
                         MomentContinuousSplitObj obj = momentSpec.getFminObjective(lensGrowingTree, indexSplitVariable, minProportionEachPartition, minCountEachPartition);
                         double minZ = lensGrowingTree.getMinimumValue(indexSplitVariable);
                         double maxZ = lensGrowingTree.getMaximumValue(indexSplitVariable);
+
                         if (debugOptimization) {
                             System.out.println("TreeMoment.java:224 -> min x_1: " + minZ + " max x_1: " + maxZ);
                         }
-                        double optimalZ_k;
-                        double optimalZ_SSE_k;
+                        double optimalZ_k = Double.POSITIVE_INFINITY;
+                        double optimalZ_SSE_k = Double.POSITIVE_INFINITY;
 
-                        boolean useFmin = true;
-                        if (useFmin) {
-                            optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
-                            optimalZ_SSE_k = obj.f_to_minimize(optimalZ_k); //Now return the summed SSEs of the optimal split point
-                        } else {
-                            optimalZ_k = Double.POSITIVE_INFINITY;
-                            optimalZ_SSE_k = Double.POSITIVE_INFINITY;
-                        }
-
-                        if (debugOptimization) {
-                            echoLn("\tFmin search on z_" + indexSplitVariable + " found x = " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
-                            System.out.println("TreeMoment.java:253 -> min x_1: " + minZ + " max x_1: " + maxZ);
-                        }
-
-                        boolean testGridSearch = true;
-                        double h = 1E-30;
-                        if (testGridSearch) {
-                            double leftZ = minZ;
-                            double rightZ = maxZ;
-
-                            double increment = h + (rightZ - leftZ) / 100.0;
-
-                            if (debugOptimization) {
-                                echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " from " + leftZ + " to " + rightZ);
+                        if (maxZ - minZ != 0) {
+                            boolean useFmin = true;
+                            if (useFmin) {
+                                optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
+                                optimalZ_SSE_k = obj.f_to_minimize(optimalZ_k); //Now return the summed SSEs of the optimal split point
+                            } else {
+                                optimalZ_k = Double.POSITIVE_INFINITY;
+                                optimalZ_SSE_k = Double.POSITIVE_INFINITY;
                             }
 
-                            for (double z = leftZ; z <= rightZ; z += increment) {
-                                double f = obj.f_to_minimize(z);
+                            if (debugOptimization) {
+                                echoLn("\tFmin search on z_" + indexSplitVariable + " found x = " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
+                                System.out.println("TreeMoment.java:253 -> min x_1: " + minZ + " max x_1: " + maxZ);
+                            }
+
+                            boolean testGridSearch = true;
+                            double h = 1E-30;
+                            if (testGridSearch) {
+                                double leftZ = minZ;
+                                double rightZ = maxZ;
+
+                                double increment = h + (rightZ - leftZ) / 100.0;
 
                                 if (debugOptimization) {
-                                    echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
+                                    echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " from " + leftZ + " to " + rightZ);
                                 }
-                                if (f < optimalZ_SSE_k) {
-                                    optimalZ_k = z;
-                                    optimalZ_SSE_k = f;
-                                    // System.out.println("SSE left: "+obj.leftMSE+" SSE right: "+obj.rightMSE);
+
+                                for (double z = leftZ + increment; z <= rightZ - increment; z += increment) {
+                                    double f = obj.f_to_minimize(z);
+
+                                    if (debugOptimization) {
+                                        echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z + " increment: " + increment);
+                                    }
+                                    if (f < optimalZ_SSE_k) {
+                                        optimalZ_k = z;
+                                        optimalZ_SSE_k = f;
+                                        // System.out.println("SSE left: "+obj.leftMSE+" SSE right: "+obj.rightMSE);
+                                    }
                                 }
-                            }
-                            if (debugOptimization) {
-                                echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " best " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
-                            }
-
-                            /**
-                             * Try a second grid search within the last interval
-                             * to really improve precision of our estimates
-                             */
-                            leftZ = optimalZ_k - increment;
-                            rightZ = optimalZ_k + increment;
-                            increment = h + (rightZ - leftZ) / 100.0;
-
-                            if (debugOptimization) {
-                                echoLn("\tSecond Finer Grid Search " + momentSpec.getVariableName(indexSplitVariable) + " from " + leftZ + " to " + rightZ);
-                            }
-
-                            for (double z = leftZ; z <= rightZ; z += increment) {
-                                double f = obj.f_to_minimize(z);
                                 if (debugOptimization) {
-                                    echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
+                                    echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " best " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
                                 }
-                                if (f < optimalZ_SSE_k) {
-                                    optimalZ_k = z;
-                                    optimalZ_SSE_k = f;
-                                    // System.out.println("SSE left: "+obj.leftMSE+" SSE right: "+obj.rightMSE);
-                                }
-                            }
-                            if (debugOptimization) {
-                                echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " best " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
-                            }
 
+                                /**
+                                 * Try a second grid search within the last
+                                 * interval to really improve precision of our
+                                 * estimates
+                                 */
+                                leftZ = optimalZ_k - increment;
+                                rightZ = optimalZ_k + increment;
+                                increment = h + (rightZ - leftZ) / 100.0;
+
+                                if (debugOptimization) {
+                                    echoLn("\tSecond Finer Grid Search " + momentSpec.getVariableName(indexSplitVariable) + " from " + leftZ + " to " + rightZ);
+                                }
+
+                                for (double z = leftZ + increment; z <= rightZ - increment; z += increment) {
+                                    double f = obj.f_to_minimize(z);
+                                    if (debugOptimization) {
+                                        echoLn("\tGrid search z_" + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + ") from " + optimalZ_SSE_k + " to " + f + " by moving from " + optimalZ_k + " to " + z);
+                                    }
+                                    if (f < optimalZ_SSE_k) {
+                                        optimalZ_k = z;
+                                        optimalZ_SSE_k = f;
+                                        // System.out.println("SSE left: "+obj.leftMSE+" SSE right: "+obj.rightMSE);
+                                    }
+                                }
+                                if (debugOptimization) {
+                                    echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " best " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
+                                }
+
+                            }
                         }
 
                         //If the summed SSE for this variable is smaller than for any other previous variable, or if its the first variable being tested, set it to be the optimal splitting variable
@@ -372,6 +386,13 @@ public class TreeMoment {
                             double optimalZ_SSE_Left_Partition = 0;
                             int numObsLeft_Partition = 0;
                             int numObsRight_Partition = 0;
+                            
+                            // System.out.println("Number of partitions: "+partitions.size());
+                            
+                            // extend the random forest here to sample to possible partitions? this will help with controlling runtime when the number of partitions is huge
+                            // alternatively, for ordered discrete bins (like income in the gasoline case) we could classify that as a continuous variable; especially
+                            // if the endpoints are classified as something else (like missing data or whatever)
+                            
                             for (int i = 0; i < partitions.size(); i++) {
                                 MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, indexSplitVariable, partitions.get(i));
 
