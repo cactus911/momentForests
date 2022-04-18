@@ -307,11 +307,23 @@ public class GasolineSpecification implements MomentSpecification {
             
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // log household size
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // log number drivers
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // catogorical: urban 
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // catogorical: urban 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // categorical: census district
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // categorical: life cycle
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // categorical: census district
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // categorical: life cycle
+            
+            /**
+             * MAJOR POINT: ContainerLinear has no idea how to deal with categorical variables right now since they are stacked and not expanded
+             * 
+             * TODO: implement categorical function (expansion?)
+             * 
+             * There is a strange observation here that you can actually treat them as continuous variables; if they actually matter,
+             * the forest should split on their discrete values and estimate separate subtrees for each of those splits!
+             * 
+             * Maybe try to just treat them all as continuous to begin
+             */
+            
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // cost per gallon
             Y = dY;
 
