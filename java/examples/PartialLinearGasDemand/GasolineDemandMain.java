@@ -142,7 +142,7 @@ public class GasolineDemandMain {
         } else {
             bestMinObservationsPerLeaf = 200;
             bestMinImprovement = 0.1;
-            bestMaxDepth = 4;
+            bestMaxDepth = 7;
         }
 
         mySpecification.resetHomogeneityIndex();

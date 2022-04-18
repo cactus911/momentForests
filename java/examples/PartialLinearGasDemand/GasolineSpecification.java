@@ -304,10 +304,14 @@ public class GasolineSpecification implements MomentSpecification {
             X = pmUtility.getColumn(dX, 0); // constant
 
             // when this is just a constant, we have the standard regression tree
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // log household size
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // log number drivers
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical family income
+            
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // log household size
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // log number drivers
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // catogorical: urban 
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // categorical: census district
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // categorical: life cycle
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // cost per gallon
             Y = dY;
 

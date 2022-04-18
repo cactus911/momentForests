@@ -116,7 +116,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
                 if (numParams > 0) {
 
-                    boolean useMeanY = true;
+                    boolean useMeanY = false;
                     if (useMeanY) {
                         xpls[1] = pmUtility.mean(Y, 0);
                     } else {
