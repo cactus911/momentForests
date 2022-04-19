@@ -75,11 +75,12 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 //            }
         // use the starting values from the DM test
         for (int k = 0; k < homogeneousParameterIndex.size(); k++) {
-            guess[k + 1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
+            guess[homogeneousParameterIndex.get(k) + 1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
         }
         System.out.print("Starting values taken from DM test: ");
         pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
         System.out.println("F_min(x): " + f_to_minimize(guess));
+        System.exit(0);
 
         double[] xpls = new double[numParams + 1];
         double[] fpls = new double[2];
