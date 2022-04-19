@@ -16,6 +16,8 @@ import org.jfree.data.xy.XYSeriesCollection;
  * @author stephen.p.ryan
  */
 public class ChartGenerator {
+    
+    static int NUM_WINDOWS = 0;
 
     public static void makeXYScatter(XYSeriesCollection xyc, String title, String xAxisLabel, String yAxisLabel) {
         ChartPanel cp = new ChartPanel(ChartFactory.createScatterPlot(title, xAxisLabel, yAxisLabel, xyc));
@@ -24,11 +26,13 @@ public class ChartGenerator {
         axis.setAutoRangeIncludesZero(false);
         
         JFrame f = new JFrame("Plot");
-        f.setBounds(100,100,500,500);
+        f.setBounds(100+600*NUM_WINDOWS,100,500,500);
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.getContentPane().setLayout(new BorderLayout());
         f.getContentPane().add(cp, BorderLayout.CENTER);
         f.setVisible(true);
+        
+        NUM_WINDOWS++;
     }
     
     public static void makeXYLine(XYSeriesCollection xyc, String title, String xAxisLabel, String yAxisLabel) {
@@ -38,11 +42,13 @@ public class ChartGenerator {
         axis.setAutoRangeIncludesZero(false);
         
         JFrame f = new JFrame("Plot");
-        f.setBounds(100,100,500,500);
+        f.setBounds(100+600*NUM_WINDOWS,100,500,500);
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.getContentPane().setLayout(new BorderLayout());
         f.getContentPane().add(cp, BorderLayout.CENTER);
         f.setVisible(true);
+        
+        NUM_WINDOWS++;
     }
     
 }

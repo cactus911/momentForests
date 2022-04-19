@@ -234,7 +234,13 @@ public class GasolineSpecification implements MomentSpecification {
                 }
             }
             in.close();
-            numObsFile /= 1;
+            
+            boolean subsample = true;
+            if(subsample) {
+                numObsFile = Math.floorDiv(numObsFile, 100);
+            }
+            
+            
             numObs = numObsFile;
         } catch (Exception e) {
             e.printStackTrace();
@@ -251,7 +257,7 @@ public class GasolineSpecification implements MomentSpecification {
             BufferedReader in = new BufferedReader(new FileReader(filename));
             String line = in.readLine(); // headers
             int i = 0;
-            while (line != null) {
+            for(int obs=0;obs<numObs;obs++) {
                 line = in.readLine();
                 // System.out.println(line);
                 if (line != null) {
@@ -304,6 +310,8 @@ public class GasolineSpecification implements MomentSpecification {
             X = pmUtility.getColumn(dX, 0); // constant
 
             // when this is just a constant, we have the standard regression tree
+            
+            // the S&S specification has all of these variables in it
             
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // log household size
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // log number drivers
