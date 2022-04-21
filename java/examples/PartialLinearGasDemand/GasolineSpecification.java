@@ -96,7 +96,7 @@ public class GasolineSpecification implements MomentSpecification {
          *
          * 2. logNumDrivers
          *
-         * 3. logAge
+         * 3. logAge (continuous due to averaging within family)
          *
          * 4. urban
          *
@@ -106,11 +106,15 @@ public class GasolineSpecification implements MomentSpecification {
          *
          * 7. lif_cyc
          *
-         * 8. logCost
+         * 8. logCost (this is the only truly continuous variable in the data
+         * set)
          */
-        int[] vsi = {3, 5};
+        int[] vsi = {1, 2, 3, 4, 5, 6, 7};
         // Boolean[] wvd = {true, false, false, false, true, true, true, true, false};
-        Boolean[] wvd = {true, false, false, false, true, false, true, true, false};
+        // Boolean[] wvd = {true, false, false, false, true, false, true, true, false};
+        // Boolean[] wvd = {true, true, true, false, true, true, true, true, true};
+        // since we can split along here, why not have it treat everything continuously, since it does a grid search?
+        Boolean[] wvd = {false, false, false, false, false, false, false, false, false};
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -234,13 +238,12 @@ public class GasolineSpecification implements MomentSpecification {
                 }
             }
             in.close();
-            
+
             boolean subsample = true;
-            if(subsample) {
-                numObsFile = Math.floorDiv(numObsFile, 100);
+            if (subsample) {
+                numObsFile = Math.floorDiv(numObsFile, 10);
             }
-            
-            
+
             numObs = numObsFile;
         } catch (Exception e) {
             e.printStackTrace();
@@ -248,16 +251,16 @@ public class GasolineSpecification implements MomentSpecification {
 
         System.out.format("Number of observations = %,d %n", numObsFile);
 
-        // in the gasoline data, we have 8 X variables and one Y
-        // in order, they are: logGallons	logHHSize	logNumDrivers	logAge	urban	hhfaminc	census_d	lif_cyc	logCost
-        Jama.Matrix dX = new Jama.Matrix(numObsFile, 8);
+        // in the gasoline data, we have 9 X variables and one Y
+        // in order, they are: logGallons (this is the Y) constant	logHHSize	logNumDrivers	logAge	urban	hhfaminc	census_d	lif_cyc	logCost
+        Jama.Matrix dX = new Jama.Matrix(numObsFile, 9);
         Jama.Matrix dY = new Jama.Matrix(numObsFile, 1);
 
         try {
             BufferedReader in = new BufferedReader(new FileReader(filename));
             String line = in.readLine(); // headers
             int i = 0;
-            for(int obs=0;obs<numObs;obs++) {
+            for (int obs = 0; obs < numObs; obs++) {
                 line = in.readLine();
                 // System.out.println(line);
                 if (line != null) {
@@ -300,7 +303,7 @@ public class GasolineSpecification implements MomentSpecification {
 
                     a = b + 1;
                     b = line.indexOf(",", a);
-                    dX.set(i, 7, Double.valueOf(line.substring(a))); // log cost per gallon
+                    dX.set(i, 8, Double.valueOf(line.substring(a))); // log cost per gallon
 
                     i++;
                 }
@@ -310,32 +313,32 @@ public class GasolineSpecification implements MomentSpecification {
             X = pmUtility.getColumn(dX, 0); // constant
 
             // when this is just a constant, we have the standard regression tree
-            
             // the S&S specification has all of these variables in it
-            
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // log household size
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // log number drivers
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // catogorical: urban 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // categorical: census district
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // categorical: life cycle
-            
             /**
-             * MAJOR POINT: ContainerLinear has no idea how to deal with categorical variables right now since they are stacked and not expanded
-             * 
+             * MAJOR POINT: ContainerLinear has no idea how to deal with
+             * categorical variables right now since they are stacked and not
+             * expanded
+             *
              * TODO: implement categorical function (expansion?)
-             * 
-             * There is a strange observation here that you can actually treat them as continuous variables; if they actually matter,
-             * the forest should split on their discrete values and estimate separate subtrees for each of those splits!
-             * 
+             *
+             * There is a strange observation here that you can actually treat
+             * them as continuous variables; if they actually matter, the forest
+             * should split on their discrete values and estimate separate
+             * subtrees for each of those splits!
+             *
              * Maybe try to just treat them all as continuous to begin
              */
-            
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // cost per gallon
             Y = dY;
 
-            boolean runMonteCarlo = true;
+            boolean runMonteCarlo = false;
             if (runMonteCarlo) {
                 /**
                  * Easy Monte Carlo here for testing purposes
@@ -343,14 +346,14 @@ public class GasolineSpecification implements MomentSpecification {
                 NormalDistribution normal = new NormalDistribution();
                 Random rng = new Random(rngSeed);
                 for (int w = 0; w < Y.getRowDimension(); w++) {
-                    if(dX.get(w,5) > 5) {
-                        Y.set(w, 0, 4.5 + dX.get(w,2) + 0.1*normal.inverse(rng.nextDouble()));
+                    if (dX.get(w, 5) > 5) {
+                        Y.set(w, 0, 4.5 + dX.get(w, 2) + 0.1 * normal.inverse(rng.nextDouble()));
                     } else {
-                        Y.set(w, 0, 4.5 - dX.get(w,2) + 0.1*normal.inverse(rng.nextDouble()));
-                    }                    
+                        Y.set(w, 0, 4.5 - dX.get(w, 2) + 0.1 * normal.inverse(rng.nextDouble()));
+                    }
                 }
             }
-            System.out.println("Mean of Y: "+pmUtility.mean(Y, 0));
+            System.out.println("Mean of Y: " + pmUtility.mean(Y, 0));
 
             Z = dX.copy();
 
