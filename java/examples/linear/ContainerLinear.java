@@ -309,7 +309,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             pmUtility.prettyPrintVector(g);
             // System.out.println("omega inverse:");
             // pmUtility.prettyPrint(omega.inverse());
-            System.out.println("q: " + q + " norm2: " + e.norm2());
+            System.out.println("q: " + q + " SSE: " + pmUtility.sumSquaredElements(e));
 
             // let's graph the fit to see what is going on here geometrically
             XYSeriesCollection xyc = new XYSeriesCollection();
@@ -339,10 +339,17 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     }
 
     @Override
-    public Matrix getVariance() {
+    public Matrix getVariance(Jama.Matrix b) {
+        System.out.println("Variance not implemented");
+        System.exit(0);
         return variance;
     }
 
+    @Override
+    public Matrix getJacobianNoDivision(Matrix beta) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+    
     @Override
     public double getMomentFunctionImposingHomogeneity(int k, double value) {
         Jama.Matrix betaHomogeneous = beta.copy();

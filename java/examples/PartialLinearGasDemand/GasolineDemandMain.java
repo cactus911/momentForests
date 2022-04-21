@@ -141,7 +141,7 @@ public class GasolineDemandMain {
                     star = "(*)";
                 }
                 System.out.println("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star);
-                jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star+"\n");
+                jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star + "\n");
             }
 
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
@@ -152,8 +152,8 @@ public class GasolineDemandMain {
             bestMaxDepth = 3;
         }
 
-        // bestMaxDepth = 0;
-        
+        bestMaxDepth = 1;
+
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
             if (verbose) {
@@ -183,16 +183,12 @@ public class GasolineDemandMain {
             ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
             // System.out.println("Post get homogeneous parameters");
 
-            // tell the specification that these parameters have been determined to be homogeneous
-//            System.out.println("Unsorted");            
-//                System.out.print(hpl+" ");
-//                System.out.println(hplStartingValues);
-            Collections.sort(hpl); // ensure that indices are ascending (this can cause some weird problems elsewhere due to my bad coding skills if not)
-            Collections.sort(hplStartingValues);
-//            System.out.println("Sorted");
-//            System.out.print(hpl+" ");
-//            System.out.println(hplStartingValues);
+            // need to sort together
+            HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
+            sorter.sort(hpl, hplStartingValues);
 
+            // Collections.sort(hpl); // ensure that indices are ascending (this can cause some weird problems elsewhere due to my bad coding skills if not)
+            // Collections.sort(hplStartingValues);
             mySpecification.resetHomogeneityIndex();
             for (int i = 0; i < hpl.size(); i++) {
                 mySpecification.setHomogeneousIndex(hpl.get(i));
@@ -263,7 +259,7 @@ public class GasolineDemandMain {
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
         pain.computeOutOfSampleMSEInParameterSpace();
         double outOfSampleFit = pain.getMSE();
-        
+
         System.out.println("Out of sample SSE: " + outOfSampleFit);
     }
 
@@ -278,7 +274,7 @@ public class GasolineDemandMain {
         int maxTreeDepth;
         long rngBaseSeedOutOfSample;
         boolean generatePlots;
-        
+
         double MSE;
 
         public computeStuff(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose, int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
@@ -325,7 +321,7 @@ public class GasolineDemandMain {
              */
             myForest.growForest();
 
-            // myForest.getTree(0).printTree();
+            myForest.getTree(0).printTree();
             /**
              * Test vectors for assessment
              */
@@ -370,7 +366,7 @@ public class GasolineDemandMain {
                 XYSeriesCollection kernelAge = new XYSeriesCollection();
 
                 NormalDistribution normal = new NormalDistribution(0, 0.05);
-                
+
                 int[] incomeBinArray = {1, 4, 6, 9};
                 String[] incomeString = {"Less Than $10,000", "$25,000 to $34,999", "$50,000 to $74,999", "$100,000 to $149,999"};
 

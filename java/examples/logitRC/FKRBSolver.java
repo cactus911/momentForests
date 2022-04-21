@@ -185,7 +185,7 @@ public class FKRBSolver implements Uncmin_methods, mcmc.mcmcFunction {
         }
         violationSummingConstraint = Math.pow(1.0 - sumWeights, 2);
 
-        return error.norm2() + penalty * (violationSummingConstraint + violationLowerBound + violationUpperBound);
+        return pmUtility.sumSquaredElements(error) + penalty * (violationSummingConstraint + violationLowerBound + violationUpperBound);
     }
 
     @Override

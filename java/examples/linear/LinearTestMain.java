@@ -554,7 +554,7 @@ public class LinearTestMain {
             }
             //pmUtility.prettyPrintVector(compositeEstimatedBeta);
 
-            outOfSampleFit += (compositeEstimatedBeta.minus(bTruth)).norm2();
+            outOfSampleFit += pmUtility.sumSquaredElements((compositeEstimatedBeta.minus(bTruth)));
         }
 
         // ChartGenerator.makeXYScatter(xyc, "Fit Beta", "zi", "beta");

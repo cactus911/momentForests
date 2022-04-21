@@ -216,7 +216,7 @@ public class DeconvolutionSolver implements Uncmin_methods {
         // System.exit(0);
         Jama.Matrix fit = FKRB_X.times(weights);
         Jama.Matrix error = fit.minus(testY);
-        return error.norm2();
+        return pmUtility.sumSquaredElements(error);
     }
 
     @Override

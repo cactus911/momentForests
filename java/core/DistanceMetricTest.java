@@ -270,7 +270,7 @@ public class DistanceMetricTest implements Uncmin_methods, mcmc.mcmcFunction {
         
         
         if(useSumOfSquaredErrors) {
-            return leftError.norm2() + rightError.norm2();
+            return pmUtility.sumSquaredElements(leftError) + pmUtility.sumSquaredElements(rightError);
         }
 
         return q;

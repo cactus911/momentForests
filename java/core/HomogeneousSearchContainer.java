@@ -66,22 +66,19 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 
         Uncmin_f77 minimizer = new Uncmin_f77(true);
 
+        System.out.println("Number of parameters: "+numParams);
+        
         double[] guess = new double[numParams + 1];
 
-        // cheat this for speeding up testing purposes
-//            double[] truth = {-1,1};
-//            for(int k=0;k<homogeneousParameterIndex.size();k++) {
-//                guess[k] = truth[homogeneousParameterIndex.get(k)];
-//            }
-        // use the starting values from the DM test
+        // use the starting values from the test
         for (int k = 0; k < homogeneousParameterIndex.size(); k++) {
-            guess[homogeneousParameterIndex.get(k) + 1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
+            guess[k + 1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
         }
-        System.out.print("Starting values taken from DM test: ");
+        System.out.print("Starting values taken from test: ");
         pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+        
         System.out.println("F_min(x): " + f_to_minimize(guess));
-        System.exit(0);
-
+        
         double[] xpls = new double[numParams + 1];
         double[] fpls = new double[2];
         double[] gpls = new double[numParams + 1];

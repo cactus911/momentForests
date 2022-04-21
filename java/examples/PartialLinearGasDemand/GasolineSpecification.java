@@ -237,7 +237,7 @@ public class GasolineSpecification implements MomentSpecification {
             
             boolean subsample = true;
             if(subsample) {
-                numObsFile = Math.floorDiv(numObsFile, 10);
+                numObsFile = Math.floorDiv(numObsFile, 100);
             }
             
             
@@ -335,7 +335,7 @@ public class GasolineSpecification implements MomentSpecification {
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // cost per gallon
             Y = dY;
 
-            boolean runMonteCarlo = false;
+            boolean runMonteCarlo = true;
             if (runMonteCarlo) {
                 /**
                  * Easy Monte Carlo here for testing purposes
@@ -343,7 +343,11 @@ public class GasolineSpecification implements MomentSpecification {
                 NormalDistribution normal = new NormalDistribution();
                 Random rng = new Random(rngSeed);
                 for (int w = 0; w < Y.getRowDimension(); w++) {
-                    Y.set(w, 0, 6.2 - dX.get(w, 3) + normal.inverse(rng.nextDouble()));
+                    if(dX.get(w,5) > 5) {
+                        Y.set(w, 0, 4.5 + dX.get(w,2) + 0.1*normal.inverse(rng.nextDouble()));
+                    } else {
+                        Y.set(w, 0, 4.5 - dX.get(w,2) + 0.1*normal.inverse(rng.nextDouble()));
+                    }                    
                 }
             }
             System.out.println("Mean of Y: "+pmUtility.mean(Y, 0));

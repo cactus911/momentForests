@@ -37,10 +37,12 @@ public abstract class ContainerMoment {
     public abstract Jama.Matrix getBeta();
     public abstract double computeMeasureOfFit(Jama.Matrix beta);
     public abstract double getGoodnessOfFit();
-    public abstract Jama.Matrix getVariance();
+    public abstract Jama.Matrix getVariance(Jama.Matrix beta);
     public abstract double getMomentFunctionValue(Jama.Matrix beta);
     public abstract double getMomentFunctionImposingHomogeneity(int k, double value);        
     public abstract Jama.Matrix getMomentGWithoutDivision(Jama.Matrix beta);
     public abstract Jama.Matrix getGi(Jama.Matrix beta, int observationIndex);
+    public abstract Jama.Matrix getJacobianNoDivision(Jama.Matrix beta);
+    public abstract void computeBetaAndErrors();
     
 }

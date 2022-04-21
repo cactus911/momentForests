@@ -254,7 +254,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
                 }
                 //pmUtility.prettyPrintVector(compositeEstimatedBeta);
 
-                outOfSampleResultsBeta += (compositeEstimatedBeta.minus(bTruth)).norm2();
+                outOfSampleResultsBeta += pmUtility.sumSquaredElements((compositeEstimatedBeta.minus(bTruth)));
             }
 
             outOfSampleResultsBeta /= testZ.getRowDimension();
