@@ -89,6 +89,9 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         pmUtility.prettyPrint(acov.inverse());
 
         wald3 = numObs * (((diffTheta.transpose()).times(acov.inverse())).times(diffTheta)).get(0, 0);
+        
+        // we can derive the test for OLS directly using linear algebra to make sure this more general moment-based version is working
+        // double wald3OLS = numObs * sigma2 * (((diffTheta.transpose()).times(xpx.inverse())).times(diffTheta)).get(0, 0);
 
         // let's try the w3 wald test from Newey McFadden here instead (doesn't have the optimal weighting matrix messing things up)
         System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " wald3: " + wald3);

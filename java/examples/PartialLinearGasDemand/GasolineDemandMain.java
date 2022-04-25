@@ -152,7 +152,7 @@ public class GasolineDemandMain {
             bestMaxDepth = 3;
         }
 
-        bestMaxDepth = 3;
+        bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
