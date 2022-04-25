@@ -181,7 +181,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 //                    Jama.Matrix betaOLS = pmUtility.OLSsvd(X, Y, false);
 //                    System.out.print("\t\tCompared to betaOLS: ");
 //                    pmUtility.prettyPrintVector(betaOLS);
-                if (debugVerbose || 1==1) {
+                if (debugVerbose) {
                     System.out.format("ContainerLinear.computeBetaAndErrors SSE: %g ", +goodnessOfFit);
                     pmUtility.prettyPrintVector(beta);
                     
