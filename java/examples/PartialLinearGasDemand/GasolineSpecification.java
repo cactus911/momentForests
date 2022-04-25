@@ -118,12 +118,12 @@ public class GasolineSpecification implements MomentSpecification {
             false, // log HH size
             false, // log num drivers
             false, // log age
-            false, // urban
+            !true, // urban
             false, // income
-            false, // census district
-            false, // life cycle
+            !true, // census district
+            !true, // life cycle
             false // log cost
-        };
+    };
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -156,7 +156,7 @@ public class GasolineSpecification implements MomentSpecification {
     @Override
     public double getGoodnessOfFit(double yi, Matrix xi, Matrix beta) {
         double fit = (xi.times(beta)).get(0, 0);
-        double error = yi - fit;
+        double error = fit - yi;
         // System.out.println(fit+" "+yi);
         return error * error;
     }
@@ -250,7 +250,7 @@ public class GasolineSpecification implements MomentSpecification {
 
             boolean subsample = true;
             if (subsample) {
-                numObsFile = Math.floorDiv(numObsFile, 10);
+                numObsFile = Math.floorDiv(numObsFile, 25);
             }
 
             numObs = numObsFile;
@@ -342,27 +342,65 @@ public class GasolineSpecification implements MomentSpecification {
              * should split on their discrete values and estimate separate
              * subtrees for each of those splits!
              *
-             * Maybe try to just treat them all as continuous to begin; little experiment shows the exact same fit doing both approaches
+             * Maybe try to just treat them all as continuous to begin; little
+             * experiment shows the exact same fit doing both approaches
+             *
+             * ALSO: categorical variables don't have to enter the OLS model
+             * (X). They only have to enter on Z! The FE are absorbed into the
+             * constant in each cell (conditioning on splitting on it!).
              */
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // cost per gallon
             Y = dY;
 
-            boolean runMonteCarlo = true;
+            boolean runMonteCarlo = false;
             if (runMonteCarlo) {
                 /**
                  * Easy Monte Carlo here for testing purposes
                  */
+
                 NormalDistribution normal = new NormalDistribution();
                 Random rng = new Random(rngSeed);
-                for (int w = 0; w < Y.getRowDimension(); w++) {
-                    double dummy = 0;
-                    if (dX.get(w, 5) > 0) { // family income
-                        // dummy = dX.get(w, 5) * 0.1;
+
+                boolean imposeUniformity = true;
+                if (imposeUniformity) {
+                    for (int w = 0; w < Y.getRowDimension(); w++) {
+                        double urbanFE = 0;
+                        double incomeFE = 0;
+                        double districtFE = 0;
+                        double lifeCycleFE = 0;
+                        double ageEffect = 0.013 * dX.get(w, 3);
+                        if (dX.get(w, 3) > 3.912) { // over age 50
+                            ageEffect = -1.31 * dX.get(w, 3);
+                        }
+
+                        if (dX.get(w, 4) < 4) {
+                            urbanFE = -0.172;
+                        } else {
+                            urbanFE = 0.109;
+                        }
+
+                        Y.set(w, 0, 4.5 // baseline
+                                + 0.152 * dX.get(w, 1) // log household size
+                                + 0.595 * dX.get(w, 2) // log number of drivers
+                                + ageEffect // dX.get(w, 3) // log age
+                                + urbanFE // dX.get(w,4) // FE: urban
+                                + incomeFE // 0 * dX.get(w, 5) // FE: income
+                                + districtFE // 0 * dX.get(w, 6) // FE: census district
+                                + lifeCycleFE // 0 * dX.get(w, 7) // FE: life cycle
+                                + 0.1 * normal.inverse(rng.nextDouble())); // number of drivers
                     }
-                    if (dX.get(w, 4) < 3) { // in urban / cluster
-                        Y.set(w, 0, 4.5 + dX.get(w, 2) + dummy + 0.1 * normal.inverse(rng.nextDouble())); // number of drivers
-                    } else {
-                        Y.set(w, 0, 4.5 - dX.get(w, 2) + dummy + 0.1 * normal.inverse(rng.nextDouble()));
+                } else {
+
+                    for (int w = 0; w < Y.getRowDimension(); w++) {
+                        double dummy = 0;
+                        if (dX.get(w, 5) > 0) { // family income
+                            // dummy = dX.get(w, 5) * 0.1;
+                        }
+                        if (dX.get(w, 4) < 3) { // in urban / cluster
+                            Y.set(w, 0, 4.5 + dX.get(w, 2) + dummy + 0.1 * normal.inverse(rng.nextDouble())); // number of drivers
+                        } else {
+                            Y.set(w, 0, 4.5 - dX.get(w, 2) + dummy + 0.1 * normal.inverse(rng.nextDouble()));
+                        }
                     }
                 }
             }
@@ -403,6 +441,29 @@ public class GasolineSpecification implements MomentSpecification {
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
         // return "Group " + fixedEffectIndex;
+        if (variableIndex == 4) {
+            String[] urban = {"InUrbanArea", "InUrbanCluster", "SurroundedByUrban", "NotUrban"};
+            return urban[fixedEffectIndex-1];
+        }
+        if (variableIndex == 5) {
+            String[] income = {"NotAnswered", "Dunno", "I'mNotTellingYou", "LessThan$10k", "$10k-15k", "$15k-25k", "$25k-35k", "$35k-50k", "$50-75k", "$75k-100k", "$100k-125k", "$125k-150k", "150k-200k", "Rich"};
+            if(fixedEffectIndex==-9) {
+                return income[0];
+            }
+            if(fixedEffectIndex==-8) {
+                return income[1];
+            }
+            if(fixedEffectIndex==-7) {
+                return income[2];
+            }
+            return income[fixedEffectIndex+2];
+        }
+        if (variableIndex == 6) {
+            String[] region = {"NewEngland", "MidAtlantic", "EastNorthCentral", "WestNorthCentral", "SouthAtlantic", "EastSouthCentral", "WestSouthCentral", "Mountain", "Pacific"};
+            return region[fixedEffectIndex-1];
+        }
+
+        // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // categorical: life cycle
         return varNames[variableIndex] + " " + fixedEffectIndex;
     }
 

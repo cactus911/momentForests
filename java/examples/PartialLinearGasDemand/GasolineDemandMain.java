@@ -108,7 +108,7 @@ public class GasolineDemandMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = !false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -116,20 +116,20 @@ public class GasolineDemandMain {
                 System.out.println("************************");
             }
 
-            ArrayList<computeStuff> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 60; minObservationsPerLeaf += 5) {
+            ArrayList<computeFitStatistics> cvList = new ArrayList<>();
+            for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 160; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 16; minImprovement <= 16; minImprovement *= 2) {
-                    for (int maxDepth = 2; maxDepth <= 7; maxDepth++) {
-                        cvList.add(new computeStuff(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
+                    for (int maxDepth = 7; maxDepth >= 2; maxDepth--) {
+                        cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
             }
 
             cvList.parallelStream().forEach(s -> {
-                s.computeOutOfSampleMSEInParameterSpace();
+                s.computeOutOfSampleMSE();
             });
 
-            for (computeStuff s : cvList) {
+            for (computeFitStatistics s : cvList) {
                 double combinationMSE = s.getMSE();
                 String star = "";
                 if (combinationMSE <= lowestSSE || first) {
@@ -149,16 +149,11 @@ public class GasolineDemandMain {
         } else {
             bestMinObservationsPerLeaf = 60;
             bestMinImprovement = 16.0;
-            bestMaxDepth = 6;
+            bestMaxDepth = 2;
         }
 
-        // bestMaxDepth = 1;
-        bestMinObservationsPerLeaf = 20;
-        bestMinImprovement = 1.0;
-        bestMaxDepth = 6;
-
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 1) {
+        if (detectHomogeneity && 1 == 2) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
@@ -256,17 +251,17 @@ public class GasolineDemandMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        verbose = !false;
-        numberTreesInForest = 1; // 48;
-        computeStuff pain = new computeStuff(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
+        verbose = false;
+        numberTreesInForest = 48;
+        computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
-        pain.computeOutOfSampleMSEInParameterSpace();
-        double outOfSampleFit = pain.getMSE();
+        fitStats.computeOutOfSampleMSE();
+        double outOfSampleFit = fitStats.getMSE();
 
         System.out.println("Out of sample SSE: " + outOfSampleFit);
     }
 
-    private class computeStuff {
+    private class computeFitStatistics {
 
         MomentSpecification mySpecification;
         int numberTreesInForest;
@@ -280,7 +275,7 @@ public class GasolineDemandMain {
 
         double MSE;
 
-        public computeStuff(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose, int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
+        public computeFitStatistics(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose, int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
             this.mySpecification = mySpecification;
             this.numberTreesInForest = numberTreesInForest;
             this.rngBaseSeedMomentForest = rngBaseSeedMomentForest;
@@ -308,7 +303,7 @@ public class GasolineDemandMain {
             return minObservationsPerLeaf;
         }
 
-        public void computeOutOfSampleMSEInParameterSpace() {
+        public void computeOutOfSampleMSE() {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
 
