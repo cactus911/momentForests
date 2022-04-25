@@ -684,6 +684,12 @@ public class TreeMoment {
                 // echoLn("Did you stop here? 2-6." + " num: " + lensHonest.getNumObs() + " y: " + lensHonest.getY(0) + " x: " + lensHonest.getX(i,0) ); //  + "    " + pmUtility.stringPrettyPrint(c.getBeta()) + "    " + pmUtility.stringPrettyPrint(oldBeta) );
                 // }
                 if (verbose) {
+//                    System.out.print("\n honest beta: ");
+//                    pmUtility.prettyPrintVector(c.getBeta());
+//                    System.out.print(" Number of obs in honest tree: ");
+//                    System.out.println(lensHonest.getNumObs());
+//                    System.out.print(" old beta: ");
+//                    pmUtility.prettyPrintVector(oldBeta);
                     echoLn(pmUtility.stringPrettyPrint(c.getBeta().transpose()) + " [ " + lensHonest.getNumObs() + " ] from " + pmUtility.stringPrettyPrint(oldBeta.transpose()));
                 }
             }

@@ -67,6 +67,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         Uncmin_f77 minimizer = new Uncmin_f77(true);
 
         System.out.println("Number of parameters: "+numParams);
+        // System.exit(0);
         
         double[] guess = new double[numParams + 1];
 

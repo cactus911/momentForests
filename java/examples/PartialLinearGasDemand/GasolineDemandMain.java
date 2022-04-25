@@ -119,7 +119,7 @@ public class GasolineDemandMain {
             ArrayList<computeStuff> cvList = new ArrayList<>();
             for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 60; minObservationsPerLeaf += 5) {
                 for (double minImprovement = 16; minImprovement <= 16; minImprovement *= 2) {
-                    for (int maxDepth = 3; maxDepth <= 4; maxDepth++) {
+                    for (int maxDepth = 2; maxDepth <= 7; maxDepth++) {
                         cvList.add(new computeStuff(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -147,15 +147,18 @@ public class GasolineDemandMain {
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
         } else {
-            bestMinObservationsPerLeaf = 55;
+            bestMinObservationsPerLeaf = 60;
             bestMinImprovement = 16.0;
-            bestMaxDepth = 3;
+            bestMaxDepth = 6;
         }
 
-        bestMaxDepth = 1;
+        // bestMaxDepth = 1;
+        bestMinObservationsPerLeaf = 20;
+        bestMinImprovement = 1.0;
+        bestMaxDepth = 6;
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity) {
+        if (detectHomogeneity && 1 == 1) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
@@ -253,8 +256,8 @@ public class GasolineDemandMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        verbose = false;
-        numberTreesInForest = 48;
+        verbose = !false;
+        numberTreesInForest = 1; // 48;
         computeStuff pain = new computeStuff(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
         pain.computeOutOfSampleMSEInParameterSpace();

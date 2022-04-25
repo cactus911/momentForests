@@ -66,11 +66,6 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public void computeBetaAndErrors() {
-        /**
-         * This is very slow (nonlinear optimization) compared to OLS formula
-         * this is where I could partial out the fixed components and then run
-         * OLS on the residualized Y and X Would be MUCH, MUCH faster
-         */
 
         if (Y.getRowDimension() < 30) {
             // System.out.println("Too few observations");
@@ -78,7 +73,6 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {
             try {
-
                 int numParams = X.getColumnDimension();
                 if (!allParametersHomogeneous) {
                     for (boolean b : homogeneityIndex) {
@@ -115,8 +109,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                 double[] stepmx = {0, 1E8};
                 double[] steptl = {0, 1E-8};
 
-                if (numParams > 0) {
-
+                if (numParams > 0 && !allParametersHomogeneous) {
                     boolean useMeanY = false;
                     if (useMeanY) {
                         xpls[1] = pmUtility.mean(Y, 0);
@@ -184,56 +177,57 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                 if (debugVerbose) {
                     System.out.format("ContainerLinear.computeBetaAndErrors SSE: %g ", +goodnessOfFit);
                     pmUtility.prettyPrintVector(beta);
-                    
+
                     // ok i want to check that things are working here just for a single split of the data
                     // compute the variance using the OLS formula, compute the variance using the GMM formula
                     // make sure they are the same thing, and if not, figure out why not
                     Jama.Matrix olsVariance = getVariance(beta);
                     System.out.println("OLS variance:");
                     pmUtility.prettyPrint(olsVariance);
-                    
+
                     // compute variance formula, B = G'omega-1G, then B-1, compare to above
                     // get G first
                     Jama.Matrix G = getJacobianNoDivision(beta);
-                    G.timesEquals(1.0/Y.getRowDimension());
+                    G.timesEquals(1.0 / Y.getRowDimension());
                     Jama.Matrix omega = new Jama.Matrix(X.getColumnDimension(), X.getColumnDimension());
                     Jama.Matrix fits = X.times(beta);
                     Jama.Matrix errors = fits.minus(Y);
-                    System.out.println("sigma2: "+pmUtility.sumSquaredElements(errors));
-                    for(int i=0;i<Y.getRowDimension();i++) {
+                    System.out.println("sigma2: " + pmUtility.sumSquaredElements(errors));
+                    for (int i = 0; i < Y.getRowDimension(); i++) {
                         Jama.Matrix gi = getGi(beta, i);
                         omega.plusEquals(gi.times(gi.transpose()));
                     }
-                    omega.timesEquals(1.0/Y.getRowDimension());
+                    omega.timesEquals(1.0 / Y.getRowDimension());
                     Jama.Matrix B = (G.transpose()).times(omega.inverse()).times(G);
-                    
+
                     // that line above why the numbers are not identical? we multiple X'X by X'Xinv by X'X. Maybe that cancellation is numerically imperfect?
                     System.out.println("G:");
                     pmUtility.prettyPrint(G);
-                    
+
                     System.out.println("G'*omega.inverse:");
                     pmUtility.prettyPrint(G.transpose().times(omega.inverse()));
-                    
+
                     System.out.println("G'*omega.inverse*G:");
                     pmUtility.prettyPrint(G.transpose().times(omega.inverse()).times(G));
-                    
+
                     System.out.println("omega:");
                     pmUtility.prettyPrint(omega);
-                    
+
                     // i think that inversion, multiplication combination is why they are not identical
                     // as the sample size grows, the covariance matrices get SUPER close (to the 6th decimal place) to each other
-                    
                     System.out.println("B:");
                     pmUtility.prettyPrint(B);
                     System.out.println("B inverse:");
                     pmUtility.prettyPrint(B.inverse());
                     System.out.println("Divided by n:");
-                    pmUtility.prettyPrint(B.inverse().times(1.0/Y.getRowDimension()));
-                    
-                    System.exit(0);                    
+                    pmUtility.prettyPrint(B.inverse().times(1.0 / Y.getRowDimension()));
+
+                    System.exit(0);
                 }
             } catch (Exception e) {
-                // e.printStackTrace();
+                if (allParametersHomogeneous) {
+                    e.printStackTrace();
+                }
                 if (debugVerbose) {
                     System.out.println("Matrix not invertible");
                 }
@@ -431,7 +425,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         Jama.Matrix xpxInv = xpx.inverse();
         // double sigma2 = sse / (Y.getRowDimension() - X.getColumnDimension());
         double sigma2 = sse / (Y.getRowDimension());
-        System.out.println("sigma2 in getVariance: "+sigma2+" n = "+Y.getRowDimension());
+        System.out.println("sigma2 in getVariance: " + sigma2 + " n = " + Y.getRowDimension());
 
         boolean debugHere = false;
         if (debugHere) {

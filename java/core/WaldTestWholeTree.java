@@ -44,7 +44,8 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         double[] unconstrainedX = computeParameters(numParamsEachSplit * v.size());
         double fminUnconstrained = f_to_minimize(unconstrainedX);
 
-        Jama.Matrix acov = computeCovarianceMatrix(unconstrainedX);
+        Jama.Matrix B = computeNeweyMcFaddenB(unconstrainedX);
+        Jama.Matrix acov = B.inverse();
 
         System.out.print("Unconstrained Estimates: ");
         Jama.Matrix thetaUnconstrained = convertToStackedBeta(unconstrainedX);
@@ -88,11 +89,9 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         System.out.println("Acov inverse:");
         pmUtility.prettyPrint(acov.inverse());
 
-        wald3 = numObs * (((diffTheta.transpose()).times(acov.inverse())).times(diffTheta)).get(0, 0);
+        // wald3 = numObs * (((diffTheta.transpose()).times(acov.inverse())).times(diffTheta)).get(0, 0);
+        wald3 = numObs * (((diffTheta.transpose()).times(B)).times(diffTheta)).get(0, 0); // same thing numerically, but avoids inverting an inverse
         
-        // we can derive the test for OLS directly using linear algebra to make sure this more general moment-based version is working
-        // double wald3OLS = numObs * sigma2 * (((diffTheta.transpose()).times(xpx.inverse())).times(diffTheta)).get(0, 0);
-
         // let's try the w3 wald test from Newey McFadden here instead (doesn't have the optimal weighting matrix messing things up)
         System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " wald3: " + wald3);
 
@@ -118,7 +117,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             typsiz[i] = 1.0;
         }
 
-        double[] fscale = {0, 1.0E-8};
+        double[] fscale = {0, 1.0E-15};
         int[] method = {0, 1};
         int[] iexp = {0, 0};
         int[] msg = {0, 1};
@@ -127,9 +126,9 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         int[] iagflg = {0, 0};
         int[] iahflg = {0, 0};
         double[] dlt = {0, 1};
-        double[] gradtl = {0, 1E-8};
+        double[] gradtl = {0, 1E-15};
         double[] stepmx = {0, 1.0}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
-        double[] steptl = {0, 1E-8};
+        double[] steptl = {0, 1E-15};
 
         // with identity weighting matrix (Step 1)
         int numMoments = v.get(0).getX().getColumnDimension() * v.size();
@@ -435,7 +434,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         return W;
     }
 
-    public Matrix computeCovarianceMatrix(double[] x) {
+    public Matrix computeNeweyMcFaddenB(double[] x) {
         ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
 
         /**
@@ -501,8 +500,24 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             pmUtility.prettyPrint(B.inverse().times(1.0/v.get(0).getNumObs()));
             System.exit(0);
         }
+        
+        boolean showGandOmegaConverging = false; // these do indeed converge to fixed things
+        if(showGandOmegaConverging) {
+//            System.out.println("G:");
+//            pmUtility.prettyPrint(G);
+//            System.out.println("omega:");
+//            pmUtility.prettyPrint(omega);
+            
+            Jama.Matrix B = (G.transpose()).times(omega.inverse()).times(G);
+            System.out.println("B:");
+            pmUtility.prettyPrint(B);
+//            System.out.println("B inverse: ");
+//            pmUtility.prettyPrint(B.inverse());
+            
+            System.exit(0);
+        }
 
-        return (G.transpose()).times(omega.inverse()).times(G); // this is B (inverse covariance matrix) recall that you need to invert and DIVIDE BY N to get estimated variance of a parameter
+        return (G.transpose()).times(omega.inverse()).times(G); // this is B
     }
 
 }

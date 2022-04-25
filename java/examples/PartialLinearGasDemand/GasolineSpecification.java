@@ -90,7 +90,7 @@ public class GasolineSpecification implements MomentSpecification {
          *
          * Z =
          *
-         * 0.constant
+         * 0. constant
          *
          * 1. logHHSize
          *
@@ -114,7 +114,16 @@ public class GasolineSpecification implements MomentSpecification {
         // Boolean[] wvd = {true, false, false, false, true, false, true, true, false};
         // Boolean[] wvd = {true, true, true, false, true, true, true, true, true};
         // since we can split along here, why not have it treat everything continuously, since it does a grid search?
-        Boolean[] wvd = {false, false, false, false, false, false, false, false, false};
+        Boolean[] wvd = {false, // const
+            false, // log HH size
+            false, // log num drivers
+            false, // log age
+            false, // urban
+            false, // income
+            false, // census district
+            false, // life cycle
+            false // log cost
+        };
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -317,9 +326,9 @@ public class GasolineSpecification implements MomentSpecification {
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // log household size
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // log number drivers
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // catogorical: urban 
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // categorical: census district
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // catogorical: urban (1 in urban, 2 in urban cluster, 3 surrounded by urban, 4 not in urban)
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income (-9 not answered, -8 dunno, -7 don't want to report, 1-11 less 10k, 15k, 25k, 35k, 50k, 75k, 100k, 125k, 150k, 200k+
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // categorical: census district 1-9: NE, Mid Atl, EN central, WN central, S atl, ES central, WS central, mountain, pacific
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // categorical: life cycle
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
@@ -333,12 +342,12 @@ public class GasolineSpecification implements MomentSpecification {
              * should split on their discrete values and estimate separate
              * subtrees for each of those splits!
              *
-             * Maybe try to just treat them all as continuous to begin
+             * Maybe try to just treat them all as continuous to begin; little experiment shows the exact same fit doing both approaches
              */
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // cost per gallon
             Y = dY;
 
-            boolean runMonteCarlo = false;
+            boolean runMonteCarlo = true;
             if (runMonteCarlo) {
                 /**
                  * Easy Monte Carlo here for testing purposes
@@ -346,10 +355,14 @@ public class GasolineSpecification implements MomentSpecification {
                 NormalDistribution normal = new NormalDistribution();
                 Random rng = new Random(rngSeed);
                 for (int w = 0; w < Y.getRowDimension(); w++) {
-                    if (dX.get(w, 5) > 5) {
-                        Y.set(w, 0, 4.5 + dX.get(w, 2) + 0.1 * normal.inverse(rng.nextDouble()));
+                    double dummy = 0;
+                    if (dX.get(w, 5) > 0) { // family income
+                        // dummy = dX.get(w, 5) * 0.1;
+                    }
+                    if (dX.get(w, 4) < 3) { // in urban / cluster
+                        Y.set(w, 0, 4.5 + dX.get(w, 2) + dummy + 0.1 * normal.inverse(rng.nextDouble())); // number of drivers
                     } else {
-                        Y.set(w, 0, 4.5 - dX.get(w, 2) + 0.1 * normal.inverse(rng.nextDouble()));
+                        Y.set(w, 0, 4.5 - dX.get(w, 2) + dummy + 0.1 * normal.inverse(rng.nextDouble()));
                     }
                 }
             }
