@@ -250,7 +250,7 @@ public class GasolineSpecification implements MomentSpecification {
 
             boolean subsample = true;
             if (subsample) {
-                numObsFile = Math.floorDiv(numObsFile, 25);
+                numObsFile = Math.floorDiv(numObsFile, 50);
             }
 
             numObs = numObsFile;
@@ -323,13 +323,16 @@ public class GasolineSpecification implements MomentSpecification {
 
             // when this is just a constant, we have the standard regression tree
             // the S&S specification has all of these variables in it
+            
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // log household size
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // log number drivers
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
+            
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // catogorical: urban (1 in urban, 2 in urban cluster, 3 surrounded by urban, 4 not in urban)
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income (-9 not answered, -8 dunno, -7 don't want to report, 1-11 less 10k, 15k, 25k, 35k, 50k, 75k, 100k, 125k, 150k, 200k+
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // categorical: census district 1-9: NE, Mid Atl, EN central, WN central, S atl, ES central, WS central, mountain, pacific
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // categorical: life cycle
+            
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
              * categorical variables right now since they are stacked and not

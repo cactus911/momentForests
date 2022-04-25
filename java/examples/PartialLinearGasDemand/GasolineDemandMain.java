@@ -96,7 +96,7 @@ public class GasolineDemandMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 8;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -117,9 +117,9 @@ public class GasolineDemandMain {
             }
 
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 160; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 250; minObservationsPerLeaf <= 250; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 16; minImprovement <= 16; minImprovement *= 2) {
-                    for (int maxDepth = 7; maxDepth >= 2; maxDepth--) {
+                    for (int maxDepth = 5; maxDepth >= 2; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -147,13 +147,13 @@ public class GasolineDemandMain {
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
         } else {
-            bestMinObservationsPerLeaf = 60;
-            bestMinImprovement = 16.0;
-            bestMaxDepth = 2;
+            bestMinObservationsPerLeaf = 100;
+            bestMinImprovement = 32.0;
+            bestMaxDepth = 4;
         }
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 2) {
+        if (detectHomogeneity && 1 == 1) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
@@ -251,7 +251,7 @@ public class GasolineDemandMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        verbose = false;
+        verbose = !false;
         numberTreesInForest = 48;
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
