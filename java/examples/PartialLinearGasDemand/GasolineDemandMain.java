@@ -117,9 +117,9 @@ public class GasolineDemandMain {
             }
 
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 250; minObservationsPerLeaf <= 250; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 16; minImprovement <= 16; minImprovement *= 2) {
-                    for (int maxDepth = 5; maxDepth >= 2; maxDepth--) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.5; minImprovement <= 2; minImprovement *= 2) {
+                    for (int maxDepth = 5; maxDepth >= 1; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -149,7 +149,7 @@ public class GasolineDemandMain {
         } else {
             bestMinObservationsPerLeaf = 100;
             bestMinImprovement = 32.0;
-            bestMaxDepth = 4;
+            bestMaxDepth = 1;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -371,8 +371,8 @@ public class GasolineDemandMain {
                 // for (int incomeBin : incomeBinArray) {
                 for (int jk = 0; jk < incomeBinArray.length; jk++) {
                     int incomeBin = incomeBinArray[jk];
-                    XYSeries xy = new XYSeries(incomeString[jk]);
-                    XYSeries xy2 = new XYSeries(incomeString[jk]);
+                    XYSeries xyFit = new XYSeries(incomeString[jk]);
+                    XYSeries xyData = new XYSeries(incomeString[jk]);
                     XYSeries xyKernel = new XYSeries(incomeString[jk]);
 
                     Random rng = new Random(rngBaseSeedOutOfSample);
@@ -392,21 +392,25 @@ public class GasolineDemandMain {
                                 sumNPWeights += weight;
 
                                 // we are going to integrate out all the other characteristics, just setting age
-                                zi.set(0, 3, Math.log(age));
+                                // zi.set(0, 3, Math.log(age));
                                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
-                                avgLogGallonsFit += mySpecification.getPredictedY(xi, compositeEstimatedBeta, rng);
-                                counter++;
+                                double prediction = mySpecification.getPredictedY(xi, compositeEstimatedBeta, rng);
+                                // System.out.print("Income: "+zi.get(0,5)+" Age: "+zi.get(0,3)+" Consumption: "+prediction+" ");
+                                // pmUtility.prettyPrintVector(compositeEstimatedBeta);
+                                avgLogGallonsFit += prediction * weight;
+                                // counter++;
+                                counter ++;
                             }
                         }
-                        avgLogGallonsFit /= counter;
+                        avgLogGallonsFit /= sumNPWeights; // counter;
                         avgLogGallonsData /= sumNPWeights;
-                        xy.add(Math.log(age), avgLogGallonsFit);
-                        xy2.add(Math.log(age), avgLogGallonsData);
+                        xyFit.add(Math.log(age), avgLogGallonsFit);
+                        xyData.add(Math.log(age), avgLogGallonsData);
                         xyKernel.add(Math.log(age), sumNPWeights / counter);
                         // System.out.println("age: "+age+" data: "+avgLogGallonsData+" fit: "+avgLogGallonsFit);
                     }
-                    xyc.addSeries(xy);
-                    xycData.addSeries(xy2);
+                    xyc.addSeries(xyFit);
+                    xycData.addSeries(xyData);
                     kernelAge.addSeries(xyKernel);
                 }
                 ChartGenerator.makeXYLine(xyc, "Fitted Gasoline Consumption", "Log Age", "Log Gallons Gasoline");

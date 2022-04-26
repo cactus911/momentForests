@@ -329,7 +329,7 @@ public class GasolineSpecification implements MomentSpecification {
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
             
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // catogorical: urban (1 in urban, 2 in urban cluster, 3 surrounded by urban, 4 not in urban)
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income (-9 not answered, -8 dunno, -7 don't want to report, 1-11 less 10k, 15k, 25k, 35k, 50k, 75k, 100k, 125k, 150k, 200k+
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income (-9 not answered, -8 dunno, -7 don't want to report, 1-11 less 10k, 15k, 25k, 35k, 50k, 75k, 100k, 125k, 150k, 200k+
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // categorical: census district 1-9: NE, Mid Atl, EN central, WN central, S atl, ES central, WS central, mountain, pacific
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // categorical: life cycle
             
@@ -355,7 +355,7 @@ public class GasolineSpecification implements MomentSpecification {
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // cost per gallon
             Y = dY;
 
-            boolean runMonteCarlo = false;
+            boolean runMonteCarlo = true;
             if (runMonteCarlo) {
                 /**
                  * Easy Monte Carlo here for testing purposes
@@ -370,12 +370,9 @@ public class GasolineSpecification implements MomentSpecification {
                         double urbanFE = 0;
                         double incomeFE = 0;
                         double districtFE = 0;
-                        double lifeCycleFE = 0;
-                        double ageEffect = 0.013 * dX.get(w, 3);
-                        if (dX.get(w, 3) > 3.912) { // over age 50
-                            ageEffect = -1.31 * dX.get(w, 3);
-                        }
-
+                        double lifeCycleFE = 0 * dX.get(w, 5);
+                        double ageEffect = -0.5 * dX.get(w, 3);
+//                        
                         if (dX.get(w, 4) < 4) {
                             urbanFE = -0.172;
                         } else {
@@ -383,8 +380,8 @@ public class GasolineSpecification implements MomentSpecification {
                         }
 
                         Y.set(w, 0, 4.5 // baseline
-                                + 0.152 * dX.get(w, 1) // log household size
-                                + 0.595 * dX.get(w, 2) // log number of drivers
+                                + 0*0.152 * dX.get(w, 1) // log household size
+                                + 0*0.595 * dX.get(w, 2) // log number of drivers
                                 + ageEffect // dX.get(w, 3) // log age
                                 + urbanFE // dX.get(w,4) // FE: urban
                                 + incomeFE // 0 * dX.get(w, 5) // FE: income
