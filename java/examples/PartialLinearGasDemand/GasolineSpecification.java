@@ -250,7 +250,7 @@ public class GasolineSpecification implements MomentSpecification {
 
             boolean subsample = true;
             if (subsample) {
-                numObsFile = Math.floorDiv(numObsFile, 10);
+                numObsFile = Math.floorDiv(numObsFile, 5);
             }
 
             numObs = numObsFile;
@@ -332,6 +332,7 @@ public class GasolineSpecification implements MomentSpecification {
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income (-9 not answered, -8 dunno, -7 don't want to report, 1-11 less 10k, 15k, 25k, 35k, 50k, 75k, 100k, 125k, 150k, 200k+
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // categorical: census district 1-9: NE, Mid Atl, EN central, WN central, S atl, ES central, WS central, mountain, pacific
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // categorical: life cycle
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8)); // log cost per gallon
             
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with

@@ -108,7 +108,7 @@ public class GasolineDemandMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = !false;
+        boolean runCV = false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -147,13 +147,13 @@ public class GasolineDemandMain {
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
         } else {
-            bestMinObservationsPerLeaf = 50;
-            bestMinImprovement = 2.0;
-            bestMaxDepth = 4;
+            bestMinObservationsPerLeaf = 500;
+            bestMinImprovement = 5.0;
+            bestMaxDepth = 3; // 4 lead to a decrease in OOS fit!
         }
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 2) {
+        if (detectHomogeneity && 1 == 1) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
