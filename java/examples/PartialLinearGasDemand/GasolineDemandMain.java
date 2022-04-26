@@ -96,7 +96,7 @@ public class GasolineDemandMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 8;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -117,9 +117,9 @@ public class GasolineDemandMain {
             }
 
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.5; minImprovement <= 2; minImprovement *= 2) {
-                    for (int maxDepth = 5; maxDepth >= 1; maxDepth--) {
+            for (int minObservationsPerLeaf = 250; minObservationsPerLeaf <= 1000; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 2.5; minImprovement <= 5; minImprovement *= 2) {
+                    for (int maxDepth = 2; maxDepth >= 1; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -147,13 +147,13 @@ public class GasolineDemandMain {
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
         } else {
-            bestMinObservationsPerLeaf = 100;
-            bestMinImprovement = 32.0;
-            bestMaxDepth = 1;
+            bestMinObservationsPerLeaf = 50;
+            bestMinImprovement = 2.0;
+            bestMaxDepth = 4;
         }
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 1) {
+        if (detectHomogeneity && 1 == 2) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");

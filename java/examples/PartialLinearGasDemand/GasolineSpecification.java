@@ -250,7 +250,7 @@ public class GasolineSpecification implements MomentSpecification {
 
             boolean subsample = true;
             if (subsample) {
-                numObsFile = Math.floorDiv(numObsFile, 50);
+                numObsFile = Math.floorDiv(numObsFile, 10);
             }
 
             numObs = numObsFile;
@@ -355,7 +355,7 @@ public class GasolineSpecification implements MomentSpecification {
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // cost per gallon
             Y = dY;
 
-            boolean runMonteCarlo = true;
+            boolean runMonteCarlo = false;
             if (runMonteCarlo) {
                 /**
                  * Easy Monte Carlo here for testing purposes
@@ -370,7 +370,7 @@ public class GasolineSpecification implements MomentSpecification {
                         double urbanFE = 0;
                         double incomeFE = 0;
                         double districtFE = 0;
-                        double lifeCycleFE = 0 * dX.get(w, 5);
+                        double lifeCycleFE = 0.15 * dX.get(w, 5);
                         double ageEffect = -0.5 * dX.get(w, 3);
 //                        
                         if (dX.get(w, 4) < 4) {
@@ -380,8 +380,8 @@ public class GasolineSpecification implements MomentSpecification {
                         }
 
                         Y.set(w, 0, 4.5 // baseline
-                                + 0*0.152 * dX.get(w, 1) // log household size
-                                + 0*0.595 * dX.get(w, 2) // log number of drivers
+                                + 0.152 * dX.get(w, 1) // log household size
+                                + 0.595 * dX.get(w, 2) // log number of drivers
                                 + ageEffect // dX.get(w, 3) // log age
                                 + urbanFE // dX.get(w,4) // FE: urban
                                 + incomeFE // 0 * dX.get(w, 5) // FE: income

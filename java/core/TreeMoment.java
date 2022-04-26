@@ -386,13 +386,11 @@ public class TreeMoment {
                             double optimalZ_SSE_Left_Partition = 0;
                             int numObsLeft_Partition = 0;
                             int numObsRight_Partition = 0;
-                            
+
                             // System.out.println("Number of partitions: "+partitions.size());
-                            
                             // extend the random forest here to sample to possible partitions? this will help with controlling runtime when the number of partitions is huge
                             // alternatively, for ordered discrete bins (like income in the gasoline case) we could classify that as a continuous variable; especially
                             // if the endpoints are classified as something else (like missing data or whatever)
-                            
                             for (int i = 0; i < partitions.size(); i++) {
                                 MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, indexSplitVariable, partitions.get(i));
 
@@ -690,7 +688,15 @@ public class TreeMoment {
 //                    System.out.println(lensHonest.getNumObs());
 //                    System.out.print(" old beta: ");
 //                    pmUtility.prettyPrintVector(oldBeta);
-                    echoLn(pmUtility.stringPrettyPrint(c.getBeta().transpose()) + " [ " + lensHonest.getNumObs() + " ] from " + pmUtility.stringPrettyPrint(oldBeta.transpose()));
+                    String betaCurrentString = "null";
+                    if (c.getBeta() != null) {
+                        betaCurrentString = pmUtility.stringPrettyPrint(c.getBeta().transpose());
+                    }
+                    String betaOldString = "null";
+                    if (oldBeta != null) {
+                        betaOldString = pmUtility.stringPrettyPrint(oldBeta.transpose());
+                    }
+                    echoLn(betaCurrentString + " [ " + lensHonest.getNumObs() + " ] from " + betaOldString);
                 }
             }
         } else {
