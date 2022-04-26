@@ -30,6 +30,7 @@ import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeMoment;
 import core.TreeOptions;
+import examples.PartialLinearGasDemand.HomogeneousParameterSorter;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -88,7 +89,7 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 500; numObs <= 4000; numObs *= 2) {
+        for (int numObs = 50; numObs <= 4000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -134,7 +135,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 10;
+                int numMonteCarlos = 48;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -151,7 +152,7 @@ public class LinearTestMain {
                 AtomicInteger bomb = new AtomicInteger();
 
                 parallelLTM.parallelStream().forEach(e -> {
-                    // parallelLTM.stream().forEach(e -> {
+                //    parallelLTM.stream().forEach(e -> {
                     e.execute();
                     bomb.incrementAndGet();
                     System.out.println("Finished " + bomb.get() + " iterations.");
@@ -287,24 +288,12 @@ public class LinearTestMain {
         boolean first = true;
 
         /**
-         * January 21, 2022: there is a question here about how to estimate the
-         * set of homogeneous parameters in that should we do so after running
-         * cross validation? I think the answer to that is probably yes since it
-         * is primarily an issue of imposing a constraint for efficiency
-         * reasons.
-         *
-         * Probably do this:
-         *
-         * 1. Run cross validation on unrestricted model 2. Run test of
-         * homogeneity 3. Impose homogeneity and re-estimate
-         */
-        /**
          * Make sure that cross-validation is run on completely unrestricted
          * model; set all parameters to heterogeneous
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 10;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -321,7 +310,7 @@ public class LinearTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = !false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -329,9 +318,9 @@ public class LinearTestMain {
                 System.out.println("************************");
             }
 
-            for (int minObservationsPerLeaf = 20; minObservationsPerLeaf <= 20; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.1; minImprovement <= 0.1; minImprovement *= 10) {
-                    for (int maxDepth = Math.min(20, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 1; maxDepth--) {
+            for (int minObservationsPerLeaf = 20; minObservationsPerLeaf <= 320; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.1; minImprovement <= 100.0; minImprovement *= 10) {
+                    for (int maxDepth = Math.min(5, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 1; maxDepth--) {
                         computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
                         double combinationMSE = outOfSampleYMSE;
                         String star = "";
@@ -343,13 +332,13 @@ public class LinearTestMain {
                             bestMaxDepth = maxDepth;
                             star = "(*)";
                         }
-                        System.out.println("minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
+                        // System.out.println("minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
                     }
                 }
             }
 
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
-            jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
+            // jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
         } else {
             bestMinObservationsPerLeaf = 20;
             bestMinImprovement = 0.1;
@@ -366,7 +355,7 @@ public class LinearTestMain {
                 bestMaxDepth = 9;
             }
         }
-        // bestMaxDepth = 1;
+        bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -384,38 +373,42 @@ public class LinearTestMain {
 
             testParameterHomogeneity = false;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
-            MomentForest myForest = new MomentForest(mySpecification, 1, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
+            MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
 
             myForest.setTreeOptions(cvOptions);
             myForest.growForest();
-
-            /**
-             * March 16, 2020: going to try something here, which is to
-             * aggregate parameters within two partitions for each parameter we
-             * are checking Find the support of each X, split in half Find the
-             * average parameter in each half Get the variance across cells (or
-             * across the forest?) Then test using a t-test
-             *
-             * Q: how to compute the variances needed in the t-test? The average
-             * seems straightforward enough
-             *
-             * A: Just going back to my "naive" idea of testing across ALL of
-             * the terminal leaves; seems to work!
-             */
-            TreeMoment loblolly = myForest.getTree(0);
-            loblolly.testHomogeneity();
+            myForest.testHomogeneity();
+            // TreeMoment loblolly = myForest.getTree(0);
+            // loblolly.testHomogeneity();
+            
+            // should I implement a voting scheme here across all the trees for discerning homogeneity?
+            // idea is to take the majority vote across trees
+            // then take the average value from those trees that voted yes
+            // let's try it and see what happens to classification rates
+            ArrayList<Integer> hpl = new ArrayList<>();
+            ArrayList<Double> hplStartingValues = new ArrayList<>();
+            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes();
+            double[] startingValues = myForest.getHomogeneityStartingValues();
+            for(int i=0;i<voteIndexHomogeneity.length;i++) {
+                if(voteIndexHomogeneity[i]) {
+                    System.out.println("Adding index "+i+" to homogeneous list with starting value: "+startingValues[i]);
+                    hpl.add(i);
+                    hplStartingValues.add(startingValues[i]);
+                }
+            }
 
             // System.out.println("Done with growforest");
-            ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
-            ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
+            // ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
+            // ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
             // System.out.println("Post get homogeneous parameters");
 
             // tell the specification that these parameters have been determined to be homogeneous
 //            System.out.println("Unsorted");            
 //                System.out.print(hpl+" ");
 //                System.out.println(hplStartingValues);
-            Collections.sort(hpl); // ensure that indices are ascending (this can cause some weird problems elsewhere due to my bad coding skills if not)
-            Collections.sort(hplStartingValues);
+            // need to sort together
+            HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
+            sorter.sort(hpl, hplStartingValues);
 //            System.out.println("Sorted");
 //            System.out.print(hpl+" ");
 //            System.out.println(hplStartingValues);
@@ -458,7 +451,7 @@ public class LinearTestMain {
             } else {
                 if (!hpl.isEmpty()) {
                     // System.out.println("Initializing search container");
-                    numberTreesInForest = 10;
+                    numberTreesInForest = 1;
                     HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                             getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                     // System.out.println("Calling execute search");
@@ -485,7 +478,7 @@ public class LinearTestMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        numberTreesInForest = 10;
+        numberTreesInForest = 1;
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
     }

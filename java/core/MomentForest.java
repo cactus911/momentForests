@@ -97,7 +97,7 @@ public class MomentForest {
                     lensHonest, treeOptions.isTestParameterHomogeneity()));
         }
 
-        boolean useParallel = !true;
+        boolean useParallel = true;
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
@@ -150,6 +150,68 @@ public class MomentForest {
             }
         }
         return countEachVariableSplit;
+    }
+
+    public boolean[] getHomogeneityVotes() {
+        int[] voteCounts = new int[spec.getHomogeneousIndex().length];
+        for(int i=0;i<numberTreesInForest;i++) {
+            ArrayList<Integer> hpl = getTree(i).getIndexHomogeneousParameters();
+            // ArrayList<Double> hplStartingValues = getTree(i).getValueHomogeneousParameters();
+            for(Integer h : hpl) {
+                voteCounts[h] = voteCounts[h] + 1;
+            }
+        }
+        boolean[] votes = new boolean[voteCounts.length];
+        for(int i=0;i<votes.length;i++) {
+            votes[i] = voteCounts[i]>Math.floorDiv(numberTreesInForest, 2);
+        }
+        System.out.print("votes: ");
+        for(int i=0;i<voteCounts.length;i++) {
+            // System.out.print(voteCounts[i]+"/"+votes[i]+" ");
+            System.out.format("%.2f%% ", (100.0 * voteCounts[i] / numberTreesInForest));
+            if(voteCounts[i]<numberTreesInForest) {
+                // System.out.println("Detected variance in voting on parameter "+i+": "+voteCounts[i]);
+                // System.exit(0);
+            }
+        }
+        System.out.println("");
+        
+        return votes;
+    }
+
+    public double[] getHomogeneityStartingValues() {
+        double[] startingValues = new double[spec.getHomogeneousIndex().length];
+        double[] voteCounts = new double[spec.getHomogeneousIndex().length];
+        for(int i=0;i<numberTreesInForest;i++) {
+            ArrayList<Integer> hpl = getTree(i).getIndexHomogeneousParameters();
+            ArrayList<Double> hplStartingValues = getTree(i).getValueHomogeneousParameters();
+//            for(Double d : hplStartingValues) {
+//                System.out.print(d+" ");
+//            }
+            // System.out.println();
+            for(int j=0;j<hpl.size();j++) {
+                voteCounts[j] = voteCounts[j] + 1;
+                startingValues[j] = startingValues[j] + hplStartingValues.get(j);
+            }
+        }
+        for(int i=0;i<startingValues.length;i++) {
+            startingValues[i] = startingValues[i] / voteCounts[i];
+        }
+        return startingValues;
+    }
+
+    public void testHomogeneity() {
+        boolean useParallel = true;
+
+        if (!useParallel) {
+            for (int i = 0; i < numberTreesInForest; i++) {
+                forest.get(i).testHomogeneity();
+            }
+        } else {
+            forest.parallelStream().forEach((tree) -> {
+                tree.testHomogeneity();
+            });
+        }
     }
 
 }

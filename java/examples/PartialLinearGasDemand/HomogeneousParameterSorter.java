@@ -11,12 +11,12 @@ import java.util.Collections;
  *
  * @author stephen.p.ryan
  */
-class HomogeneousParameterSorter {
+public class HomogeneousParameterSorter {
 
     public HomogeneousParameterSorter() {
     }
        
-    void sort(ArrayList<Integer> hpl, ArrayList<Double> hplStartingValues) {
+    public void sort(ArrayList<Integer> hpl, ArrayList<Double> hplStartingValues) {
         ArrayList<Duple> dupleList = new ArrayList<>();
         for(int i=0;i<hpl.size();i++) {
             dupleList.add(new Duple(hpl.get(i), hplStartingValues.get(i)));
