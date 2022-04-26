@@ -66,7 +66,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public void computeBetaAndErrors() {
-
+        // System.out.println("In here");
         if (Y.getRowDimension() < 30) {
             // System.out.println("Too few observations");
             beta = null;
@@ -231,6 +231,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                 if (debugVerbose) {
                     System.out.println("Matrix not invertible");
                 }
+                
                 beta = null;
                 goodnessOfFit = Double.POSITIVE_INFINITY;
             }

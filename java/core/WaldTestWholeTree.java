@@ -91,9 +91,11 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
         // wald3 = numObs * (((diffTheta.transpose()).times(acov.inverse())).times(diffTheta)).get(0, 0);
         wald3 = numObs * (((diffTheta.transpose()).times(B)).times(diffTheta)).get(0, 0); // same thing numerically, but avoids inverting an inverse
-        
+
         // let's try the w3 wald test from Newey McFadden here instead (doesn't have the optimal weighting matrix messing things up)
         System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " wald3: " + wald3);
+
+        // System.exit(0);
 
         return wald3;
     }
@@ -102,7 +104,13 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
         System.out.println("Number of parameters: " + numParams);
 
-        Uncmin_f77 minimizer = new Uncmin_f77(false);
+        boolean uncminVerbose = false;
+        boolean constrainedEstimation = false;
+        if (indexConstrainedParameter >= 0) {
+            // uncminVerbose = true;
+            constrainedEstimation = true;
+        }
+        Uncmin_f77 minimizer = new Uncmin_f77(uncminVerbose);
 
         double[] guess = new double[numParams + 1];
 
@@ -126,16 +134,53 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         int[] iagflg = {0, 0};
         int[] iahflg = {0, 0};
         double[] dlt = {0, 1};
-        double[] gradtl = {0, 1E-15};
-        double[] stepmx = {0, 1.0}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
-        double[] steptl = {0, 1E-15};
+        double[] gradtl = {0, 1E-8};
+        double[] stepmx = {0, 3.0}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
+        double[] steptl = {0, 1E-8};
+
+        // why not seed this with starting values coming from the unrelated regressions?
+        // System.out.println(indexConstrainedParameter);
+        int xCounter = 0;
+        boolean first = true;
+        for (int leaf = 0; leaf < v.size(); leaf++) {
+            DataLens lens = v.get(leaf);
+            ContainerMoment cm = spec.getContainerMoment(lens);
+            cm.computeBetaAndErrors();
+            // pmUtility.prettyPrintVector(cm.getBeta());
+            if (indexConstrainedParameter < 0) {
+                // unconstrained case, just put in double[] x in order
+                for (int i = 0; i < cm.getBeta().getRowDimension(); i++) {
+                    guess[xCounter + 1] = cm.getBeta().get(i, 0);
+                    xCounter++;
+                }
+            } else {
+                // have to do something more complex here, figure that once i get the above working
+                for (int i = 0; i < cm.getBeta().getRowDimension(); i++) {
+                    if (indexConstrainedParameter == i) {
+                        if (first) {
+                            guess[1] = cm.getBeta().get(i, 0);
+                            first = false;
+                        }
+                    } else {
+                        guess[xCounter + 2] = cm.getBeta().get(i, 0);
+                        xCounter++;
+                    }
+                }
+            }
+        }
+        System.out.print("Seeded starting values: ");
+        pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+        for (int i = 0; i < xpls.length; i++) {
+            xpls[i] = guess[i];
+        }
+        // System.exit(0);
 
         // with identity weighting matrix (Step 1)
         int numMoments = v.get(0).getX().getColumnDimension() * v.size();
         omega = Jama.Matrix.identity(numMoments, numMoments);
 
-        boolean minimizeSSEFirst = true;
-        if (minimizeSSEFirst) {
+        boolean minimizeSSEFirst = !true;
+        if (minimizeSSEFirst && !constrainedEstimation) {
             useSumOfSquaredErrors = true;
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             for (int i = 0; i < guess.length; i++) {
@@ -146,8 +191,8 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             useSumOfSquaredErrors = false;
         }
 
-        boolean useUncminFirst = true;
-        if (useUncminFirst) {
+        boolean useUncminFirst = !true;
+        if (useUncminFirst && !constrainedEstimation) {
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             for (int i = 0; i < guess.length; i++) {
                 guess[i] = xpls[i];
@@ -157,7 +202,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         boolean useLTE = false;
-        if (useLTE) {
+        if (useLTE && !constrainedEstimation) {
             double start = f_to_minimize(xpls);
             mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 1000, 1000, xpls, false);
             guess = lte.getLowestPoint();
@@ -174,29 +219,39 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             }
         }
 
+        boolean useOptimalTwoStepWeightingMatrix = true;
+        if (useOptimalTwoStepWeightingMatrix) {
+            for (int i = 0; i < 2; i++) {
+                System.out.println("************* STEP " + (i + 1) + " of 2 *************");
+                System.out.print("Starting xpls in optimal two step matrix: ");
+                pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+                // with optimal weighting matrix (Step 2)
+                System.out.print("Computing optimal weighting matrix...");
+                omega = computeOptimalOmega(xpls);
+                System.out.println("done.");
+
+                System.out.println("With optimal weighting matrix:");
+                pmUtility.prettyPrint(omega);
+
+                System.out.print("Starting guess in optimal two step matrix: ");
+                pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+
+                minimizer = new Uncmin_f77(uncminVerbose);
+                minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                System.out.print("after second step with fixed Omega: ");
+                pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+
+                System.arraycopy(xpls, 0, guess, 0, guess.length);
+            }
+        }
+
         boolean useCUEInSecondStep = false;
-        if (useCUEInSecondStep) {
+        if (useCUEInSecondStep || constrainedEstimation && 2==2) {
             System.out.println("Recomputing with CUE...");
             useCUE = true;
             minimizer = new Uncmin_f77(true);
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             System.out.print("after second step with CUE: ");
-            pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
-        }
-
-        boolean useOptimalTwoStepWeightingMatrix = true;
-        if (useOptimalTwoStepWeightingMatrix) {
-            // with optimal weighting matrix (Step 2)
-            System.out.print("Computing optimal weighting matrix...");
-            omega = computeOptimalOmega(xpls);
-            System.out.println("done.");
-
-            System.out.println("With optimal weighting matrix:");
-            pmUtility.prettyPrint(omega);
-
-            minimizer = new Uncmin_f77(false);
-            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-            System.out.print("after second step with fixed Omega: ");
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
         }
 
@@ -252,13 +307,12 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
         double q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
 
-        if (useCUE) {
-            System.out.println("-----------");
-            System.out.print("f: " + q + " ");
-            pmUtility.prettyPrint(new Jama.Matrix(x, 1));
-            pmUtility.prettyPrint(omega);
-        }
-
+//        if (useCUE) {
+//            System.out.println("-----------");
+//            System.out.print("f: " + q + " ");
+//            pmUtility.prettyPrint(new Jama.Matrix(x, 1));
+//            pmUtility.prettyPrint(omega);
+//        }
         return q;
     }
 
@@ -497,23 +551,23 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             System.out.println("variance OLS:");
             pmUtility.prettyPrint(c.getVariance(cellBetaList.get(0)));
             System.out.println("B inverse scaled properly: ");
-            pmUtility.prettyPrint(B.inverse().times(1.0/v.get(0).getNumObs()));
+            pmUtility.prettyPrint(B.inverse().times(1.0 / v.get(0).getNumObs()));
             System.exit(0);
         }
-        
+
         boolean showGandOmegaConverging = false; // these do indeed converge to fixed things
-        if(showGandOmegaConverging) {
+        if (showGandOmegaConverging) {
 //            System.out.println("G:");
 //            pmUtility.prettyPrint(G);
 //            System.out.println("omega:");
 //            pmUtility.prettyPrint(omega);
-            
+
             Jama.Matrix B = (G.transpose()).times(omega.inverse()).times(G);
             System.out.println("B:");
             pmUtility.prettyPrint(B);
 //            System.out.println("B inverse: ");
 //            pmUtility.prettyPrint(B.inverse());
-            
+
             System.exit(0);
         }
 

@@ -102,7 +102,7 @@ public class GasolineDemandMain {
         /**
          * Initialize the moment forest
          */
-        boolean verbose = false;
+        boolean verbose = true;
         boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
@@ -149,7 +149,7 @@ public class GasolineDemandMain {
         } else {
             bestMinObservationsPerLeaf = 500;
             bestMinImprovement = 5.0;
-            bestMaxDepth = 3; // 4 lead to a decrease in OOS fit!
+            bestMaxDepth = 3; // 4 lead to a decrease in OOS fit! this is the 20 percent sample
         }
 
         mySpecification.resetHomogeneityIndex();
