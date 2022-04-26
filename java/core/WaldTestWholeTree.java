@@ -246,7 +246,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         boolean useCUEInSecondStep = false;
-        if (useCUEInSecondStep || constrainedEstimation && 2==2) {
+        if (useCUEInSecondStep || constrainedEstimation && 1==2) {
             System.out.println("Recomputing with CUE...");
             useCUE = true;
             minimizer = new Uncmin_f77(true);

@@ -97,7 +97,7 @@ public class MomentForest {
                     lensHonest, treeOptions.isTestParameterHomogeneity()));
         }
 
-        boolean useParallel = true;
+        boolean useParallel = !true;
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
@@ -137,12 +137,19 @@ public class MomentForest {
         this.treeOptions = cvOptions;
     }
 
-    public ArrayList<Integer> getIndexSplitVariables() {
-        TreeSet<Integer> splitTree = new TreeSet<>();
+    public double[] getIndexSplitVariables() {
+        
+        double countEachVariableSplit[] = new double[spec.getDiscreteVector().length];
+        
         for(TreeMoment tree : forest) {
+            TreeSet<Integer> splitTree = new TreeSet<>();
             tree.getIndexSplitVariables(splitTree);
+            
+            for(int i:splitTree) {
+                countEachVariableSplit[i] = countEachVariableSplit[i]+1.0;
+            }
         }
-        return new ArrayList(splitTree);
+        return countEachVariableSplit;
     }
 
 }

@@ -34,7 +34,6 @@ import core.TreeMoment;
 import core.TreeOptions;
 import java.awt.GridLayout;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
@@ -153,7 +152,7 @@ public class GasolineDemandMain {
         }
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 1) {
+        if (detectHomogeneity && 1 == 2) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
@@ -209,49 +208,35 @@ public class GasolineDemandMain {
             /**
              * Estimate values of those homogeneous parameters
              */
-            boolean cheatToVerifyWorking = false;
-            if (cheatToVerifyWorking) {
-                // this is here to verify that the code is working in that we should get a lower OOS MSE when the truth is imposed (it works)
-                hpl.clear();
-                hpl.add(1);
-                // hpl.add(1);
-                mySpecification.resetHomogeneityIndex();
-                mySpecification.setHomogeneousIndex(1);
-                mySpecification.setHomogeneousParameter(1, 1.0);
-                // mySpecification.setHomogeneousIndex(1);
-                // mySpecification.setHomogeneousParameter(1, 1.0);
-                setEstimatedHomogeneousParameters(mySpecification.getHomogeneousParameterVector());
-            } else {
-                if (!hpl.isEmpty()) {
-                    // System.out.println("Initializing search container");
-                    numberTreesInForest = 10;
-                    HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
-                            getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
-                    // System.out.println("Calling execute search");
-                    con.executeSearch();
-                    // System.out.println("Post search");
-                    Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
-                    System.out.print("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
-                    pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
+            if (!hpl.isEmpty()) {
+                // System.out.println("Initializing search container");
+                numberTreesInForest = 10;
+                HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
+                        getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
+                // System.out.println("Calling execute search");
+                con.executeSearch();
+                // System.out.println("Post search");
+                Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
+                System.out.print("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
+                pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
 
-                    int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
-                    Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
-                    int counter = 0;
-                    for (int k = 0; k < K; k++) {
-                        if (mySpecification.getHomogeneousIndex()[k]) {
-                            expandedHomogeneousParameterVector.set(k, 0, homogeneousParameters.get(counter, 0));
-                            counter++;
-                        }
+                int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
+                Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
+                int counter = 0;
+                for (int k = 0; k < K; k++) {
+                    if (mySpecification.getHomogeneousIndex()[k]) {
+                        expandedHomogeneousParameterVector.set(k, 0, homogeneousParameters.get(counter, 0));
+                        counter++;
                     }
-                    setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
                 }
+                setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
             }
         }
 
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        verbose = !false;
+        verbose = false;
         numberTreesInForest = 48;
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
@@ -259,6 +244,15 @@ public class GasolineDemandMain {
         double outOfSampleFit = fitStats.getMSE();
 
         System.out.println("Out of sample SSE: " + outOfSampleFit);
+
+        System.out.println("Number of trees in forest: "+numberTreesInForest);
+        System.out.println("Forest split on the following variables:");
+        double[] countVariableSplitsInForest = fitStats.getSplitVariables();
+        for (int i = 0; i < countVariableSplitsInForest.length; i++) {
+            if (countVariableSplitsInForest[i] > 0) {
+                System.out.format("%20s [%.2f%%] %n", mySpecification.getVariableName(i), 100.0 * countVariableSplitsInForest[i] / numberTreesInForest);
+            }
+        }
     }
 
     private class computeFitStatistics {
@@ -274,6 +268,8 @@ public class GasolineDemandMain {
         boolean generatePlots;
 
         double MSE;
+
+        MomentForest myForest;
 
         public computeFitStatistics(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose, int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
             this.mySpecification = mySpecification;
@@ -303,11 +299,13 @@ public class GasolineDemandMain {
             return minObservationsPerLeaf;
         }
 
+        public double[] getSplitVariables() {
+            return myForest.getIndexSplitVariables();
+        }
+
         public void computeOutOfSampleMSE() {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
-
-            MomentForest myForest;
 
             DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
@@ -399,7 +397,7 @@ public class GasolineDemandMain {
                                 // pmUtility.prettyPrintVector(compositeEstimatedBeta);
                                 avgLogGallonsFit += prediction * weight;
                                 // counter++;
-                                counter ++;
+                                counter++;
                             }
                         }
                         avgLogGallonsFit /= sumNPWeights; // counter;

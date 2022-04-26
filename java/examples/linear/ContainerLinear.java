@@ -347,7 +347,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public Matrix getJacobianNoDivision(Matrix beta) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return (X.transpose()).times(X);
     }
     
     @Override

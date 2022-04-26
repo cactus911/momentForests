@@ -615,6 +615,7 @@ public class TreeMoment {
     }
 
     public void printTree() {
+        // echoLn(getParentRuleDescriptive(null) + " [" + lensHonest.getNumObs() + "] " + momentSpec.formatTreeLeafOutput(betaEstimateNode, varianceMatrix));
         if (!terminal) {
             childLeft.printTree();
             childRight.printTree();

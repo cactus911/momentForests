@@ -118,9 +118,9 @@ public class GasolineSpecification implements MomentSpecification {
             false, // log HH size
             false, // log num drivers
             false, // log age
-            !true, // urban
+            true, // urban
             false, // income
-            !true, // census district
+            true, // census district
             !true, // life cycle
             false // log cost
     };
@@ -250,7 +250,7 @@ public class GasolineSpecification implements MomentSpecification {
 
             boolean subsample = true;
             if (subsample) {
-                numObsFile = Math.floorDiv(numObsFile, 5);
+                numObsFile = Math.floorDiv(numObsFile, 2);
             }
 
             numObs = numObsFile;
