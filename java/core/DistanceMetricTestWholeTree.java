@@ -45,10 +45,10 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
 
         System.out.print("Unconstrained Estimates: ");
         pmUtility.prettyPrint(new Jama.Matrix(unconstrainedX, 1));
-        for(Jama.Matrix beta : convertToBetaList(unconstrainedX)) {
+        for (Jama.Matrix beta : convertToBetaList(unconstrainedX)) {
             pmUtility.prettyPrintVector(beta);
         }
-        System.out.println("SSE (unconstrained): "+computeSSE(unconstrainedX));
+        System.out.println("SSE (unconstrained): " + computeSSE(unconstrainedX));
 
         // then impose constraint on indexParameterConstrain, report twice the difference
         this.indexConstrainedParameter = indexConstrainedParameter;
@@ -62,13 +62,13 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
 
         System.out.print("Constrained Estimates: ");
         pmUtility.prettyPrint(new Jama.Matrix(constrainedX, 1));
-        
+
         valueConstrainedParameter = constrainedX[1];
-        
-        for(Jama.Matrix beta : convertToBetaList(constrainedX)) {
+
+        for (Jama.Matrix beta : convertToBetaList(constrainedX)) {
             pmUtility.prettyPrintVector(beta);
         }
-        System.out.println("SSE (constrained): "+computeSSE(constrainedX));
+        System.out.println("SSE (constrained): " + computeSSE(constrainedX));
 
         dm = 2.0 * numObs * (fminConstrained - fminUnconstrained);
 
@@ -78,7 +78,6 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
     }
 
     private double[] computeParameters(int numParams) {
-
         System.out.println("Number of parameters: " + numParams);
 
         Uncmin_f77 minimizer = new Uncmin_f77(false);
@@ -109,11 +108,45 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         double[] stepmx = {0, 1.0}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
         double[] steptl = {0, 1E-8};
 
+        int xCounter = 0;
+        boolean first = true;
+        for (int leaf = 0; leaf < v.size(); leaf++) {
+            DataLens lens = v.get(leaf);
+            ContainerMoment cm = spec.getContainerMoment(lens);
+            cm.computeBetaAndErrors();
+            // pmUtility.prettyPrintVector(cm.getBeta());
+            if (indexConstrainedParameter < 0) {
+                // unconstrained case, just put in double[] x in order
+                for (int i = 0; i < cm.getBeta().getRowDimension(); i++) {
+                    guess[xCounter + 1] = cm.getBeta().get(i, 0);
+                    xCounter++;
+                }
+            } else {
+                // have to do something more complex here, figure that once i get the above working
+                for (int i = 0; i < cm.getBeta().getRowDimension(); i++) {
+                    if (indexConstrainedParameter == i) {
+                        if (first) {
+                            guess[1] = cm.getBeta().get(i, 0);
+                            first = false;
+                        }
+                    } else {
+                        guess[xCounter + 2] = cm.getBeta().get(i, 0);
+                        xCounter++;
+                    }
+                }
+            }
+        }
+        System.out.print("Seeded starting values: ");
+        pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+        for (int i = 0; i < xpls.length; i++) {
+            xpls[i] = guess[i];
+        }
+
         // with identity weighting matrix (Step 1)
         int numMoments = v.get(0).getX().getColumnDimension() * v.size();
         omega = Jama.Matrix.identity(numMoments, numMoments);
 
-        boolean minimizeSSEFirst = true;
+        boolean minimizeSSEFirst = false;
         if (minimizeSSEFirst) {
             useSumOfSquaredErrors = true;
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
@@ -125,7 +158,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             useSumOfSquaredErrors = false;
         }
 
-        boolean useUncminFirst = true;
+        boolean useUncminFirst = false;
         if (useUncminFirst) {
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             for (int i = 0; i < guess.length; i++) {
@@ -165,18 +198,21 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
 
         boolean useOptimalTwoStepWeightingMatrix = true;
         if (useOptimalTwoStepWeightingMatrix) {
-            // with optimal weighting matrix (Step 2)
-            System.out.print("Computing optimal weighting matrix...");
-            omega = computeOptimalOmega(xpls);
-            System.out.println("done.");
-            
-            System.out.println("With optimal weighting matrix:");
-            pmUtility.prettyPrint(omega);
-            
-            minimizer = new Uncmin_f77(false);
-            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-            System.out.print("after second step with fixed Omega: ");
-            pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+            for (int i = 0; i < 2; i++) {
+                // with optimal weighting matrix (Step 2)
+                System.out.print("Computing optimal weighting matrix...");
+                omega = computeOptimalOmega(xpls);
+                System.out.println("done.");
+
+                System.out.println("With optimal weighting matrix:");
+                pmUtility.prettyPrint(omega);
+
+                minimizer = new Uncmin_f77(false);
+                minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                System.out.print("after second step with fixed Omega: ");
+                pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+                System.arraycopy(xpls, 0, guess, 0, guess.length);
+            }
         }
 
         return xpls;
@@ -191,6 +227,13 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
      */
     @Override
     public double f_to_minimize(double[] x) {
+        boolean oracle = true;
+        if (oracle) {
+            if (indexConstrainedParameter == 1) {
+                x[1] = 1.0;
+            }
+        }
+
         ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
 
         /**
@@ -240,7 +283,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
 
         return q;
     }
-    
+
     public double computeSSE(double[] x) {
         ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
 
@@ -252,12 +295,12 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         int K = v.get(0).getX().getColumnDimension();
 
         double SSE = 0;
-        
+
         /**
          * Go leaf by leaf and stack moments
          */
         int numObs = 0;
-        Jama.Matrix g = new Jama.Matrix(0,1);
+        Jama.Matrix g = new Jama.Matrix(0, 1);
         for (int leaf = 0; leaf < v.size(); leaf++) {
             DataLens lens = v.get(leaf);
             numObs += lens.getNumObs();
@@ -265,11 +308,11 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             g = pmUtility.stackMatrix(g, c.getMomentGWithoutDivision(cellBetaList.get(leaf)));
             SSE += c.computeMeasureOfFit(cellBetaList.get(leaf));
         }
-        g.timesEquals(1.0/numObs);
+        g.timesEquals(1.0 / numObs);
         System.out.println("Moment Vector:");
         pmUtility.prettyPrint(g);
-        System.out.println("g'g: "+((g.transpose()).times(g)).get(0,0));
-        
+        System.out.println("g'g: " + ((g.transpose()).times(g)).get(0, 0));
+
         return SSE;
     }
 

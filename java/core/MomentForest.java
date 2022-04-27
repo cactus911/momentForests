@@ -26,6 +26,7 @@ package core;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
+import javax.swing.JTextArea;
 
 /**
  * Class containing a collection of trees and utility classes for interacting
@@ -152,7 +153,7 @@ public class MomentForest {
         return countEachVariableSplit;
     }
 
-    public boolean[] getHomogeneityVotes() {
+    public boolean[] getHomogeneityVotes(JTextArea jt) {
         int[] voteCounts = new int[spec.getHomogeneousIndex().length];
         for(int i=0;i<numberTreesInForest;i++) {
             ArrayList<Integer> hpl = getTree(i).getIndexHomogeneousParameters();
@@ -169,6 +170,8 @@ public class MomentForest {
         for(int i=0;i<voteCounts.length;i++) {
             // System.out.print(voteCounts[i]+"/"+votes[i]+" ");
             System.out.format("%.2f%% ", (100.0 * voteCounts[i] / numberTreesInForest));
+            double pct = 100.0*voteCounts[i] / numberTreesInForest;
+//            jt.append(i+". votes: "+voteCounts[i]+" out of "+numberTreesInForest+" ("+pct+")\n");
             if(voteCounts[i]<numberTreesInForest) {
                 // System.out.println("Detected variance in voting on parameter "+i+": "+voteCounts[i]);
                 // System.exit(0);
@@ -190,18 +193,42 @@ public class MomentForest {
 //            }
             // System.out.println();
             for(int j=0;j<hpl.size();j++) {
-                voteCounts[j] = voteCounts[j] + 1;
-                startingValues[j] = startingValues[j] + hplStartingValues.get(j);
+                int index = hpl.get(j);
+                voteCounts[index] = voteCounts[index] + 1;
+                startingValues[index] = startingValues[index] + hplStartingValues.get(j);
             }
         }
         for(int i=0;i<startingValues.length;i++) {
-            startingValues[i] = startingValues[i] / voteCounts[i];
+            if(voteCounts[i]>0) {
+                startingValues[i] = startingValues[i] / voteCounts[i];
+            }
+            if(Double.isNaN(startingValues[i])) {
+                System.out.println("Detected starting value of NaN:");
+                System.out.println("voteCounts: "+voteCounts[i]);
+                
+                for(int t=0;t<numberTreesInForest;t++) {
+                    System.out.println("Tree "+t+": ");
+                    ArrayList<Integer> hpl = getTree(t).getIndexHomogeneousParameters();
+                    ArrayList<Double> hplStartingValues = getTree(t).getValueHomogeneousParameters();
+                    for(Double d : hplStartingValues) {
+                        System.out.print(d+" ");
+                    }
+                    System.out.println("");
+                    System.out.print("Index homogeneous parameters: ");
+                    for(Integer h : hpl) {
+                        System.out.print(h+" ");
+                    }
+                    
+                    System.out.println("");
+                }
+                System.exit(0);
+            }
         }
         return startingValues;
     }
 
     public void testHomogeneity() {
-        boolean useParallel = true;
+        boolean useParallel = false;
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {

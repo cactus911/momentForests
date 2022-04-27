@@ -73,7 +73,9 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 
         // use the starting values from the test
         for (int k = 0; k < homogeneousParameterIndex.size(); k++) {
-            guess[k + 1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
+            if(!Double.isNaN(mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k)))) {
+                guess[k + 1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
+            }
         }
         System.out.print("Starting values taken from test: ");
         pmUtility.prettyPrint(new Jama.Matrix(guess, 1));

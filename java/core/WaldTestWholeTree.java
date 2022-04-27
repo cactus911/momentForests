@@ -179,7 +179,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         int numMoments = v.get(0).getX().getColumnDimension() * v.size();
         omega = Jama.Matrix.identity(numMoments, numMoments);
 
-        boolean minimizeSSEFirst = !true;
+        boolean minimizeSSEFirst = false;
         if (minimizeSSEFirst && !constrainedEstimation) {
             useSumOfSquaredErrors = true;
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
@@ -191,7 +191,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             useSumOfSquaredErrors = false;
         }
 
-        boolean useUncminFirst = !true;
+        boolean useUncminFirst = false;
         if (useUncminFirst && !constrainedEstimation) {
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             for (int i = 0; i < guess.length; i++) {
@@ -246,10 +246,10 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         boolean useCUEInSecondStep = false;
-        if (useCUEInSecondStep || constrainedEstimation && 1==2) {
+        if (useCUEInSecondStep || (constrainedEstimation && 1==2)) {
             System.out.println("Recomputing with CUE...");
             useCUE = true;
-            minimizer = new Uncmin_f77(true);
+            minimizer = new Uncmin_f77(false);
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             System.out.print("after second step with CUE: ");
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));

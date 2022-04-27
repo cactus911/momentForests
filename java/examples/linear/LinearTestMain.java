@@ -89,7 +89,7 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
+        for (int numObs = 5000; numObs <= 40000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -111,8 +111,8 @@ public class LinearTestMain {
 
             JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-            boolean[] d = {false, true};
-            // boolean[] d = {!true};
+            // boolean[] d = {false, true};
+            boolean[] d = {!true};
             for (boolean detectHomogeneity : d) {
                 // boolean detectHomogeneity = !true;
                 if (detectHomogeneity) {
@@ -135,14 +135,15 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 48;
+                int numMonteCarlos = 1;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
                 for (int m = 0; m < numMonteCarlos; m++) {
                     LinearTestMain go;
                     if (numMonteCarlos == 1) {
-                        go = new LinearTestMain(4606544446801080638L, numObs, detectHomogeneity, jam);
+                        // 8621193992485539638L
+                        go = new LinearTestMain(8621193992485539638L, numObs, detectHomogeneity, jam);
                     } else {
                         go = new LinearTestMain(rng.nextLong(), numObs, detectHomogeneity, jam);
                     }
@@ -152,7 +153,7 @@ public class LinearTestMain {
                 AtomicInteger bomb = new AtomicInteger();
 
                 parallelLTM.parallelStream().forEach(e -> {
-                //    parallelLTM.stream().forEach(e -> {
+                    //    parallelLTM.stream().forEach(e -> {
                     e.execute();
                     bomb.incrementAndGet();
                     System.out.println("Finished " + bomb.get() + " iterations.");
@@ -293,7 +294,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 10;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -305,6 +306,9 @@ public class LinearTestMain {
          */
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
         boolean verbose = false;
+        if (numberTreesInForest == 1) {
+            verbose = !true;
+        }
         boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
@@ -318,11 +322,12 @@ public class LinearTestMain {
                 System.out.println("************************");
             }
 
-            for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 50; minObservationsPerLeaf += 25) {
+            // for (int minObservationsPerLeaf = numObs/10; minObservationsPerLeaf <= 4 * numObs/10; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
                 // for (double minImprovement = 0.1; minImprovement <= 10.0; minImprovement *= 10) {
-                double[] improvementLevels = {10, 20, 50}; // , 10.0, 20.0};
-                for(double minImprovement : improvementLevels) {
-                    for (int maxDepth = Math.min(3, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 1; maxDepth--) {
+                double[] improvementLevels = {1,5,10}; // {1, 5, 10, 20}; // , 10.0, 20.0};
+                for (double minImprovement : improvementLevels) {
+                    for (int maxDepth = Math.min(9, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 1; maxDepth--) {
                         computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
                         double combinationMSE = outOfSampleYMSE;
                         String star = "";
@@ -334,7 +339,7 @@ public class LinearTestMain {
                             bestMaxDepth = maxDepth;
                             star = "(*)";
                         }
-                        if(star.contains("*")) {
+                        if (star.contains("*") || numberTreesInForest == 1) {
                             System.out.println("minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
                         }
                     }
@@ -342,15 +347,17 @@ public class LinearTestMain {
             }
 
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
-            jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
+            if(numberTreesInForest==1) {
+                jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
+            }
         } else {
-            bestMinObservationsPerLeaf = 50;
-            bestMinImprovement = 50;
+            bestMinObservationsPerLeaf = 25;
+            bestMinImprovement = 10;
             if (numObs == 500) {
                 bestMaxDepth = 3;
             }
             if (numObs == 1000) {
-                bestMaxDepth = 2;
+                bestMaxDepth = 5;
             }
             if (numObs == 2000) {
                 bestMaxDepth = 7;
@@ -359,7 +366,9 @@ public class LinearTestMain {
                 bestMaxDepth = 9;
             }
         }
-        bestMaxDepth = 1;
+//        bestMinObservationsPerLeaf = 150;
+//        bestMinImprovement = 1.0;
+        // bestMaxDepth = 2;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -384,28 +393,30 @@ public class LinearTestMain {
             myForest.testHomogeneity();
             // TreeMoment loblolly = myForest.getTree(0);
             // loblolly.testHomogeneity();
-            
+
             // should I implement a voting scheme here across all the trees for discerning homogeneity?
             // idea is to take the majority vote across trees
             // then take the average value from those trees that voted yes
             // let's try it and see what happens to classification rates
             ArrayList<Integer> hpl = new ArrayList<>();
             ArrayList<Double> hplStartingValues = new ArrayList<>();
-            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes();
+            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt);
             double[] startingValues = myForest.getHomogeneityStartingValues();
-            for(int i=0;i<voteIndexHomogeneity.length;i++) {
-                if(voteIndexHomogeneity[i]) {
-                    System.out.println("Adding index "+i+" to homogeneous list with starting value: "+startingValues[i]);
+            for (int i = 0; i < voteIndexHomogeneity.length; i++) {
+                if (voteIndexHomogeneity[i]) {
+                    System.out.println("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i]);
                     hpl.add(i);
                     hplStartingValues.add(startingValues[i]);
                 }
+//                if(i==0 && !voteIndexHomogeneity[i]) {
+//                    jt.append("BAD SEED: "+rngSeed+"\n");
+//                }
             }
 
             // System.out.println("Done with growforest");
             // ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
             // ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
             // System.out.println("Post get homogeneous parameters");
-
             // tell the specification that these parameters have been determined to be homogeneous
 //            System.out.println("Unsorted");            
 //                System.out.print(hpl+" ");
@@ -428,15 +439,14 @@ public class LinearTestMain {
 
             // this seems to be working
             boolean testPostClassificationConvergence = false;
-            if(testPostClassificationConvergence) {
+            if (testPostClassificationConvergence) {
                 hpl.clear();
                 hpl.add(0);
                 mySpecification.resetHomogeneityIndex();
                 mySpecification.setHomogeneousIndex(0);
                 mySpecification.setHomogeneousParameter(0, -1.0);
             }
-            
-            
+
             /**
              * Estimate values of those homogeneous parameters
              */
@@ -482,7 +492,7 @@ public class LinearTestMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        numberTreesInForest = 100; // using larger numbers here really improves fit!
+        numberTreesInForest = 20; // using larger numbers here really improves fit!
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
     }
@@ -501,18 +511,21 @@ public class LinearTestMain {
         // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
 
         MomentForest myForest;
+        
+        double minProportionPerLeaf = 0.01;
 
         DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
         myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
-        TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
+        TreeOptions cvOptions = new TreeOptions(minProportionPerLeaf, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
         myForest.setTreeOptions(cvOptions);
         /**
          * Grow the moment forest
          */
-        myForest.growForest(); 
+        myForest.growForest();
 
-        // myForest.getTree(0).printTree();
+        System.out.println("First tree:");
+        myForest.getTree(0).printTree();
         /**
          * Test vectors for assessment
          */
@@ -520,8 +533,8 @@ public class LinearTestMain {
         Jama.Matrix testZ = oosDataLens.getZ();
         Jama.Matrix testX = oosDataLens.getX();
         Jama.Matrix testY = oosDataLens.getY();
-        
-        Random rng = new Random(rngBaseSeedOutOfSample-3);
+
+        Random rng = new Random(rngBaseSeedOutOfSample - 3);
 
         double outOfSampleFit = 0;
         outOfSampleYMSE = 0;
