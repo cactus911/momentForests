@@ -284,9 +284,9 @@ public class TreeMoment {
                         double optimalZ_SSE_k = Double.POSITIVE_INFINITY;
 
                         if (maxZ - minZ != 0) {
-                            boolean useFmin = !true;
+                            boolean useFmin = true;
                             if (useFmin) {
-                                optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-8); // This is choosing a split point such that the summed SSEs of each leaf are minimized
+                                optimalZ_k = Fmin.fmin(minZ, maxZ, obj, 1E-14); // This is choosing a split point such that the summed SSEs of each leaf are minimized
                                 optimalZ_SSE_k = obj.f_to_minimize(optimalZ_k); //Now return the summed SSEs of the optimal split point
                             } else {
                                 optimalZ_k = Double.POSITIVE_INFINITY;

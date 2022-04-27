@@ -89,7 +89,7 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 5000; numObs <= 40000; numObs *= 2) {
+        for (int numObs = 5000; numObs <= 40000000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -264,6 +264,7 @@ public class LinearTestMain {
             LinearMonteCarloTable tf = new LinearMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted, betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta1_mean, beta1_SD, beta2_mean, beta2_SD, classificationRate1, classificationRate2);
             jam.append(tf.toString());
         }
+        System.out.println("Execution finished.");
     }
 
     public LinearTestMain(long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt) {
@@ -368,7 +369,7 @@ public class LinearTestMain {
         }
 //        bestMinObservationsPerLeaf = 150;
 //        bestMinImprovement = 1.0;
-        // bestMaxDepth = 2;
+        bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
