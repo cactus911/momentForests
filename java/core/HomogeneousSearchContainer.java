@@ -66,9 +66,9 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 
         Uncmin_f77 minimizer = new Uncmin_f77(true);
 
-        System.out.println("Number of parameters: "+numParams);
+        System.out.println("Number of parameters: " + numParams);
         // System.exit(0);
-        
+
         double[] guess = new double[numParams + 1];
 
         // use the starting values from the test
@@ -77,9 +77,9 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         }
         System.out.print("Starting values taken from test: ");
         pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
-        
+
         System.out.println("F_min(x): " + f_to_minimize(guess));
-        
+
         double[] xpls = new double[numParams + 1];
         double[] fpls = new double[2];
         double[] gpls = new double[numParams + 1];
@@ -105,53 +105,60 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         double[] steptl = {0, 1E-8};
 
         if (numParams == 1) {
-            t1 = System.currentTimeMillis();
-            int numEvals = 9; // number evaluations within each bracket (MIN: 3)
-            int R = 5; // number of times to bracket grid search
-            double left = guess[1] - 1.0;
-            double right = guess[1] + 1.0;
-            double increment = (right - left) / numEvals;
-            // for (int r = 0; r < R; r++) {
-            boolean converged = false;
-            int r = 0;
-            boolean first = true;
-
-            // plotFunction(-4, 0, 25);
-            // see how well this works
-            guess[1] = goldenRatioSearch(left, right)[1];
-            // this appears to work incredibly well
-
-            boolean useGridSearch = false;
-
-            if (useGridSearch) {
-                while (!converged) {
-                    double[] v = gridSearch(left, right, increment);
-                    System.out.println("r = " + r + " Grid search produced best x = " + v[0] + " f(x) = " + v[1] + " [" + (2.0 * increment) + "]");
-                    if (Math.abs(guess[1] - v[0]) < 1E-4) { // this criterion really just checks the length of the search interval, which is probably fine for now
-                        if (first) {
-                            first = false;
-                        } else {
-                            converged = true;
-                        }
-                    }
-                    guess[1] = v[0];
-                    left = guess[1] - increment;
-                    right = guess[1] + increment;
-                    increment = (right - left) / numEvals;
-                    r++;
-                }
-                long t2 = System.currentTimeMillis();
-                System.out.println("Grid search with numEvals: " + numEvals + " R: " + R + " time: " + (t2 - t1) + " f: " + f_to_minimize(guess));
-            }
-
-            // plotFunction(left, right, numEvals);
-            // System.exit(0);
+            // just use the number passed from the legit optimizer that already did all the work in detecting the parameter
             xpls[1] = guess[1];
+        }
 
-            // try one newton step after this?
-            // doesn't look like it is necessary
-            // itnlim[1] = 2;
-            // minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        if (numParams == 1) {
+            if (1 == 2) {
+                t1 = System.currentTimeMillis();
+                int numEvals = 9; // number evaluations within each bracket (MIN: 3)
+                int R = 5; // number of times to bracket grid search
+                double left = guess[1] - 1.0;
+                double right = guess[1] + 1.0;
+                double increment = (right - left) / numEvals;
+                // for (int r = 0; r < R; r++) {
+                boolean converged = false;
+                int r = 0;
+                boolean first = true;
+
+                // plotFunction(-4, 0, 25);
+                // see how well this works
+                guess[1] = goldenRatioSearch(left, right)[1];
+                // this appears to work incredibly well
+
+                boolean useGridSearch = false;
+
+                if (useGridSearch) {
+                    while (!converged) {
+                        double[] v = gridSearch(left, right, increment);
+                        System.out.println("r = " + r + " Grid search produced best x = " + v[0] + " f(x) = " + v[1] + " [" + (2.0 * increment) + "]");
+                        if (Math.abs(guess[1] - v[0]) < 1E-4) { // this criterion really just checks the length of the search interval, which is probably fine for now
+                            if (first) {
+                                first = false;
+                            } else {
+                                converged = true;
+                            }
+                        }
+                        guess[1] = v[0];
+                        left = guess[1] - increment;
+                        right = guess[1] + increment;
+                        increment = (right - left) / numEvals;
+                        r++;
+                    }
+                    long t2 = System.currentTimeMillis();
+                    System.out.println("Grid search with numEvals: " + numEvals + " R: " + R + " time: " + (t2 - t1) + " f: " + f_to_minimize(guess));
+                }
+
+                // plotFunction(left, right, numEvals);
+                // System.exit(0);
+                xpls[1] = guess[1];
+
+                // try one newton step after this?
+                // doesn't look like it is necessary
+                // itnlim[1] = 2;
+                // minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+            }
         } else {
 
             // good for robustness, way too slow to actually use
