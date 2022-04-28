@@ -300,7 +300,7 @@ public class GasolineDemandMain {
         }
 
         public double[] getSplitVariables() {
-            return myForest.getIndexSplitVariables();
+            return myForest.getCountSplitVariables();
         }
 
         public void computeOutOfSampleMSE() {

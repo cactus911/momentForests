@@ -89,7 +89,7 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 5000; numObs <= 40000000; numObs *= 2) {
+        for (int numObs = 500; numObs <= 400000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -111,8 +111,8 @@ public class LinearTestMain {
 
             JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-            // boolean[] d = {false, true};
-            boolean[] d = {!true};
+            boolean[] d = {false, true};
+            // boolean[] d = {!true};
             for (boolean detectHomogeneity : d) {
                 // boolean detectHomogeneity = !true;
                 if (detectHomogeneity) {
@@ -135,7 +135,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 1;
+                int numMonteCarlos = 8;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -315,7 +315,7 @@ public class LinearTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = !false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");

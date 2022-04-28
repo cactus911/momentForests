@@ -186,7 +186,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
         beta.set(0, 0, -1.0 + 0.0 * normal.inverse(rng.nextDouble()));
         beta.set(1, 0, 1.0 + 1.0 * normal.inverse(rng.nextDouble()));
-        
+
 //        double draw = rng.nextDouble();
 //        if (draw < 0.7) {
 //            beta.set(1, 0, beta.get(1, 0) + normal.inverse(rng.nextDouble()));
@@ -289,15 +289,23 @@ public class LogitRCMomentSpecification implements MomentSpecification {
          */
         // to point 5 above, query the moment forest to see which variables
         // are ever split on
-        ArrayList<Integer> indexSplitVariables = myForest.getIndexSplitVariables();
+        boolean rcDetected = false;
+        
+        ArrayList<Integer> rcVarIndices = new ArrayList<>();
+        double[] countSplitVariables = myForest.getCountSplitVariables();
         System.out.print("Detected random coefficients on following X indices: ");
-        for (Integer i : indexSplitVariables) {
-            System.out.print(i + " ");
+        for (int i = 0; i < countSplitVariables.length; i++) {
+            if (countSplitVariables[i] > 0) {
+                rcDetected = true;
+                rcVarIndices.add(i);
+                System.out.print(i + " " + countSplitVariables[i]);
+            }
         }
         System.out.println("");
+        
 
-        if (!indexSplitVariables.isEmpty()) {
-            DeconvolutionSolver desolve = new DeconvolutionSolver(testY, testX, this, indexSplitVariables);
+        if (rcDetected) {
+            DeconvolutionSolver desolve = new DeconvolutionSolver(testY, testX, this, rcVarIndices);
             desolve.solve();
             ArrayList<double[]> betaList = desolve.getBetaList();
             double[] betaWeights = desolve.getBetaWeights();

@@ -265,11 +265,6 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
     }
 
     @Override
-    public Matrix getVariance() {
-        return containerVariance;
-    }
-
-    @Override
     public double getMomentFunctionImposingHomogeneity(int k, double value) {
         Jama.Matrix betaHomogeneous = containerBeta.copy();
         betaHomogeneous.set(k, 0, value);
@@ -339,6 +334,16 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
     @Override
     public double computeMeasureOfFit(Matrix beta) {
         return computeLLH(beta);
+    }
+
+    @Override
+    public Matrix getVariance(Matrix beta) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public Matrix getJacobianNoDivision(Matrix beta) {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 }

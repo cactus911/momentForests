@@ -138,7 +138,7 @@ public class MomentForest {
         this.treeOptions = cvOptions;
     }
 
-    public double[] getIndexSplitVariables() {
+    public double[] getCountSplitVariables() {
         
         double countEachVariableSplit[] = new double[spec.getDiscreteVector().length];
         
