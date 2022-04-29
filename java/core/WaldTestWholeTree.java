@@ -88,6 +88,9 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
         System.out.println("Acov inverse:");
         pmUtility.prettyPrint(acov.inverse());
+        
+//        System.out.println("Newey-McFadden B:");
+//        pmUtility.prettyPrint(B);
 
         // wald3 = numObs * (((diffTheta.transpose()).times(acov.inverse())).times(diffTheta)).get(0, 0);
         wald3 = numObs * (((diffTheta.transpose()).times(B)).times(diffTheta)).get(0, 0); // same thing numerically, but avoids inverting an inverse

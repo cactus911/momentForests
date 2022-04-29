@@ -62,7 +62,7 @@ public class LinearTestMain {
      */
     public static void main(String[] args) {
         JFrame f = new JFrame("Monte Carlo");
-        f.setBounds(100, 100, 1500, 500);
+        f.setBounds(100, 100, 1100, 500);
         f.getContentPane().setLayout(new GridLayout(1, 2));
         JTextAreaAutoscroll jt1 = new JTextAreaAutoscroll();
         f.getContentPane().add(new JScrollPane(jt1));
@@ -89,7 +89,7 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 500; numObs <= 400000; numObs *= 2) {
+        for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
 
             double YMSE_unrestricted = 0;
             double YMSE_SD_unrestricted = 0;
@@ -135,7 +135,7 @@ public class LinearTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 8;
+                int numMonteCarlos = 48;
 
                 ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -282,6 +282,13 @@ public class LinearTestMain {
         MomentSpecification mySpecification = new LinearMomentSpecification(numObs);
         mySpecification.loadData(rng.nextLong()); // Create data using rng
 
+//        Jama.Matrix dx = mySpecification.getX();
+//        Jama.Matrix dxp = dx.transpose();
+//        Jama.Matrix xpx = dxp.times(dx);
+//        xpx.timesEquals(1.0/numObs);
+//        jt.append(pmUtility.stringPrettyPrint(xpx)+"\n");
+            
+            
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
         int bestMaxDepth = 5;
@@ -315,7 +322,7 @@ public class LinearTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = !false;
+        boolean runCV = !true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -326,9 +333,9 @@ public class LinearTestMain {
             // for (int minObservationsPerLeaf = numObs/10; minObservationsPerLeaf <= 4 * numObs/10; minObservationsPerLeaf *= 2) {
             for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
                 // for (double minImprovement = 0.1; minImprovement <= 10.0; minImprovement *= 10) {
-                double[] improvementLevels = {1,5,10}; // {1, 5, 10, 20}; // , 10.0, 20.0};
+                double[] improvementLevels = {1, 5, 10}; // {1, 5, 10, 20}; // , 10.0, 20.0};
                 for (double minImprovement : improvementLevels) {
-                    for (int maxDepth = Math.min(9, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 1; maxDepth--) {
+                    for (int maxDepth = Math.min(3, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 0; maxDepth--) {
                         computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
                         double combinationMSE = outOfSampleYMSE;
                         String star = "";
@@ -348,28 +355,28 @@ public class LinearTestMain {
             }
 
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
-            if(numberTreesInForest==1) {
-                jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
+            if (numberTreesInForest == 1) {
+                // jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
             }
         } else {
-            bestMinObservationsPerLeaf = 25;
+            bestMinObservationsPerLeaf = 50;
             bestMinImprovement = 10;
             if (numObs == 500) {
-                bestMaxDepth = 3;
+                bestMaxDepth = 2;
             }
             if (numObs == 1000) {
-                bestMaxDepth = 5;
+                bestMaxDepth = 3;
             }
             if (numObs == 2000) {
-                bestMaxDepth = 7;
+                bestMaxDepth = 4;
             }
             if (numObs == 4000) {
-                bestMaxDepth = 9;
+                bestMaxDepth = 5;
             }
         }
 //        bestMinObservationsPerLeaf = 150;
 //        bestMinImprovement = 1.0;
-        bestMaxDepth = 1;
+        // bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -382,6 +389,8 @@ public class LinearTestMain {
              * Step 2: determine homogeneous parameters post-CV
              */
             double minProportionInEachLeaf = 0.01;
+
+            numberTreesInForest = 20;
 
             DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
@@ -466,7 +475,7 @@ public class LinearTestMain {
             } else {
                 if (!hpl.isEmpty()) {
                     // System.out.println("Initializing search container");
-                    numberTreesInForest = 40;
+                    numberTreesInForest = 1;
                     HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                             getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                     // System.out.println("Calling execute search");
@@ -493,7 +502,7 @@ public class LinearTestMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        numberTreesInForest = 20; // using larger numbers here really improves fit!
+        numberTreesInForest = 1; // using larger numbers here really improves fit!
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
     }
@@ -512,7 +521,7 @@ public class LinearTestMain {
         // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
 
         MomentForest myForest;
-        
+
         double minProportionPerLeaf = 0.01;
 
         DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
@@ -525,8 +534,8 @@ public class LinearTestMain {
          */
         myForest.growForest();
 
-        System.out.println("First tree:");
-        myForest.getTree(0).printTree();
+        // System.out.println("First tree:");
+        // myForest.getTree(0).printTree();
         /**
          * Test vectors for assessment
          */

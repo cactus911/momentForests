@@ -152,7 +152,7 @@ public class GasolineDemandMain {
         }
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 2) {
+        if (detectHomogeneity && 1 == 1) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
@@ -171,14 +171,36 @@ public class GasolineDemandMain {
 
             myForest.setTreeOptions(cvOptions);
             myForest.growForest();
+            myForest.testHomogeneity();
+            // TreeMoment loblolly = myForest.getTree(0);
+            // loblolly.testHomogeneity();
 
-            TreeMoment loblolly = myForest.getTree(0);
-            loblolly.testHomogeneity();
+            // should I implement a voting scheme here across all the trees for discerning homogeneity?
+            // idea is to take the majority vote across trees
+            // then take the average value from those trees that voted yes
+            // let's try it and see what happens to classification rates
+            ArrayList<Integer> hpl = new ArrayList<>();
+            ArrayList<Double> hplStartingValues = new ArrayList<>();
+            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt);
+            double[] startingValues = myForest.getHomogeneityStartingValues();
+            for (int i = 0; i < voteIndexHomogeneity.length; i++) {
+                if (voteIndexHomogeneity[i]) {
+                    System.out.println("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i]);
+                    hpl.add(i);
+                    hplStartingValues.add(startingValues[i]);
+                }
+//                if(i==0 && !voteIndexHomogeneity[i]) {
+//                    jt.append("BAD SEED: "+rngSeed+"\n");
+//                }
+            }
 
-            // System.out.println("Done with growforest");
-            ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
-            ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
-            // System.out.println("Post get homogeneous parameters");
+//            TreeMoment loblolly = myForest.getTree(0);
+//            loblolly.testHomogeneity();
+//
+//            // System.out.println("Done with growforest");
+//            ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
+//            ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
+//            // System.out.println("Post get homogeneous parameters");
 
             // need to sort together
             HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();

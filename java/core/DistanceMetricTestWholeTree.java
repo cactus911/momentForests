@@ -227,7 +227,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
      */
     @Override
     public double f_to_minimize(double[] x) {
-        boolean oracle = true;
+        boolean oracle = false;
         if (oracle) {
             if (indexConstrainedParameter == 1) {
                 x[1] = 1.0;

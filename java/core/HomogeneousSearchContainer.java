@@ -111,7 +111,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         }
 
         if (numParams == 1) {
-            if (1 == 1) {
+            if (1 == 2) {
                 t1 = System.currentTimeMillis();
                 int numEvals = 9; // number evaluations within each bracket (MIN: 3)
                 int R = 5; // number of times to bracket grid search
