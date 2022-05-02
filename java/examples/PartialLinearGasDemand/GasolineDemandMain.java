@@ -86,7 +86,8 @@ public class GasolineDemandMain {
         int bestMinObservationsPerLeaf = 25;
         int bestMaxDepth = 5;
 
-        double lowestSSE = 0;
+        double minOutOfSampleFit = 0;
+        double minInSampleFit = 0;
         boolean first = true;
 
         /**
@@ -101,13 +102,13 @@ public class GasolineDemandMain {
         /**
          * Initialize the moment forest
          */
-        boolean verbose = true;
+        boolean verbose = !true;
         boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = !false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -116,9 +117,10 @@ public class GasolineDemandMain {
             }
 
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 250; minObservationsPerLeaf <= 1000; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 2.5; minImprovement <= 5; minImprovement *= 2) {
-                    for (int maxDepth = 2; maxDepth >= 1; maxDepth--) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 2.5; minImprovement <= 25; minImprovement *= 2) {
+                    // for (int maxDepth = 2; maxDepth >= 1; maxDepth--) {
+                    for (int maxDepth = 1; maxDepth <= 5; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -131,20 +133,32 @@ public class GasolineDemandMain {
             for (computeFitStatistics s : cvList) {
                 double combinationMSE = s.getMSE();
                 String star = "";
-                if (combinationMSE <= lowestSSE || first) {
-                    lowestSSE = combinationMSE;
-                    first = false;
+                String starIn = "";
+                if (combinationMSE <= minOutOfSampleFit || first) {
+                    minOutOfSampleFit = combinationMSE;
                     bestMinImprovement = s.getMinImprovement();
                     bestMinObservationsPerLeaf = s.getMinObservationsPerLeaf();
                     bestMaxDepth = s.getMaxTreeDepth();
                     star = "(*)";
                 }
+                System.out.print("best: "+minInSampleFit+" this: "+s.getInSampleFit()+" "+(minInSampleFit>s.getInSampleFit()));
+                if(s.getInSampleFit()<minInSampleFit || first) {
+                    System.out.println("detected lower");
+                    minInSampleFit = s.getInSampleFit();
+                    starIn = "(**)";
+                }
+                
+                if(first) {
+                    first = false;
+                }
+                System.out.println(starIn);
                 System.out.println("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star);
-                jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star + "\n");
+                jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star + " In-Sample Fit: "+s.getInSampleFit()+" "+starIn+"\n");
             }
 
-            System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
-            jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
+            System.out.println("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
+            jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
+            jt.append("Best in-sample fit: "+minInSampleFit);
         } else {
             bestMinObservationsPerLeaf = 500;
             bestMinImprovement = 5.0;
@@ -290,6 +304,7 @@ public class GasolineDemandMain {
         boolean generatePlots;
 
         double MSE;
+        double inSampleFit;
 
         MomentForest myForest;
 
@@ -358,6 +373,18 @@ public class GasolineDemandMain {
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
                 outOfSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
             }
+            
+            inSampleFit = 0;
+            for (int i = 0; i < mySpecification.getZ().getRowDimension(); i++) {
+                Jama.Matrix zi = mySpecification.getZ().getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
+                Jama.Matrix xi = mySpecification.getX().getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
+                double yi = mySpecification.getY().get(i, 0);
+
+                // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
+                Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+                inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
+            }
+            inSampleFit /= mySpecification.getZ().getRowDimension();
 
             if (generatePlots) {
                 /**
@@ -439,6 +466,10 @@ public class GasolineDemandMain {
             }
 
             MSE = outOfSampleFit / testZ.getRowDimension(); // mse
+        }
+
+        private double getInSampleFit() {
+            return inSampleFit;
         }
     }
 
