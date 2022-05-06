@@ -9,6 +9,7 @@ import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.MomentSpecification;
 import java.util.Random;
+import utility.pmUtility;
 
 /**
  *
@@ -20,8 +21,8 @@ public class LinearDataGenerator {
     private Jama.Matrix Y; 
     private Jama.Matrix Z;
 
-    public LinearDataGenerator(int numObs, MomentSpecification mySpecification, long randSeed) {
-        X = new Jama.Matrix(numObs, 2);
+    public LinearDataGenerator(int numObs, MomentSpecification mySpecification, long randSeed, int dimensionX) {
+        X = new Jama.Matrix(numObs, dimensionX);
         Z = new Jama.Matrix(numObs, mySpecification.getDiscreteVector().length);
         Y = new Jama.Matrix(numObs, 1);
         Random rng = new Random(randSeed);
@@ -29,7 +30,9 @@ public class LinearDataGenerator {
         for (int i = 0; i < numObs; i++) {
             // X.set(i, 0, normal.inverse(rng.nextDouble()));
             X.set(i, 0, 1.0);
-            X.set(i, 1, Math.pow(normal.inverse(rng.nextDouble()), 2));
+            for(int k=1;k<dimensionX;k++) {
+                X.set(i, k, Math.pow(normal.inverse(rng.nextDouble()), 2));
+            }
 
             Z.set(i, 0, normal.inverse(rng.nextDouble()));
             // Z.set(i, 0, -6.0 + 10.0 * rng.nextDouble()); // uniform [-6,4]
@@ -45,10 +48,13 @@ public class LinearDataGenerator {
             // Z.set(i, 1, X.get(i, 1));
             Jama.Matrix beta = mySpecification.getBetaTruth(Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1), rng); // Z1 and Z2 to compute beta
 //                pmUtility.prettyPrintVector(beta);
-            Jama.Matrix subX = X.getMatrix(i, i, 0, 1); // only first two columns of X matter in producing Y
+            Jama.Matrix subX = X.getMatrix(i, i, 0, dimensionX-1);
             // pmUtility.prettyPrint(subX);
             Y.set(i, 0, (subX.times(beta)).get(0, 0) + normal.inverse(rng.nextDouble()));
         }
+        
+//        pmUtility.prettyPrintVector(pmUtility.OLS(X,Y,false));
+//        System.exit(0);
     }
 
     public Matrix getX() {

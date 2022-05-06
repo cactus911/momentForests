@@ -133,6 +133,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                                     }
                                 }
                             }
+                            
                             Jama.Matrix olsBeta = pmUtility.OLSsvd(Xres, Yres, false);
 
                             // System.out.println("Average of Y is :"+pmUtility.mean(Y, 0));
@@ -229,7 +230,8 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     e.printStackTrace();
                 }
                 if (debugVerbose) {
-                    System.out.println("Matrix not invertible");
+                    e.printStackTrace();
+                    System.out.println("Something went wrong...Matrix not invertible?");
                 }
                 
                 beta = null;

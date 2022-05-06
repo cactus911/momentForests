@@ -28,12 +28,10 @@ import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.MomentSpecification;
-import core.TreeMoment;
 import core.TreeOptions;
 import examples.PartialLinearGasDemand.HomogeneousParameterSorter;
 import java.awt.GridLayout;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
@@ -56,6 +54,7 @@ public class LinearTestMain {
     private Jama.Matrix estimatedHomogeneousParameters;
     private final boolean detectHomogeneity;
     private JTextArea jt;
+    private final int dimX;
 
     /**
      * @param args the command line arguments
@@ -89,189 +88,193 @@ public class LinearTestMain {
          * X,Z combinations, run l2-norm on that? Done that, seems to be working
          * really nicely.
          */
-        for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
+        for (int dimX = 2; dimX < 10; dimX++) {
+            for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
 
-            double YMSE_unrestricted = 0;
-            double YMSE_SD_unrestricted = 0;
-            double YMSE_restricted = 0;
-            double YMSE_SD_restricted = 0;
+                double YMSE_unrestricted = 0;
+                double YMSE_SD_unrestricted = 0;
+                double YMSE_restricted = 0;
+                double YMSE_SD_restricted = 0;
 
-            double betaMSE_unrestricted = 0;
-            double betaMSE_restricted = 0;
-            double betaMSE_SD_unrestricted = 0;
-            double betaMSE_SD_restricted = 0;
+                double betaMSE_unrestricted = 0;
+                double betaMSE_restricted = 0;
+                double betaMSE_SD_unrestricted = 0;
+                double betaMSE_SD_restricted = 0;
 
-            double beta1_mean = 0;
-            double beta1_SD = 0;
-            double beta2_mean = 0;
-            double beta2_SD = 0;
+                double beta1_mean = 0;
+                double beta1_SD = 0;
+                double beta2_mean = 0;
+                double beta2_SD = 0;
 
-            double classificationRate1 = 0;
-            double classificationRate2 = 0;
+                double classificationRate1 = 0;
+                double classificationRate2 = 0;
 
-            JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
+                JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-            boolean[] d = {false, true};
-            // boolean[] d = {!true};
-            for (boolean detectHomogeneity : d) {
-                // boolean detectHomogeneity = !true;
-                if (detectHomogeneity) {
-                    jam = jt1;
-                    // jam.append("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
-                } else {
-                    jam = jt2;
-                    // jam.append("***** UNRESTRICTED MODEL *****\n");
-                }
-                jam.append("\\\\ \n");
-
-                Random rng = new Random(22);
-
-                int numParameters = 2;
-
-                double[] homogeneousClassificationRate = new double[numParameters];
-                double[] avgParameter = new double[numParameters];
-                double Y_MSE = 0;
-                double Y_MSE_var = 0;
-                double beta_MSE = 0;
-                double beta_MSE_var = 0;
-
-                int numMonteCarlos = 48;
-
-                ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
-
-                for (int m = 0; m < numMonteCarlos; m++) {
-                    LinearTestMain go;
-                    if (numMonteCarlos == 1) {
-                        // 8621193992485539638L
-                        go = new LinearTestMain(8621193992485539638L, numObs, detectHomogeneity, jam);
+                boolean[] d = {false, true};
+                // boolean[] d = {!true};
+                for (boolean detectHomogeneity : d) {
+                    // boolean detectHomogeneity = !true;
+                    if (detectHomogeneity) {
+                        jam = jt1;
+                        // jam.append("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
                     } else {
-                        go = new LinearTestMain(rng.nextLong(), numObs, detectHomogeneity, jam);
+                        jam = jt2;
+                        // jam.append("***** UNRESTRICTED MODEL *****\n");
                     }
-                    parallelLTM.add(go);
-                }
+                    jam.append("\\\\ \n");
 
-                AtomicInteger bomb = new AtomicInteger();
+                    jam.append("Dimensionality of X: "+dimX+"\n");
+                    
+                    Random rng = new Random(22);
 
-                parallelLTM.parallelStream().forEach(e -> {
-                    //    parallelLTM.stream().forEach(e -> {
-                    e.execute();
-                    bomb.incrementAndGet();
-                    System.out.println("Finished " + bomb.get() + " iterations.");
-                });
+                    // int dimX = 3;
+                    double[] homogeneousClassificationRate = new double[dimX];
+                    double[] avgParameter = new double[dimX];
+                    double Y_MSE = 0;
+                    double Y_MSE_var = 0;
+                    double beta_MSE = 0;
+                    double beta_MSE_var = 0;
 
-                // for (int m = 0; m < numMonteCarlos; m++) {
-                int[] counts = new int[numParameters];
-                double[] standardErrors = new double[numParameters];
-                for (LinearTestMain m : parallelLTM) {
+                    int numMonteCarlos = 1;
+
+                    ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
+
+                    for (int m = 0; m < numMonteCarlos; m++) {
+                        LinearTestMain go;
+                        if (numMonteCarlos == 1) {
+                            // 8621193992485539638L
+                            go = new LinearTestMain(8621193992485539638L, numObs, detectHomogeneity, jam, dimX);
+                        } else {
+                            go = new LinearTestMain(rng.nextLong(), numObs, detectHomogeneity, jam, dimX);
+                        }
+                        parallelLTM.add(go);
+                    }
+
+                    AtomicInteger bomb = new AtomicInteger();
+
+                    parallelLTM.parallelStream().forEach(e -> {
+                        //    parallelLTM.stream().forEach(e -> {
+                        e.execute();
+                        bomb.incrementAndGet();
+                        System.out.println("Finished " + bomb.get() + " iterations.");
+                    });
+
+                    // for (int m = 0; m < numMonteCarlos; m++) {
+                    int[] counts = new int[dimX];
+                    double[] standardErrors = new double[dimX];
+                    for (LinearTestMain m : parallelLTM) {
+                        if (detectHomogeneity) {
+                            ArrayList<Integer> hList = m.getHomogeneousParameterList();
+                            if (!hList.isEmpty()) {
+                                for (Integer h : hList) {
+                                    // jt.append("Detected homogeneity on parameter index " + h + " hList.size = " + hList.size());
+                                    // jt.append(" estimatedParemeterSize: " + m.getEstimatedHomogeneousParameters().getRowDimension() + "\n");
+                                    homogeneousClassificationRate[h] = homogeneousClassificationRate[h] + 1.0;
+                                    for (int i = 0; i < dimX; i++) {
+                                        if (h == i) {
+                                            counts[i]++; // this is counting how many times this parameter is chosen as homogeneous
+                                            avgParameter[i] += m.getEstimatedHomogeneousParameters().get(i, 0);
+                                            // jt.append("Estimated Homogeneous Parameter: "+pmUtility.stringPrettyPrintVector(m.getEstimatedHomogeneousParameters())+"\n");
+                                            // jt.append("Average parameter sum for "+i+" is: "+avgParameter[i]+" Running count: "+counts[i]+"\n");
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        Y_MSE += m.getOutOfSampleYMSE();
+                        beta_MSE += m.getEstimatedBetaVersusTruthMSE();
+                    }
+
                     if (detectHomogeneity) {
-                        ArrayList<Integer> hList = m.getHomogeneousParameterList();
-                        if (!hList.isEmpty()) {
-                            for (Integer h : hList) {
-                                // jt.append("Detected homogeneity on parameter index " + h + " hList.size = " + hList.size());
-                                // jt.append(" estimatedParemeterSize: " + m.getEstimatedHomogeneousParameters().getRowDimension() + "\n");
-                                homogeneousClassificationRate[h] = homogeneousClassificationRate[h] + 1.0;
-                                for (int i = 0; i < numParameters; i++) {
-                                    if (h == i) {
-                                        counts[i]++; // this is counting how many times this parameter is chosen as homogeneous
-                                        avgParameter[i] += m.getEstimatedHomogeneousParameters().get(i, 0);
-                                        // jt.append("Estimated Homogeneous Parameter: "+pmUtility.stringPrettyPrintVector(m.getEstimatedHomogeneousParameters())+"\n");
-                                        // jt.append("Average parameter sum for "+i+" is: "+avgParameter[i]+" Running count: "+counts[i]+"\n");
+                        for (int i = 0; i < dimX; i++) {
+                            if (counts[i] > 0) {
+                                avgParameter[i] = avgParameter[i] / counts[i];
+                            }
+                        }
+                    }
+
+                    // needed average to compute standard errors (kind of clunky, but whatever)
+                    for (LinearTestMain m : parallelLTM) {
+                        if (detectHomogeneity) {
+                            ArrayList<Integer> hList = m.getHomogeneousParameterList();
+                            if (hList.size() > 0) {
+                                for (Integer h : hList) {
+                                    for (int i = 0; i < dimX; i++) {
+                                        if (h == i) {
+                                            standardErrors[i] += Math.pow(m.getEstimatedHomogeneousParameters().get(i, 0) - avgParameter[i], 2);
+                                        }
                                     }
                                 }
                             }
                         }
                     }
-                    Y_MSE += m.getOutOfSampleYMSE();
-                    beta_MSE += m.getEstimatedBetaVersusTruthMSE();
-                }
-
-                if (detectHomogeneity) {
-                    for (int i = 0; i < numParameters; i++) {
-                        if (counts[i] > 0) {
-                            avgParameter[i] = avgParameter[i] / counts[i];
-                        }
-                    }
-                }
-
-                // needed average to compute standard errors (kind of clunky, but whatever)
-                for (LinearTestMain m : parallelLTM) {
                     if (detectHomogeneity) {
-                        ArrayList<Integer> hList = m.getHomogeneousParameterList();
-                        if (hList.size() > 0) {
-                            for (Integer h : hList) {
-                                for (int i = 0; i < numParameters; i++) {
-                                    if (h == i) {
-                                        standardErrors[i] += Math.pow(m.getEstimatedHomogeneousParameters().get(i, 0) - avgParameter[i], 2);
-                                    }
-                                }
+                        for (int i = 0; i < dimX; i++) {
+                            if (counts[i] > 0) {
+                                standardErrors[i] = Math.sqrt(standardErrors[i] / counts[i]);
                             }
                         }
                     }
-                }
-                if (detectHomogeneity) {
-                    for (int i = 0; i < numParameters; i++) {
-                        if (counts[i] > 0) {
-                            standardErrors[i] = Math.sqrt(standardErrors[i] / counts[i]);
+
+                    Y_MSE /= parallelLTM.size();
+                    beta_MSE /= parallelLTM.size();
+                    for (LinearTestMain m : parallelLTM) {
+                        Y_MSE_var += Math.pow(Y_MSE - m.getOutOfSampleYMSE(), 2);
+                        beta_MSE_var += Math.pow(beta_MSE - m.getEstimatedBetaVersusTruthMSE(), 2);
+                    }
+                    Y_MSE_var /= parallelLTM.size();
+                    beta_MSE_var /= parallelLTM.size();
+
+                    // jt.append("---------------------------------------------------------\n");
+                    // jt.append("n = " + numObs + " Classification Rate by Parameter\n");
+                    if (detectHomogeneity) {
+                        for (int i = 0; i < homogeneousClassificationRate.length; i++) {
+                            // jt.append(i + ". " + (homogeneousClassificationRate[i] / (0.0 + numMonteCarlos)) + "\n");
                         }
                     }
-                }
+                    // jt.append("Y_MSE: " + Y_MSE + " (" + Y_MSE_var + ")\n");
+                    // jt.append("beta_MSE: " + beta_MSE + " (" + beta_MSE_var + ")\n");
+                    if (detectHomogeneity) {
+                        for (int i = 0; i < dimX; i++) {
+                            String s = String.format("x[%d]: mean: %g se: %g [%d]\n", i, avgParameter[i], standardErrors[i], counts[i]);
+                            // jt.append("Parameter " + i + " mean: " + avgParameter[i] + " se: " + standardErrors[i] + " [" + counts[i] + "]\n");
+                            // jt.append(s);
+                        }
+                    }
+                    // jt.append("---------------------------------------------------------\n");
 
-                Y_MSE /= parallelLTM.size();
-                beta_MSE /= parallelLTM.size();
-                for (LinearTestMain m : parallelLTM) {
-                    Y_MSE_var += Math.pow(Y_MSE - m.getOutOfSampleYMSE(), 2);
-                    beta_MSE_var += Math.pow(beta_MSE - m.getEstimatedBetaVersusTruthMSE(), 2);
-                }
-                Y_MSE_var /= parallelLTM.size();
-                beta_MSE_var /= parallelLTM.size();
-
-                // jt.append("---------------------------------------------------------\n");
-                // jt.append("n = " + numObs + " Classification Rate by Parameter\n");
-                if (detectHomogeneity) {
-                    for (int i = 0; i < homogeneousClassificationRate.length; i++) {
-                        // jt.append(i + ". " + (homogeneousClassificationRate[i] / (0.0 + numMonteCarlos)) + "\n");
+                    if (detectHomogeneity) {
+                        YMSE_SD_restricted = Y_MSE_var;
+                        YMSE_restricted = Y_MSE;
+                        betaMSE_SD_restricted = beta_MSE_var;
+                        betaMSE_restricted = beta_MSE;
+                        beta1_mean = avgParameter[0];
+                        beta2_mean = avgParameter[1];
+                        beta1_SD = standardErrors[0];
+                        beta2_SD = standardErrors[1];
+                        classificationRate1 = homogeneousClassificationRate[0] / numMonteCarlos;
+                        classificationRate2 = homogeneousClassificationRate[1] / numMonteCarlos;
+                    } else {
+                        YMSE_SD_unrestricted = Y_MSE_var;
+                        YMSE_unrestricted = Y_MSE;
+                        betaMSE_SD_unrestricted = beta_MSE_var;
+                        betaMSE_unrestricted = beta_MSE;
                     }
                 }
-                // jt.append("Y_MSE: " + Y_MSE + " (" + Y_MSE_var + ")\n");
-                // jt.append("beta_MSE: " + beta_MSE + " (" + beta_MSE_var + ")\n");
-                if (detectHomogeneity) {
-                    for (int i = 0; i < numParameters; i++) {
-                        String s = String.format("x[%d]: mean: %g se: %g [%d]\n", i, avgParameter[i], standardErrors[i], counts[i]);
-                        // jt.append("Parameter " + i + " mean: " + avgParameter[i] + " se: " + standardErrors[i] + " [" + counts[i] + "]\n");
-                        // jt.append(s);
-                    }
-                }
-                // jt.append("---------------------------------------------------------\n");
-
-                if (detectHomogeneity) {
-                    YMSE_SD_restricted = Y_MSE_var;
-                    YMSE_restricted = Y_MSE;
-                    betaMSE_SD_restricted = beta_MSE_var;
-                    betaMSE_restricted = beta_MSE;
-                    beta1_mean = avgParameter[0];
-                    beta2_mean = avgParameter[1];
-                    beta1_SD = standardErrors[0];
-                    beta2_SD = standardErrors[1];
-                    classificationRate1 = homogeneousClassificationRate[0] / numMonteCarlos;
-                    classificationRate2 = homogeneousClassificationRate[1] / numMonteCarlos;
-                } else {
-                    YMSE_SD_unrestricted = Y_MSE_var;
-                    YMSE_unrestricted = Y_MSE;
-                    betaMSE_SD_unrestricted = beta_MSE_var;
-                    betaMSE_unrestricted = beta_MSE;
-                }
+                LinearMonteCarloTable tf = new LinearMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted, betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta1_mean, beta1_SD, beta2_mean, beta2_SD, classificationRate1, classificationRate2);
+                jam.append(tf.toString());
             }
-            LinearMonteCarloTable tf = new LinearMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted, betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta1_mean, beta1_SD, beta2_mean, beta2_SD, classificationRate1, classificationRate2);
-            jam.append(tf.toString());
         }
         System.out.println("Execution finished.");
     }
 
-    public LinearTestMain(long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt) {
+    public LinearTestMain(long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt, int dimX) {
         this.rngSeed = rngSeed;
         this.jt = jt;
         this.numObs = numObs;
         this.detectHomogeneity = detectHomogeneity;
+        this.dimX = dimX;
     }
 
     private void execute() {
@@ -279,7 +282,7 @@ public class LinearTestMain {
         Random rng = new Random(rngSeed);
 
         // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
-        MomentSpecification mySpecification = new LinearMomentSpecification(numObs);
+        MomentSpecification mySpecification = new LinearMomentSpecification(numObs, dimX);
         mySpecification.loadData(rng.nextLong()); // Create data using rng
 
 //        Jama.Matrix dx = mySpecification.getX();
@@ -287,8 +290,6 @@ public class LinearTestMain {
 //        Jama.Matrix xpx = dxp.times(dx);
 //        xpx.timesEquals(1.0/numObs);
 //        jt.append(pmUtility.stringPrettyPrint(xpx)+"\n");
-            
-            
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
         int bestMaxDepth = 5;
@@ -534,8 +535,9 @@ public class LinearTestMain {
          */
         myForest.growForest();
 
-        // System.out.println("First tree:");
-        // myForest.getTree(0).printTree();
+//        System.out.println("First tree:");
+//        myForest.getTree(0).printTree();
+//        System.exit(0);
         /**
          * Test vectors for assessment
          */

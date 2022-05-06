@@ -1,7 +1,7 @@
 /*
  * The MIT License
  *
- * Copyright 2020 Stephen P. Ryan <stephen.p.ryan@wustl.edu>.
+ * Copyright 2022 Stephen P. Ryan <stephen.p.ryan@wustl.edu>.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -52,6 +52,8 @@ public class LinearMomentSpecification implements MomentSpecification {
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean MONTE_CARLO = true;
+    
+    int dimensionX = 5;
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -61,11 +63,12 @@ public class LinearMomentSpecification implements MomentSpecification {
     // i'm going to change that, since that sounds like a recipe for disaster as the set of parameters that gets the homogeneous label shifts around
     // how to keep everything straight--easier way is to just to make it the size of the parameter vector and go from there (and never read elements that aren't labeled as homogeneous)
 
-    public LinearMomentSpecification(int numObs) {
+    public LinearMomentSpecification(int numObs, int dimX) {
         this.numObs = numObs;
+        this.dimensionX = dimX;
         // all these indices are hard-coded; want to change that down the road!
-        homogeneityIndex = new boolean[2];
-        homogeneousParameterVector = new Jama.Matrix(2,1);
+        homogeneityIndex = new boolean[dimensionX];
+        homogeneousParameterVector = new Jama.Matrix(dimensionX,1);
         resetHomogeneityIndex();
         int[] vsi = {0, 1, 2}; //Search over z1, z2, z3 
         Boolean[] wvd = {false, false, true}; // z1, z2 continuous, z3 discrete
@@ -89,7 +92,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public int getNumMoments() {
-        return 2;
+        return X.getColumnDimension();
     }
     
     @Override
@@ -186,7 +189,7 @@ public class LinearMomentSpecification implements MomentSpecification {
     //Return the true parameter vector for a given observation
     @Override
     public Matrix getBetaTruth(Matrix zi, Random rng) {
-        Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
+        Jama.Matrix beta = new Jama.Matrix(dimensionX, 1, 1); // Beta is a scalar
         beta.set(0, 0, -1);
         beta.set(1, 0, 1.0);
         
@@ -239,7 +242,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public DataLens getOutOfSampleXYZ(int numObsOOS, long rngSeed) {
-        LinearDataGenerator xyz = new LinearDataGenerator(numObsOOS, this, rngSeed);
+        LinearDataGenerator xyz = new LinearDataGenerator(numObsOOS, this, rngSeed, dimensionX);
         return new DataLens(xyz.getX(), xyz.getY(), xyz.getZ(), null);
     }
 
@@ -303,7 +306,7 @@ public class LinearMomentSpecification implements MomentSpecification {
             }
         } else {
 
-            LinearDataGenerator xyz = new LinearDataGenerator(numObs, this, rngSeed);
+            LinearDataGenerator xyz = new LinearDataGenerator(numObs, this, rngSeed, dimensionX);
             X = xyz.getX();
             Y = xyz.getY();
             Z = xyz.getZ();

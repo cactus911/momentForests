@@ -250,7 +250,7 @@ public class GasolineSpecification implements MomentSpecification {
 
             boolean subsample = true;
             if (subsample) {
-                numObsFile = Math.floorDiv(numObsFile, 50);
+                numObsFile = Math.floorDiv(numObsFile, 5);
             }
 
             numObs = numObsFile;
