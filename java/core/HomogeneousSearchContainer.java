@@ -36,6 +36,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     private Jama.Matrix estimatedHomogeneousParameters;
     boolean allParametersHomogeneous = true;
 
+    boolean debug = false;
+    
     long t1 = System.currentTimeMillis();
     DataLens homogenizedForestLens;
 
@@ -65,7 +67,9 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 
         Uncmin_f77 minimizer = new Uncmin_f77(true);
 
-        System.out.println("Number of parameters: " + numParams);
+        if(debug) {
+            System.out.println("Number of parameters: " + numParams);
+        }
         // System.exit(0);
 
         double[] guess = new double[numParams + 1];
@@ -76,10 +80,12 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
                 guess[k + 1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
             }
         }
+        if(debug) {
         System.out.print("Starting values taken from test: ");
         pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
 
         System.out.println("F_min(x): " + f_to_minimize(guess));
+        }
 
         double[] xpls = new double[numParams + 1];
         double[] fpls = new double[2];
@@ -93,7 +99,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         }
 
         double[] fscale = {0, 1.0E-8};
-        int[] method = {0, 3};
+        int[] method = {0, 1};
         int[] iexp = {0, 0};
         int[] msg = {0, 1};
         int[] ndigit = {0, 8};
@@ -133,7 +139,9 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
                 if (useGridSearch) {
                     while (!converged) {
                         double[] v = gridSearch(left, right, increment);
-                        System.out.println("r = " + r + " Grid search produced best x = " + v[0] + " f(x) = " + v[1] + " [" + (2.0 * increment) + "]");
+                        if(debug) {
+                            System.out.println("r = " + r + " Grid search produced best x = " + v[0] + " f(x) = " + v[1] + " [" + (2.0 * increment) + "]");
+                        }
                         if (Math.abs(guess[1] - v[0]) < 1E-4) { // this criterion really just checks the length of the search interval, which is probably fine for now
                             if (first) {
                                 first = false;
@@ -148,7 +156,9 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
                         r++;
                     }
                     long t2 = System.currentTimeMillis();
-                    System.out.println("Grid search with numEvals: " + numEvals + " R: " + R + " time: " + (t2 - t1) + " f: " + f_to_minimize(guess));
+                    if(debug) {
+                        System.out.println("Grid search with numEvals: " + numEvals + " R: " + R + " time: " + (t2 - t1) + " f: " + f_to_minimize(guess));
+                    }
                 }
 
                 // plotFunction(left, right, numEvals);

@@ -748,7 +748,9 @@ public class TreeMoment {
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);
         // printTree();
-        System.out.println("Number of leaves: " + v.size());
+        if(verbose) {
+            System.out.println("Number of leaves: " + v.size());
+        }
 
         /**
          * Oh wow, I think I am really poisoning myself here by setting degrees of freedom equal to 1!
@@ -756,7 +758,9 @@ public class TreeMoment {
          * is equal. So need to crank up the degrees of freedom here, I think!
          */
         double degreesFreedom = v.size()*betaEstimateNode.getRowDimension();
-        System.out.println("Degrees of freedom in chi-squared test: "+degreesFreedom);
+        if(verbose) {
+            System.out.println("Degrees of freedom in chi-squared test: "+degreesFreedom);
+        }
         ChiSqrDistribution chi = new ChiSqrDistribution(degreesFreedom);
 
         ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
@@ -767,11 +771,15 @@ public class TreeMoment {
             WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
             double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
             double pval = 1.0 - chi.cumulative(dm2);
-            System.out.println("p-value: " + pval);
+            if(verbose) {
+                System.out.println("p-value: " + pval);
+            }
             pList.add(new PValue(k, pval));
             constrainedParameterList.add(new PValue(k, big.getValueConstrainedParameter()));
             if (dm2 < chi.inverse(0.95)) {
+                if(verbose) {
                 System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k + " constrained parameter guess: " + big.getValueConstrainedParameter());
+                }
             }
         }
 
@@ -784,11 +792,17 @@ public class TreeMoment {
             boolean addSuccessiveParameters = false; // need this since i kind of constructed this loop backwards in terms of testing the null hypothesis (which is that there is parameter homogeneity)
             for (int k = 0; k < pList.size(); k++) {
                 PValue d = pList.get(k);
-                System.out.println(d);
+                if(verbose) {
+                    System.out.println(d);
+                }
                 double adjustedPValue = 0.05 / (pList.size() - k);
-                System.out.println("p: " + d.getP() + " adjusted P-value: " + adjustedPValue);
+                if(verbose) {
+                    System.out.println("p: " + d.getP() + " adjusted P-value: " + adjustedPValue);
+                }
                 if (d.getP() > adjustedPValue || addSuccessiveParameters) {
-                    System.out.println("Holm-Bonferroni -> Accepting null; Adding parameter index " + d.getK() + " to homogeneity list.");
+                    if(verbose) {
+                        System.out.println("Holm-Bonferroni -> Accepting null; Adding parameter index " + d.getK() + " to homogeneity list.");
+                    }
                     indexHomogeneousParameters.add(d.getK());
 
                     for (PValue cp : constrainedParameterList) {
@@ -802,7 +816,9 @@ public class TreeMoment {
                     // yes, i sort of wrote this backwards; should be adding parameters to HETEROGENEOUS index
                     addSuccessiveParameters = true;
                 } else {
-                    System.out.println("Holm-Bonferroni -> Rejecting null; Retaining parameter index " + d.getK() + " in moment forest.");
+                    if(verbose) {
+                        System.out.println("Holm-Bonferroni -> Rejecting null; Retaining parameter index " + d.getK() + " in moment forest.");
+                    }
                 }
             }
 //                    System.out.println("DEBUG: ending Holm Bonferroni method");
@@ -814,10 +830,14 @@ public class TreeMoment {
                 double criticalValue = 0.05 / (0.0 + pList.size());
                 System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
                 if (d.getP() > criticalValue) {
-                    System.out.println("Straight Bonferroni -> Accepting null; adding parameter index " + d.getK() + " to homogeneity list.");
+                    if(verbose) {
+                        System.out.println("Straight Bonferroni -> Accepting null; adding parameter index " + d.getK() + " to homogeneity list.");
+                    }
                     indexHomogeneousParameters.add(d.getK());
                 } else {
-                    System.out.println("Straight Bonferroni -> Rejecting null; retaining parameter index " + d.getK() + " in moment forest.");
+                    if(verbose) {
+                        System.out.println("Straight Bonferroni -> Rejecting null; retaining parameter index " + d.getK() + " in moment forest.");
+                    }
                 }
             }
         }

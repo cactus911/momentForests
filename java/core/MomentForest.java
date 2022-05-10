@@ -70,8 +70,8 @@ public class MomentForest {
     public void growForest() {
         /**
          * Reinitialize the forest in case we are doing a CV (or whatever). Do
-         * not want to be stacking a bunch of trees of various options into the forest
-         * each time we call growForest!
+         * not want to be stacking a bunch of trees of various options into the
+         * forest each time we call growForest!
          */
         forest = new ArrayList<>();
         double proportionObservationsToEstimateTreeStructure = 0.35;
@@ -82,14 +82,14 @@ public class MomentForest {
             // resample the forestLens, then split it
             DataLens resampled;
             DataLens[] split;
-            if(forestLens.balancingVector==null) {
+            if (forestLens.balancingVector == null) {
                 resampled = forestLens.getResampledDataLens(rng.nextLong());
                 split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
             } else {
                 resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
                 split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
-            }            
-            
+            }
+
             DataLens lensGrow = split[0];
             DataLens lensHonest = split[1];
 
@@ -116,9 +116,9 @@ public class MomentForest {
 
     /**
      * Get parameters associated with a given vector of observables zi
-     * 
+     *
      * @param zi Observable vector
-     * @return 
+     * @return
      */
     public Jama.Matrix getEstimatedParameterForest(Jama.Matrix zi) {
         Jama.Matrix estimatedParameters = forest.get(0).getEstimatedBeta(zi);
@@ -139,15 +139,15 @@ public class MomentForest {
     }
 
     public double[] getCountSplitVariables() {
-        
+
         double countEachVariableSplit[] = new double[spec.getDiscreteVector().length];
-        
-        for(TreeMoment tree : forest) {
+
+        for (TreeMoment tree : forest) {
             TreeSet<Integer> splitTree = new TreeSet<>();
             tree.getIndexSplitVariables(splitTree);
-            
-            for(int i:splitTree) {
-                countEachVariableSplit[i] = countEachVariableSplit[i]+1.0;
+
+            for (int i : splitTree) {
+                countEachVariableSplit[i] = countEachVariableSplit[i] + 1.0;
             }
         }
         return countEachVariableSplit;
@@ -155,70 +155,76 @@ public class MomentForest {
 
     public boolean[] getHomogeneityVotes(JTextArea jt) {
         int[] voteCounts = new int[spec.getHomogeneousIndex().length];
-        for(int i=0;i<numberTreesInForest;i++) {
+        for (int i = 0; i < numberTreesInForest; i++) {
             ArrayList<Integer> hpl = getTree(i).getIndexHomogeneousParameters();
             // ArrayList<Double> hplStartingValues = getTree(i).getValueHomogeneousParameters();
-            for(Integer h : hpl) {
+            for (Integer h : hpl) {
                 voteCounts[h] = voteCounts[h] + 1;
             }
         }
         boolean[] votes = new boolean[voteCounts.length];
-        for(int i=0;i<votes.length;i++) {
-            votes[i] = voteCounts[i]>Math.floorDiv(numberTreesInForest, 2);
+        for (int i = 0; i < votes.length; i++) {
+            votes[i] = voteCounts[i] > Math.floorDiv(numberTreesInForest, 2);
         }
-        System.out.print("votes: ");
-        for(int i=0;i<voteCounts.length;i++) {
+        if (verbose) {
+            System.out.print("votes: ");
+        }
+        for (int i = 0; i < voteCounts.length; i++) {
             // System.out.print(voteCounts[i]+"/"+votes[i]+" ");
-            System.out.format("%.2f%% ", (100.0 * voteCounts[i] / numberTreesInForest));
-            double pct = 100.0*voteCounts[i] / numberTreesInForest;
+            if (verbose) {
+                System.out.format("%.2f%% ", (100.0 * voteCounts[i] / numberTreesInForest));
+            }
+            double pct = 100.0 * voteCounts[i] / numberTreesInForest;
 //            jt.append(i+". votes: "+voteCounts[i]+" out of "+numberTreesInForest+" ("+pct+")\n");
-            if(voteCounts[i]<numberTreesInForest) {
+            if (voteCounts[i] < numberTreesInForest) {
                 // System.out.println("Detected variance in voting on parameter "+i+": "+voteCounts[i]);
                 // System.exit(0);
             }
         }
-        System.out.println("");
-        
+        if(verbose) {
+            System.out.println("");
+        }
+
         return votes;
     }
 
     public double[] getHomogeneityStartingValues() {
         double[] startingValues = new double[spec.getHomogeneousIndex().length];
         double[] voteCounts = new double[spec.getHomogeneousIndex().length];
-        for(int i=0;i<numberTreesInForest;i++) {
+        for (int i = 0; i < numberTreesInForest; i++) {
             ArrayList<Integer> hpl = getTree(i).getIndexHomogeneousParameters();
             ArrayList<Double> hplStartingValues = getTree(i).getValueHomogeneousParameters();
 //            for(Double d : hplStartingValues) {
 //                System.out.print(d+" ");
 //            }
             // System.out.println();
-            for(int j=0;j<hpl.size();j++) {
+            for (int j = 0; j < hpl.size(); j++) {
                 int index = hpl.get(j);
                 voteCounts[index] = voteCounts[index] + 1;
                 startingValues[index] = startingValues[index] + hplStartingValues.get(j);
             }
         }
-        for(int i=0;i<startingValues.length;i++) {
-            if(voteCounts[i]>0) {
+        for (int i = 0; i < startingValues.length; i++) {
+            if (voteCounts[i] > 0) {
                 startingValues[i] = startingValues[i] / voteCounts[i];
             }
-            if(Double.isNaN(startingValues[i])) {
+            if (Double.isNaN(startingValues[i])) {
                 System.out.println("Detected starting value of NaN:");
-                System.out.println("voteCounts: "+voteCounts[i]);
-                
-                for(int t=0;t<numberTreesInForest;t++) {
-                    System.out.println("Tree "+t+": ");
+                System.out.println("voteCounts: " + voteCounts[i]);
+
+                for (int t = 0; t < numberTreesInForest; t++) {
+                    System.out.println("Tree " + t + ": ");
                     ArrayList<Integer> hpl = getTree(t).getIndexHomogeneousParameters();
                     ArrayList<Double> hplStartingValues = getTree(t).getValueHomogeneousParameters();
-                    for(Double d : hplStartingValues) {
-                        System.out.print(d+" ");
+                    for (Double d : hplStartingValues) {
+                        System.out.print(d + " ");
                     }
                     System.out.println("");
                     System.out.print("Index homogeneous parameters: ");
-                    for(Integer h : hpl) {
-                        System.out.print(h+" ");
+                    for (Integer h : hpl) {
+                        System.out.print(h + " ");
                     }
-                    
+
                     System.out.println("");
                 }
                 System.exit(0);
