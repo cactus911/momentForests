@@ -48,6 +48,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         double[] unconstrainedX = computeParameters(numParamsEachSplit * v.size());
         double fminUnconstrained = f_to_minimize(unconstrainedX);
 
+        // okay, from Newey-McFadden we have B = G'Omega^{-1}G, where G is m x k matrix of derivatives and omega is mxm E[gg']
         Jama.Matrix B = computeNeweyMcFaddenB(unconstrainedX);
         Jama.Matrix acov = B.inverse();
 
