@@ -57,6 +57,7 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
         // computeBetaAndErrors();
     }
 
+    @Override
     public void computeBetaAndErrors() {
         if (Y.getRowDimension() < 30) {
             // System.out.println("Too few observations");
