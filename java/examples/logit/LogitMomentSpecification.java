@@ -186,7 +186,7 @@ public class LogitMomentSpecification implements MomentSpecification {
             return beta;
         }
 
-        boolean partiallyLinearModel = true;
+        boolean partiallyLinearModel = false;
         if (partiallyLinearModel) {
             // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
             beta.set(0, 0, 2.5 * Math.sin(zi.get(0, 0)) + 0.25 * Math.pow(zi.get(0, 0), 2));

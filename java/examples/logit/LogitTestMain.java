@@ -284,7 +284,7 @@ public class LogitTestMain {
 
         double bestMinImprovement = 0.8;
         int bestMinObservationsPerLeaf = 25;
-        int bestMaxDepth = 5;
+        int bestMaxDepth = 2;
 
         double lowestSSE = 0;
         boolean first = true;
@@ -360,6 +360,8 @@ public class LogitTestMain {
                 bestMaxDepth = 9;
             }
         }
+        
+        bestMaxDepth = 2;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {

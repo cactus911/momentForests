@@ -42,6 +42,14 @@ public abstract class ContainerMoment {
     public abstract double getMomentFunctionImposingHomogeneity(int k, double value);        
     public abstract Jama.Matrix getMomentGWithoutDivision(Jama.Matrix beta);
     public abstract Jama.Matrix getGi(Jama.Matrix beta, int observationIndex);
+    
+    /**
+     * The no division part of this is that we are going to stack blockwise Jacobians,
+     * so we need to divide by the total sample size in front of the block diagonal matrix.
+     * Do not divide the Jacobian by the leaf sample size!!!
+     * @param beta
+     * @return 
+     */
     public abstract Jama.Matrix getJacobianNoDivision(Jama.Matrix beta);
     public abstract void computeBetaAndErrors();
     

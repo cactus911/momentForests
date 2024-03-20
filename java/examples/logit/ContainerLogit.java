@@ -157,30 +157,17 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
     public Jama.Matrix getGi(Jama.Matrix beta, int i) {
         int numMoments = X.getColumnDimension();
 
-        // try using the derivatives with respect to beta as the moments here (two X's)
-        if (numMoments != 2) {
-            System.out.println("Hardwired moments for two parameters in ContainerLogit.java");
-            System.exit(0);
+        double utility = 0;
+        for (int k = 0; k < X.getColumnDimension(); k++) {
+            utility += X.get(i, k) * beta.get(k, 0);
         }
-
-        double utility = X.get(i, 0) * beta.get(0, 0) + X.get(i, 1) * beta.get(1, 0);
         double shareInside = Math.exp(utility) / (1.0 + Math.exp(utility));
 
         Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
 
-        boolean useScores = false;
-        if (useScores) {
-            if (Y.get(i, 0) == 1) {
-                gi.set(0, 0, X.get(i, 0) * (1.0 - shareInside));
-                gi.set(1, 0, X.get(i, 1) * (1.0 - shareInside));
-            } else {
-                gi.set(0, 0, -X.get(i, 0) * shareInside);
-                gi.set(1, 0, -X.get(i, 1) * shareInside);
-            }
-        } else {
-            double ei = Y.get(i, 0) - shareInside;
-            gi.set(0, 0, X.get(i, 0) * ei);
-            gi.set(1, 0, X.get(i, 1) * ei);
+        double ei = Y.get(i, 0) - shareInside;
+        for (int m = 0; m < numMoments; m++) {
+            gi.set(m, 0, X.get(i, m) * ei);
         }
 
         return gi;
@@ -344,6 +331,8 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public Matrix getJacobianNoDivision(Matrix beta) {
+        // need to convert this to momets, so then I can make the Jacobian G
+        // Jama.Matrix G = new Jama.Matrix(numMoments, numParams);
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 

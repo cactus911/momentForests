@@ -201,10 +201,10 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             for (int i = 0; i < 2; i++) {
                 // with optimal weighting matrix (Step 2)
                 System.out.print("Computing optimal weighting matrix...");
-                omega = computeOptimalOmega(xpls);
+                omega = computeOmega(xpls);
                 System.out.println("done.");
 
-                System.out.println("With optimal weighting matrix:");
+                System.out.println("Omega:");
                 pmUtility.prettyPrint(omega);
 
                 minimizer = new Uncmin_f77(false);
@@ -269,7 +269,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         // try just using the identity weighting matrix to see if it fixes things up
         // can turn off CUE using the boolean here
         if (useCUE) {
-            omega = computeOptimalOmega(x);
+            omega = computeOmega(x);
         }
 
         double q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
@@ -377,7 +377,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         return cellBetaList;
     }
 
-    private Jama.Matrix computeOptimalOmega(double[] x) {
+    private Jama.Matrix computeOmega(double[] x) {
         ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
 
         /**
