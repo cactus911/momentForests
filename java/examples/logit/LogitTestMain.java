@@ -138,7 +138,7 @@ public class LogitTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 50;
+                int numMonteCarlos = 1;
 
                 ArrayList<LogitTestMain> parallelLTM = new ArrayList<>();
 
@@ -153,7 +153,7 @@ public class LogitTestMain {
                 }
 
                 AtomicInteger bomb = new AtomicInteger();
-
+                
                 parallelLTM.parallelStream().forEach(e -> {
                     // parallelLTM.stream().forEach(e -> {
                     e.execute();
@@ -295,7 +295,7 @@ public class LogitTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 100;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -335,29 +335,33 @@ public class LogitTestMain {
                             bestMaxDepth = maxDepth;
                             star = "(*)";
                         }
-                        System.out.println("minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
-                        debugOutputArea.append("minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star + "\n");
+                        System.out.println("detectHomogeneity: "+detectHomogeneity+" minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
+                        debugOutputArea.append("detectHomogeneity: "+detectHomogeneity+" minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star + "\n");
 
                     }
                 }
             }
 
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
-            jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
+            jt.append("detectHomogeneity: "+detectHomogeneity+" CV Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
         } else {
             bestMinObservationsPerLeaf = 20;
             bestMinImprovement = 0.1;
             if (numObs == 500) {
-                bestMaxDepth = 3;
+                bestMaxDepth = 1;
+                bestMinObservationsPerLeaf = 50;
             }
             if (numObs == 1000) {
-                bestMaxDepth = 2;
+                bestMaxDepth = 1;
+                bestMinObservationsPerLeaf = 100;
             }
             if (numObs == 2000) {
-                bestMaxDepth = 7;
+                bestMaxDepth = 1;
+                bestMinObservationsPerLeaf = 100;
             }
             if (numObs == 4000) {
-                bestMaxDepth = 9;
+                bestMaxDepth = 1;
+                bestMinObservationsPerLeaf = 100;
             }
         }
 
