@@ -165,6 +165,12 @@ public class LogitMomentSpecification implements MomentSpecification {
         return ContainerLogit.computeLLHi(yi, xi, beta);
     }
 
+    @Override
+    public int getNumParams() {
+        return 2;
+    }
+    
+
     //Return the true parameter vector for a given observation
     @Override
     public Matrix getBetaTruth(Matrix zi, Random rng) {

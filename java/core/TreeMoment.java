@@ -752,12 +752,7 @@ public class TreeMoment {
             System.out.println("Number of leaves: " + v.size());
         }
 
-        /**
-         * Oh wow, I think I am really poisoning myself here by setting degrees of freedom equal to 1!
-         * When we do this restricted estimation, we are testing whether the ENTIRE vector of parameters
-         * is equal. So need to crank up the degrees of freedom here, I think!
-         */
-        double degreesFreedom = v.size()*betaEstimateNode.getRowDimension();
+        double degreesFreedom = v.size();
         if(verbose) {
             System.out.println("Degrees of freedom in chi-squared test: "+degreesFreedom);
         }
@@ -789,6 +784,8 @@ public class TreeMoment {
         // holm-bonferroni procedure below
         boolean useHolmBonferroni = true;
         if (useHolmBonferroni) {
+            indexHomogeneousParameters.clear();
+            valueHomogeneousParameters.clear();
             boolean addSuccessiveParameters = false; // need this since i kind of constructed this loop backwards in terms of testing the null hypothesis (which is that there is parameter homogeneity)
             for (int k = 0; k < pList.size(); k++) {
                 PValue d = pList.get(k);

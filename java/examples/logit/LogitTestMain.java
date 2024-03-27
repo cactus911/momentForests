@@ -33,7 +33,6 @@ import core.TreeMoment;
 import core.TreeOptions;
 import java.awt.GridLayout;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
@@ -138,7 +137,7 @@ public class LogitTestMain {
                 double beta_MSE = 0;
                 double beta_MSE_var = 0;
 
-                int numMonteCarlos = 1;
+                int numMonteCarlos = 50;
 
                 ArrayList<LogitTestMain> parallelLTM = new ArrayList<>();
 
@@ -153,7 +152,7 @@ public class LogitTestMain {
                 }
 
                 AtomicInteger bomb = new AtomicInteger();
-                
+
                 parallelLTM.parallelStream().forEach(e -> {
                     // parallelLTM.stream().forEach(e -> {
                     e.execute();
@@ -169,8 +168,8 @@ public class LogitTestMain {
                         ArrayList<Integer> hList = m.getHomogeneousParameterList();
                         if (!hList.isEmpty()) {
                             for (Integer h : hList) {
-                                // jt.append("Detected homogeneity on parameter index " + h + " hList.size = " + hList.size());
-                                // jt.append(" estimatedParemeterSize: " + m.getEstimatedHomogeneousParameters().getRowDimension() + "\n");
+                                // jt1.append("Detected homogeneity on parameter index " + h + " hList.size = " + hList.size());
+                                // jt1.append(" estimatedParameterSize: " + m.getEstimatedHomogeneousParameters().getRowDimension() + "\n");
                                 homogeneousClassificationRate[h] = homogeneousClassificationRate[h] + 1.0;
                                 for (int i = 0; i < numParameters; i++) {
                                     if (h == i) {
@@ -263,7 +262,8 @@ public class LogitTestMain {
                     betaMSE_unrestricted = beta_MSE;
                 }
             }
-            LogitMonteCarloTable tf = new LogitMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted, betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta1_mean, beta1_SD, beta2_mean, beta2_SD, classificationRate1, classificationRate2);
+            LogitMonteCarloTable tf = new LogitMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted, betaMSE_unrestricted, betaMSE_restricted,
+                    betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta1_mean, beta1_SD, beta2_mean, beta2_SD, classificationRate1, classificationRate2);
             jam.append(tf.toString());
         }
     }
@@ -335,15 +335,15 @@ public class LogitTestMain {
                             bestMaxDepth = maxDepth;
                             star = "(*)";
                         }
-                        System.out.println("detectHomogeneity: "+detectHomogeneity+" minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
-                        debugOutputArea.append("detectHomogeneity: "+detectHomogeneity+" minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star + "\n");
+                        System.out.println("detectHomogeneity: " + detectHomogeneity + " minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
+                        debugOutputArea.append("detectHomogeneity: " + detectHomogeneity + " minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star + "\n");
 
                     }
                 }
             }
 
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
-            jt.append("detectHomogeneity: "+detectHomogeneity+" CV Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
+            jt.append("detectHomogeneity: " + detectHomogeneity + " CV Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
         } else {
             bestMinObservationsPerLeaf = 20;
             bestMinImprovement = 0.1;
@@ -381,47 +381,59 @@ public class LogitTestMain {
 
             testParameterHomogeneity = false;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
-            MomentForest myForest = new MomentForest(mySpecification, 1, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
+            MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
 
             myForest.setTreeOptions(cvOptions);
             myForest.growForest();
 
+            ArrayList<Integer> hpl = new ArrayList<>();
+
             /**
-             * March 16, 2020: going to try something here, which is to
-             * aggregate parameters within two partitions for each parameter we
-             * are checking Find the support of each X, split in half Find the
-             * average parameter in each half Get the variance across cells (or
-             * across the forest?) Then test using a t-test
-             *
-             * Q: how to compute the variances needed in the t-test? The average
-             * seems straightforward enough
-             *
-             * A: Just going back to my "naive" idea of testing across ALL of
-             * the terminal leaves; seems to work!
+             * Have each tree in the forest vote for homogeneity; take majority vote as classification
              */
-            TreeMoment loblolly = myForest.getTree(0);
-            loblolly.testHomogeneity();
-
-            // System.out.println("Done with growforest");
-            ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
-            ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
-            // System.out.println("Post get homogeneous parameters");
-
-            // tell the specification that these parameters have been determined to be homogeneous
-//            System.out.println("Unsorted");            
-//                System.out.print(hpl+" ");
-//                System.out.println(hplStartingValues);
-            Collections.sort(hpl); // ensure that indices are ascending (this can cause some weird problems elsewhere due to my bad coding skills if not)
-            Collections.sort(hplStartingValues);
-//            System.out.println("Sorted");
-//            System.out.print(hpl+" ");
-//            System.out.println(hplStartingValues);
-
-            for (int i = 0; i < hpl.size(); i++) {
-                mySpecification.setHomogeneousIndex(hpl.get(i));
-                mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
-                // System.out.println(i);
+            for (int k = 0; k < mySpecification.getNumParams(); k++) {
+                double voteShareHomogeneousParameterK = 0;
+                for (int jelly = 0; jelly < myForest.getForestSize(); jelly++) {
+                    myForest.getTree(jelly).testHomogeneity();
+                    ArrayList<Integer> hpl_jelly = myForest.getTree(jelly).getIndexHomogeneousParameters();
+                    if (hpl_jelly.contains(k)) {
+                        voteShareHomogeneousParameterK++;
+                    }
+                }
+                jt.append("\n");
+                voteShareHomogeneousParameterK /= myForest.getForestSize();
+                System.out.println("Proportion of trees that voted for parameter "+k+" as homogeneous: " + voteShareHomogeneousParameterK);
+                if (voteShareHomogeneousParameterK >= 0.5) {
+                    hpl.add(k);
+                }
             }
+
+            /**
+             * For each tree that voted for homogeneity, average homogeneous parameter values
+             */
+            // ArrayList<Double> hplStartingValues = new ArrayList<>();
+            for(Integer k : hpl) {
+                double counter = 0;
+                double avgValueParameterK = 0;
+                for(int m=0;m<myForest.getForestSize();m++) {
+                    TreeMoment mt = myForest.getTree(m);
+                    if(mt.getIndexHomogeneousParameters().contains(k)) {
+                        counter++;
+                        avgValueParameterK += mt.getValueHomogeneousParameters().get(mt.getIndexHomogeneousParameters().indexOf(k));
+                    }
+                }
+                avgValueParameterK /= counter;
+                mySpecification.setHomogeneousIndex(k);
+                mySpecification.setHomogeneousParameter(k, avgValueParameterK);
+                System.out.println("Setting parameter "+k+" to homogeneous with value of "+avgValueParameterK);
+            }
+            
+
+//            for (int i = 0; i < hpl.size(); i++) {
+//                mySpecification.setHomogeneousIndex(hpl.get(i));
+//                mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
+//                // System.out.println(i);
+//            }
             setHomogeneousParameterList(hpl);
             // System.out.println("After setting hp list");
 
@@ -485,8 +497,6 @@ public class LogitTestMain {
     public void setEstimatedBetaVersusTruthMSE(double estimatedBetaVersusTruthMSE) {
         this.estimatedBetaVersusTruthMSE = estimatedBetaVersusTruthMSE;
     }
-
-    
 
     private void setHomogeneousParameterList(ArrayList<Integer> homogeneousParameterList) {
         this.homogeneousParameterList = homogeneousParameterList;

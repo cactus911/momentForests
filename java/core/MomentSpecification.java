@@ -172,4 +172,6 @@ public interface MomentSpecification {
         return new OutOfSampleStatisticsContainer(outOfSampleResultsBeta, outOfSampleResultsY);
     }
 
+    public int getNumParams();
+
 }

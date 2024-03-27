@@ -133,6 +133,10 @@ public class MomentForest {
         estimatedParameters.timesEquals(1.0 / forest.size());
         return estimatedParameters;
     }
+    
+    public int getForestSize() {
+        return forest.size();
+    }
 
     public void setTreeOptions(TreeOptions cvOptions) {
         this.treeOptions = cvOptions;
