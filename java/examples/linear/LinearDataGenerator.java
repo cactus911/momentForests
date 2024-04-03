@@ -50,7 +50,7 @@ public class LinearDataGenerator {
 //                pmUtility.prettyPrintVector(beta);
             Jama.Matrix subX = X.getMatrix(i, i, 0, dimensionX-1);
             // pmUtility.prettyPrint(subX);
-            Y.set(i, 0, (subX.times(beta)).get(0, 0) + 5.0*normal.inverse(rng.nextDouble()));
+            Y.set(i, 0, (subX.times(beta)).get(0, 0) + 1.0*normal.inverse(rng.nextDouble()));
         }
         
 //        pmUtility.prettyPrintVector(pmUtility.OLS(X,Y,false));

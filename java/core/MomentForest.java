@@ -133,7 +133,7 @@ public class MomentForest {
         estimatedParameters.timesEquals(1.0 / forest.size());
         return estimatedParameters;
     }
-    
+
     public int getForestSize() {
         return forest.size();
     }
@@ -158,6 +158,7 @@ public class MomentForest {
     }
 
     public boolean[] getHomogeneityVotes(JTextArea jt) {
+        boolean verboseVoting = false;
         int[] voteCounts = new int[spec.getHomogeneousIndex().length];
         for (int i = 0; i < numberTreesInForest; i++) {
             ArrayList<Integer> hpl = getTree(i).getIndexHomogeneousParameters();
@@ -170,22 +171,24 @@ public class MomentForest {
         for (int i = 0; i < votes.length; i++) {
             votes[i] = voteCounts[i] > Math.floorDiv(numberTreesInForest, 2);
         }
-        if (verbose) {
+        if (verboseVoting) {
             System.out.print("votes: ");
         }
         for (int i = 0; i < voteCounts.length; i++) {
             // System.out.print(voteCounts[i]+"/"+votes[i]+" ");
-            if (verbose) {
+            if (verboseVoting) {
                 System.out.format("%.2f%% ", (100.0 * voteCounts[i] / numberTreesInForest));
             }
             double pct = 100.0 * voteCounts[i] / numberTreesInForest;
-//            jt.append(i+". votes: "+voteCounts[i]+" out of "+numberTreesInForest+" ("+pct+")\n");
+            if (verboseVoting) {
+                jt.append(i + ". votes: " + voteCounts[i] + " out of " + numberTreesInForest + " (" + pct + "): "+votes[i]+"\n");
+            }
             if (voteCounts[i] < numberTreesInForest) {
                 // System.out.println("Detected variance in voting on parameter "+i+": "+voteCounts[i]);
                 // System.exit(0);
             }
         }
-        if(verbose) {
+        if (verboseVoting) {
             System.out.println("");
         }
 
@@ -242,6 +245,7 @@ public class MomentForest {
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
+                System.out.println("========== Tree "+i+" ==========");
                 forest.get(i).testHomogeneity();
             }
         } else {

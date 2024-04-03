@@ -86,6 +86,13 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
+    public int getNumParams() {
+        return dimensionX;
+    }
+
+    
+    
+    @Override
     public double getHomogeneousParameter(int parameterIndex) {
         return homogeneousParameterVector.get(parameterIndex,0);
     }
@@ -193,14 +200,14 @@ public class LinearMomentSpecification implements MomentSpecification {
         beta.set(0, 0, -1);
         beta.set(1, 0, 1.0);
         
-        boolean partiallyLinearModel = true;
+        boolean partiallyLinearModel = false;
         if(partiallyLinearModel) {
             // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
             beta.set(0, 0, 2.5*Math.sin(zi.get(0,0)) + 0.25*Math.pow(zi.get(0,0),2));
             return beta;
         }        
 
-        boolean singleBeta = false;
+        boolean singleBeta = true;
         if (singleBeta) {
             return beta;
         }
@@ -208,7 +215,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         boolean oneDimensionHeterogeneity = false;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
-                beta.set(1, 0, -1.05);
+                beta.set(1, 0, -1.0);
             }
             return beta; 
         }
@@ -217,7 +224,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         if (twoDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
                 beta.set(0, 0, 0.33);
-                beta.set(1, 0, -1.05);
+                beta.set(1, 0, -1.0);
             }
             return beta;
         }

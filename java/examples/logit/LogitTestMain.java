@@ -400,7 +400,6 @@ public class LogitTestMain {
                         voteShareHomogeneousParameterK++;
                     }
                 }
-                jt.append("\n");
                 voteShareHomogeneousParameterK /= myForest.getForestSize();
                 System.out.println("Proportion of trees that voted for parameter "+k+" as homogeneous: " + voteShareHomogeneousParameterK);
                 if (voteShareHomogeneousParameterK >= 0.5) {
