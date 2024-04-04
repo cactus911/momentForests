@@ -5,6 +5,7 @@
  */
 package core;
 
+import examples.linear.ContainerLinear;
 import java.awt.BorderLayout;
 import java.util.ArrayList;
 import javax.swing.JFrame;
@@ -37,7 +38,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     boolean allParametersHomogeneous = true;
 
     boolean debug = false;
-    
+
     long t1 = System.currentTimeMillis();
     DataLens homogenizedForestLens;
 
@@ -65,9 +66,9 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     public void executeSearch() {
         // System.out.println("Inside executeSearch");
 
-        Uncmin_f77 minimizer = new Uncmin_f77(true);
+        Uncmin_f77 minimizer = new Uncmin_f77(false);
 
-        if(debug) {
+        if (debug) {
             System.out.println("Number of parameters: " + numParams);
         }
         // System.exit(0);
@@ -76,15 +77,15 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 
         // use the starting values from the test
         for (int k = 0; k < homogeneousParameterIndex.size(); k++) {
-            if(!Double.isNaN(mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k)))) {
+            if (!Double.isNaN(mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k)))) {
                 guess[k + 1] = mySpecification.getHomogeneousParameter(homogeneousParameterIndex.get(k));
             }
         }
-        if(debug) {
-        System.out.print("Starting values taken from test: ");
-        pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+        if (debug) {
+            System.out.print("Starting values taken from test: ");
+            pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
 
-        System.out.println("F_min(x): " + f_to_minimize(guess));
+            System.out.println("F_min(x): " + f_to_minimize(guess));
         }
 
         double[] xpls = new double[numParams + 1];
@@ -111,86 +112,101 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         double[] stepmx = {0, 1.0}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
         double[] steptl = {0, 1E-8};
 
-        if (numParams == 1) {
-            // just use the number passed from the legit optimizer that already did all the work in detecting the parameter
-            xpls[1] = guess[1];
-        }
-
-        if (numParams == 1) {
-            if (1 == 2) {
-                t1 = System.currentTimeMillis();
-                int numEvals = 9; // number evaluations within each bracket (MIN: 3)
-                int R = 5; // number of times to bracket grid search
-                double left = guess[1] - 1.0;
-                double right = guess[1] + 1.0;
-                double increment = (right - left) / numEvals;
-                // for (int r = 0; r < R; r++) {
-                boolean converged = false;
-                int r = 0;
-                boolean first = true;
-
-                // plotFunction(-4, 0, 25);
-                // see how well this works
-                guess[1] = goldenRatioSearch(left, right)[1];
-                // this appears to work incredibly well
-
-                boolean useGridSearch = false;
-
-                if (useGridSearch) {
-                    while (!converged) {
-                        double[] v = gridSearch(left, right, increment);
-                        if(debug) {
-                            System.out.println("r = " + r + " Grid search produced best x = " + v[0] + " f(x) = " + v[1] + " [" + (2.0 * increment) + "]");
-                        }
-                        if (Math.abs(guess[1] - v[0]) < 1E-4) { // this criterion really just checks the length of the search interval, which is probably fine for now
-                            if (first) {
-                                first = false;
-                            } else {
-                                converged = true;
-                            }
-                        }
-                        guess[1] = v[0];
-                        left = guess[1] - increment;
-                        right = guess[1] + increment;
-                        increment = (right - left) / numEvals;
-                        r++;
-                    }
-                    long t2 = System.currentTimeMillis();
-                    if(debug) {
-                        System.out.println("Grid search with numEvals: " + numEvals + " R: " + R + " time: " + (t2 - t1) + " f: " + f_to_minimize(guess));
-                    }
-                }
-
-                // plotFunction(left, right, numEvals);
-                // System.exit(0);
-                xpls[1] = guess[1];
-
-                // try one newton step after this?
-                // doesn't look like it is necessary
-                // itnlim[1] = 2;
-                // minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        if (allParametersHomogeneous && 1 == 2) {
+// ok, alternatively, we can just use the original sample and run OLS when all the parameters are estimated to be homogeneous
+            boolean[] fillerIndex = new boolean[mySpecification.getHomogeneousIndex().length];
+            for (int i = 0; i < fillerIndex.length; i++) {
+                fillerIndex[i] = false;
+            }
+            ContainerLinear cl = new ContainerLinear(homogenizedForestLens, fillerIndex, null, false);
+            cl.computeBetaAndErrors();
+            Jama.Matrix beta = cl.getBeta();
+            setCompactEstimatedHomogeneousParameters(beta); // need to account for the fact that this is potentially a shorter vector
+            for (int i = 0; i < numParams; i++) {
+                mySpecification.setHomogeneousParameter(homogeneousParameterIndex.get(i), beta.get(i,0));
             }
         } else {
 
-            // good for robustness, way too slow to actually use
+            if (numParams == 1) {
+                // just use the number passed from the legit optimizer that already did all the work in detecting the parameter
+                xpls[1] = guess[1];
+            }
+
+            if (numParams == 1) {
+                if (1 == 2) {
+                    t1 = System.currentTimeMillis();
+                    int numEvals = 9; // number evaluations within each bracket (MIN: 3)
+                    int R = 5; // number of times to bracket grid search
+                    double left = guess[1] - 1.0;
+                    double right = guess[1] + 1.0;
+                    double increment = (right - left) / numEvals;
+                    // for (int r = 0; r < R; r++) {
+                    boolean converged = false;
+                    int r = 0;
+                    boolean first = true;
+
+                    // plotFunction(-4, 0, 25);
+                    // see how well this works
+                    guess[1] = goldenRatioSearch(left, right)[1];
+                    // this appears to work incredibly well
+
+                    boolean useGridSearch = false;
+
+                    if (useGridSearch) {
+                        while (!converged) {
+                            double[] v = gridSearch(left, right, increment);
+                            if (debug) {
+                                System.out.println("r = " + r + " Grid search produced best x = " + v[0] + " f(x) = " + v[1] + " [" + (2.0 * increment) + "]");
+                            }
+                            if (Math.abs(guess[1] - v[0]) < 1E-4) { // this criterion really just checks the length of the search interval, which is probably fine for now
+                                if (first) {
+                                    first = false;
+                                } else {
+                                    converged = true;
+                                }
+                            }
+                            guess[1] = v[0];
+                            left = guess[1] - increment;
+                            right = guess[1] + increment;
+                            increment = (right - left) / numEvals;
+                            r++;
+                        }
+                        long t2 = System.currentTimeMillis();
+                        if (debug) {
+                            System.out.println("Grid search with numEvals: " + numEvals + " R: " + R + " time: " + (t2 - t1) + " f: " + f_to_minimize(guess));
+                        }
+                    }
+
+                    // plotFunction(left, right, numEvals);
+                    // System.exit(0);
+                    xpls[1] = guess[1];
+
+                    // try one newton step after this?
+                    // doesn't look like it is necessary
+                    // itnlim[1] = 2;
+                    // minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                }
+            } else {
+
+                // good for robustness, way too slow to actually use
 //            long t1 = System.currentTimeMillis();
 //            mcmc.gibbsLTEGeneralized lte = new gibbsLTEGeneralized(this, 10, 0, guess, false);
 //            guess = lte.getLowestPoint();
 //            long t2 = System.currentTimeMillis();
 //            System.out.println("===================================== "+(t2-t1)+" ms to starting value: "+pmUtility.stringPrettyPrint(new Jama.Matrix(guess,1)));
 // it is getting stuck internally (not even calling f_to_minimize!)
-            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
 
-            // System.out.print("Post-uncmin f: " + fpls[1] + " x = ");
-            // pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+                // System.out.print("Post-uncmin f: " + fpls[1] + " x = ");
+                // pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+            }
+
+            Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numParams, 1);
+            for (int i = 0; i < numParams; i++) {
+                compactHomogeneousParameterVector.set(i, 0, xpls[i + 1]);
+            }
+            setCompactEstimatedHomogeneousParameters(compactHomogeneousParameterVector); // need to account for the fact that this is potentially a shorter vector
         }
-
-        Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numParams, 1);
-        for (int i = 0; i < numParams; i++) {
-            compactHomogeneousParameterVector.set(i, 0, xpls[i + 1]);
-        }
-        setCompactEstimatedHomogeneousParameters(compactHomogeneousParameterVector); // need to account for the fact that this is potentially a shorter vector
-
     }
 
     private double[] gridSearch(double leftEnd, double rightEnd, double interval) {
@@ -223,22 +239,19 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         for (int i = 0; i < numParams; i++) {
             mySpecification.setHomogeneousParameter(homogeneousParameterIndex.get(i), x[i + 1]);
         }
-        // System.out.print("Inside homogeneousSearchContainer f_to_min: ");
-        // pmUtility.prettyPrint(new Jama.Matrix(x, 1));
-
-        // i should seed this in some way with the estimates from the DistanceMetricTest results
         double v = computeObjectiveFunction();
-//        long t2 = System.currentTimeMillis();
-//        if(t2-t1>60000) { // if longer than a minute
-//            System.out.print("f: "+v+" x: ");
-//            pmUtility.prettyPrint(new Jama.Matrix(x,1));
-//        }
         return v;
     }
 
     public double computeObjectiveFunction() {
         // verbose = true;
 
+        /**
+         * April 3, 2024: Why am I not using the moment functions here to
+         * compute objective functions for this search container? Maybe
+         * something about how the implementation is complex with the moments
+         * having homogeneous and heterogeneous parameters at the same time?
+         */
         /**
          * Two things: 1. need to be using in-sample Y,X,Z here, not
          * out-of-sample 2. do not need to grow any trees when all the

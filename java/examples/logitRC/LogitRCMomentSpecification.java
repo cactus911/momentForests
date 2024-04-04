@@ -533,4 +533,9 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         return 2;
     }
 
+    @Override
+    public int getNumParams() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
 }

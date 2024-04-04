@@ -245,7 +245,7 @@ public class MomentForest {
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
-                System.out.println("========== Tree "+i+" ==========");
+                // System.out.println("========== Tree "+i+" ==========");
                 forest.get(i).testHomogeneity();
             }
         } else {

@@ -745,11 +745,11 @@ public class TreeMoment {
     }
 
     public void testHomogeneity() {
-        System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
+        // System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);
         // printTree();
-        if (verbose || 1 == 1) {
+        if (verbose || 1 == 2) {
             System.out.println("Number of leaves: " + v.size());
         }
 
