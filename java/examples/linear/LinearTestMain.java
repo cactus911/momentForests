@@ -61,6 +61,7 @@ public class LinearTestMain {
     private final boolean detectHomogeneity;
     private JTextArea jt;
     private final int dimX;
+    private final int monteCarloIndex;
 
     /**
      * @param args the command line arguments
@@ -97,10 +98,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 40;
+        int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 500; numObs <= 4000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 100000; numObs *= 2) {
 
                 double YMSE_unrestricted = 0;
                 double YMSE_SD_unrestricted = 0;
@@ -123,8 +124,8 @@ public class LinearTestMain {
 
                 JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-                // boolean[] d = {false};
-                boolean[] d = {false, true};
+                boolean[] d = {false};
+                // boolean[] d = {false, true};
 
                 for (boolean detectHomogeneity : d) {
                     // boolean detectHomogeneity = !true;
@@ -155,9 +156,9 @@ public class LinearTestMain {
                         LinearTestMain go;
                         if (numMonteCarlos == 1) {
                             // 8621193992485539638L
-                            go = new LinearTestMain(8621193992485539638L, numObs, detectHomogeneity, jam, dimX);
+                            go = new LinearTestMain(m, 8621193992485539638L, numObs, detectHomogeneity, jam, dimX);
                         } else {
-                            go = new LinearTestMain(rng.nextLong(), numObs, detectHomogeneity, jam, dimX);
+                            go = new LinearTestMain(m, rng.nextLong(), numObs, detectHomogeneity, jam, dimX);
                         }
                         parallelLTM.add(go);
                     }
@@ -247,8 +248,8 @@ public class LinearTestMain {
                         betaMSE_parametric /= parallelLTM.size();
                     }
                     // jt2.append("Average NP_YMSE: "+Y_nonparametric_MSE+"\n");
-                    beta_MSE /= parallelLTM.size();                    
-                    
+                    beta_MSE /= parallelLTM.size();
+
                     for (LinearTestMain m : parallelLTM) {
                         Y_MSE_var += Math.pow(Y_MSE - m.getOutOfSampleYMSE(), 2);
                         beta_MSE_var += Math.pow(beta_MSE - m.getEstimatedBetaVersusTruthMSE(), 2);
@@ -271,20 +272,19 @@ public class LinearTestMain {
                         YMSE_unrestricted = Y_MSE;
                         betaMSE_SD_unrestricted = beta_MSE_var;
                         betaMSE_unrestricted = beta_MSE;
-                        
-                        Jama.Matrix avgParametricParameters = new Jama.Matrix(dimX,1);
+
+                        Jama.Matrix avgParametricParameters = new Jama.Matrix(dimX, 1);
                         for (LinearTestMain m : parallelLTM) {
                             avgParametricParameters.plusEquals(m.getParametricParameters());
                         }
-                        avgParametricParameters.timesEquals(1.0/parallelLTM.size());
-                        for(int i=0;i<avgParametricParameters.getRowDimension();i++) {
-                            beta_mean_parametric[i] = avgParametricParameters.get(i,0);
+                        avgParametricParameters.timesEquals(1.0 / parallelLTM.size());
+                        for (int i = 0; i < avgParametricParameters.getRowDimension(); i++) {
+                            beta_mean_parametric[i] = avgParametricParameters.get(i, 0);
                         }
-                        
+
                     }
                 }
-                
-                
+
                 LinearMonteCarloTable tf = new LinearMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted,
                         betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta_mean, beta_SD, classificationRate, Y_nonparametric_MSE, Y_parametric_MSE,
                         beta_mean_parametric, betaMSE_parametric);
@@ -294,8 +294,9 @@ public class LinearTestMain {
         System.out.println("Execution finished.");
     }
 
-    public LinearTestMain(long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt, int dimX) {
+    public LinearTestMain(int monteCarloIndex, long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt, int dimX) {
         this.rngSeed = rngSeed;
+        this.monteCarloIndex = monteCarloIndex;
         this.jt = jt;
         this.numObs = numObs;
         this.detectHomogeneity = detectHomogeneity;
@@ -334,7 +335,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 10;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -357,7 +358,10 @@ public class LinearTestMain {
         computeOutOfSampleNonparametricFits(mySpecification, rngBaseSeedOutOfSample);
         computeOutOfSampleParametricFits(mySpecification, rngBaseSeedOutOfSample);
 
-        boolean runCV = false;
+        // partial linear model results from CV:
+        // 500: 50, 10, 2
+        // 
+        boolean runCV = true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -366,11 +370,11 @@ public class LinearTestMain {
             }
 
             // for (int minObservationsPerLeaf = numObs/10; minObservationsPerLeaf <= 4 * numObs/10; minObservationsPerLeaf *= 2) {
-            for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 2; minObservationsPerLeaf <= 2; minObservationsPerLeaf *= 2) {
                 // for (double minImprovement = 0.1; minImprovement <= 10.0; minImprovement *= 10) {
-                double[] improvementLevels = {1, 5, 10}; // {1, 5, 10, 20}; // , 10.0, 20.0};
+                double[] improvementLevels = {0}; // 0.1, 0.5, 1.0}; // {1, 5, 10, 20}; // , 10.0, 20.0};
                 for (double minImprovement : improvementLevels) {
-                    for (int maxDepth = Math.min(10, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 0; maxDepth--) {
+                    for (int maxDepth = Math.min(5, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 0; maxDepth--) {
                         computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
                         double combinationMSE = outOfSampleYMSE;
                         String star = "";
@@ -382,8 +386,8 @@ public class LinearTestMain {
                             bestMaxDepth = maxDepth;
                             star = "(*)";
                         }
-                        if (star.contains("*")) {
-                            // System.out.println("minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
+                        if (star.contains("*") || 1 == 1) {
+                            System.out.println(monteCarloIndex + ". minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
                         }
                     }
                 }
@@ -521,7 +525,7 @@ public class LinearTestMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        numberTreesInForest = 10; // using larger numbers here really improves fit!
+        numberTreesInForest = 100; // using larger numbers here really improves fit!
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
     }
@@ -578,7 +582,6 @@ public class LinearTestMain {
         outOfSampleFitNWEstimator /= testZ.getRowDimension();
 
         // System.out.println("NW Estimator MSE(Y): " + outOfSampleFitNWEstimator);
-
         return outOfSampleFitNWEstimator;
     }
 
@@ -601,26 +604,25 @@ public class LinearTestMain {
 
         Random rng = new Random(rngBaseSeedOutOfSample - 3);
         betaMSE_parametric = 0;
-        
+
         for (int i = 0; i < testX.getRowDimension(); i++) {
             Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
             outOfSampleFitParametricEstimator += mySpecification.getGoodnessOfFit(testY.get(i, 0), xi, beta);
-            
+
             Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
-            
+
             // going to compare directly to the true parameter vector in this method instead of using fit of Y
             Jama.Matrix bTruth = mySpecification.getBetaTruth(zi, rng);
             betaMSE_parametric += pmUtility.sumSquaredElements((beta.minus(bTruth)));
-            if(i< -10) {
+            if (i < -10) {
                 System.out.print("OLS: ");
                 pmUtility.prettyPrintVector(beta);
             }
         }
         outOfSampleFitParametricEstimator /= testX.getRowDimension();
-        betaMSE_parametric /= testX.getRowDimension();        
+        betaMSE_parametric /= testX.getRowDimension();
 
         // System.out.println("Parametric MSE(Y): " + outOfSampleFitParametricEstimator+" MSE(beta): "+betaMSE_parametric);
-
         return outOfSampleFitParametricEstimator;
     }
 
@@ -691,10 +693,10 @@ public class LinearTestMain {
                 }
                 hString = hString + "]";
                 // jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
-            
+
                 System.out.print("tree: ");
                 pmUtility.prettyPrintVector(compositeEstimatedBeta);
-            
+
             }
             //pmUtility.prettyPrintVector(compositeEstimatedBeta);
             outOfSampleFit += pmUtility.sumSquaredElements((compositeEstimatedBeta.minus(bTruth)));
@@ -813,6 +815,13 @@ public class LinearTestMain {
      */
     public double getBetaMSE_parametric() {
         return betaMSE_parametric;
+    }
+
+    /**
+     * @return the monteCarloIndex
+     */
+    public int getMonteCarloIndex() {
+        return monteCarloIndex;
     }
 
 }

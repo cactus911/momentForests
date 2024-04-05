@@ -312,7 +312,7 @@ public class LogitTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = !false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
