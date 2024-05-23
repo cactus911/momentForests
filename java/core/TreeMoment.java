@@ -745,7 +745,7 @@ public class TreeMoment {
     }
 
     public void testHomogeneity() {
-        // System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
+        System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);
         // printTree();
@@ -989,10 +989,10 @@ public class TreeMoment {
         return valueHomogeneousParameters;
     }
 
-    void getIndexSplitVariables(TreeSet<Integer> splitTree) {
+    void getEnumerationOfAllSplitVariablesInThisTree(TreeSet<Integer> splitTree) {
         if (!terminal) {
-            childLeft.getIndexSplitVariables(splitTree);
-            childRight.getIndexSplitVariables(splitTree);
+            childLeft.getEnumerationOfAllSplitVariablesInThisTree(splitTree);
+            childRight.getEnumerationOfAllSplitVariablesInThisTree(splitTree);
             splitTree.add(rule.getOptimalSplitVariableIndex());
         }
     }

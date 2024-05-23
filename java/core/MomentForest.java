@@ -142,13 +142,13 @@ public class MomentForest {
         this.treeOptions = cvOptions;
     }
 
-    public double[] getCountSplitVariables() {
+    public double[] getNumberTimesTreesInForestSplitOnAGivenVariableIndex() {
 
         double countEachVariableSplit[] = new double[spec.getDiscreteVector().length];
 
         for (TreeMoment tree : forest) {
             TreeSet<Integer> splitTree = new TreeSet<>();
-            tree.getIndexSplitVariables(splitTree);
+            tree.getEnumerationOfAllSplitVariablesInThisTree(splitTree);
 
             for (int i : splitTree) {
                 countEachVariableSplit[i] = countEachVariableSplit[i] + 1.0;
@@ -157,8 +157,8 @@ public class MomentForest {
         return countEachVariableSplit;
     }
 
-    public boolean[] getHomogeneityVotes(JTextArea jt) {
-        boolean verboseVoting = false;
+    public boolean[] getHomogeneityVotes(JTextArea jt, boolean verboseVoting) {
+        
         int[] voteCounts = new int[spec.getHomogeneousIndex().length];
         for (int i = 0; i < numberTreesInForest; i++) {
             ArrayList<Integer> hpl = getTree(i).getIndexHomogeneousParameters();

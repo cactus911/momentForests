@@ -184,8 +184,8 @@ public class LogitRCMomentSpecification implements MomentSpecification {
     @Override
     public Matrix getBetaTruth(Matrix zi, Random rng) {
         Jama.Matrix beta = new Jama.Matrix(2, 1); // Beta is a scalar
-        beta.set(0, 0, -1.0 + 0.0 * normal.inverse(rng.nextDouble()));
-        beta.set(1, 0, 1.0 + 1.0 * normal.inverse(rng.nextDouble()));
+        beta.set(0, 0, -1.0 + 1.0 * normal.inverse(rng.nextDouble()));
+        beta.set(1, 0, 1.0 + 0.0 * normal.inverse(rng.nextDouble()));
 
 //        double draw = rng.nextDouble();
 //        if (draw < 0.7) {
@@ -220,7 +220,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         /**
          * Test vectors for assessment
          */
-        DataLens oosDataLens = getOutOfSampleXYZ(25000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        DataLens oosDataLens = getOutOfSampleXYZ(500, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
         Jama.Matrix testZ = oosDataLens.getZ();
         Jama.Matrix testX = oosDataLens.getX();
         Jama.Matrix testY = oosDataLens.getY();
@@ -275,7 +275,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
          * constraints and see if that works Looks like the quick and dirty
          * works; let's do point 4 next and see if it still works The short
          * answer is that it sort of works. Need a proper constrained optimizer
-         * here in the future.
+         * here in the future. (UPDATE: done with Matlab below)
          *
          * 3. Want to extend to using normal distributions instead of point
          * masses to get smooth CDFs
@@ -285,27 +285,28 @@ public class LogitRCMomentSpecification implements MomentSpecification {
          * collinearity of the predicted models as you add more and more points
          *
          * 5. Need to connect the X's that the tree splits on to automate the RC
-         * testing / estimation procedure
+         * testing / estimation procedure (UPDATE: done)
          */
         // to point 5 above, query the moment forest to see which variables
         // are ever split on
         boolean rcDetected = false;
         
         ArrayList<Integer> rcVarIndices = new ArrayList<>();
-        double[] countSplitVariables = myForest.getCountSplitVariables();
+        double[] countSplitVariables = myForest.getNumberTimesTreesInForestSplitOnAGivenVariableIndex();
         System.out.print("Detected random coefficients on following X indices: ");
         for (int i = 0; i < countSplitVariables.length; i++) {
             if (countSplitVariables[i] > 0) {
                 rcDetected = true;
                 rcVarIndices.add(i);
-                System.out.print(i + " " + countSplitVariables[i]);
+                System.out.print(i + " " + countSplitVariables[i]+"; ");
             }
         }
         System.out.println("");
         
-
-        if (rcDetected) {
-            DeconvolutionSolver desolve = new DeconvolutionSolver(testY, testX, this, rcVarIndices);
+        if (rcDetected && 1==2) {
+            // why am I estimating weights on test data? should estimate them on main data, use test for OOS evaluation
+            // DeconvolutionSolver desolve = new DeconvolutionSolver(testY, testX, this, rcVarIndices);
+            DeconvolutionSolver desolve = new DeconvolutionSolver(getY(), getX(), this, rcVarIndices);
             desolve.solve();
             ArrayList<double[]> betaList = desolve.getBetaList();
             double[] betaWeights = desolve.getBetaWeights();
@@ -364,6 +365,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
                         beta.set(j, 0, betaList.get(r)[j]);
                     }
                     fittedShare += betaWeights[r] * LogitRCDataGenerator.getLogitShare(xi, beta);
+                    // fittedShare += (1.0/betaList.size()) * LogitRCDataGenerator.getLogitShare(xi, beta); // deliberately wrong to see how this shifts (answer: it break like it should)
                 }
                 System.out.format("Y: %.4f Fitted: %.4f %n", testY.get(i, 0), fittedShare);
             }
@@ -535,7 +537,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
 
     @Override
     public int getNumParams() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return 2;
     }
 
 }

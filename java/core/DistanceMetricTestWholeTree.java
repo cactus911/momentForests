@@ -292,7 +292,11 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
          * now for the linear case, need to come back to this and figure this
          * out in general when we have broader cases)
          */
-        int K = v.get(0).getX().getColumnDimension();
+        if(v.get(0).getX().getColumnDimension()!=spec.getNumParams()) {
+            System.out.println("DistanceMetricTestWholeTree.java:296 Use of specification getNumParams gives different answer than previous hardwired columnDimension!");
+            System.exit(0);
+        }
+        int K = spec.getNumParams(); // v.get(0).getX().getColumnDimension();
 
         double SSE = 0;
 

@@ -361,7 +361,9 @@ public class ContainerLogitRC extends ContainerMoment implements Uncmin_methods 
 
     @Override
     public double computeMeasureOfFit(Matrix beta) {
-        return computeLLH(beta);
+        // return computeLLH(beta);
+        // should this work?
+        return getMomentFunctionValue(beta);
     }
 
     @Override

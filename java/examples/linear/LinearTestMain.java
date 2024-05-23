@@ -101,7 +101,7 @@ public class LinearTestMain {
         int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 100000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 800000; numObs *= 2) {
 
                 double YMSE_unrestricted = 0;
                 double YMSE_SD_unrestricted = 0;
@@ -165,8 +165,8 @@ public class LinearTestMain {
 
                     AtomicInteger bomb = new AtomicInteger();
 
-                    parallelLTM.parallelStream().forEach(e -> {
-                        // parallelLTM.stream().forEach(e -> {
+                    // parallelLTM.parallelStream().forEach(e -> {
+                        parallelLTM.stream().forEach(e -> {
                         e.execute();
                         bomb.incrementAndGet();
                         System.out.println("Finished " + bomb.get() + " iterations.");
@@ -275,7 +275,7 @@ public class LinearTestMain {
 
                         Jama.Matrix avgParametricParameters = new Jama.Matrix(dimX, 1);
                         for (LinearTestMain m : parallelLTM) {
-                            avgParametricParameters.plusEquals(m.getParametricParameters());
+                            avgParametricParameters.plusEquals(m.getParametricParameters()); 
                         }
                         avgParametricParameters.timesEquals(1.0 / parallelLTM.size());
                         for (int i = 0; i < avgParametricParameters.getRowDimension(); i++) {
@@ -355,8 +355,13 @@ public class LinearTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        computeOutOfSampleNonparametricFits(mySpecification, rngBaseSeedOutOfSample);
-        computeOutOfSampleParametricFits(mySpecification, rngBaseSeedOutOfSample);
+        boolean computeAlternatives = true;
+        if (computeAlternatives) {
+            System.out.println("Computing nonparametric fits...");
+            computeOutOfSampleNonparametricFits(mySpecification, rngBaseSeedOutOfSample);
+            System.out.println("Computing completely parametric fits...");
+            computeOutOfSampleParametricFits(mySpecification, rngBaseSeedOutOfSample);
+        }
 
         // partial linear model results from CV:
         // 500: 50, 10, 2
@@ -370,7 +375,7 @@ public class LinearTestMain {
             }
 
             // for (int minObservationsPerLeaf = numObs/10; minObservationsPerLeaf <= 4 * numObs/10; minObservationsPerLeaf *= 2) {
-            for (int minObservationsPerLeaf = 2; minObservationsPerLeaf <= 2; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
                 // for (double minImprovement = 0.1; minImprovement <= 10.0; minImprovement *= 10) {
                 double[] improvementLevels = {0}; // 0.1, 0.5, 1.0}; // {1, 5, 10, 20}; // , 10.0, 20.0};
                 for (double minImprovement : improvementLevels) {
@@ -416,8 +421,8 @@ public class LinearTestMain {
             }
 
             bestMinObservationsPerLeaf = 50;
-            bestMinImprovement = 10.0;
-            bestMaxDepth = 1;
+            bestMinImprovement = 100.0;
+            bestMaxDepth = 4;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -440,13 +445,17 @@ public class LinearTestMain {
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
             myForest.setTreeOptions(cvOptions);
+            System.out.println("Growing forest for homogeneity testing...");
             myForest.growForest();
             System.out.println("----- Call to testHomogeneity -----");
             myForest.testHomogeneity();
 
             ArrayList<Integer> hpl = new ArrayList<>();
             ArrayList<Double> hplStartingValues = new ArrayList<>();
-            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt);
+
+            boolean verboseVoting = true;
+            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, verboseVoting);
+
             double[] startingValues = myForest.getHomogeneityStartingValues();
             for (int i = 0; i < voteIndexHomogeneity.length; i++) {
                 if (voteIndexHomogeneity[i]) {
@@ -473,7 +482,7 @@ public class LinearTestMain {
             }
             setHomogeneousParameterList(hpl);
 
-            boolean executeSearch = true;
+            boolean executeSearch = false;
 
             /**
              * Estimate values of those homogeneous parameters
@@ -525,9 +534,11 @@ public class LinearTestMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        numberTreesInForest = 100; // using larger numbers here really improves fit!
+        System.out.println("Computing final trees...");
+        numberTreesInForest = 50; // using larger numbers here really improves fit!
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
+        System.out.println("Finished execute.");
     }
 
     public double getEstimatedBetaVersusTruthMSE() {
