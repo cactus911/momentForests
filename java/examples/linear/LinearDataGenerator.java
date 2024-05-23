@@ -34,8 +34,8 @@ public class LinearDataGenerator {
                 X.set(i, k, Math.pow(normal.inverse(rng.nextDouble()), 2));
             }
 
-            Z.set(i, 0, normal.inverse(rng.nextDouble()));
-            // Z.set(i, 0, -6.0 + 10.0 * rng.nextDouble()); // uniform [-6,4]
+            // Z.set(i, 0, normal.inverse(rng.nextDouble()));
+            Z.set(i, 0, -3.0 + 6.0 * rng.nextDouble()); // uniform [-6,4]
             Z.set(i, 1, rng.nextDouble());
 
             double draw = rng.nextDouble();

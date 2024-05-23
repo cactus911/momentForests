@@ -53,7 +53,7 @@ public class LinearMomentSpecification implements MomentSpecification {
     String filename;
     boolean MONTE_CARLO = true;
 
-    int dimensionX = 5;
+    int dimensionX;
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -69,7 +69,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         // all these indices are hard-coded; want to change that down the road!
         homogeneityIndex = new boolean[dimensionX];
         homogeneousParameterVector = new Jama.Matrix(dimensionX, 1);
-        resetHomogeneityIndex();
+        resetHomogeneityIndex(); 
         int[] vsi = {0, 1, 2}; //Search over z1, z2, z3 
         Boolean[] wvd = {false, false, true}; // z1, z2 continuous, z3 discrete
         variableSearchIndex = vsi;

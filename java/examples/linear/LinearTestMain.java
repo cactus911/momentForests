@@ -25,6 +25,8 @@ package examples.linear;
 
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
+import com.google.common.math.Quantiles;
+import core.ChartGenerator;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
@@ -39,6 +41,8 @@ import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -101,7 +105,7 @@ public class LinearTestMain {
         int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 800000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 100000; numObs *= 2) {
 
                 double YMSE_unrestricted = 0;
                 double YMSE_SD_unrestricted = 0;
@@ -124,8 +128,8 @@ public class LinearTestMain {
 
                 JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-                boolean[] d = {false};
-                // boolean[] d = {false, true};
+                // boolean[] d = {false};
+                boolean[] d = {false, true};
 
                 for (boolean detectHomogeneity : d) {
                     // boolean detectHomogeneity = !true;
@@ -301,6 +305,7 @@ public class LinearTestMain {
         this.numObs = numObs;
         this.detectHomogeneity = detectHomogeneity;
         this.dimX = dimX;
+        parametricParameters = new Jama.Matrix(dimX, 1);
     }
 
     private void publish(String s, JTextArea jelly) {
@@ -335,7 +340,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 10;
+        int numberTreesInForest = 50;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -355,7 +360,7 @@ public class LinearTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean computeAlternatives = true;
+        boolean computeAlternatives = false;
         if (computeAlternatives) {
             System.out.println("Computing nonparametric fits...");
             computeOutOfSampleNonparametricFits(mySpecification, rngBaseSeedOutOfSample);
@@ -366,7 +371,7 @@ public class LinearTestMain {
         // partial linear model results from CV:
         // 500: 50, 10, 2
         // 
-        boolean runCV = true;
+        boolean runCV = false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -375,11 +380,12 @@ public class LinearTestMain {
             }
 
             // for (int minObservationsPerLeaf = numObs/10; minObservationsPerLeaf <= 4 * numObs/10; minObservationsPerLeaf *= 2) {
-            for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 25; minObservationsPerLeaf *= 2) {
                 // for (double minImprovement = 0.1; minImprovement <= 10.0; minImprovement *= 10) {
-                double[] improvementLevels = {0}; // 0.1, 0.5, 1.0}; // {1, 5, 10, 20}; // , 10.0, 20.0};
+                double[] improvementLevels = {2}; // {1,2,5,10}; // , 10, 20, 50}; // 0.1, 0.5, 1.0}; // {1, 5, 10, 20}; // , 10.0, 20.0};
                 for (double minImprovement : improvementLevels) {
-                    for (int maxDepth = Math.min(5, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 0; maxDepth--) {
+                    // for (int maxDepth = Math.min(5, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 0; maxDepth--) {
+                    for (int maxDepth = 8; maxDepth >= 0; maxDepth--) {
                         computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
                         double combinationMSE = outOfSampleYMSE;
                         String star = "";
@@ -400,7 +406,7 @@ public class LinearTestMain {
 
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             // jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth+"\n");
-            if (numberTreesInForest == 1) {
+            if (numberTreesInForest == 10) {
                 // jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
             }
 
@@ -420,9 +426,9 @@ public class LinearTestMain {
                 bestMaxDepth = 5;
             }
 
-            bestMinObservationsPerLeaf = 50;
-            bestMinImprovement = 100.0;
-            bestMaxDepth = 4;
+            bestMinObservationsPerLeaf = 10;
+            bestMinImprovement = 5.0;
+            bestMaxDepth = 6;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -535,7 +541,8 @@ public class LinearTestMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         System.out.println("Computing final trees...");
-        numberTreesInForest = 50; // using larger numbers here really improves fit!
+        numberTreesInForest = 10; // using larger numbers here really improves fit!
+        verbose = false;
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
         System.out.println("Finished execute.");
@@ -676,18 +683,36 @@ public class LinearTestMain {
         Random rng = new Random(rngBaseSeedOutOfSample - 3);
 
         double outOfSampleFit = 0;
+        
+        XYSeries betaTruthXY = new XYSeries("True Beta");
+        XYSeries betaEstimateXY = new XYSeries("Estimated Beta");
+        XYSeries betaEstimateXY5 = new XYSeries("Estimated Beta 5th Percentile");
+        XYSeries betaEstimateXY95 = new XYSeries("Estimated Beta 95th Percentile");
 
         outOfSampleYMSE = 0;
         for (int i = 0; i < testZ.getRowDimension(); i++) {
             Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
+            
+            // zi.set(0, 0, -1.5 + i * 1.0 / (testZ.getRowDimension()));
+            
             Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
             double yi = testY.get(i, 0);
 
-            // going to compare directly to the true parameter vector in this method instead of using fit of Y
             Jama.Matrix bTruth = mySpecification.getBetaTruth(zi, rng);
-
+            betaTruthXY.add(zi.get(0,0), bTruth.get(0,0));
+            
             // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
             Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+            ArrayList<Jama.Matrix> allParametersInForest = myForest.getAllEstimatedParametersFromForest(zi);
+            
+            ArrayList<Double> betaZeroList = new ArrayList<>();
+            for(int k=0;k<allParametersInForest.size();k++) {
+                betaZeroList.add(allParametersInForest.get(k).get(0,0));
+            }
+            betaEstimateXY5.add(zi.get(0,0), Quantiles.percentiles().index(5).compute(betaZeroList));
+            betaEstimateXY95.add(zi.get(0,0), Quantiles.percentiles().index(95).compute(betaZeroList));
+            
+            betaEstimateXY.add(zi.get(0,0), compositeEstimatedBeta.get(0,0));
             if (i == 0 && 1 == 2) {
                 jt.append("Composite beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + "\n");
             }
@@ -713,10 +738,12 @@ public class LinearTestMain {
             outOfSampleFit += pmUtility.sumSquaredElements((compositeEstimatedBeta.minus(bTruth)));
         }
 
-        // ok, is there some way that i could do a nonparametric regression here to compare?
-        // just compute the conditional expectation using Nadaraya-Watson estimator
-        // look at the outOfSampleFit from that?
-        // ChartGenerator.makeXYScatter(xyc, "Fit Beta", "zi", "beta");
+        XYSeriesCollection xyc = new XYSeriesCollection(betaTruthXY);
+        xyc.addSeries(betaEstimateXY);
+        // xyc.addSeries(betaEstimateXY5);
+        // xyc.addSeries(betaEstimateXY95);
+        
+        ChartGenerator.makeXYScatter(xyc, "Fit Beta", "zi", "beta");
         // jt.append("betaMSE: " + (outOfSampleFit / testZ.getRowDimension()) + " \t [" + rngSeed + "]\n");
         outOfSampleYMSE /= testZ.getRowDimension();
         // System.out.println("Forest MSE(Y): "+outOfSampleYMSE+" MSE(beta): "+outOfSampleFit/testZ.getRowDimension());

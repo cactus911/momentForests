@@ -884,10 +884,12 @@ public class TreeMoment {
     public Jama.Matrix getEstimatedBeta(Jama.Matrix zi) {
         if (terminal) {
             // return the treatment effect for this z_i, not the predicted y_i
+            // System.out.println("GEB "+zi.get(0,0)+" "+betaEstimateNode.get(0, 0));
             return betaEstimateNode;
         } else // use rule to figure out whether to return left or right node's value
         // this will keep going down the rabbit hole until it returns a terminal node's value
         // kind of cool how this works!
+            // System.out.println("Rule is "+getRule()+" decision to go left is: "+getRule().isLeft(zi));
         if (getRule().isLeft(zi)) {
             return childLeft.getEstimatedBeta(zi);
         } else {

@@ -122,16 +122,27 @@ public class MomentForest {
      */
     public Jama.Matrix getEstimatedParameterForest(Jama.Matrix zi) {
         Jama.Matrix estimatedParameters = forest.get(0).getEstimatedBeta(zi);
-//        String s = "[ " + forest.get(0).getEstimatedBeta(zi).get(0, 0) + " "; //Assuming beta is 1 by 1?
+        // String s = "[ " + forest.get(0).getEstimatedBeta(zi).get(0, 0) + " "; //Assuming beta is 1 by 1?
         for (int i = 1; i < forest.size(); i++) {
             estimatedParameters = estimatedParameters.plus(forest.get(i).getEstimatedBeta(zi));
-//            s = s.concat(forest.get(i).getEstimatedBeta(zi).get(0, 0) + " ");
+            // s = s.concat(forest.get(i).getEstimatedBeta(zi).get(0, 0) + " ");
         }
-//        s = s.concat("]");
-//        System.out.println(s);
+        // s = s.concat("]");
+        // System.out.println(s);
 //        System.exit(0);
+        if (forest.size() == 1) {
+            System.out.println(zi.get(0, 0) + " " + estimatedParameters.get(0, 0));
+        }
         estimatedParameters.timesEquals(1.0 / forest.size());
         return estimatedParameters;
+    }
+
+    public ArrayList<Jama.Matrix> getAllEstimatedParametersFromForest(Jama.Matrix zi) {
+        ArrayList<Jama.Matrix> parameterList = new ArrayList<>();
+        for (int i = 0; i < forest.size(); i++) {
+            parameterList.add(forest.get(i).getEstimatedBeta(zi));
+        }
+        return parameterList;
     }
 
     public int getForestSize() {
@@ -158,7 +169,7 @@ public class MomentForest {
     }
 
     public boolean[] getHomogeneityVotes(JTextArea jt, boolean verboseVoting) {
-        
+
         int[] voteCounts = new int[spec.getHomogeneousIndex().length];
         for (int i = 0; i < numberTreesInForest; i++) {
             ArrayList<Integer> hpl = getTree(i).getIndexHomogeneousParameters();
@@ -181,7 +192,7 @@ public class MomentForest {
             }
             double pct = 100.0 * voteCounts[i] / numberTreesInForest;
             if (verboseVoting) {
-                jt.append(i + ". votes: " + voteCounts[i] + " out of " + numberTreesInForest + " (" + pct + "): "+votes[i]+"\n");
+                jt.append(i + ". votes: " + voteCounts[i] + " out of " + numberTreesInForest + " (" + pct + "): " + votes[i] + "\n");
             }
             if (voteCounts[i] < numberTreesInForest) {
                 // System.out.println("Detected variance in voting on parameter "+i+": "+voteCounts[i]);
