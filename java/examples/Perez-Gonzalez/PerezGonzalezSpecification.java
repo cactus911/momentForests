@@ -56,7 +56,7 @@ public class PerezGonzalezSpecification implements MomentSpecification {
 
     DataLens outSampleLens;
     // NEED TO UPDATE
-    String[] varNames = {"constant", "D", "mpreuxs", "uxs_opass", "uxs_mb", "lnsale", "bown", "highfamd", "year"};
+    String[] varNames = {"constant", "mpreuxs", "uxs_opass", "uxs_mb", "lnsale", "bown", "highfamd", "year"};
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -93,26 +93,23 @@ public class PerezGonzalezSpecification implements MomentSpecification {
          *
          * 0. constant
          *
-         * 1. dummy=1 if new CEO is related to founder, large shareholder or preceding CEO
+         * 1. mean pre-transition xs_opass
          *
-         * 2. mean pre-transition xs_opass
-         *
-         * 3. industry adjusted opass
+         * 2. industry adjusted opass
          * 
-         * 4. industry adjusted mb
+         * 3. industry adjusted mb
          *
-         * 5. log of sales
+         * 4. log of sales
          *
-         * 6. ownership of officers and directors
+         * 5. ownership of officers and directors
          *
-         * 7. dummy=1 if % of family members in board > median of the firms in the sample
+         * 6. dummy=1 if % of family members in board > median of the firms in the sample
          *
-         * 8. year, categorical
+         * 7. year, categorical
          *
          */
-        int[] vsi = {1, 2, 3, 4, 5, 6, 7}; //no splitting on year
+	    int[] vsi = {1, 2, 3, 4, 5, 6}; 
         Boolean[] wvd = {false,
-            true, 
             false, 
             false, 
             false, 
@@ -402,11 +399,8 @@ public class PerezGonzalezSpecification implements MomentSpecification {
             
             // NEED TO UPDATE
             // Let Z be all the variables in X except D
-            //Z = dX.copy();
-            //Something about this code is crashing my memory
-            //Running with all nine columns is better than a subset of them?
+            //Z = dX.copy();  
             Z = pmUtility.getColumn(dX, 0);
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 1)); 
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 2)); 
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 3)); 
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 4)); 
@@ -448,7 +442,12 @@ public class PerezGonzalezSpecification implements MomentSpecification {
     
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-        return "Group " + fixedEffectIndex;
+        //return "Group " + fixedEffectIndex;
+        if (variableIndex == 7) {
+            String[] year = {"1980", "1981", "1982", "1983", "1984", "1985", "1986", "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995", "1996", "1997", "1998", "1999"};
+            return year[fixedEffectIndex-1];
+        }
+        return varNames[variableIndex] + " " + fixedEffectIndex;
     }
     
     @Override

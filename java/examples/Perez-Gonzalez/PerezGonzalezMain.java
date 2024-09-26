@@ -80,7 +80,7 @@ public class PerezGonzalezMain {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecification mySpecification = new PerezGonzalezSpecification("src/test.csv");
+        MomentSpecification mySpecification = new PerezGonzalezSpecification("src/mb1.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -116,9 +116,9 @@ public class PerezGonzalezMain {
                 System.out.println("************************");
             }
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.2; minImprovement <= 10; minImprovement *= 2) {
-                    for (int maxDepth = 1; maxDepth <= 6; maxDepth++) {
+            for (int minObservationsPerLeaf = 20; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.1; minImprovement <= 10; minImprovement *= 2) {
+                    for (int maxDepth = 1; maxDepth <= 5; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
