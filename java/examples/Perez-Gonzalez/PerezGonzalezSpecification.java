@@ -56,7 +56,7 @@ public class PerezGonzalezSpecification implements MomentSpecification {
 
     DataLens outSampleLens;
     // NEED TO UPDATE
-    String[] varNames = {"constant", "D", "W1", "W2", "W3", "W4", "W5", "W6", "W7"};
+    String[] varNames = {"constant", "D", "mpreuxs", "uxs_opass", "uxs_mb", "lnsale", "bown", "highfamd", "year"};
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -110,7 +110,7 @@ public class PerezGonzalezSpecification implements MomentSpecification {
          * 8. year, categorical
          *
          */
-        int[] vsi = {1, 2, 3, 4, 5, 6, 7};
+        int[] vsi = {1, 2, 3, 4, 5, 6, 7}; //no splitting on year
         Boolean[] wvd = {false,
             true, 
             false, 
@@ -316,11 +316,8 @@ public class PerezGonzalezSpecification implements MomentSpecification {
             }
             
             // NEED TO UPDATE
-            // going to pull a subset of loaded X's to use in base linear model
+            //X = pmUtility.getColumn(dX, 0); // constant
             X = pmUtility.getColumn(dX, 1); // D
-
-            // when this is just a constant, we have the standard regression tree
-            // the S&S specification has all of these variables in it
             /*
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); 
@@ -404,8 +401,20 @@ public class PerezGonzalezSpecification implements MomentSpecification {
             System.out.println("Mean of Y: " + pmUtility.mean(Y, 0));
             
             // NEED TO UPDATE
-            Z = dX.copy();
-
+            // Let Z be all the variables in X except D
+            //Z = dX.copy();
+            //Something about this code is crashing my memory
+            //Running with all nine columns is better than a subset of them?
+            Z = pmUtility.getColumn(dX, 0);
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 1)); 
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 2)); 
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 3)); 
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 4)); 
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 5)); 
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 6)); 
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 7)); 
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 8));
+            
             // can split these into in-sample and out-of-sample here
             int cutoff = (int) Math.round(X.getRowDimension() * 0.9);
 
@@ -429,6 +438,7 @@ public class PerezGonzalezSpecification implements MomentSpecification {
         // System.exit(0);
 //        pmUtility.prettyPrint(pmUtility.concatMatrix(Y,pmUtility.concatMatrix(X,Z)));
 //        System.exit(0);
+
     }
 
     @Override

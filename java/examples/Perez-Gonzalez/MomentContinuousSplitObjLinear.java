@@ -54,8 +54,6 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
 
     @Override
     public int getEffectiveNumObsLeft() {
-        // in the rct context, care about the minimum of count of 0's and 1's in each partition
-        // here, total N is fine
         return numObsLeft;
     }
 

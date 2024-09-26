@@ -80,7 +80,7 @@ public class PerezGonzalezMain {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecification mySpecification = new PerezGonzalezSpecification("src/oroa1.csv");
+        MomentSpecification mySpecification = new PerezGonzalezSpecification("src/test.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -96,7 +96,7 @@ public class PerezGonzalezMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 5;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -107,7 +107,7 @@ public class PerezGonzalezMain {
 
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
-
+        
         boolean runCV = !false;
         if (runCV) {
             if (verbose) {
@@ -115,16 +115,14 @@ public class PerezGonzalezMain {
                 System.out.println("* Run Cross-Validation *");
                 System.out.println("************************");
             }
-
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
             for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 2.5; minImprovement <= 60; minImprovement *= 2) {
-                    for (int maxDepth = 1; maxDepth <= 5; maxDepth++) {
+                for (double minImprovement = 0.2; minImprovement <= 10; minImprovement *= 2) {
+                    for (int maxDepth = 1; maxDepth <= 6; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
             }
-
             cvList.parallelStream().forEach(s -> {
                 s.computeOutOfSampleMSE();
             });
@@ -163,7 +161,6 @@ public class PerezGonzalezMain {
             bestMinImprovement = 5.0;
             bestMaxDepth = 3; // 4 lead to a decrease in OOS fit! this is the 20 percent sample
         }
-        
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity && 1 == 1) {
             if (verbose) {
@@ -242,7 +239,7 @@ public class PerezGonzalezMain {
              */
             if (!hpl.isEmpty()) {
                 System.out.println("Initializing search container");
-                numberTreesInForest = 10;
+                numberTreesInForest = 50;
                 HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                         getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                 System.out.println("Calling execute search");
@@ -263,20 +260,18 @@ public class PerezGonzalezMain {
                 }
                 setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
             }
-            System.out.print("Test 5");
         }
-        System.out.print("Test 6");
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 48;
+        numberTreesInForest = 50;
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
         fitStats.computeOutOfSampleMSE();
         double outOfSampleFit = fitStats.getMSE();
 
-        System.out.println("Out of sample MSE: " + outOfSampleFit);
+        System.out.println("Out of sample SSE: " + outOfSampleFit);
 
         System.out.println("Number of trees in forest: "+numberTreesInForest);
         System.out.println("Forest split on the following variables:");
@@ -383,6 +378,7 @@ public class PerezGonzalezMain {
             }
             inSampleFit /= mySpecification.getZ().getRowDimension();
             
+            // NEED TO UPDATE
             generatePlots = false;
             if (generatePlots) {
                 /**

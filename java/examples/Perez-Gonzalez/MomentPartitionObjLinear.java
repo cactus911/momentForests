@@ -68,11 +68,6 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        /**
-         * RCT regresses outcome on indicator for treatment; there are no X's
-         * There is a constant, and we measure the coefficient on the W
-         * So in this implementation just use the first column to get OLS fits and errors, etc.
-         */
         ContainerLinear leftLinear = new ContainerLinear(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
         ContainerLinear rightLinear = new ContainerLinear(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
         
