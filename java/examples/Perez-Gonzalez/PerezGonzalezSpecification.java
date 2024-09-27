@@ -68,17 +68,7 @@ public class PerezGonzalezSpecification implements MomentSpecification {
         this.filename = filename;
 
         // what specification am i going to use here?
-        // y = x'b + h(t) + e
-        // the baseline models is going to be y = \alpha + \beta' X + \epsilon
-        // we are going to let Z = X
-        // if we don't split, then we have OLS for the whole sample
-        // if we have NP component on some X, then we keep splitting on X over and over again
-        // will we have interaction of X with \beta'X though? is that weird?
-        // we'll grow the unrestricted tree, detect the homogeneous parameters, then let the tree
-        // go to town holding those fixed across leaves; should work
-        // observation: fixed effects don't need to be in the OLS baseline model
-        // as long as an intercept is there and we allow the tree to split on those categorical variables as Z's
-        // we can build the fixed effects within the estimator
+        // y = alpha(z) + gamma(z) * D + epsilon
         loadData(787);
 
         homogeneityIndex = new boolean[X.getColumnDimension()];
@@ -158,8 +148,7 @@ public class PerezGonzalezSpecification implements MomentSpecification {
     @Override
     public Double getPredictedY(Matrix xi, Jama.Matrix beta, Random rng) {
         /**
-         * This may have to be adjusted when we impose homogeneity, depending on
-         * what this is used for
+         * This may have to be adjusted when we impose homogeneity, depending on what this is used for
          */
         // pmUtility.prettyPrint(xi);
         if (beta != null) {
@@ -313,10 +302,9 @@ public class PerezGonzalezSpecification implements MomentSpecification {
             }
             
             // NEED TO UPDATE
-            //X = pmUtility.getColumn(dX, 0); // constant
-            X = pmUtility.getColumn(dX, 1); // D
+            X = pmUtility.getColumn(dX, 0); // constant
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // D
             /*
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); 

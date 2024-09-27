@@ -80,7 +80,7 @@ public class PerezGonzalezMain {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecification mySpecification = new PerezGonzalezSpecification("src/mb1.csv");
+        MomentSpecification mySpecification = new PerezGonzalezSpecification("src/oroa1.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -96,19 +96,19 @@ public class PerezGonzalezMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 5;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
          * Initialize the moment forest
          */
-        boolean verbose = !true;
+        boolean verbose = true;
         boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
         
-        boolean runCV = !false;
+        boolean runCV = !true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -117,8 +117,8 @@ public class PerezGonzalezMain {
             }
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
             for (int minObservationsPerLeaf = 20; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.1; minImprovement <= 10; minImprovement *= 2) {
-                    for (int maxDepth = 1; maxDepth <= 5; maxDepth++) {
+                for (double minImprovement = 0.0001; minImprovement <= 10; minImprovement *= 2) {
+                    for (int maxDepth = 1; maxDepth <= 7; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -157,9 +157,9 @@ public class PerezGonzalezMain {
             jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
             jt.append("Best in-sample fit: "+minInSampleFit);
         } else {
-            bestMinObservationsPerLeaf = 500;
-            bestMinImprovement = 5.0;
-            bestMaxDepth = 3; // 4 lead to a decrease in OOS fit! this is the 20 percent sample
+            bestMinObservationsPerLeaf = 20;
+            bestMinImprovement = 0.0064;
+            bestMaxDepth = 5; 
         }
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity && 1 == 1) {
@@ -239,7 +239,7 @@ public class PerezGonzalezMain {
              */
             if (!hpl.isEmpty()) {
                 System.out.println("Initializing search container");
-                numberTreesInForest = 50;
+                numberTreesInForest = 1;
                 HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                         getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                 System.out.println("Calling execute search");
@@ -261,21 +261,28 @@ public class PerezGonzalezMain {
                 setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
             }
         }
+        
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 50;
-        computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
-                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
+        numberTreesInForest = 1;
+        computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, false, bestMinObservationsPerLeaf,
+                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);  
         fitStats.computeOutOfSampleMSE();
         double outOfSampleFit = fitStats.getMSE();
 
+        System.out.println("Best minimum observations in leaf: " + bestMinObservationsPerLeaf);
+        System.out.println("Best minimum improvement: " + bestMinImprovement);
+        System.out.println("Best maximum depth: " + bestMaxDepth);
+        
         System.out.println("Out of sample SSE: " + outOfSampleFit);
-
         System.out.println("Number of trees in forest: "+numberTreesInForest);
-        System.out.println("Forest split on the following variables:");
+        
         double[] countVariableSplitsInForest = fitStats.getSplitVariables();
+        System.out.println("Number of split variables: " + countVariableSplitsInForest.length);
+    
+        System.out.println("Forest split on the following variables:");
         for (int i = 0; i < countVariableSplitsInForest.length; i++) {
             if (countVariableSplitsInForest[i] > 0) {
                 System.out.format("%20s [%.2f%%] %n", mySpecification.getVariableName(i), 100.0 * countVariableSplitsInForest[i] / numberTreesInForest);
@@ -345,7 +352,6 @@ public class PerezGonzalezMain {
              * Grow the moment forest
              */
             myForest.growForest();
-
             myForest.getTree(0).printTree();
             /**
              * Test vectors for assessment
@@ -365,19 +371,18 @@ public class PerezGonzalezMain {
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
                 outOfSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
             }
-            
+
             inSampleFit = 0;
             for (int i = 0; i < mySpecification.getZ().getRowDimension(); i++) {
                 Jama.Matrix zi = mySpecification.getZ().getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
                 Jama.Matrix xi = mySpecification.getX().getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
                 double yi = mySpecification.getY().get(i, 0);
-
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
                 inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
             }
             inSampleFit /= mySpecification.getZ().getRowDimension();
-            
+
             // NEED TO UPDATE
             generatePlots = false;
             if (generatePlots) {
