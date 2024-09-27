@@ -108,7 +108,7 @@ public class PerezGonzalezMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
         
-        boolean runCV = !true;
+        boolean runCV = true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -117,7 +117,7 @@ public class PerezGonzalezMain {
             }
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
             for (int minObservationsPerLeaf = 20; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.0001; minImprovement <= 10; minImprovement *= 2) {
+                for (double minImprovement = 0.001; minImprovement <= 10; minImprovement *= 2) {
                     for (int maxDepth = 1; maxDepth <= 7; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
@@ -356,7 +356,8 @@ public class PerezGonzalezMain {
             /**
              * Test vectors for assessment
              */
-            DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+            // NEED TO UPDATE
+            DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(33, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
             Jama.Matrix testZ = oosDataLens.getZ();
             Jama.Matrix testX = oosDataLens.getX();
             Jama.Matrix testY = oosDataLens.getY();
