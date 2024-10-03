@@ -116,9 +116,9 @@ public class PerezGonzalezMain {
                 System.out.println("************************");
             }
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 10; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.001; minImprovement <= 10; minImprovement *= 2) {
-                    for (int maxDepth = 1; maxDepth <= 7; maxDepth++) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.001; minImprovement <= 1; minImprovement *= 10) {
+                    for (int maxDepth = 2; maxDepth <= 7; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -157,9 +157,9 @@ public class PerezGonzalezMain {
             jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
             jt.append("Best in-sample fit: "+minInSampleFit);
         } else {
-            bestMinObservationsPerLeaf = 20;
-            bestMinImprovement = 0.0064;
-            bestMaxDepth = 5; 
+            bestMinObservationsPerLeaf = 10;
+            bestMinImprovement = 0.002;
+            bestMaxDepth = 1; 
         }
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity && 1 == 1) {
@@ -175,7 +175,7 @@ public class PerezGonzalezMain {
 
             DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
-            testParameterHomogeneity = false;
+            testParameterHomogeneity = true;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
             MomentForest myForest = new MomentForest(mySpecification, 1, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
 
@@ -199,23 +199,10 @@ public class PerezGonzalezMain {
                     hpl.add(i);
                     hplStartingValues.add(startingValues[i]);
                 }
-//                if(i==0 && !voteIndexHomogeneity[i]) {
-//                    jt.append("BAD SEED: "+rngSeed+"\n");
-//                }
             }
-
-//            TreeMoment loblolly = myForest.getTree(0);
-//            loblolly.testHomogeneity();
-//
-//            // System.out.println("Done with growforest");
-//            ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
-//            ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
-//            // System.out.println("Post get homogeneous parameters");
 
             HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
             sorter.sort(hpl, hplStartingValues);
-            // Collections.sort(hpl); // ensure that indices are ascending (this can cause some weird problems elsewhere due to my bad coding skills if not)
-            // Collections.sort(hplStartingValues);
             mySpecification.resetHomogeneityIndex();
             for (int i = 0; i < hpl.size(); i++) {
                 mySpecification.setHomogeneousIndex(hpl.get(i));
@@ -239,7 +226,7 @@ public class PerezGonzalezMain {
              */
             if (!hpl.isEmpty()) {
                 System.out.println("Initializing search container");
-                numberTreesInForest = 1;
+                numberTreesInForest = 50;
                 HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                         getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                 System.out.println("Calling execute search");
@@ -260,14 +247,15 @@ public class PerezGonzalezMain {
                 }
                 setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
             }
+            
         }
         
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 1;
-        computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, false, bestMinObservationsPerLeaf,
+        numberTreesInForest = 50;
+        computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);  
         fitStats.computeOutOfSampleMSE();
         double outOfSampleFit = fitStats.getMSE();
