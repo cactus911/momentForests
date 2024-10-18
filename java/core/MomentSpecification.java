@@ -102,7 +102,11 @@ public interface MomentSpecification {
 
         MomentForest myForest;
 
-        DataLens homogenizedForestLens = new DataLens(getX(), getY(), getZ(), null);
+               
+        DataLens originalDataLens = new DataLens(getX(), getY(), getZ(), null);
+        DataLens[] twoLenses = originalDataLens.randomlySplitSample(0.8, rngBaseSeedOutOfSample);
+        
+        DataLens homogenizedForestLens = twoLenses[0];
 
         myForest = new MomentForest(this, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
         TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
@@ -117,7 +121,8 @@ public interface MomentSpecification {
         /**
          * Test vectors for assessment
          */
-        DataLens oosDataLens = getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        
+        DataLens oosDataLens = twoLenses[1]; // getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
         Jama.Matrix testZ = oosDataLens.getZ();
         Jama.Matrix testX = oosDataLens.getX();
         Jama.Matrix testY = oosDataLens.getY();
@@ -128,16 +133,13 @@ public interface MomentSpecification {
             Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
             Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
 
-            // going to compare directly to the true parameter vector in this method instead of using fit of Y
-            Jama.Matrix bTruth = getBetaTruth(zi, rng);
-
             Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
 
             outOfSampleResultsY += getGoodnessOfFit(testY.get(i, 0), xi, compositeEstimatedBeta);
 
             if (i < 10) {
                 String hString = "[ ";
-                for (int k = 0; k < bTruth.getRowDimension(); k++) {
+                for (int k = 0; k < getNumParams(); k++) {
                     if (getHomogeneousIndex()[k]) {
                         hString = hString + "X ";
                     } else {
@@ -147,28 +149,11 @@ public interface MomentSpecification {
                 hString = hString + "]";
                 System.out.print("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + " "+testY.get(i,0)+" "+getPredictedY(xi, compositeEstimatedBeta, rng)+ "\n");
             }
-            //pmUtility.prettyPrintVector(compositeEstimatedBeta);
-
-            outOfSampleResultsBeta += pmUtility.sumSquaredElements(compositeEstimatedBeta.minus(bTruth));
+            //pmUtility.prettyPrintVector(compositeEstimatedBeta);    
         }
 
-        outOfSampleResultsBeta /= testZ.getRowDimension();
         outOfSampleResultsY /= testZ.getRowDimension();
 
-        boolean manualCheck = false;
-        if (manualCheck) {
-            Jama.Matrix zi = testZ.getMatrix(0, 0, 0, testZ.getColumnDimension() - 1);
-
-            zi.set(0, 0, -1);
-            System.out.print("Forest z1 < 0: ");
-            pmUtility.prettyPrintVector(myForest.getEstimatedParameterForest(zi));
-
-            System.out.print("Forest z1 > 0: ");
-            zi.set(0, 0, 1.0);
-            pmUtility.prettyPrintVector(myForest.getEstimatedParameterForest(zi));
-        }
-
-        // jt.append("betaMSE: " + (outOfSampleFit / testZ.getRowDimension()) + " \t [" + rngSeed + "]\n");
         return new OutOfSampleStatisticsContainer(outOfSampleResultsBeta, outOfSampleResultsY);
     }
 
