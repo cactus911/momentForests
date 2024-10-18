@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.CardIV;
+package examples.Card;
 
 import core.IntegerPartition;
 import core.MomentPartitionObj;
@@ -68,8 +68,8 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerIV leftLinear = new ContainerIV(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
-        ContainerIV rightLinear = new ContainerIV(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
+        ContainerLinear leftLinear = new ContainerLinear(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
+        ContainerLinear rightLinear = new ContainerLinear(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
         
         leftLinear.computeBetaAndErrors();
         rightLinear.computeBetaAndErrors();

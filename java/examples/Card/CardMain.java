@@ -120,7 +120,7 @@ public class CardMain {
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
             for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 400; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 0.01; minImprovement <= 20; minImprovement *= 2) {
-                    for (int maxDepth = 2; maxDepth <= 9; maxDepth++) {
+                    for (int maxDepth = 2; maxDepth <= 11; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -228,7 +228,7 @@ public class CardMain {
              */
             if (!hpl.isEmpty()) {
                 System.out.println("Initializing search container");
-                numberTreesInForest = 50;
+                numberTreesInForest = 2; // 10
                 HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                         getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                 System.out.println("Calling execute search");
@@ -239,6 +239,7 @@ public class CardMain {
                 pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
 
                 int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
+                System.out.print("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
                 Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
                 int counter = 0;
                 for (int k = 0; k < K; k++) {
@@ -248,15 +249,14 @@ public class CardMain {
                     }
                 }
                 setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
-            }
-            
+            }           
         }
         
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = !true;
-        numberTreesInForest = 50;
+        numberTreesInForest = 3; // 50
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);  
         fitStats.computeOutOfSampleMSE();

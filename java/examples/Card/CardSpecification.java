@@ -114,7 +114,7 @@ public class CardSpecification implements MomentSpecification {
          * 15. dummy = 1 if household is a single mother
          *
          */
-	    int[] vsi = {0, 1, 2, 3, 9, 11}; 
+	    int[] vsi = {1, 2, 3, 4, 5, 6, 9, 11}; 
         Boolean[] wvd = {false,
             false, 
             false, 
@@ -356,18 +356,18 @@ public class CardSpecification implements MomentSpecification {
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8));
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8));
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 9)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 10)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 10)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 11)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 12)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15));
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 12)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15));
             
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
