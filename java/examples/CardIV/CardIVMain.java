@@ -80,8 +80,8 @@ public class CardIVMain {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecification mySpecification = new CardIVSpecification("src/table3.csv");
-
+        MomentSpecification mySpecification = new CardIVSpecification("src/IV test.csv");
+                
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
         int bestMaxDepth = 5;
@@ -108,7 +108,7 @@ public class CardIVMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
         
-        boolean runCV = true;
+        boolean runCV = !true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -118,17 +118,18 @@ public class CardIVMain {
             
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 400; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.01; minImprovement <= 20; minImprovement *= 2) {
-                    for (int maxDepth = 2; maxDepth <= 9; maxDepth++) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.01; minImprovement <= 0.1; minImprovement *= 2) {
+                    for (int maxDepth = 2; maxDepth <= 11; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
-            }
+            }         
             cvList.parallelStream().forEach(s -> {
                 s.computeOutOfSampleMSE();
             });
 
+            
             for (computeFitStatistics s : cvList) {
                 double combinationMSE = s.getMSE();
                 String star = "";
@@ -157,12 +158,12 @@ public class CardIVMain {
 
             System.out.println("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
-            jt.append("Best in-sample fit: "+minInSampleFit);
+            jt.append("Best in-sample fit: "+minInSampleFit + "\n");
         } else {
         	// NEED TO UPDATE
             bestMinObservationsPerLeaf = 50;
-            bestMinImprovement = 2.56;
-            bestMaxDepth = 2; 
+            bestMinImprovement = 0.08;
+            bestMaxDepth = 7; 
         }
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity && 1 == 1) {
@@ -175,17 +176,16 @@ public class CardIVMain {
              * Step 2: determine homogeneous parameters post-CV
              */
             double minProportionInEachLeaf = 0.01;
-
             DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
-
+            
             testParameterHomogeneity = true;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
             MomentForest myForest = new MomentForest(mySpecification, 1, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
-
+                             
             myForest.setTreeOptions(cvOptions);
-            myForest.growForest();
-            myForest.testHomogeneity();
-
+            myForest.growForest();                       
+            myForest.testHomogeneity();           
+                              
             ArrayList<Integer> hpl = new ArrayList<>();
             ArrayList<Double> hplStartingValues = new ArrayList<>();
             boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, true);
@@ -329,7 +329,8 @@ public class CardIVMain {
 
             DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
-            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
+            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());           
+            
             TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
             myForest.setTreeOptions(cvOptions);
             /**
@@ -341,10 +342,14 @@ public class CardIVMain {
              * Test vectors for assessment
              */
             // NEED TO UPDATE
-            DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(1500, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+            DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(500, rngBaseSeedOutOfSample); // I think the specification actually does nothing
             Jama.Matrix testZ = oosDataLens.getZ();
-            Jama.Matrix testX = oosDataLens.getX();
-            Jama.Matrix testY = oosDataLens.getY();
+            Jama.Matrix testY = oosDataLens.getY();   
+            Jama.Matrix tempX = oosDataLens.getX();
+            
+            Jama.Matrix testX = tempX.getMatrix(0, tempX.getRowDimension() - 1, 0, tempX.getColumnDimension() - 2); // X without the last column (assuming there is one instrument)
+            Jama.Matrix testI = testX.copy();
+            testI.setMatrix(0, tempX.getRowDimension() - 1, 1, 1, tempX.getMatrix(0, tempX.getRowDimension() - 1, tempX.getColumnDimension() - 1, tempX.getColumnDimension() - 1));
 
             double outOfSampleFit = 0;
             for (int i = 0; i < testZ.getRowDimension(); i++) {
@@ -354,13 +359,14 @@ public class CardIVMain {
 
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
-                outOfSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
-            }
-
-            inSampleFit = 0;
+                outOfSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);               
+            }                   
+            
+            inSampleFit = 0;           
+            Jama.Matrix insampleX = mySpecification.getX().getMatrix(0, mySpecification.getX().getRowDimension() - 1, 0, mySpecification.getX().getColumnDimension() - 2); // X without the last column (assuming there is one instrument)                        
             for (int i = 0; i < mySpecification.getZ().getRowDimension(); i++) {
                 Jama.Matrix zi = mySpecification.getZ().getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
-                Jama.Matrix xi = mySpecification.getX().getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
+                Jama.Matrix xi = insampleX.getMatrix(i, i, 0, insampleX.getColumnDimension() - 1);
                 double yi = mySpecification.getY().get(i, 0);
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);

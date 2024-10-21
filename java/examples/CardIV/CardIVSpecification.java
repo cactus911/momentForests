@@ -44,6 +44,7 @@ import utility.pmUtility;
 public class CardIVSpecification implements MomentSpecification {
 
     Jama.Matrix X;
+    Jama.Matrix I;
     Jama.Matrix Y;
     Jama.Matrix Z;
     Jama.Matrix balancingVector; // is treatment status in the RCT setting
@@ -114,7 +115,7 @@ public class CardIVSpecification implements MomentSpecification {
          * 15. dummy = 1 if household is a single mother
          *
          */
-        int[] vsi = {0, 1, 2, 3, 9, 11}; 
+        int[] vsi = {1, 2, 3}; 
         Boolean[] wvd = {false,
             false, 
             false, 
@@ -148,7 +149,7 @@ public class CardIVSpecification implements MomentSpecification {
 
     @Override
     public int getNumMoments() {
-        return X.getColumnDimension();
+        return X.getColumnDimension() - 1; // For one instrument
     }
 
     @Override
@@ -199,7 +200,7 @@ public class CardIVSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerIV l = new ContainerIV(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
+        ContainerIV l = new ContainerIV(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);             
         l.computeBetaAndErrors();
         return l;
     }
@@ -210,15 +211,20 @@ public class CardIVSpecification implements MomentSpecification {
     }
 
     @Override
-    public Matrix getX() {
-        return X;
-    }
-
-    @Override
     public Matrix getZ() {
         return Z;
     }
 
+    @Override
+    public Matrix getX() {
+        return X;
+    }
+    
+    public Matrix getI() {
+        return I;
+    }
+
+    
     @Override
     public int numberoftrees() {
         return numtrees;
@@ -359,15 +365,15 @@ public class CardIVSpecification implements MomentSpecification {
             X = pmUtility.getColumn(dX, 0);
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8));
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 9)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 9)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 10)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 11)); 
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 11)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 12)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); 
@@ -473,6 +479,7 @@ public class CardIVSpecification implements MomentSpecification {
             X = inSample.getX();
             Y = inSample.getY();
             Z = inSample.getZ();
+            
 
 //            pmUtility.prettyPrint(dX, 10);
 //            System.out.println("----");
@@ -508,6 +515,7 @@ public class CardIVSpecification implements MomentSpecification {
     @Override
     public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
         if (beta == null) {
+        	System.out.println("Null beta, shouldn't be here!");
             return "null (shouldn't be here!)";
         }
         // double b = beta.get(0, 0);
