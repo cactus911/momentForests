@@ -176,7 +176,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        System.out.println("Are all parameters homogeneous? " + allParametersHomogeneous);
+        // System.out.println("Are all parameters homogeneous? " + allParametersHomogeneous);
         ContainerCardIV l = new ContainerCardIV(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
         l.computeBetaAndErrors();
         return l;
@@ -447,12 +447,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-        //return "Group " + fixedEffectIndex;
-        if (variableIndex == 7) {
-            String[] year = {"1980", "1981", "1982", "1983", "1984", "1985", "1986", "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995", "1996", "1997", "1998", "1999"};
-            return year[fixedEffectIndex - 1];
-        }
-        return varNames[variableIndex] + " " + fixedEffectIndex;
+        return "" + fixedEffectIndex;
     }
 
     @Override

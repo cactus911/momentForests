@@ -32,7 +32,6 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
     }
 
     public double computeStatistic(int indexConstrainedParameter) {
-
         System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameter + " ------------------------");
 
         double dm = 0;
@@ -143,7 +142,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         }
 
         // with identity weighting matrix (Step 1)
-        int numMoments = v.get(0).getX().getColumnDimension() * v.size();
+        int numMoments = spec.getNumMoments() * v.size();
         omega = Jama.Matrix.identity(numMoments, numMoments);
 
         boolean minimizeSSEFirst = false;
@@ -227,21 +226,13 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
      */
     @Override
     public double f_to_minimize(double[] x) {
-        boolean oracle = false;
-        if (oracle) {
-            if (indexConstrainedParameter == 1) {
-                x[1] = 1.0;
-            }
-        }
 
         ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
 
         /**
-         * This is the number of moments in each cell (this is hardwired right
-         * now for the linear case, need to come back to this and figure this
-         * out in general when we have broader cases)
+         * This is the number of moments in each cell
          */
-        int K = spec.getNumParams();
+        int K = spec.getNumMoments();
 
         /**
          * The total size of the stacked moment vector is the dimensionality of

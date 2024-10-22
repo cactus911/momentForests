@@ -162,7 +162,7 @@ public class MainCardIV {
         }
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 2) {
+        if (detectHomogeneity && 1 == 1) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");

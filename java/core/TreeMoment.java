@@ -181,8 +181,8 @@ public class TreeMoment {
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
         // System.out.println("Setting beta");
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
-        if(verbose) {
-            System.out.println("Current node objective function value is "+currentNodeMoment.getGoodnessOfFit());
+        if (verbose) {
+            System.out.println("Current node objective function value is " + currentNodeMoment.getGoodnessOfFit());
             System.out.print("Current beta: ");
             pmUtility.prettyPrintVector(currentNodeMoment.getBeta());
         }
@@ -270,7 +270,7 @@ public class TreeMoment {
 
             for (int indexSplitVariable : momentSpec.getVariableIndicesToSearchOver()) {
                 if (debugOptimization) {
-                    echoLn("indexSplitVariable: " + indexSplitVariable + "("+momentSpec.getVariableName(indexSplitVariable)+"); isDiscrete: " + discreteVector[indexSplitVariable] + "; In Tree: " + randomForestIndex.contains(indexSplitVariable));
+                    echoLn("indexSplitVariable: " + indexSplitVariable + "(" + momentSpec.getVariableName(indexSplitVariable) + "); isDiscrete: " + discreteVector[indexSplitVariable] + "; In Tree: " + randomForestIndex.contains(indexSplitVariable));
                 }
                 if (randomForestIndex.contains(indexSplitVariable)) {
                     /**
@@ -403,7 +403,7 @@ public class TreeMoment {
                                 if (obj.getEffectiveNumObsLeft() < minCountEachPartition || obj.getEffectiveNumObsRight() < minCountEachPartition) {
                                     // echoLn("IS IT IN? : obj.getNumObsLeft(): " + obj.getEffectiveNumObsLeft() + " minCountEachPartition " + minCountEachPartition + " right obs: " + obj.getEffectiveNumObsRight() + " indexSplitVariable " + indexSplitVariable);
                                     if (debugOptimization) {
-                                        echoLn("\t\tMin K violated: rejecting partition for left obs: " + obj.getEffectiveNumObsLeft()+ " right obs: " + obj.getEffectiveNumObsRight());
+                                        echoLn("\t\tMin K violated: rejecting partition for left obs: " + obj.getEffectiveNumObsLeft() + " right obs: " + obj.getEffectiveNumObsRight());
                                     }
                                     partitionSSE = Double.POSITIVE_INFINITY;
                                 } else if (((obj.getEffectiveNumObsLeft() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) < minProportionEachPartition || ((obj.getEffectiveNumObsRight() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) < minProportionEachPartition) {
@@ -749,6 +749,45 @@ public class TreeMoment {
 //        System.out.println("DEBUG: Exiting estimateHonestTree()");
     }
 
+    public double getTreeMomentObjectiveFunctionAtComputedParameters() {
+        ArrayList<DataLens> v = new ArrayList<>();
+        collectAllTerminalDataLens(v);
+
+        Jama.Matrix G = new Jama.Matrix(v.size() * momentSpec.getNumMoments(), 1);
+        Jama.Matrix omega = new Jama.Matrix(v.size() * momentSpec.getNumMoments(), v.size() * momentSpec.getNumMoments());
+        int totalObs = 0;
+        for (int leafLensList = 0; leafLensList < v.size(); leafLensList++) {
+            DataLens leafLens = v.get(leafLensList);
+            totalObs += leafLens.getNumObs();
+            ContainerMoment cm = momentSpec.computeOptimalBeta(leafLens, allParametersHomogeneous);
+            Jama.Matrix leafG = cm.getMomentGWithoutDivision(cm.getBeta());
+            Jama.Matrix leafOmega = new Jama.Matrix(momentSpec.getNumMoments(), momentSpec.getNumMoments());
+            for (int i = 0; i < leafLens.getNumObs(); i++) {
+                Jama.Matrix gi = cm.getGi(cm.getBeta(), i);
+                leafOmega.plusEquals(gi.times(gi.transpose()));
+            }
+            for (int j = 0; j < momentSpec.getNumMoments(); j++) {
+                G.set(j + leafLensList * momentSpec.getNumMoments(), 0, leafG.get(j, 0));
+                for (int k = 0; k < momentSpec.getNumMoments(); k++) {
+                    omega.set(j + leafLensList * momentSpec.getNumMoments(), k + leafLensList * momentSpec.getNumMoments(), leafOmega.get(j, k));
+                }
+            }
+        }
+        G.timesEquals(1.0 / totalObs);
+        omega.timesEquals(1.0 / totalObs);
+
+        boolean verboseTreeGMMObjectiveFunction = true;
+        if(verboseTreeGMMObjectiveFunction) {
+            System.out.print("moment vector: ");
+            pmUtility.prettyPrintVector(G);
+            System.out.println("omega:");
+            pmUtility.prettyPrint(omega);
+        }
+        
+        // not sure I should use omega here?
+        return (((G.transpose()).times(omega)).times(G)).get(0, 0);
+    }
+
     public void testHomogeneity() {
         System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
         ArrayList<DataLens> v = new ArrayList<>();
@@ -766,7 +805,6 @@ public class TreeMoment {
                 valueHomogeneousParameters.add(getNodeEstimatedBeta().get(k, 0));
             }
         } else {
-
             double degreesFreedom = v.size() - 1; // basically saying that if we have 2 leaves, we have one restriction (param_k0 = param_k1)
             if (verbose || 1 == 1) {
                 System.out.println("Degrees of freedom in chi-squared test: " + degreesFreedom);
@@ -894,7 +932,7 @@ public class TreeMoment {
         } else // use rule to figure out whether to return left or right node's value
         // this will keep going down the rabbit hole until it returns a terminal node's value
         // kind of cool how this works!
-            // System.out.println("Rule is "+getRule()+" decision to go left is: "+getRule().isLeft(zi));
+        // System.out.println("Rule is "+getRule()+" decision to go left is: "+getRule().isLeft(zi));
         if (getRule().isLeft(zi)) {
             return childLeft.getEstimatedBeta(zi);
         } else {
