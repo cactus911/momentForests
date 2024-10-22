@@ -409,7 +409,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
                     // generate Y with correlation between one X and the error
                     double beta1 = -5.0;
                     double beta2 = 3.0;
-                    boolean observableHeterogeneity = true;
+                    boolean observableHeterogeneity = false;
                     if (observableHeterogeneity) {
                         if (Z.get(i, 4) == 1.0) {
                             // System.out.println("black");

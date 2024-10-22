@@ -204,19 +204,21 @@ public class MainCardIV {
             setHomogeneousParameterList(hpl);
             // System.out.println("After setting hp list");
             // this seems to be working
-            boolean testPostClassificationConvergence = !true;
-            if (testPostClassificationConvergence) {
-                hpl.clear();
-                hpl.add(0);
-                mySpecification.resetHomogeneityIndex();
-                mySpecification.setHomogeneousIndex(0);
-                mySpecification.setHomogeneousParameter(0, -1.0);
+            
+            /**
+             * OK, key insight: if all the parameters are homogeneous, don't have to do anything
+             * Just sent max depth to 0 and then grow the forest as usual.
+             */
+            boolean allParametersHomogeneous = false;
+            if(hpl.size()==mySpecification.getNumParams()) {
+                allParametersHomogeneous = true;
+                bestMaxDepth = 0;
             }
 
             /*
              * Estimate values of those homogeneous parameters
              */
-            if (!hpl.isEmpty()) {
+            if (!hpl.isEmpty() && !allParametersHomogeneous) {
                 System.out.println("Initializing search container");
                 numberTreesInForest = 2; // 10
                 HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,

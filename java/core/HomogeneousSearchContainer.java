@@ -22,7 +22,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     double minImprovement;
     int minObservationsPerLeaf;
     int maxTreeDepth;
-    int numParams;
+    int numHomogeneousParametersToSearchOver;
     long rngSeedBaseMomentForest;
     long rngSeedBaseOutOfSample;
     ArrayList<Integer> homogeneousParameterList;
@@ -43,7 +43,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         this.minImprovement = minImprovement;
         this.minObservationsPerLeaf = minObservationsPerLeaf;
         this.maxTreeDepth = maxTreeDepth;
-        numParams = homogeneousParameterList.size();
+        numHomogeneousParametersToSearchOver = homogeneousParameterList.size();
         this.rngSeedBaseMomentForest = rngSeedBaseMomentForest;
         this.rngSeedBaseOutOfSample = rngSeedBaseOutOfSample;
         this.homogeneousParameterList = homogeneousParameterList;
@@ -63,11 +63,11 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         Uncmin_f77 minimizer = new Uncmin_f77(false);
 
         if (debug) {
-            System.out.println("Number of parameters: " + numParams);
+            System.out.println("Number of parameters: " + numHomogeneousParametersToSearchOver);
         }
         // System.exit(0);
 
-        double[] guess = new double[numParams + 1];
+        double[] guess = new double[numHomogeneousParametersToSearchOver + 1];
 
         // use the starting values from the test
         for (int k = 0; k < homogeneousParameterList.size(); k++) {
@@ -82,14 +82,14 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             System.out.println("F_min(x): " + f_to_minimize(guess));
         }
 
-        double[] xpls = new double[numParams + 1];
+        double[] xpls = new double[numHomogeneousParametersToSearchOver + 1];
         double[] fpls = new double[2];
-        double[] gpls = new double[numParams + 1];
+        double[] gpls = new double[numHomogeneousParametersToSearchOver + 1];
         int[] itrmcd = new int[2];
-        double[][] a = new double[numParams + 1][numParams + 1];
-        double[] udiag = new double[numParams + 1];
-        double[] typsiz = new double[numParams + 1];
-        for (int i = 1; i <= numParams; i++) {
+        double[][] a = new double[numHomogeneousParametersToSearchOver + 1][numHomogeneousParametersToSearchOver + 1];
+        double[] udiag = new double[numHomogeneousParametersToSearchOver + 1];
+        double[] typsiz = new double[numHomogeneousParametersToSearchOver + 1];
+        for (int i = 1; i <= numHomogeneousParametersToSearchOver; i++) {
             typsiz[i] = 1.0;
         }
 
@@ -106,15 +106,15 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         double[] stepmx = {0, 1.0}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
         double[] steptl = {0, 1E-8};
 
-        if (numParams == 1) {
+        if (numHomogeneousParametersToSearchOver == 1) {
             // just use the number passed from the legit optimizer that already did all the work in detecting the parameter
             xpls[1] = guess[1];
         }
 
-        minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        minimizer.optif9_f77(numHomogeneousParametersToSearchOver, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
 
-        Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numParams, 1);
-        for (int i = 0; i < numParams; i++) {
+        Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numHomogeneousParametersToSearchOver, 1);
+        for (int i = 0; i < numHomogeneousParametersToSearchOver; i++) {
             compactHomogeneousParameterVector.set(i, 0, xpls[i + 1]);
         }
         setCompactEstimatedHomogeneousParameters(compactHomogeneousParameterVector); // need to account for the fact that this is potentially a shorter vector
@@ -123,27 +123,10 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
 
     @Override
     public double f_to_minimize(double[] x) {
-        for (int i = 0; i < numParams; i++) {
+        for (int i = 0; i < numHomogeneousParametersToSearchOver; i++) {
             mySpecification.setHomogeneousParameter(homogeneousParameterList.get(i), x[i + 1]);
         }
         
-        if (allParametersHomogeneous) {
-            System.out.println("Broken: HomogeneousSearchContainer.java all parameter homogeneous option");
-            System.exit(0);
-            
-            Jama.Matrix beta = new Jama.Matrix(mySpecification.getHomogeneousIndex().length, 1);
-            for (int i = 0; i < mySpecification.getHomogeneousIndex().length; i++) {
-                beta.set(i, 0, mySpecification.getHomogeneousParameter(i));
-            }
-            double f = 0;
-            Jama.Matrix Y = mySpecification.getY();
-            Jama.Matrix X = mySpecification.getX();
-            for (int i = 0; i < Y.getRowDimension(); i++) {
-                f += mySpecification.getGoodnessOfFit(Y.get(i, 0), X.getMatrix(i, i, 0, X.getColumnDimension() - 1), beta);
-            }
-            return f;
-        }
-
         boolean testParameterHomogeneity = false;
         // System.out.println("Initializing forest");
         MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngSeedBaseMomentForest, homogenizedForestLens, verbose, new TreeOptions());
