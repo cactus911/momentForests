@@ -23,23 +23,18 @@
  */
 package examples.CardIV;
 
-import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
-import core.ChartGenerator;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
-import core.MomentSpecification;
-import core.TreeMoment;
 import core.TreeOptions;
+import examples.PartialLinearGasDemand.HomogeneousParameterSorter;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -47,7 +42,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class CardIVMain {
+public class MainCardIV {
 
     private ArrayList<Integer> homogeneousParameterList;
     private Jama.Matrix estimatedHomogeneousParameters;
@@ -68,20 +63,20 @@ public class CardIVMain {
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setVisible(true);
 
-        CardIVMain go = new CardIVMain(jt1);
+        MainCardIV go = new MainCardIV(jt1);
         go.execute();
 
     }
 
-    public CardIVMain(JTextArea jt) {
+    public MainCardIV(JTextArea jt) {
         this.jt = jt;
         detectHomogeneity = true;
     }
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecification mySpecification = new CardIVSpecification("src/IV test.csv");
-                
+        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("j:/git/momentforests/java/examples/cardiv/IV test.csv");
+
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
         int bestMaxDepth = 5;
@@ -107,29 +102,28 @@ public class CardIVMain {
 
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
-        
-        boolean runCV = !true;
+
+        boolean runCV = false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Run Cross-Validation *");
                 System.out.println("************************");
             }
-            
+
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.01; minImprovement <= 0.1; minImprovement *= 2) {
-                    for (int maxDepth = 2; maxDepth <= 11; maxDepth++) {
+            for (int minObservationsPerLeaf = 200; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.1; minImprovement <= 0.1; minImprovement *= 2) {
+                    for (int maxDepth = 0; maxDepth <= 2; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
-            }         
+            }
             cvList.parallelStream().forEach(s -> {
                 s.computeOutOfSampleMSE();
             });
 
-            
             for (computeFitStatistics s : cvList) {
                 double combinationMSE = s.getMSE();
                 String star = "";
@@ -141,32 +135,33 @@ public class CardIVMain {
                     bestMaxDepth = s.getMaxTreeDepth();
                     star = "(*)";
                 }
-                System.out.print("best: "+minInSampleFit+" this: "+s.getInSampleFit()+" "+(minInSampleFit>s.getInSampleFit()));
-                if(s.getInSampleFit()<minInSampleFit || first) {
+                System.out.print("best: " + minInSampleFit + " this: " + s.getInSampleFit() + " " + (minInSampleFit > s.getInSampleFit()));
+                if (s.getInSampleFit() < minInSampleFit || first) {
                     System.out.println("detected lower");
                     minInSampleFit = s.getInSampleFit();
                     starIn = "(**)";
                 }
-                
-                if(first) {
+
+                if (first) {
                     first = false;
                 }
                 System.out.println(starIn);
                 System.out.println("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star);
-                jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star + " In-Sample Fit: "+s.getInSampleFit()+" "+starIn+"\n");
+                jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star + " In-Sample Fit: " + s.getInSampleFit() + " " + starIn + "\n");
             }
 
             System.out.println("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
-            jt.append("Best in-sample fit: "+minInSampleFit + "\n");
+            jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
-        	// NEED TO UPDATE
-            bestMinObservationsPerLeaf = 50;
+            // NEED TO UPDATE
+            bestMinObservationsPerLeaf = 25;
             bestMinImprovement = 0.08;
-            bestMaxDepth = 7; 
+            bestMaxDepth = 1;
         }
+
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 1) {
+        if (detectHomogeneity && 1 == 2) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
@@ -177,15 +172,15 @@ public class CardIVMain {
              */
             double minProportionInEachLeaf = 0.01;
             DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
-            
+
             testParameterHomogeneity = true;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
             MomentForest myForest = new MomentForest(mySpecification, 1, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
-                             
+
             myForest.setTreeOptions(cvOptions);
-            myForest.growForest();                       
-            myForest.testHomogeneity();           
-                              
+            myForest.growForest();
+            myForest.testHomogeneity();
+
             ArrayList<Integer> hpl = new ArrayList<>();
             ArrayList<Double> hplStartingValues = new ArrayList<>();
             boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, true);
@@ -216,7 +211,7 @@ public class CardIVMain {
                 mySpecification.setHomogeneousIndex(0);
                 mySpecification.setHomogeneousParameter(0, -1.0);
             }
-            
+
             /*
              * Estimate values of those homogeneous parameters
              */
@@ -243,29 +238,30 @@ public class CardIVMain {
                     }
                 }
                 setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
-            }           
+            }
         }
-        
+
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        verbose = !true;
-        numberTreesInForest = 3; // 50
+        verbose = true;
+        numberTreesInForest = 500; // 50
+
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
-                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);  
+                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
         fitStats.computeOutOfSampleMSE();
         double outOfSampleFit = fitStats.getMSE();
 
         System.out.println("Best minimum observations in leaf: " + bestMinObservationsPerLeaf);
         System.out.println("Best minimum improvement: " + bestMinImprovement);
         System.out.println("Best maximum depth: " + bestMaxDepth);
-        
+
         System.out.println("Out of sample SSE: " + outOfSampleFit);
-        System.out.println("Number of trees in forest: "+numberTreesInForest);
-        
+        System.out.println("Number of trees in forest: " + numberTreesInForest);
+
         double[] countVariableSplitsInForest = fitStats.getSplitVariables();
         System.out.println("Number of split variables: " + countVariableSplitsInForest.length);
-    
+
         System.out.println("Forest split on the following variables:");
         for (int i = 0; i < countVariableSplitsInForest.length; i++) {
             if (countVariableSplitsInForest[i] > 0) {
@@ -276,7 +272,7 @@ public class CardIVMain {
 
     private class computeFitStatistics {
 
-        MomentSpecification mySpecification;
+        MomentSpecificationCardIV mySpecification;
         int numberTreesInForest;
         long rngBaseSeedMomentForest;
         boolean verbose;
@@ -291,7 +287,7 @@ public class CardIVMain {
 
         MomentForest myForest;
 
-        public computeFitStatistics(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose, int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
+        public computeFitStatistics(MomentSpecificationCardIV mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose, int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
             this.mySpecification = mySpecification;
             this.numberTreesInForest = numberTreesInForest;
             this.rngBaseSeedMomentForest = rngBaseSeedMomentForest;
@@ -327,10 +323,15 @@ public class CardIVMain {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
 
-            DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
-
-            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());           
+            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
+            DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
+            DataLens estimatingLens = split[0];
+            DataLens oosDataLens = split[1];
             
+            // System.out.println(estimatingLens.getNumObs()+" "+oosDataLens.getNumObs());
+
+            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, estimatingLens, verbose, new TreeOptions());
+
             TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
             myForest.setTreeOptions(cvOptions);
             /**
@@ -341,119 +342,60 @@ public class CardIVMain {
             /**
              * Test vectors for assessment
              */
-            // NEED TO UPDATE
-            DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(500, rngBaseSeedOutOfSample); // I think the specification actually does nothing
+
             Jama.Matrix testZ = oosDataLens.getZ();
-            Jama.Matrix testY = oosDataLens.getY();   
-            Jama.Matrix tempX = oosDataLens.getX();
-            
-            Jama.Matrix testX = tempX.getMatrix(0, tempX.getRowDimension() - 1, 0, tempX.getColumnDimension() - 2); // X without the last column (assuming there is one instrument)
-            Jama.Matrix testI = testX.copy();
-            testI.setMatrix(0, tempX.getRowDimension() - 1, 1, 1, tempX.getMatrix(0, tempX.getRowDimension() - 1, tempX.getColumnDimension() - 1, tempX.getColumnDimension() - 1));
+            Jama.Matrix testY = oosDataLens.getY();
+            Jama.Matrix testX = oosDataLens.getX();
+
+            boolean allParametersHomogeneous = false; // SPR: NEED TO COME BACK TO THIS (Oct 21, 2024)
+            ContainerCardIV civ = new ContainerCardIV(oosDataLens,
+                    mySpecification.getHomogeneityIndex(),
+                    mySpecification.getHomogeneousParameterVector(),
+                    allParametersHomogeneous,
+                    mySpecification);
 
             double outOfSampleFit = 0;
+            Jama.Matrix oosMoments = new Jama.Matrix(mySpecification.getNumMoments(), 1);
+            
             for (int i = 0; i < testZ.getRowDimension(); i++) {
                 Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
-                Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
+                Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 2);
                 double yi = testY.get(i, 0);
 
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
                 outOfSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);               
-            }                   
-            
-            inSampleFit = 0;           
-            Jama.Matrix insampleX = mySpecification.getX().getMatrix(0, mySpecification.getX().getRowDimension() - 1, 0, mySpecification.getX().getColumnDimension() - 2); // X without the last column (assuming there is one instrument)                        
-            for (int i = 0; i < mySpecification.getZ().getRowDimension(); i++) {
-                Jama.Matrix zi = mySpecification.getZ().getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
-                Jama.Matrix xi = insampleX.getMatrix(i, i, 0, insampleX.getColumnDimension() - 1);
-                double yi = mySpecification.getY().get(i, 0);
+                // I think I just need to evaluate the moments at each observation for the beta that the forest has given
+                oosMoments.plusEquals(civ.getGi(compositeEstimatedBeta, i));
+            }
+            // oosMoments.timesEquals(1.0 / testZ.getRowDimension());
+            // outOfSampleFit = ((oosMoments.transpose()).times(oosMoments)).get(0, 0);
+
+            ContainerCardIV civIn = new ContainerCardIV(estimatingLens,
+                    mySpecification.getHomogeneityIndex(),
+                    mySpecification.getHomogeneousParameterVector(),
+                    allParametersHomogeneous,
+                    mySpecification);
+            Jama.Matrix inMoments = new Jama.Matrix(mySpecification.getNumMoments(), 1);
+            inSampleFit = 0;
+
+            System.out.println(mySpecification.getNumMoments());
+
+            System.out.println("Starting in-sample Z");
+            for (int i = 0; i < estimatingLens.getZ().getRowDimension(); i++) {
+                Jama.Matrix zi = estimatingLens.getZ().getMatrix(i, i, 0, estimatingLens.getZ().getColumnDimension() - 1);
+                Jama.Matrix xi = estimatingLens.getX().getMatrix(i, i, 0, estimatingLens.getX().getColumnDimension() - 2);
+                double yi = estimatingLens.getY().get(i, 0);
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+
                 inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
+                // inMoments.plusEquals(civIn.getGi(compositeEstimatedBeta, i));
             }
+            // inMoments.timesEquals(1.0 / mySpecification.getZ().getRowDimension());
+            // inSampleFit = ((inMoments.transpose()).times(inMoments)).get(0, 0);
             inSampleFit /= mySpecification.getZ().getRowDimension();
-
-            // NEED TO UPDATE
-            generatePlots = false;
-            if (generatePlots) {
-                /**
-                 * This would be a fine place to make the graph ala Schmalensee
-                 * and Stoker
-                 *
-                 * Nonparametric plot of log total gallons (Y axis) against log
-                 * age (X axis)
-                 *
-                 */
-
-                Jama.Matrix Z = mySpecification.getZ();
-                Jama.Matrix X = mySpecification.getX();
-                Jama.Matrix Y = mySpecification.getY();
-                boolean useOutOfSample = !true;
-                if (useOutOfSample) {
-                    Z = testZ;
-                    X = testX;
-                    Y = testY;
-                }
-
-                XYSeriesCollection xyc = new XYSeriesCollection();
-                XYSeriesCollection xycData = new XYSeriesCollection();
-                XYSeriesCollection kernelAge = new XYSeriesCollection();
-
-                NormalDistribution normal = new NormalDistribution(0, 0.05);
-
-                int[] incomeBinArray = {1, 4, 6, 9};
-                String[] incomeString = {"Less Than $10,000", "$25,000 to $34,999", "$50,000 to $74,999", "$100,000 to $149,999"};
-
-                // for (int incomeBin : incomeBinArray) {
-                for (int jk = 0; jk < incomeBinArray.length; jk++) {
-                    int incomeBin = incomeBinArray[jk];
-                    XYSeries xyFit = new XYSeries(incomeString[jk]);
-                    XYSeries xyData = new XYSeries(incomeString[jk]);
-                    XYSeries xyKernel = new XYSeries(incomeString[jk]);
-
-                    Random rng = new Random(rngBaseSeedOutOfSample);
-                    for (double age = 16; age <= 92; age++) {
-                        double avgLogGallonsFit = 0;
-                        double avgLogGallonsData = 0;
-                        double sumNPWeights = 0;
-                        double counter = 0;
-                        for (int i = 0; i < Z.getRowDimension(); i++) {
-                            Jama.Matrix zi = Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1);
-                            Jama.Matrix xi = X.getMatrix(i, i, 0, X.getColumnDimension() - 1);
-
-                            // try a smoothed estimator of the average in this area
-                            if ((int) zi.get(0, 5) == incomeBin) {
-                                double weight = normal.probability(zi.get(0, 3) - Math.log(age));
-                                avgLogGallonsData += Y.get(i, 0) * weight;
-                                sumNPWeights += weight;
-
-                                // we are going to integrate out all the other characteristics, just setting age
-                                // zi.set(0, 3, Math.log(age));
-                                Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
-                                double prediction = mySpecification.getPredictedY(xi, compositeEstimatedBeta, rng);
-                                // System.out.print("Income: "+zi.get(0,5)+" Age: "+zi.get(0,3)+" Consumption: "+prediction+" ");
-                                // pmUtility.prettyPrintVector(compositeEstimatedBeta);
-                                avgLogGallonsFit += prediction * weight;
-                                // counter++;
-                                counter++;
-                            }
-                        }
-                        avgLogGallonsFit /= sumNPWeights; // counter;
-                        avgLogGallonsData /= sumNPWeights;
-                        xyFit.add(Math.log(age), avgLogGallonsFit);
-                        xyData.add(Math.log(age), avgLogGallonsData);
-                        xyKernel.add(Math.log(age), sumNPWeights / counter);
-                        // System.out.println("age: "+age+" data: "+avgLogGallonsData+" fit: "+avgLogGallonsFit);
-                    }
-                    xyc.addSeries(xyFit);
-                    xycData.addSeries(xyData);
-                    kernelAge.addSeries(xyKernel);
-                }
-                ChartGenerator.makeXYLine(xyc, "Fitted Gasoline Consumption", "Log Age", "Log Gallons Gasoline");
-                ChartGenerator.makeXYLine(xycData, "Actual Gasoline Consumption", "Log Age", "Log Gallons Gasoline");
-                ChartGenerator.makeXYLine(kernelAge, "Kernel Density", "Log Age", "Log Age Density");
-            }
+            System.out.println("In-sample SSE: "+inSampleFit);
 
             MSE = outOfSampleFit / testZ.getRowDimension(); // mse
         }

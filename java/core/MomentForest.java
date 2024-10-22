@@ -127,12 +127,7 @@ public class MomentForest {
             estimatedParameters = estimatedParameters.plus(forest.get(i).getEstimatedBeta(zi));
             // s = s.concat(forest.get(i).getEstimatedBeta(zi).get(0, 0) + " ");
         }
-        // s = s.concat("]");
-        // System.out.println(s);
-//        System.exit(0);
-        if (forest.size() == 1) {
-            System.out.println(zi.get(0, 0) + " " + estimatedParameters.get(0, 0));
-        }
+        
         estimatedParameters.timesEquals(1.0 / forest.size());
         return estimatedParameters;
     }

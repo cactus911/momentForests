@@ -33,12 +33,12 @@ import core.SplitContainer;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class MomentPartitionObjLinear extends MomentPartitionObj {
+public class MomentPartitionObjCardIV extends MomentPartitionObj {
 
     SplitContainer container;
-    MomentSpecification spec;
+    MomentSpecificationCardIV spec;
     
-    public MomentPartitionObjLinear(IntegerPartition partition, int indexSplitVariable, DataLens lens, MomentSpecification spec) {
+    public MomentPartitionObjCardIV(IntegerPartition partition, int indexSplitVariable, DataLens lens, MomentSpecificationCardIV spec) {
         this.partition = partition;
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
@@ -68,8 +68,8 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerIV leftLinear = new ContainerIV(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
-        ContainerIV rightLinear = new ContainerIV(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
+        ContainerCardIV leftLinear = new ContainerCardIV(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec); //This object will compute the beta and MSE for the left split
+        ContainerCardIV rightLinear = new ContainerCardIV(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec);
         
         leftLinear.computeBetaAndErrors();
         rightLinear.computeBetaAndErrors();

@@ -195,7 +195,7 @@ public class GasolineDemandMain {
             // let's try it and see what happens to classification rates
             ArrayList<Integer> hpl = new ArrayList<>();
             ArrayList<Double> hplStartingValues = new ArrayList<>();
-            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt);
+            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, false);
             double[] startingValues = myForest.getHomogeneityStartingValues();
             for (int i = 0; i < voteIndexHomogeneity.length; i++) {
                 if (voteIndexHomogeneity[i]) {

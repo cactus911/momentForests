@@ -64,7 +64,7 @@ public class TreeMoment {
     boolean allParametersHomogeneous;
 
     boolean useRandomForest = false;
-    boolean debugOptimization = !true;
+    boolean debugOptimization = true;
     private double currentNodeObjectiveFunction;
     private ContainerMoment currentNodeMoment;
 
@@ -181,6 +181,11 @@ public class TreeMoment {
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
         // System.out.println("Setting beta");
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
+        if(verbose) {
+            System.out.println("Current node objective function value is "+currentNodeMoment.getGoodnessOfFit());
+            System.out.print("Current beta: ");
+            pmUtility.prettyPrintVector(currentNodeMoment.getBeta());
+        }
         // System.out.println("Setting variance");
         // setNodeEstimatedVariance(currentNodeMoment.getVariance(getNodeEstimatedBeta()));
 
@@ -265,7 +270,7 @@ public class TreeMoment {
 
             for (int indexSplitVariable : momentSpec.getVariableIndicesToSearchOver()) {
                 if (debugOptimization) {
-                    echoLn("indexSplitVariable: " + indexSplitVariable + "; isDiscrete: " + discreteVector[indexSplitVariable] + "; In Tree: " + randomForestIndex.contains(indexSplitVariable));
+                    echoLn("indexSplitVariable: " + indexSplitVariable + "("+momentSpec.getVariableName(indexSplitVariable)+"); isDiscrete: " + discreteVector[indexSplitVariable] + "; In Tree: " + randomForestIndex.contains(indexSplitVariable));
                 }
                 if (randomForestIndex.contains(indexSplitVariable)) {
                     /**
@@ -398,12 +403,12 @@ public class TreeMoment {
                                 if (obj.getEffectiveNumObsLeft() < minCountEachPartition || obj.getEffectiveNumObsRight() < minCountEachPartition) {
                                     // echoLn("IS IT IN? : obj.getNumObsLeft(): " + obj.getEffectiveNumObsLeft() + " minCountEachPartition " + minCountEachPartition + " right obs: " + obj.getEffectiveNumObsRight() + " indexSplitVariable " + indexSplitVariable);
                                     if (debugOptimization) {
-                                        //   echoLn("\t\tMin K violated: rejecting partition for left obs: " + obj.getNumObsLeft() + " right obs: " + obj.getNumObsRight());
+                                        echoLn("\t\tMin K violated: rejecting partition for left obs: " + obj.getEffectiveNumObsLeft()+ " right obs: " + obj.getEffectiveNumObsRight());
                                     }
                                     partitionSSE = Double.POSITIVE_INFINITY;
                                 } else if (((obj.getEffectiveNumObsLeft() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) < minProportionEachPartition || ((obj.getEffectiveNumObsRight() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) < minProportionEachPartition) {
                                     if (debugOptimization) {
-                                        //  echoLn("\t\tRejecting partition for proportion; left: " + ((obj.getNumObsLeft() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) + " right: " + ((obj.getNumObsRight() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)));
+                                        echoLn("\t\tRejecting partition for proportion; left: " + ((obj.getEffectiveNumObsLeft() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)) + " right: " + ((obj.getEffectiveNumObsRight() + 0.0) / (lensGrowingTree.getNumObs() + 0.0)));
                                         // System.exit(0);
                                     }
                                     partitionSSE = Double.POSITIVE_INFINITY;
@@ -412,7 +417,7 @@ public class TreeMoment {
                                 }
 
                                 if (debugOptimization) {
-                                    //  echoLn("\t x_" + indexSplitVariable + " Partition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE);
+                                    echoLn("\t x_" + indexSplitVariable + " Partition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE);
                                 }
 
                                 //For every possible partition, we check which has the lowest SSE

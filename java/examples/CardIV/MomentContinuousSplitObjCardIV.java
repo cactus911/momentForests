@@ -33,16 +33,16 @@ import optimization.Uncmin_methods;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
+public class MomentContinuousSplitObjCardIV extends MomentContinuousSplitObj {
 
     SplitContainer container; 
     DataLens lens;
     int minCount;
     double minProportion;
     boolean debugVerbose = false;
-    MomentSpecification spec;
+    MomentSpecificationCardIV spec;
 
-    public MomentContinuousSplitObjLinear(int indexSplitVariable, DataLens lens, double minProportion, int minCount, MomentSpecification spec) {
+    public MomentContinuousSplitObjCardIV(int indexSplitVariable, DataLens lens, double minProportion, int minCount, MomentSpecificationCardIV spec) {
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
         this.minCount = minCount;
@@ -68,8 +68,8 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerIV leftLinear = new ContainerIV(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
-        ContainerIV rightLinear = new ContainerIV(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
+        ContainerCardIV leftLinear = new ContainerCardIV(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec); //This object will compute the beta and MSE for the left split
+        ContainerCardIV rightLinear = new ContainerCardIV(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec);
         leftLinear.computeBetaAndErrors();
         rightLinear.computeBetaAndErrors();
 

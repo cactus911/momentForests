@@ -41,10 +41,9 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class CardIVSpecification implements MomentSpecification {
+public class MomentSpecificationCardIV implements MomentSpecification {
 
     Jama.Matrix X;
-    Jama.Matrix I;
     Jama.Matrix Y;
     Jama.Matrix Z;
     Jama.Matrix balancingVector; // is treatment status in the RCT setting
@@ -65,7 +64,7 @@ public class CardIVSpecification implements MomentSpecification {
     final private boolean[] homogeneityIndex; // = new boolean[X.getColumnDimension()];
     final private Jama.Matrix homogeneousParameterVector; // = new Jama.Matrix(X.getColumnDimension(), 1); // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
 
-    public CardIVSpecification(String filename) {
+    public MomentSpecificationCardIV(String filename) {
         this.filename = filename;
 
         // what specification am i going to use here?
@@ -75,19 +74,19 @@ public class CardIVSpecification implements MomentSpecification {
         homogeneityIndex = new boolean[X.getColumnDimension()];
         homogeneousParameterVector = new Jama.Matrix(X.getColumnDimension(), 1);
         resetHomogeneityIndex();
-        
+
         // NEED TO UPDATE
         /**
          * These all refer to Z (not X)!!!
          *
          * Z =
          *
-         * 0. constant
+         * 1. constant
          *
-         * 1. education
+         * 0. education (flipped these below)
          *
          * 2. experience
-         * 
+         *
          * 3. experience^2
          *
          * 4. dummy = 1 if black
@@ -97,11 +96,11 @@ public class CardIVSpecification implements MomentSpecification {
          * 6. dummy = 1 if living in SMSA in 1976
          *
          * 7. region in 1966, categorical
-         * 
+         *
          * 8. dummy = 1 if living in SMSA in 1966
          *
          * 9. father's years of education
-         * 
+         *
          * 10. dummy = 1 if father's education is missing
          *
          * 11. mother's years of education
@@ -115,24 +114,24 @@ public class CardIVSpecification implements MomentSpecification {
          * 15. dummy = 1 if household is a single mother
          *
          */
-        int[] vsi = {1, 2, 3}; 
+        int[] vsi = {4};
         Boolean[] wvd = {false,
-            false, 
-            false, 
-            false, 
+            false,
+            false,
+            false,
             true,
             true,
             true,
             true,
-            true, 
-            false, 
-            true, 
+            true,
+            false,
+            true,
             false,
             true,
             true,
             true,
             true
-    };
+        };
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -149,7 +148,7 @@ public class CardIVSpecification implements MomentSpecification {
 
     @Override
     public int getNumMoments() {
-        return X.getColumnDimension() - 1; // For one instrument
+        return X.getColumnDimension() - 1; // one endo X (first column), one instrument (last column of "X")
     }
 
     @Override
@@ -164,16 +163,15 @@ public class CardIVSpecification implements MomentSpecification {
 
     @Override
     public double getGoodnessOfFit(double yi, Matrix xi, Matrix beta) {
-        double fit = (xi.times(beta)).get(0, 0);
-        double error = fit - yi;
-        // System.out.println(fit+" "+yi);
-        return error * error;
+        double error = yi - (xi.times(beta)).get(0,0);
+        return error*error;
     }
 
     @Override
     public Double getPredictedY(Matrix xi, Jama.Matrix beta, Random rng) {
         /**
-         * This may have to be adjusted when we impose homogeneity, depending on what this is used for
+         * This may have to be adjusted when we impose homogeneity, depending on
+         * what this is used for
          */
         // pmUtility.prettyPrint(xi);
         if (beta != null) {
@@ -190,17 +188,17 @@ public class CardIVSpecification implements MomentSpecification {
 
     @Override
     public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-        return new MomentContinuousSplitObjLinear(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition, this);
+        return new MomentContinuousSplitObjCardIV(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition, this);
     }
 
     @Override
     public MomentPartitionObj getMomentPartitionObj(DataLens lens, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjLinear(partition, indexSplitVariable, lens, this);
+        return new MomentPartitionObjCardIV(partition, indexSplitVariable, lens, this);
     }
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerIV l = new ContainerIV(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);             
+        ContainerCardIV l = new ContainerCardIV(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
         l.computeBetaAndErrors();
         return l;
     }
@@ -219,12 +217,7 @@ public class CardIVSpecification implements MomentSpecification {
     public Matrix getX() {
         return X;
     }
-    
-    public Matrix getI() {
-        return I;
-    }
 
-    
     @Override
     public int numberoftrees() {
         return numtrees;
@@ -272,10 +265,11 @@ public class CardIVSpecification implements MomentSpecification {
         }
 
         System.out.format("Number of observations = %,d %n", numObsFile);
-        
+
         // NEED TO UPDATE
         Jama.Matrix dX = new Jama.Matrix(numObsFile, 17);
         Jama.Matrix dY = new Jama.Matrix(numObsFile, 1);
+
         try {
             BufferedReader in = new BufferedReader(new FileReader(filename));
             String line = in.readLine(); // headers
@@ -287,7 +281,7 @@ public class CardIVSpecification implements MomentSpecification {
                     int a = 0;
                     int b = line.indexOf(",", a); //Returns the index within this string of the first occurrence of "," starting at 0; this is a comma delimited file
                     // System.out.println(line);
-                    dY.set(i, 0, Double.valueOf(line.substring(a, b))); 
+                    dY.set(i, 0, Double.valueOf(line.substring(a, b)));
 
                     a = b + 1;
                     b = line.indexOf(",", a);
@@ -295,8 +289,8 @@ public class CardIVSpecification implements MomentSpecification {
 
                     a = b + 1;
                     b = line.indexOf(",", a);
-                    dX.set(i, 1, Double.valueOf(line.substring(a, b))); 	// education
-                    
+                    dX.set(i, 1, Double.valueOf(line.substring(a, b))); 	// education (POTENTIALLY ENDOGENOUS)
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 2, Double.valueOf(line.substring(a, b))); 	// experience
@@ -308,51 +302,51 @@ public class CardIVSpecification implements MomentSpecification {
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 4, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if black
-                                            
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 5, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if living in the South in 1976  
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 6, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if living in SMSA in 1976
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 7, Double.valueOf(line.substring(a, b))); 	// region in 1966, categorical  
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 8, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if living in SMSA in 1966 
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 9, Double.valueOf(line.substring(a, b))); 	// father's years of education 
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 10, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if father's education is missing  
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 11, Double.valueOf(line.substring(a, b))); 	// mother's years of education  
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 12, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if mother's education is missing 
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 13, Double.valueOf(line.substring(a, b))); 	// interactions of family education, categorical 
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 14, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if household contains both parents
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 15, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if household contains both parents
-                    
+
                     a = b + 1;
                     b = line.indexOf(",", a);
                     dX.set(i, 16, Double.valueOf(line.substring(a))); 		// dummy = 1 if near a 4-year college (instrument)
@@ -360,11 +354,14 @@ public class CardIVSpecification implements MomentSpecification {
                     i++;
                 }
             }
-            
-            // NEED TO UPDATE
-            X = pmUtility.getColumn(dX, 0);
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); 
+
+            /**
+             * NATHAN: going to put the endogenous X here in the first column to
+             * make keeping track of it easier
+             */
+            X = pmUtility.getColumn(dX, 1); // the endogenous variable
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 0));
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2));
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); 
@@ -379,7 +376,7 @@ public class CardIVSpecification implements MomentSpecification {
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15));
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 16));  	// the instrument
-            
+
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
              * categorical variables right now since they are stacked and not
@@ -399,123 +396,82 @@ public class CardIVSpecification implements MomentSpecification {
              * (X). They only have to enter on Z! The FE are absorbed into the
              * constant in each cell (conditioning on splitting on it!).
              */
-
             Y = dY;
-            /*
-            boolean runMonteCarlo = false;
-            if (runMonteCarlo) {
-                 // Easy Monte Carlo here for testing purposes
-                NormalDistribution normal = new NormalDistribution();
-                Random rng = new Random(rngSeed);
 
-                boolean imposeUniformity = true;
-                if (imposeUniformity) {
-                    for (int w = 0; w < Y.getRowDimension(); w++) {
-                        double urbanFE = 0;
-                        double incomeFE = 0;
-                        double districtFE = 0;
-                        double lifeCycleFE = 0.15 * dX.get(w, 5);
-                        double ageEffect = -0.5 * dX.get(w, 3);
-                        
-                        if (dX.get(w, 4) < 4) {
-                            urbanFE = -0.172;
-                        } else {
-                            urbanFE = 0.109;
-                        }
-
-                        Y.set(w, 0, 4.5 // baseline
-                                + 0.152 * dX.get(w, 1) // log household size
-                                + 0.595 * dX.get(w, 2) // log number of drivers
-                                + ageEffect // dX.get(w, 3) // log age
-                                + urbanFE // dX.get(w,4) // FE: urban
-                                + incomeFE // 0 * dX.get(w, 5) // FE: income
-                                + districtFE // 0 * dX.get(w, 6) // FE: census district
-                                + lifeCycleFE // 0 * dX.get(w, 7) // FE: life cycle
-                                + 0.1 * normal.inverse(rng.nextDouble())); // number of drivers
-                    }
-                } else {
-
-                    for (int w = 0; w < Y.getRowDimension(); w++) {
-                        double dummy = 0;
-                        if (dX.get(w, 5) > 0) { // family income
-                            // dummy = dX.get(w, 5) * 0.1;
-                        }
-                        if (dX.get(w, 4) < 3) { // in urban / cluster
-                            // Y.set(w, 0, 4.5 + dX.get(w, 2) + dummy + 0.1 * normal.inverse(rng.nextDouble())); // number of drivers
-                        } else {
-                            // Y.set(w, 0, 4.5 - dX.get(w, 2) + dummy + 0.1 * normal.inverse(rng.nextDouble()));
-                        }
-                    }
-                }
-            }
-            */
-            System.out.println("Mean of Y: " + pmUtility.mean(Y, 0));
-            
-            // NEED TO UPDATE
+            // SPLITTING VARIABLES FOR HETEROGENEITY
             //Z = dX.copy();  
             Z = pmUtility.getColumn(dX, 0);
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 1)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 2)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 3)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 4)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 5)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 6)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 7)); 
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 1));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 2));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 3));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 4));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 5));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 6));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 7));
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 8));
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 9)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 10)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 11)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 12)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 13)); 
-            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 14)); 
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 9));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 10));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 11));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 12));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 13));
+            Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 14));
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 15));
-            
-            // can split these into in-sample and out-of-sample here
-            int cutoff = (int) Math.round(X.getRowDimension() * 0.9);
 
-            DataLens lens = new DataLens(X, Y, Z, null);
-            DataLens inSample = lens.getSubsetData(0, cutoff);
-            outSampleLens = lens.getSubsetData(cutoff, X.getRowDimension() - 1);
-            X = inSample.getX();
-            Y = inSample.getY();
-            Z = inSample.getZ();
-            
+            boolean FAKE_DATA = true;
+            if (FAKE_DATA) {
+                Random rng = new Random(rngSeed);
+                NormalDistribution normal = new NormalDistribution();
+                for (i = 0; i < numObs; i++) {
+                    // generate X that is correlated with Z
+                    X.set(i, 3, 3 * rng.nextDouble()); // this is now the instrument
+                    double error = normal.inverse(rng.nextDouble());
+                    X.set(i, 0, X.get(i, 3) + 0.3* error); // this is the endogenous variable
 
-//            pmUtility.prettyPrint(dX, 10);
-//            System.out.println("----");
-//            pmUtility.prettyPrint(Z, 10);
-//            System.exit(0);
+                    // generate Y with correlation between one X and the error
+                    double beta1 = -5.0;
+                    if (Z.get(i, 4) == 1.0) {
+                        // System.out.println("black");
+                        beta1 = 5.0;
+                    } else {
+                        // System.out.println("white");
+                    }
+                    Y.set(i, 0, X.get(i, 0) * 1 + X.get(i, 1) * beta1 + X.get(i, 2) * 3 + error);
+                }
+            }
+            System.out.println("Mean of Y: " + pmUtility.mean(Y, 0));
+            System.out.print("OLS: ");
+            pmUtility.prettyPrintVector(pmUtility.OLS(X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 2), Y, false));
+
             in.close();
         } catch (Exception e) {
             e.printStackTrace();
         }
 
-        // have to decide what I'm going to split on (Z vector)
+        // have to decide what instrumentVariables'm going to split on (Z vector)
         // System.exit(0);
 //        pmUtility.prettyPrint(pmUtility.concatMatrix(Y,pmUtility.concatMatrix(X,Z)));
 //        System.exit(0);
-
     }
 
     @Override
     public String getVariableName(int variableIndex) {
         return varNames[variableIndex];
     }
-    
+
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
         //return "Group " + fixedEffectIndex;
         if (variableIndex == 7) {
             String[] year = {"1980", "1981", "1982", "1983", "1984", "1985", "1986", "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995", "1996", "1997", "1998", "1999"};
-            return year[fixedEffectIndex-1];
+            return year[fixedEffectIndex - 1];
         }
         return varNames[variableIndex] + " " + fixedEffectIndex;
     }
-    
+
     @Override
     public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
         if (beta == null) {
-        	System.out.println("Null beta, shouldn't be here!");
+            System.out.println("Null beta, shouldn't be here!");
             return "null (shouldn't be here!)";
         }
         // double b = beta.get(0, 0);
@@ -563,12 +519,11 @@ public class CardIVSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerIV(lens, homogeneityIndex, homogeneousParameterVector, false);
+        return new ContainerCardIV(lens, homogeneityIndex, homogeneousParameterVector, false, this);
     }
-    
+
     @Override
     public int getNumParams() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    	//return 8;
+        return X.getColumnDimension() - 1;
     }
 }
