@@ -283,7 +283,7 @@ public class TreeMoment {
                         double maxZ = lensGrowingTree.getMaximumValue(indexSplitVariable);
 
                         if (debugOptimization) {
-                            System.out.println("TreeMoment.java:224 -> min x_1: " + minZ + " max x_1: " + maxZ);
+                            System.out.println("TreeMoment.java:224 -> min "+momentSpec.getVariableName(indexSplitVariable)+": " + minZ + " max "+momentSpec.getVariableName(optimalSplitVariableIndex)+": " + maxZ);
                         }
                         double optimalZ_k = Double.POSITIVE_INFINITY;
                         double optimalZ_SSE_k = Double.POSITIVE_INFINITY;
@@ -299,8 +299,8 @@ public class TreeMoment {
                             }
 
                             if (debugOptimization) {
-                                echoLn("\tFmin search on z_" + indexSplitVariable + " found x = " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
-                                System.out.println("TreeMoment.java:253 -> min x_1: " + minZ + " max x_1: " + maxZ);
+                                echoLn("\tFmin search on " + momentSpec.getVariableName(indexSplitVariable) + " found x = " + optimalZ_k + " SSE: " + optimalZ_SSE_k);
+                                // System.out.println("TreeMoment.java:253 -> min x_1: " + minZ + " max x_1: " + maxZ);
                             }
 
                             boolean testGridSearch = true;
@@ -417,7 +417,7 @@ public class TreeMoment {
                                 }
 
                                 if (debugOptimization) {
-                                    echoLn("\t x_" + indexSplitVariable + " Partition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE);
+                                    echoLn("\t "+ momentSpec.getVariableName(indexSplitVariable) + " Partition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE);
                                 }
 
                                 //For every possible partition, we check which has the lowest SSE
@@ -446,7 +446,7 @@ public class TreeMoment {
                                 numObsRight = numObsRight_Partition;
                                 first = false;
                                 if (debugOptimization) {
-                                    echoLn("Variable x_" + optimalSplitVariableIndex + " with partition " + partitions.get((int) optimalZ) + " giving SSE of " + optimalZ_SSE + " set as overall current best.");
+                                    echoLn("Variable " + momentSpec.getVariableName(optimalSplitVariableIndex) + " with partition " + partitions.get((int) optimalZ) + " giving SSE of " + optimalZ_SSE + " set as overall current best.");
                                 }
                             }
                         }
@@ -477,7 +477,7 @@ public class TreeMoment {
 
                     MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, optimalSplitVariableIndex, partitions.get((int) optimalZ)); //This is where we use optimalX
                     if (verbose) {
-                        echoLn(depth + ". Calculated optimal split along discrete variable, partitioning x_" + optimalSplitVariableIndex + " -> " + partitions.get((int) optimalZ) + ", generating SSE of " + obj.getSSE());
+                        echoLn(depth + ". Calculated optimal split along discrete variable, partitioning " + momentSpec.getVariableName(optimalSplitVariableIndex) + " -> " + partitions.get((int) optimalZ) + ", generating SSE of " + obj.getSSE());
                     }
                     setRule(new SplitRule(true, optimalSplitVariableIndex, optimalZ, partitions.get((int) optimalZ), momentSpec));
                     childLeft = new TreeMoment(this, momentSpec, obj.getDataSplit().getLeft(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
@@ -749,7 +749,7 @@ public class TreeMoment {
 //        System.out.println("DEBUG: Exiting estimateHonestTree()");
     }
 
-    public double getTreeMomentObjectiveFunctionAtComputedParameters() {
+    public double getTreeMomentObjectiveFunctionAtComputedParameters(boolean verboseTreeGMMObjectiveFunction) {
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);
 
@@ -776,12 +776,12 @@ public class TreeMoment {
         G.timesEquals(1.0 / totalObs);
         omega.timesEquals(1.0 / totalObs);
 
-        boolean verboseTreeGMMObjectiveFunction = true;
         if(verboseTreeGMMObjectiveFunction) {
             System.out.print("moment vector: ");
             pmUtility.prettyPrintVector(G);
             System.out.println("omega:");
             pmUtility.prettyPrint(omega);
+            System.out.println("objective function: "+(((G.transpose()).times(omega)).times(G)).get(0, 0));
         }
         
         // not sure I should use omega here?

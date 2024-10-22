@@ -151,11 +151,16 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             // we grew a tree under the parameter restriction, should be able to find the sum of (unaveraged??? unweighted?) GMM functions across leaves
             double avgGMMObjectiveFunctionValue = 0;
             for (TreeMoment tree : myForest.forest) {
-                avgGMMObjectiveFunctionValue += tree.getTreeMomentObjectiveFunctionAtComputedParameters();;
+                avgGMMObjectiveFunctionValue += tree.getTreeMomentObjectiveFunctionAtComputedParameters(verbose);
             }
             avgGMMObjectiveFunctionValue /= myForest.getForestSize();
+            if(verbose) {
+                
+            }
             return avgGMMObjectiveFunctionValue;
         } else {
+            System.out.println("Deprecated and marked for deletion Oct 22 2024");
+            System.exit(0);
             // System.out.println("Computing out of sample fits");
             // Random rng = new Random(888);
             double outOfSampleFit = 0;

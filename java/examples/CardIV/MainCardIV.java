@@ -158,7 +158,7 @@ public class MainCardIV {
             // NEED TO UPDATE
             bestMinObservationsPerLeaf = 25;
             bestMinImprovement = 0.08;
-            bestMaxDepth = 2;
+            bestMaxDepth = 1;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -220,7 +220,7 @@ public class MainCardIV {
              */
             if (!hpl.isEmpty() && !allParametersHomogeneous) {
                 System.out.println("Initializing search container");
-                numberTreesInForest = 2; // 10
+                numberTreesInForest = 1; // 10
                 HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                         getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                 System.out.println("Calling execute search");
@@ -248,7 +248,7 @@ public class MainCardIV {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 1; // 50
+        numberTreesInForest = 50; // 50
 
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
