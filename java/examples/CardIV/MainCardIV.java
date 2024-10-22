@@ -75,7 +75,8 @@ public class MainCardIV {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("j:/git/momentforests/java/examples/cardiv/IV test.csv");
+        // MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("j:/git/momentforests/java/examples/cardiv/IV test.csv");
+        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("j:/git/momentforests/java/examples/cardiv/table3.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -113,9 +114,9 @@ public class MainCardIV {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 200; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 0.1; minImprovement <= 0.1; minImprovement *= 2) {
-                    for (int maxDepth = 0; maxDepth <= 2; maxDepth++) {
+                    for (int maxDepth = 0; maxDepth <= 4; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -155,13 +156,13 @@ public class MainCardIV {
             jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
             // NEED TO UPDATE
-            bestMinObservationsPerLeaf = 25;
+            bestMinObservationsPerLeaf = 200;
             bestMinImprovement = 0.08;
             bestMaxDepth = 1;
         }
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 2) {
+        if (detectHomogeneity && 1 == 1) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
@@ -245,7 +246,7 @@ public class MainCardIV {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 500; // 50
+        numberTreesInForest = 50; // 50
 
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
@@ -268,6 +269,7 @@ public class MainCardIV {
                 System.out.format("%20s [%.2f%%] %n", mySpecification.getVariableName(i), 100.0 * countVariableSplitsInForest[i] / numberTreesInForest);
             }
         }
+        
     }
 
     private class computeFitStatistics {
@@ -347,44 +349,33 @@ public class MainCardIV {
             Jama.Matrix testY = oosDataLens.getY();
             Jama.Matrix testX = oosDataLens.getX();
 
-            boolean allParametersHomogeneous = false; // SPR: NEED TO COME BACK TO THIS (Oct 21, 2024)
-            ContainerCardIV civ = new ContainerCardIV(oosDataLens,
-                    mySpecification.getHomogeneityIndex(),
-                    mySpecification.getHomogeneousParameterVector(),
-                    allParametersHomogeneous,
-                    mySpecification);
-
             double outOfSampleFit = 0;
             Jama.Matrix oosMoments = new Jama.Matrix(mySpecification.getNumMoments(), 1);
             
             for (int i = 0; i < testZ.getRowDimension(); i++) {
                 Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
-                Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 2);
+                Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
                 double yi = testY.get(i, 0);
 
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
                 outOfSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);               
                 // I think I just need to evaluate the moments at each observation for the beta that the forest has given
-                oosMoments.plusEquals(civ.getGi(compositeEstimatedBeta, i));
+                if(i<10) {
+                    System.out.println(pmUtility.stringPrettyPrintVector(compositeEstimatedBeta)+"\t"+pmUtility.stringPrettyPrint(zi));
+                }
             }
             // oosMoments.timesEquals(1.0 / testZ.getRowDimension());
             // outOfSampleFit = ((oosMoments.transpose()).times(oosMoments)).get(0, 0);
 
-            ContainerCardIV civIn = new ContainerCardIV(estimatingLens,
-                    mySpecification.getHomogeneityIndex(),
-                    mySpecification.getHomogeneousParameterVector(),
-                    allParametersHomogeneous,
-                    mySpecification);
-            Jama.Matrix inMoments = new Jama.Matrix(mySpecification.getNumMoments(), 1);
             inSampleFit = 0;
 
-            System.out.println(mySpecification.getNumMoments());
+            // System.out.println(mySpecification.getNumMoments());
 
-            System.out.println("Starting in-sample Z");
+            // System.out.println("Starting in-sample Z");
             for (int i = 0; i < estimatingLens.getZ().getRowDimension(); i++) {
                 Jama.Matrix zi = estimatingLens.getZ().getMatrix(i, i, 0, estimatingLens.getZ().getColumnDimension() - 1);
-                Jama.Matrix xi = estimatingLens.getX().getMatrix(i, i, 0, estimatingLens.getX().getColumnDimension() - 2);
+                Jama.Matrix xi = estimatingLens.getX().getMatrix(i, i, 0, estimatingLens.getX().getColumnDimension() - 1);
                 double yi = estimatingLens.getY().get(i, 0);
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);

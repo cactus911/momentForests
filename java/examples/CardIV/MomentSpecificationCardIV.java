@@ -56,7 +56,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     DataLens outSampleLens;
     // NEED TO UPDATE
-    String[] varNames = {"constant", "ed76", "exp76", "exp762", "black", "reg76r", "smsa76r", "region_1966", "smsa66r", "daded", "momed", "nodaded", "nomomed", "famed", "momdad14", "sinmom14", "near4"};
+    String[] varNames = {"ed76", "constant", "exp76", "exp762", "black", "reg76r", "smsa76r", "region_1966", "smsa66r", "daded", "momed", "nodaded", "nomomed", "famed", "momdad14", "sinmom14", "near4"};
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -71,8 +71,8 @@ public class MomentSpecificationCardIV implements MomentSpecification {
         // y = alpha(Z)X + epsilon
         loadData(787);
 
-        homogeneityIndex = new boolean[X.getColumnDimension()];
-        homogeneousParameterVector = new Jama.Matrix(X.getColumnDimension(), 1);
+        homogeneityIndex = new boolean[getNumParams()];
+        homogeneousParameterVector = new Jama.Matrix(getNumParams(), 1);
         resetHomogeneityIndex();
 
         // NEED TO UPDATE
@@ -82,58 +82,43 @@ public class MomentSpecificationCardIV implements MomentSpecification {
          * Z =
          *
          * 1. constant
-         *
          * 0. education (flipped these below)
-         *
          * 2. experience
-         *
          * 3. experience^2
-         *
          * 4. dummy = 1 if black
-         *
          * 5. dummy = 1 if living in the South in 1976
-         *
          * 6. dummy = 1 if living in SMSA in 1976
-         *
          * 7. region in 1966, categorical
-         *
          * 8. dummy = 1 if living in SMSA in 1966
-         *
          * 9. father's years of education
-         *
-         * 10. dummy = 1 if father's education is missing
-         *
-         * 11. mother's years of education
-         *
+         * 10. mother's years of education
+         * 11. dummy = 1 if father's education is missing
          * 12. dummy = 1 if mother's education is missing
-         *
          * 13. interactions of family education, categorical
-         *
          * 14. dummy = 1 if household contains both parents
-         *
          * 15. dummy = 1 if household is a single mother
          *
          */
-        int[] vsi = {4};
-        Boolean[] wvd = {false,
+        int[] vsi = {4,5,6,8,9,10,11,12,13,14,15};
+        Boolean[] whichVariablesAreDiscrete = {false, // 0
             false,
             false,
             false,
-            true,
-            true,
+            true, // black
+            true, 
             true,
             true,
             true,
             false,
-            true,
             false,
             true,
             true,
+            false, // ordered (interaction of education and family)
             true,
             true
         };
         variableSearchIndex = vsi;
-        DiscreteVariables = wvd;
+        DiscreteVariables = whichVariablesAreDiscrete;
     }
 
     @Override
@@ -163,7 +148,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     @Override
     public double getGoodnessOfFit(double yi, Matrix xi, Matrix beta) {
-        double error = yi - (xi.times(beta)).get(0,0);
+        double error = yi - ((xi.getMatrix(0, 0, 0, xi.getColumnDimension()-2)).times(beta)).get(0,0);
         return error*error;
     }
 
@@ -198,6 +183,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
+        System.out.println("Are all parameters homogeneous? "+allParametersHomogeneous);
         ContainerCardIV l = new ContainerCardIV(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
         l.computeBetaAndErrors();
         return l;
@@ -325,11 +311,11 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
                     a = b + 1;
                     b = line.indexOf(",", a);
-                    dX.set(i, 10, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if father's education is missing  
+                    dX.set(i, 10, Double.valueOf(line.substring(a, b))); 	// mother's years of education  
 
                     a = b + 1;
                     b = line.indexOf(",", a);
-                    dX.set(i, 11, Double.valueOf(line.substring(a, b))); 	// mother's years of education  
+                    dX.set(i, 11, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if father's education is missing 
 
                     a = b + 1;
                     b = line.indexOf(",", a);
@@ -345,7 +331,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
                     a = b + 1;
                     b = line.indexOf(",", a);
-                    dX.set(i, 15, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if household contains both parents
+                    dX.set(i, 15, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if single mom
 
                     a = b + 1;
                     b = line.indexOf(",", a);
@@ -513,7 +499,10 @@ public class MomentSpecificationCardIV implements MomentSpecification {
     /**
      * @return the homogeneousParameterVector
      */
+    @Override
     public Jama.Matrix getHomogeneousParameterVector() {
+        // System.out.print("Returning homogeneous parameter vector: ");
+        // pmUtility.prettyPrintVector(homogeneousParameterVector);
         return homogeneousParameterVector;
     }
 

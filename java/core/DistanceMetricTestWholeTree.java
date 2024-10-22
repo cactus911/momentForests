@@ -38,7 +38,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         double dm = 0;
 
         // let's test this unconstrained first to make sure that we get the same parameters back
-        int numParamsEachSplit = v.get(0).getX().getColumnDimension();
+        int numParamsEachSplit = spec.getNumParams();
 
         double[] unconstrainedX = computeParameters(numParamsEachSplit * v.size());
         double fminUnconstrained = f_to_minimize(unconstrainedX);
@@ -241,7 +241,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
          * now for the linear case, need to come back to this and figure this
          * out in general when we have broader cases)
          */
-        int K = v.get(0).getX().getColumnDimension();
+        int K = spec.getNumParams();
 
         /**
          * The total size of the stacked moment vector is the dimensionality of
@@ -293,8 +293,8 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
          * out in general when we have broader cases)
          */
         if(v.get(0).getX().getColumnDimension()!=spec.getNumParams()) {
-            System.out.println("DistanceMetricTestWholeTree.java:296 Use of specification getNumParams gives different answer than previous hardwired columnDimension!");
-            System.exit(0);
+            System.out.println("WARNING! Check your Container that you implemented SSE correctly!\nDistanceMetricTestWholeTree.java:296 Use of specification getNumParams gives different answer than previous hardwired columnDimension!");
+            // System.exit(0);
         }
         int K = spec.getNumParams(); // v.get(0).getX().getColumnDimension();
 
@@ -349,7 +349,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
 
     private ArrayList<Jama.Matrix> convertToBetaList(double[] x) {
         ArrayList<Jama.Matrix> cellBetaList = new ArrayList<>();
-        int numParamsEachLeaf = v.get(0).getX().getColumnDimension();
+        int numParamsEachLeaf = spec.getNumParams();
 
         /**
          * Fill up a list with betas that will match the moments in each cell

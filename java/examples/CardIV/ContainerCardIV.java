@@ -63,33 +63,33 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
         // System.out.println("In here");
         
         if (Y.getRowDimension() < 30) {
-            System.out.println("Too few observations");
+            // System.out.println("Too few observations");
             
             beta = null;
             goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {
             // System.out.println("Minimizer");
             try {
-                int numParams = spec.getNumParams();
+                int numParamsToOptimize = spec.getNumParams();
                 if (!allParametersHomogeneous) {
                     for (boolean b : homogeneityIndex) {
                         if (b) {
-                            numParams = numParams - 1; // homogeneous parameter imposed externally
+                            numParamsToOptimize = numParamsToOptimize - 1; // homogeneous parameter imposed externally
                         }
                     }
                 }
 
                 Uncmin_f77 minimizer = new Uncmin_f77(false);
-                double[] guess = new double[numParams + 1];
+                double[] guess = new double[numParamsToOptimize + 1];
 
-                double[] xpls = new double[numParams + 1];
+                double[] xpls = new double[numParamsToOptimize + 1];
                 double[] fpls = new double[2];
-                double[] gpls = new double[numParams + 1];
+                double[] gpls = new double[numParamsToOptimize + 1];
                 int[] itrmcd = new int[2];
-                double[][] a = new double[numParams + 1][numParams + 1];
-                double[] udiag = new double[numParams + 1];
-                double[] typsiz = new double[numParams + 1];
-                for (int i = 1; i <= numParams; i++) {
+                double[][] a = new double[numParamsToOptimize + 1][numParamsToOptimize + 1];
+                double[] udiag = new double[numParamsToOptimize + 1];
+                double[] typsiz = new double[numParamsToOptimize + 1];
+                for (int i = 1; i <= numParamsToOptimize; i++) {
                     typsiz[i] = 1.0;
                 }
 
@@ -113,14 +113,14 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
 //                System.exit(0);
 //                
                 
-                if (numParams > 0 && !allParametersHomogeneous) {
-                    minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                if (numParamsToOptimize > 0 && !allParametersHomogeneous) {
+                    minimizer.optif9_f77(numParamsToOptimize, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
                 }
 
-                Jama.Matrix betaUncmin = new Jama.Matrix(numParams, 1);
+                Jama.Matrix betaUncmin = new Jama.Matrix(spec.getNumParams(), 1);
                 int counter = 0;
 
-                for (int i = 0; i < numParams; i++) {
+                for (int i = 0; i < spec.getNumParams(); i++) {
                     if (homogeneityIndex[i]) {
                         betaUncmin.set(i, 0, homogeneityParameters.get(i, 0));
                     } else {
@@ -131,6 +131,11 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
 
                 beta = betaUncmin.copy();
                 double sse = 0;
+                
+                // System.out.print("Composite beta inside ContainerCardIV: ");
+                // pmUtility.prettyPrintVector(beta);
+                // System.out.println(X.getRowDimension()+" "+X.getColumnDimension());
+                
                 Jama.Matrix fit = (X.getMatrix(0, X.getRowDimension()-1, 0, X.getColumnDimension()-2)).times(beta);
                 for (int i = 0; i < Y.getRowDimension(); i++) {
                     sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
@@ -237,8 +242,12 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
     public double computeMeasureOfFit(Jama.Matrix beta) {
         // just return the GMM objective function (I think this works, no?)
         // this isn't anything critical, so don't worry about it
+        
+        // actually, i think that it is better to use SSE
+        Jama.Matrix fittedY = (X.getMatrix(0, X.getRowDimension()-1, 0, X.getColumnDimension()-2)).times(beta);
+        Jama.Matrix e = fittedY.minus(Y);
 
-        return getMomentObjectiveFunction(beta, false);
+        return e.normF();
     }
 
     private double getMomentObjectiveFunction(Jama.Matrix beta, boolean debugMoment) {
@@ -316,6 +325,9 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
                 counter++;
             }
         }
+        
+//        System.out.print("Compose beta in f_to_minimize ContainerCardIV: ");
+//        pmUtility.prettyPrintVector(b);
 
         return getMomentObjectiveFunction(b, false);
     }
