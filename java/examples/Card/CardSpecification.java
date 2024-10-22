@@ -199,7 +199,7 @@ public class CardSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
+        ContainerCard l = new ContainerCard(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
         l.computeBetaAndErrors();
         return l;
     }
@@ -550,7 +550,7 @@ public class CardSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false);
+        return new ContainerCard(lens, homogeneityIndex, homogeneousParameterVector, false);
     }
     
     @Override

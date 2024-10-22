@@ -75,8 +75,8 @@ public class MainCardIV {
 
     private void execute() {
         Random rng = new Random(777);
-        // MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("j:/git/momentforests/java/examples/cardiv/IV test.csv");
-        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("j:/git/momentforests/java/examples/cardiv/table3.csv");
+        // MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("d:/git/momentforests/java/examples/cardiv/IV test.csv");
+        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("d:/git/momentforests/java/examples/cardiv/table3.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -114,7 +114,7 @@ public class MainCardIV {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 200; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 0.1; minImprovement <= 0.1; minImprovement *= 2) {
                     for (int maxDepth = 0; maxDepth <= 4; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
@@ -156,13 +156,13 @@ public class MainCardIV {
             jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
             // NEED TO UPDATE
-            bestMinObservationsPerLeaf = 200;
+            bestMinObservationsPerLeaf = 25;
             bestMinImprovement = 0.08;
-            bestMaxDepth = 1;
+            bestMaxDepth = 2;
         }
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 1) {
+        if (detectHomogeneity && 1 == 2) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
@@ -246,7 +246,7 @@ public class MainCardIV {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 50; // 50
+        numberTreesInForest = 1; // 50
 
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);

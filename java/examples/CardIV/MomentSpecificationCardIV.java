@@ -56,7 +56,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     DataLens outSampleLens;
     // NEED TO UPDATE
-    String[] varNames = {"ed76", "constant", "exp76", "exp762", "black", "reg76r", "smsa76r", "region_1966", "smsa66r", "daded", "momed", "nodaded", "nomomed", "famed", "momdad14", "sinmom14", "near4"};
+    String[] varNames = {"ed76", "constant", "exp76", "exp762", "black", "south76", "city76", "region_1966", "smsa66r", "daded", "momed", "nodaded", "nomomed", "famed", "momdad14", "sinmom14", "near4"};
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -81,31 +81,24 @@ public class MomentSpecificationCardIV implements MomentSpecification {
          *
          * Z =
          *
-         * 1. constant
-         * 0. education (flipped these below)
-         * 2. experience
-         * 3. experience^2
-         * 4. dummy = 1 if black
-         * 5. dummy = 1 if living in the South in 1976
-         * 6. dummy = 1 if living in SMSA in 1976
-         * 7. region in 1966, categorical
-         * 8. dummy = 1 if living in SMSA in 1966
-         * 9. father's years of education
-         * 10. mother's years of education
-         * 11. dummy = 1 if father's education is missing
-         * 12. dummy = 1 if mother's education is missing
-         * 13. interactions of family education, categorical
-         * 14. dummy = 1 if household contains both parents
-         * 15. dummy = 1 if household is a single mother
+         * 1. constant 0. education (flipped these below) 2. experience 3.
+         * experience^2 4. dummy = 1 if black 5. dummy = 1 if living in the
+         * South in 1976 6. dummy = 1 if living in SMSA in 1976 7. region in
+         * 1966, categorical 8. dummy = 1 if living in SMSA in 1966 9. father's
+         * years of education 10. mother's years of education 11. dummy = 1 if
+         * father's education is missing 12. dummy = 1 if mother's education is
+         * missing 13. interactions of family education, categorical 14. dummy =
+         * 1 if household contains both parents 15. dummy = 1 if household is a
+         * single mother
          *
          */
-        int[] vsi = {4,5,6,8,9,10,11,12,13,14,15};
+        int[] vsi = {4, 5, 6, 8, 9, 11, 12, 13, 14, 15};
         Boolean[] whichVariablesAreDiscrete = {false, // 0
             false,
             false,
             false,
             true, // black
-            true, 
+            true,
             true,
             true,
             true,
@@ -148,8 +141,8 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     @Override
     public double getGoodnessOfFit(double yi, Matrix xi, Matrix beta) {
-        double error = yi - ((xi.getMatrix(0, 0, 0, xi.getColumnDimension()-2)).times(beta)).get(0,0);
-        return error*error;
+        double error = yi - ((xi.getMatrix(0, 0, 0, xi.getColumnDimension() - 2)).times(beta)).get(0, 0);
+        return error * error;
     }
 
     @Override
@@ -160,7 +153,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
          */
         // pmUtility.prettyPrint(xi);
         if (beta != null) {
-            double yhat = (xi.times(beta)).get(0, 0);
+            double yhat = ((xi.getMatrix(0, 0, 0, xi.getColumnDimension() - 2)).times(beta)).get(0, 0);
             return yhat;
         }
         return null;
@@ -183,7 +176,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        System.out.println("Are all parameters homogeneous? "+allParametersHomogeneous);
+        System.out.println("Are all parameters homogeneous? " + allParametersHomogeneous);
         ContainerCardIV l = new ContainerCardIV(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
         l.computeBetaAndErrors();
         return l;
@@ -411,17 +404,25 @@ public class MomentSpecificationCardIV implements MomentSpecification {
                     // generate X that is correlated with Z
                     X.set(i, 3, 3 * rng.nextDouble()); // this is now the instrument
                     double error = normal.inverse(rng.nextDouble());
-                    X.set(i, 0, X.get(i, 3) + 0.3* error); // this is the endogenous variable
+                    X.set(i, 0, X.get(i, 3) + 0.3 * error); // this is the endogenous variable
 
                     // generate Y with correlation between one X and the error
                     double beta1 = -5.0;
-                    if (Z.get(i, 4) == 1.0) {
-                        // System.out.println("black");
-                        beta1 = 5.0;
-                    } else {
-                        // System.out.println("white");
+                    double beta2 = 3.0;
+                    boolean observableHeterogeneity = true;
+                    if (observableHeterogeneity) {
+                        if (Z.get(i, 4) == 1.0) {
+                            // System.out.println("black");
+                            beta1 = 5.0;
+                        } else {
+                            // System.out.println("non-black");
+                        }
+
+                        if (Z.get(i, 5) == 1.0 && Z.get(i, 4) == 1.0) {
+                            beta2 = 2.0;
+                        }
                     }
-                    Y.set(i, 0, X.get(i, 0) * 1 + X.get(i, 1) * beta1 + X.get(i, 2) * 3 + error);
+                    Y.set(i, 0, X.get(i, 0) * 1 + X.get(i, 1) * beta1 + X.get(i, 2) * beta2 + error);
                 }
             }
             System.out.println("Mean of Y: " + pmUtility.mean(Y, 0));
