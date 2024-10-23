@@ -2,13 +2,13 @@
  * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
  * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
  */
-package examples.logit;
+package examples.logitVSL;
 
 /**
  *
  * @author stephen.p.ryan
  */
-public class LogitMonteCarloTable {
+public class LogitVSLMonteCarloTable {
 
     int n;
     double YMSE_unrestricted;
@@ -29,7 +29,7 @@ public class LogitMonteCarloTable {
     double classificationRate1;
     double classificationRate2;
 
-    public LogitMonteCarloTable(int n, double YMSE_unrestricted, double YMSE_SD_unrestricted, double YMSE_restricted, double YMSE_SD_restricted, double betaMSE_unrestricted, double betaMSE_restricted, double betaMSE_SD_unrestricted, double betaMSE_SD_restricted, double beta1_mean, double beta1_SD, double beta2_mean, double beta2_SD, double classificationRate1, double classificationRate2) {
+    public LogitVSLMonteCarloTable(int n, double YMSE_unrestricted, double YMSE_SD_unrestricted, double YMSE_restricted, double YMSE_SD_restricted, double betaMSE_unrestricted, double betaMSE_restricted, double betaMSE_SD_unrestricted, double betaMSE_SD_restricted, double beta1_mean, double beta1_SD, double beta2_mean, double beta2_SD, double classificationRate1, double classificationRate2) {
         this.n = n;
         this.YMSE_unrestricted = YMSE_unrestricted;
         this.YMSE_SD_unrestricted = YMSE_SD_unrestricted;

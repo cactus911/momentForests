@@ -20,13 +20,13 @@ public class CallMatlab {
 
     public CallMatlab() {
         try {
-            // MatlabEngine eng = MatlabEngine.startMatlab();
+            MatlabEngine eng = MatlabEngine.startMatlab();
 
             String[] engines = MatlabEngine.findMatlab();
             for(String s : engines) {
                 System.out.println(s);
             }
-            MatlabEngine eng = MatlabEngine.connectMatlab(engines[0]);
+            // MatlabEngine eng = MatlabEngine.connectMatlab(engines[0]);
             // Execute command on shared MATLAB session
             // eng.eval("plot(1:10); print('myPlot','-djpeg')");
             // eng.close();

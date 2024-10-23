@@ -109,7 +109,7 @@ public class TreeMoment {
         }
         if (allParametersHomogeneous) {
             this.maxDepth = 0;
-            System.out.println("Detected all homogeneous");
+            // System.out.println("Detected all homogeneous");
         }
     }
 
@@ -745,98 +745,106 @@ public class TreeMoment {
     }
 
     public void testHomogeneity() {
+        System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);
         // printTree();
-        if(verbose) {
+        if (verbose || 1 == 2) {
             System.out.println("Number of leaves: " + v.size());
         }
 
-        /**
-         * Oh wow, I think I am really poisoning myself here by setting degrees of freedom equal to 1!
-         * When we do this restricted estimation, we are testing whether the ENTIRE vector of parameters
-         * is equal. So need to crank up the degrees of freedom here, I think!
-         */
-        double degreesFreedom = v.size()*betaEstimateNode.getRowDimension();
-        if(verbose) {
-            System.out.println("Degrees of freedom in chi-squared test: "+degreesFreedom);
-        }
-        ChiSqrDistribution chi = new ChiSqrDistribution(degreesFreedom);
-
-        ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
-        ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
-
-        for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
-            DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
-            // WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
-            double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
-            double pval = 1.0 - chi.cumulative(dm2);
-            if(verbose) {
-                System.out.println("p-value: " + pval);
+        // how to handle case with only a stump?
+        // all parameters are classified as homogeneous
+        if (v.size() == 1) {
+            for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+                indexHomogeneousParameters.add(k);
+                valueHomogeneousParameters.add(getNodeEstimatedBeta().get(k, 0));
             }
-            pList.add(new PValue(k, pval));
-            constrainedParameterList.add(new PValue(k, big.getValueConstrainedParameter()));
-            if (dm2 < chi.inverse(0.95)) {
-                if(verbose) {
-                System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k + " constrained parameter guess: " + big.getValueConstrainedParameter());
-                }
+        } else {
+
+            double degreesFreedom = v.size() - 1; // basically saying that if we have 2 leaves, we have one restriction (param_k0 = param_k1)
+            if (verbose || 1 == 1) {
+                System.out.println("Degrees of freedom in chi-squared test: " + degreesFreedom);
             }
-        }
+            ChiSqrDistribution chi = new ChiSqrDistribution(degreesFreedom);
 
-        // now sort the p-values from lowest to highest
-        Collections.sort(pList);
+            ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
+            ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
 
-        // holm-bonferroni procedure below
-        boolean useHolmBonferroni = true;
-        if (useHolmBonferroni) {
-            boolean addSuccessiveParameters = false; // need this since i kind of constructed this loop backwards in terms of testing the null hypothesis (which is that there is parameter homogeneity)
-            for (int k = 0; k < pList.size(); k++) {
-                PValue d = pList.get(k);
-                if(verbose) {
-                    System.out.println(d);
+            for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+                DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
+                // WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
+                double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
+                double pval = 1.0 - chi.cumulative(dm2);
+                if (verbose) {
+                    System.out.println("p-value: " + pval);
                 }
-                double adjustedPValue = 0.05 / (pList.size() - k);
-                if(verbose) {
-                    System.out.println("p: " + d.getP() + " adjusted P-value: " + adjustedPValue);
-                }
-                if (d.getP() > adjustedPValue || addSuccessiveParameters) {
-                    if(verbose) {
-                        System.out.println("Holm-Bonferroni -> Accepting null; Adding parameter index " + d.getK() + " to homogeneity list.");
+                pList.add(new PValue(k, pval));
+                constrainedParameterList.add(new PValue(k, big.getValueConstrainedParameter()));
+                if (dm2 < chi.inverse(0.95)) {
+                    if (verbose) {
+                        System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k + " constrained parameter guess: " + big.getValueConstrainedParameter());
                     }
-                    indexHomogeneousParameters.add(d.getK());
+                }
+            }
 
-                    for (PValue cp : constrainedParameterList) {
-                        if (cp.getK() == d.getK()) {
-                            valueHomogeneousParameters.add(cp.getP());
+            // now sort the p-values from lowest to highest
+            Collections.sort(pList);
+
+            // holm-bonferroni procedure below
+            boolean useHolmBonferroni = true;
+            if (useHolmBonferroni) {
+                indexHomogeneousParameters.clear();
+                valueHomogeneousParameters.clear();
+                boolean addSuccessiveParameters = false; // need this since i kind of constructed this loop backwards in terms of testing the null hypothesis (which is that there is parameter homogeneity)
+                for (int k = 0; k < pList.size(); k++) {
+                    PValue d = pList.get(k);
+                    if (verbose) {
+                        System.out.println(d);
+                    }
+                    double adjustedPValue = 0.05 / (pList.size() - k);
+                    if (verbose) {
+                        System.out.println("p: " + d.getP() + " adjusted P-value: " + adjustedPValue);
+                    }
+                    if (d.getP() > adjustedPValue || addSuccessiveParameters) {
+                        if (verbose) {
+                            System.out.println("Holm-Bonferroni -> Accepting null; Adding parameter index " + d.getK() + " to homogeneity list.");
+                        }
+                        indexHomogeneousParameters.add(d.getK());
+
+                        for (PValue cp : constrainedParameterList) {
+                            if (cp.getK() == d.getK()) {
+                                valueHomogeneousParameters.add(cp.getP());
+                            }
+                        }
+
+                        // should i terminate this for loop here?
+                        // i think i am supposed to fail to reject all the other hypotheses if this happens (add them to homogeneity list?)
+                        // yes, i sort of wrote this backwards; should be adding parameters to HETEROGENEOUS index
+                        addSuccessiveParameters = true;
+                    } else {
+                        if (verbose) {
+                            System.out.println("Holm-Bonferroni -> Rejecting null; Retaining parameter index " + d.getK() + " in moment forest.");
                         }
                     }
-
-                    // should i terminate this for loop here?
-                    // i think i am supposed to fail to reject all the other hypotheses if this happens (add them to homogeneity list?)
-                    // yes, i sort of wrote this backwards; should be adding parameters to HETEROGENEOUS index
-                    addSuccessiveParameters = true;
-                } else {
-                    if(verbose) {
-                        System.out.println("Holm-Bonferroni -> Rejecting null; Retaining parameter index " + d.getK() + " in moment forest.");
-                    }
                 }
-            }
 //                    System.out.println("DEBUG: ending Holm Bonferroni method");
-        } else {
-            // easier bonferroni procedure (for checking what's going on here)
-            for (int k = 0; k < pList.size(); k++) {
-                PValue d = pList.get(k);
-                System.out.println(d);
-                double criticalValue = 0.05 / (0.0 + pList.size());
-                System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
-                if (d.getP() > criticalValue) {
-                    if(verbose) {
-                        System.out.println("Straight Bonferroni -> Accepting null; adding parameter index " + d.getK() + " to homogeneity list.");
-                    }
-                    indexHomogeneousParameters.add(d.getK());
-                } else {
-                    if(verbose) {
-                        System.out.println("Straight Bonferroni -> Rejecting null; retaining parameter index " + d.getK() + " in moment forest.");
+            } else {
+                // easier bonferroni procedure (for checking what's going on here)
+                for (int k = 0; k < pList.size(); k++) {
+                    PValue d = pList.get(k);
+                    System.out.println(d);
+                    double criticalValue = 0.05 / (0.0 + pList.size());
+                    System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
+                    if (d.getP() > criticalValue) {
+                        if (verbose) {
+                            System.out.println("Straight Bonferroni -> Accepting null; adding parameter index " + d.getK() + " to homogeneity list.");
+                        }
+                        indexHomogeneousParameters.add(d.getK());
+                    } else {
+                        if (verbose) {
+                            System.out.println("Straight Bonferroni -> Rejecting null; retaining parameter index " + d.getK() + " in moment forest.");
+                        }
                     }
                 }
             }
@@ -876,10 +884,12 @@ public class TreeMoment {
     public Jama.Matrix getEstimatedBeta(Jama.Matrix zi) {
         if (terminal) {
             // return the treatment effect for this z_i, not the predicted y_i
+            // System.out.println("GEB "+zi.get(0,0)+" "+betaEstimateNode.get(0, 0));
             return betaEstimateNode;
         } else // use rule to figure out whether to return left or right node's value
         // this will keep going down the rabbit hole until it returns a terminal node's value
         // kind of cool how this works!
+            // System.out.println("Rule is "+getRule()+" decision to go left is: "+getRule().isLeft(zi));
         if (getRule().isLeft(zi)) {
             return childLeft.getEstimatedBeta(zi);
         } else {
@@ -981,10 +991,10 @@ public class TreeMoment {
         return valueHomogeneousParameters;
     }
 
-    void getIndexSplitVariables(TreeSet<Integer> splitTree) {
+    void getEnumerationOfAllSplitVariablesInThisTree(TreeSet<Integer> splitTree) {
         if (!terminal) {
-            childLeft.getIndexSplitVariables(splitTree);
-            childRight.getIndexSplitVariables(splitTree);
+            childLeft.getEnumerationOfAllSplitVariablesInThisTree(splitTree);
+            childRight.getEnumerationOfAllSplitVariablesInThisTree(splitTree);
             splitTree.add(rule.getOptimalSplitVariableIndex());
         }
     }

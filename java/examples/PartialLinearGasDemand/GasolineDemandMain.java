@@ -337,7 +337,7 @@ public class GasolineDemandMain {
         }
 
         public double[] getSplitVariables() {
-            return myForest.getCountSplitVariables();
+            return myForest.getNumberTimesTreesInForestSplitOnAGivenVariableIndex();
         }
 
         public void computeOutOfSampleMSE() {

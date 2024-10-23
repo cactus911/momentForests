@@ -23,7 +23,10 @@
  */
 package examples.linear;
 
+import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
+import com.google.common.math.Quantiles;
+import core.ChartGenerator;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
@@ -37,6 +40,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.SwingUtilities;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -50,11 +56,16 @@ public class LinearTestMain {
     private final long rngSeed;
     private final int numObs;
     private double outOfSampleYMSE;
+    private double outOfSampleFitNWEstimator = 0;
+    private double outOfSampleFitParametricEstimator = 0;
     private double estimatedBetaVersusTruthMSE;
+    private double betaMSE_parametric = 0;
     private Jama.Matrix estimatedHomogeneousParameters;
+    private Jama.Matrix parametricParameters;
     private final boolean detectHomogeneity;
     private JTextArea jt;
     private final int dimX;
+    private final int monteCarloIndex;
 
     /**
      * @param args the command line arguments
@@ -85,30 +96,41 @@ public class LinearTestMain {
          *
          * How to implement that? We know the truth here, so query the
          * specification for its guess of the parameter vector for a bunch of
-         * X,Z combinations, run l2-norm on that? Done that, seems to be working
-         * really nicely.
+         * X,Z combinations, run Frobenius norm on that? Done that, seems to be
+         * working really nicely.
          */
-        for (int dimX = 3; dimX <= 3; dimX++) {
-            for (int numObs = 200; numObs <= 1600; numObs += 25) {
+        /**
+         * Number of Monte Carlos to run
+         */
+        int numMonteCarlos = 1;
+
+        for (int dimX = 2; dimX <= 2; dimX++) {
+            for (int numObs = 1000; numObs <= 100000; numObs *= 2) {
 
                 double YMSE_unrestricted = 0;
                 double YMSE_SD_unrestricted = 0;
                 double YMSE_restricted = 0;
                 double YMSE_SD_restricted = 0;
 
+                double Y_nonparametric_MSE = 0;
+                double Y_parametric_MSE = 0;
+
                 double betaMSE_unrestricted = 0;
                 double betaMSE_restricted = 0;
+                double betaMSE_parametric = 0;
                 double betaMSE_SD_unrestricted = 0;
                 double betaMSE_SD_restricted = 0;
 
                 double[] beta_mean = new double[dimX];
+                double[] beta_mean_parametric = new double[dimX];
                 double[] beta_SD = new double[dimX];
                 double[] classificationRate = new double[dimX];
 
                 JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-                // boolean[] d = {false, true};
-                boolean[] d = {true};
+                // boolean[] d = {false};
+                boolean[] d = {false, true};
+
                 for (boolean detectHomogeneity : d) {
                     // boolean detectHomogeneity = !true;
                     if (detectHomogeneity) {
@@ -120,19 +142,17 @@ public class LinearTestMain {
                     }
                     jam.append("\\\\ \n");
 
-                    jam.append("Dimensionality of X: " + dimX + "\n");
-
+                    // jam.append("Dimensionality of X: " + dimX + "\n");
                     Random rng = new Random(22);
 
                     // int dimX = 3;
                     double[] homogeneousClassificationRate = new double[dimX];
                     double[] avgParameter = new double[dimX];
                     double Y_MSE = 0;
+
                     double Y_MSE_var = 0;
                     double beta_MSE = 0;
                     double beta_MSE_var = 0;
-
-                    int numMonteCarlos = 250;
 
                     ArrayList<LinearTestMain> parallelLTM = new ArrayList<>();
 
@@ -140,17 +160,17 @@ public class LinearTestMain {
                         LinearTestMain go;
                         if (numMonteCarlos == 1) {
                             // 8621193992485539638L
-                            go = new LinearTestMain(8621193992485539638L, numObs, detectHomogeneity, jam, dimX);
+                            go = new LinearTestMain(m, 8621193992485539638L, numObs, detectHomogeneity, jam, dimX);
                         } else {
-                            go = new LinearTestMain(rng.nextLong(), numObs, detectHomogeneity, jam, dimX);
+                            go = new LinearTestMain(m, rng.nextLong(), numObs, detectHomogeneity, jam, dimX);
                         }
                         parallelLTM.add(go);
                     }
 
                     AtomicInteger bomb = new AtomicInteger();
 
-                    parallelLTM.parallelStream().forEach(e -> {
-                        //    parallelLTM.stream().forEach(e -> {
+                    // parallelLTM.parallelStream().forEach(e -> {
+                        parallelLTM.stream().forEach(e -> {
                         e.execute();
                         bomb.incrementAndGet();
                         System.out.println("Finished " + bomb.get() + " iterations.");
@@ -170,7 +190,7 @@ public class LinearTestMain {
                                     for (int i = 0; i < dimX; i++) {
                                         if (h == i) {
                                             counts[i]++; // this is counting how many times this parameter is chosen as homogeneous
-                                            if(m.getEstimatedHomogeneousParameters()!=null) {
+                                            if (m.getEstimatedHomogeneousParameters() != null) {
                                                 avgParameter[i] += m.getEstimatedHomogeneousParameters().get(i, 0);
                                             }
                                             // jt.append("Estimated Homogeneous Parameter: "+pmUtility.stringPrettyPrintVector(m.getEstimatedHomogeneousParameters())+"\n");
@@ -181,7 +201,15 @@ public class LinearTestMain {
                             }
                         }
                         Y_MSE += m.getOutOfSampleYMSE();
+                        if (!detectHomogeneity) {
+                            Y_nonparametric_MSE += m.getOutOfSampleFitNWEstimator();
+                            Y_parametric_MSE += m.getOutOfSampleFitParametricEstimator();
+                            betaMSE_parametric += m.getBetaMSE_parametric();
+                        }
+                        // jt2.append("Rolling: "+Y_nonparametric_MSE+" Marginal: "+m.getOutOfSampleFitNWEstimator()+"\n");
                         beta_MSE += m.getEstimatedBetaVersusTruthMSE();
+                        // jt2.append("forest_beta_MSE: "+beta_MSE+" marginal: "+m.getEstimatedBetaVersusTruthMSE()+"\n");
+                        // jt2.append("OLS_beta_MSE: "+betaMSE_parametric+" marginal: "+m.getBetaMSE_parametric()+"\n");
                     }
 
                     if (detectHomogeneity) {
@@ -200,8 +228,8 @@ public class LinearTestMain {
                                 for (Integer h : hList) {
                                     for (int i = 0; i < dimX; i++) {
                                         if (h == i) {
-                                            if(m.getEstimatedHomogeneousParameters()!=null) {
-                                            standardErrors[i] += Math.pow(m.getEstimatedHomogeneousParameters().get(i, 0) - avgParameter[i], 2);
+                                            if (m.getEstimatedHomogeneousParameters() != null) {
+                                                standardErrors[i] += Math.pow(m.getEstimatedHomogeneousParameters().get(i, 0) - avgParameter[i], 2);
                                             }
                                         }
                                     }
@@ -218,31 +246,20 @@ public class LinearTestMain {
                     }
 
                     Y_MSE /= parallelLTM.size();
+                    if (!detectHomogeneity) {
+                        Y_nonparametric_MSE /= parallelLTM.size();
+                        Y_parametric_MSE /= parallelLTM.size();
+                        betaMSE_parametric /= parallelLTM.size();
+                    }
+                    // jt2.append("Average NP_YMSE: "+Y_nonparametric_MSE+"\n");
                     beta_MSE /= parallelLTM.size();
+
                     for (LinearTestMain m : parallelLTM) {
                         Y_MSE_var += Math.pow(Y_MSE - m.getOutOfSampleYMSE(), 2);
                         beta_MSE_var += Math.pow(beta_MSE - m.getEstimatedBetaVersusTruthMSE(), 2);
                     }
                     Y_MSE_var /= parallelLTM.size();
                     beta_MSE_var /= parallelLTM.size();
-
-                    // jt.append("---------------------------------------------------------\n");
-                    // jt.append("n = " + numObs + " Classification Rate by Parameter\n");
-                    if (detectHomogeneity) {
-                        for (int i = 0; i < homogeneousClassificationRate.length; i++) {
-                            // jt.append(i + ". " + (homogeneousClassificationRate[i] / (0.0 + numMonteCarlos)) + "\n");
-                        }
-                    }
-                    // jt.append("Y_MSE: " + Y_MSE + " (" + Y_MSE_var + ")\n");
-                    // jt.append("beta_MSE: " + beta_MSE + " (" + beta_MSE_var + ")\n");
-                    if (detectHomogeneity) {
-                        for (int i = 0; i < dimX; i++) {
-                            String s = String.format("x[%d]: mean: %g se: %g [%d]\n", i, avgParameter[i], standardErrors[i], counts[i]);
-                            // jt.append("Parameter " + i + " mean: " + avgParameter[i] + " se: " + standardErrors[i] + " [" + counts[i] + "]\n");
-                            // jt.append(s);
-                        }
-                    }
-                    // jt.append("---------------------------------------------------------\n");
 
                     if (detectHomogeneity) {
                         YMSE_SD_restricted = Y_MSE_var;
@@ -259,25 +276,46 @@ public class LinearTestMain {
                         YMSE_unrestricted = Y_MSE;
                         betaMSE_SD_unrestricted = beta_MSE_var;
                         betaMSE_unrestricted = beta_MSE;
+
+                        Jama.Matrix avgParametricParameters = new Jama.Matrix(dimX, 1);
+                        for (LinearTestMain m : parallelLTM) {
+                            avgParametricParameters.plusEquals(m.getParametricParameters()); 
+                        }
+                        avgParametricParameters.timesEquals(1.0 / parallelLTM.size());
+                        for (int i = 0; i < avgParametricParameters.getRowDimension(); i++) {
+                            beta_mean_parametric[i] = avgParametricParameters.get(i, 0);
+                        }
+
                     }
                 }
-                LinearMonteCarloTable tf = new LinearMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted, betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta_mean, beta_SD, classificationRate);
+
+                LinearMonteCarloTable tf = new LinearMonteCarloTable(numObs, YMSE_unrestricted, YMSE_SD_unrestricted, YMSE_restricted, YMSE_SD_restricted,
+                        betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta_mean, beta_SD, classificationRate, Y_nonparametric_MSE, Y_parametric_MSE,
+                        beta_mean_parametric, betaMSE_parametric);
                 jam.append(tf.toString());
             }
         }
         System.out.println("Execution finished.");
     }
 
-    public LinearTestMain(long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt, int dimX) {
+    public LinearTestMain(int monteCarloIndex, long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt, int dimX) {
         this.rngSeed = rngSeed;
+        this.monteCarloIndex = monteCarloIndex;
         this.jt = jt;
         this.numObs = numObs;
         this.detectHomogeneity = detectHomogeneity;
         this.dimX = dimX;
+        parametricParameters = new Jama.Matrix(dimX, 1);
+    }
+
+    private void publish(String s, JTextArea jelly) {
+        SwingUtilities.invokeLater(() -> {
+            jelly.append(s);
+        });
     }
 
     private void execute() {
-        // System.out.println("**************** rngSeed = " + rngSeed + " ****************");
+        System.out.println("**************** rngSeed = " + rngSeed + " ****************");
         Random rng = new Random(rngSeed);
 
         // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
@@ -302,7 +340,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 10;
+        int numberTreesInForest = 50;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -322,7 +360,18 @@ public class LinearTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = true;
+        boolean computeAlternatives = false;
+        if (computeAlternatives) {
+            System.out.println("Computing nonparametric fits...");
+            computeOutOfSampleNonparametricFits(mySpecification, rngBaseSeedOutOfSample);
+            System.out.println("Computing completely parametric fits...");
+            computeOutOfSampleParametricFits(mySpecification, rngBaseSeedOutOfSample);
+        }
+
+        // partial linear model results from CV:
+        // 500: 50, 10, 2
+        // 
+        boolean runCV = false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -331,11 +380,12 @@ public class LinearTestMain {
             }
 
             // for (int minObservationsPerLeaf = numObs/10; minObservationsPerLeaf <= 4 * numObs/10; minObservationsPerLeaf *= 2) {
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 25; minObservationsPerLeaf *= 2) {
                 // for (double minImprovement = 0.1; minImprovement <= 10.0; minImprovement *= 10) {
-                double[] improvementLevels = {1, 5, 10}; // {1, 5, 10, 20}; // , 10.0, 20.0};
+                double[] improvementLevels = {2}; // {1,2,5,10}; // , 10, 20, 50}; // 0.1, 0.5, 1.0}; // {1, 5, 10, 20}; // , 10.0, 20.0};
                 for (double minImprovement : improvementLevels) {
-                    for (int maxDepth = Math.min(3, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 0; maxDepth--) {
+                    // for (int maxDepth = Math.min(5, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 0; maxDepth--) {
+                    for (int maxDepth = 8; maxDepth >= 0; maxDepth--) {
                         computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
                         double combinationMSE = outOfSampleYMSE;
                         String star = "";
@@ -347,17 +397,19 @@ public class LinearTestMain {
                             bestMaxDepth = maxDepth;
                             star = "(*)";
                         }
-                        if (star.contains("*") || numberTreesInForest == 1) {
-                            // System.out.println("minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
+                        if (star.contains("*") || 1 == 1) {
+                            System.out.println(monteCarloIndex + ". minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
                         }
                     }
                 }
             }
 
             System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
-            if (numberTreesInForest == 1) {
+            // jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth+"\n");
+            if (numberTreesInForest == 10) {
                 // jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
             }
+
         } else {
             bestMinObservationsPerLeaf = 50;
             bestMinImprovement = 10;
@@ -373,10 +425,11 @@ public class LinearTestMain {
             if (numObs == 4000) {
                 bestMaxDepth = 5;
             }
+
+            bestMinObservationsPerLeaf = 10;
+            bestMinImprovement = 5.0;
+            bestMaxDepth = 6;
         }
-//        bestMinObservationsPerLeaf = 150;
-//        bestMinImprovement = 1.0;
-        // bestMaxDepth = 1;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) {
@@ -390,32 +443,31 @@ public class LinearTestMain {
              */
             double minProportionInEachLeaf = 0.01;
 
-            numberTreesInForest = 20;
+            numberTreesInForest = 100;
 
             DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
             testParameterHomogeneity = false;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
-
             myForest.setTreeOptions(cvOptions);
+            System.out.println("Growing forest for homogeneity testing...");
             myForest.growForest();
+            System.out.println("----- Call to testHomogeneity -----");
             myForest.testHomogeneity();
-            // TreeMoment loblolly = myForest.getTree(0);
-            // loblolly.testHomogeneity();
 
-            // should I implement a voting scheme here across all the trees for discerning homogeneity?
-            // idea is to take the majority vote across trees
-            // then take the average value from those trees that voted yes
-            // let's try it and see what happens to classification rates
             ArrayList<Integer> hpl = new ArrayList<>();
             ArrayList<Double> hplStartingValues = new ArrayList<>();
-            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt);
+
+            boolean verboseVoting = true;
+            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, verboseVoting);
+
             double[] startingValues = myForest.getHomogeneityStartingValues();
             for (int i = 0; i < voteIndexHomogeneity.length; i++) {
                 if (voteIndexHomogeneity[i]) {
                     if (verbose) {
                         System.out.println("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i]);
+                        jt.append("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i] + "\n");
                     }
                     hpl.add(i);
                     hplStartingValues.add(startingValues[i]);
@@ -425,20 +477,8 @@ public class LinearTestMain {
 //                }
             }
 
-            // System.out.println("Done with growforest");
-            // ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
-            // ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
-            // System.out.println("Post get homogeneous parameters");
-            // tell the specification that these parameters have been determined to be homogeneous
-//            System.out.println("Unsorted");            
-//                System.out.print(hpl+" ");
-//                System.out.println(hplStartingValues);
-            // need to sort together
             HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
             sorter.sort(hpl, hplStartingValues);
-//            System.out.println("Sorted");
-//            System.out.print(hpl+" ");
-//            System.out.println(hplStartingValues);
 
             mySpecification.resetHomogeneityIndex();
             for (int i = 0; i < hpl.size(); i++) {
@@ -447,20 +487,9 @@ public class LinearTestMain {
                 // System.out.println(i);
             }
             setHomogeneousParameterList(hpl);
-            // System.out.println("After setting hp list");
-
-            // this seems to be working
-            boolean testPostClassificationConvergence = false;
-            if (testPostClassificationConvergence) {
-                hpl.clear();
-                hpl.add(0);
-                mySpecification.resetHomogeneityIndex();
-                mySpecification.setHomogeneousIndex(0);
-                mySpecification.setHomogeneousParameter(0, -1.0);
-            }
 
             boolean executeSearch = false;
-            
+
             /**
              * Estimate values of those homogeneous parameters
              */
@@ -488,8 +517,9 @@ public class LinearTestMain {
 
                     // System.out.println("Post search");
                     Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
-                    if (verbose) {
+                    if (verbose || 1 == 2) {
                         System.out.print("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
+                        jt.append("Post search: " + pmUtility.stringPrettyPrintVector(homogeneousParameters) + "\n");
                         pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
                     }
 
@@ -510,9 +540,12 @@ public class LinearTestMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        numberTreesInForest = 1; // using larger numbers here really improves fit!
+        System.out.println("Computing final trees...");
+        numberTreesInForest = 10; // using larger numbers here really improves fit!
+        verbose = false;
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
+        System.out.println("Finished execute.");
     }
 
     public double getEstimatedBetaVersusTruthMSE() {
@@ -521,6 +554,94 @@ public class LinearTestMain {
 
     public void setEstimatedBetaVersusTruthMSE(double estimatedBetaVersusTruthMSE) {
         this.estimatedBetaVersusTruthMSE = estimatedBetaVersusTruthMSE;
+    }
+
+    private double computeOutOfSampleNonparametricFits(MomentSpecification mySpecification, long rngBaseSeedOutOfSample) {
+        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(numObs, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        Jama.Matrix testZ = oosDataLens.getZ();
+        Jama.Matrix testX = oosDataLens.getX();
+        Jama.Matrix testY = oosDataLens.getY();
+
+        // do CV for optimal NW bandwidth parameter
+        double optimalBandwidthNWValue = 1.0;
+        double optimalBandwidthNW = 1.0;
+        boolean firstNWBandwidth = true;
+        for (double bandwidth = 3.0; bandwidth >= 1E-1; bandwidth /= 2.0) {
+            double bVal = 0;
+            for (int i = 0; i < mySpecification.getX().getRowDimension(); i++) {
+                Jama.Matrix xi = testX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
+                Jama.Matrix zi = testZ.getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
+                double nwEstimatorY = getNWEstimatorY(pmUtility.concatMatrix(xi, zi), mySpecification.getY(), mySpecification.getX(), mySpecification.getZ(), bandwidth);
+                if (i < -10) {
+                    System.out.println("y_i: " + testY.get(i, 0) + " yhat_i: " + nwEstimatorY + " x_i: " + pmUtility.stringPrettyPrint(xi) + " zi: " + pmUtility.stringPrettyPrint(zi));
+                }
+                bVal += Math.pow(testY.get(i, 0) - nwEstimatorY, 2);
+            }
+            bVal /= mySpecification.getX().getRowDimension();
+            if (bVal < optimalBandwidthNWValue || firstNWBandwidth) {
+                firstNWBandwidth = false;
+                optimalBandwidthNWValue = bVal;
+                optimalBandwidthNW = bandwidth;
+            }
+            // System.out.println(bandwidth + " " + bVal);
+        }
+        // System.out.println("Optimal NW bandwidth: " + optimalBandwidthNW + " MSE(Y): " + optimalBandwidthNWValue);
+        // System.exit(0);
+
+        outOfSampleFitNWEstimator = 0;
+
+        for (int i = 0; i < testZ.getRowDimension(); i++) {
+            Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
+            Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
+
+            double nwEstimatorY = getNWEstimatorY(pmUtility.concatMatrix(xi, zi), mySpecification.getY(), mySpecification.getX(), mySpecification.getZ(), optimalBandwidthNW);
+            outOfSampleFitNWEstimator += Math.pow(testY.get(i, 0) - nwEstimatorY, 2);
+        }
+        outOfSampleFitNWEstimator /= testZ.getRowDimension();
+
+        // System.out.println("NW Estimator MSE(Y): " + outOfSampleFitNWEstimator);
+        return outOfSampleFitNWEstimator;
+    }
+
+    private double computeOutOfSampleParametricFits(MomentSpecification mySpecification, long rngBaseSeedOutOfSample) {
+        DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(numObs, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        Jama.Matrix testX = oosDataLens.getX();
+        Jama.Matrix testY = oosDataLens.getY();
+        Jama.Matrix testZ = oosDataLens.getZ();
+
+        outOfSampleFitParametricEstimator = 0;
+
+        boolean[] fillerIndex = new boolean[mySpecification.getHomogeneousIndex().length];
+        for (int i = 0; i < fillerIndex.length; i++) {
+            fillerIndex[i] = false;
+        }
+        ContainerLinear cl = new ContainerLinear(new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null), fillerIndex, null, false);
+        cl.computeBetaAndErrors();
+        Jama.Matrix beta = cl.getBeta();
+        setParametricParameters(beta);
+
+        Random rng = new Random(rngBaseSeedOutOfSample - 3);
+        betaMSE_parametric = 0;
+
+        for (int i = 0; i < testX.getRowDimension(); i++) {
+            Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
+            outOfSampleFitParametricEstimator += mySpecification.getGoodnessOfFit(testY.get(i, 0), xi, beta);
+
+            Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
+
+            // going to compare directly to the true parameter vector in this method instead of using fit of Y
+            Jama.Matrix bTruth = mySpecification.getBetaTruth(zi, rng);
+            betaMSE_parametric += pmUtility.sumSquaredElements((beta.minus(bTruth)));
+            if (i < -10) {
+                System.out.print("OLS: ");
+                pmUtility.prettyPrintVector(beta);
+            }
+        }
+        outOfSampleFitParametricEstimator /= testX.getRowDimension();
+        betaMSE_parametric /= testX.getRowDimension();
+
+        // System.out.println("Parametric MSE(Y): " + outOfSampleFitParametricEstimator+" MSE(beta): "+betaMSE_parametric);
+        return outOfSampleFitParametricEstimator;
     }
 
     private double computeOutOfSampleMSEInParameterSpace(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
@@ -534,6 +655,12 @@ public class LinearTestMain {
 
         DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
+//        for(Boolean b : mySpecification.getHomogeneousIndex()) {
+//            System.out.println(b);
+//        }
+//        for(int i=0;i<mySpecification.getHomogeneousParameterVector().getRowDimension();i++) {
+//            System.out.println(mySpecification.getHomogeneousParameterVector().get(i,0));
+//        }
         myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
         TreeOptions cvOptions = new TreeOptions(minProportionPerLeaf, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
         myForest.setTreeOptions(cvOptions);
@@ -556,20 +683,42 @@ public class LinearTestMain {
         Random rng = new Random(rngBaseSeedOutOfSample - 3);
 
         double outOfSampleFit = 0;
+        
+        XYSeries betaTruthXY = new XYSeries("True Beta");
+        XYSeries betaEstimateXY = new XYSeries("Estimated Beta");
+        XYSeries betaEstimateXY5 = new XYSeries("Estimated Beta 5th Percentile");
+        XYSeries betaEstimateXY95 = new XYSeries("Estimated Beta 95th Percentile");
+
         outOfSampleYMSE = 0;
         for (int i = 0; i < testZ.getRowDimension(); i++) {
             Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
+            
+            // zi.set(0, 0, -1.5 + i * 1.0 / (testZ.getRowDimension()));
+            
             Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
             double yi = testY.get(i, 0);
 
-            // going to compare directly to the true parameter vector in this method instead of using fit of Y
             Jama.Matrix bTruth = mySpecification.getBetaTruth(zi, rng);
-
+            betaTruthXY.add(zi.get(0,0), bTruth.get(0,0));
+            
             // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
             Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+            ArrayList<Jama.Matrix> allParametersInForest = myForest.getAllEstimatedParametersFromForest(zi);
+            
+            ArrayList<Double> betaZeroList = new ArrayList<>();
+            for(int k=0;k<allParametersInForest.size();k++) {
+                betaZeroList.add(allParametersInForest.get(k).get(0,0));
+            }
+            betaEstimateXY5.add(zi.get(0,0), Quantiles.percentiles().index(5).compute(betaZeroList));
+            betaEstimateXY95.add(zi.get(0,0), Quantiles.percentiles().index(95).compute(betaZeroList));
+            
+            betaEstimateXY.add(zi.get(0,0), compositeEstimatedBeta.get(0,0));
+            if (i == 0 && 1 == 2) {
+                jt.append("Composite beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + "\n");
+            }
             outOfSampleYMSE += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
 
-            if (i < 10) {
+            if (i < -10) {
                 String hString = "[ ";
                 for (int k = 0; k < bTruth.getRowDimension(); k++) {
                     if (mySpecification.getHomogeneousIndex()[k]) {
@@ -580,15 +729,28 @@ public class LinearTestMain {
                 }
                 hString = hString + "]";
                 // jt.append("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + "\n");
+
+                System.out.print("tree: ");
+                pmUtility.prettyPrintVector(compositeEstimatedBeta);
+
             }
             //pmUtility.prettyPrintVector(compositeEstimatedBeta);
-
             outOfSampleFit += pmUtility.sumSquaredElements((compositeEstimatedBeta.minus(bTruth)));
         }
 
-        // ChartGenerator.makeXYScatter(xyc, "Fit Beta", "zi", "beta");
+        XYSeriesCollection xyc = new XYSeriesCollection(betaTruthXY);
+        xyc.addSeries(betaEstimateXY);
+        // xyc.addSeries(betaEstimateXY5);
+        // xyc.addSeries(betaEstimateXY95);
+        
+        ChartGenerator.makeXYScatter(xyc, "Fit Beta", "zi", "beta");
         // jt.append("betaMSE: " + (outOfSampleFit / testZ.getRowDimension()) + " \t [" + rngSeed + "]\n");
         outOfSampleYMSE /= testZ.getRowDimension();
+        // System.out.println("Forest MSE(Y): "+outOfSampleYMSE+" MSE(beta): "+outOfSampleFit/testZ.getRowDimension());
+
+        if (1 == 2) {
+            jt.append("MSE(beta): " + outOfSampleFit / testZ.getRowDimension() + "\n");
+        }
         return outOfSampleFit / testZ.getRowDimension(); // mse
     }
 
@@ -598,6 +760,36 @@ public class LinearTestMain {
 
     public ArrayList<Integer> getHomogeneousParameterList() {
         return homogeneousParameterList;
+    }
+
+    private double getNWEstimatorY(Jama.Matrix pointX, Jama.Matrix allY, Jama.Matrix allX, Jama.Matrix allZ, double h) {
+        double nwTop = 0;
+        double nwBottom = 0;
+        for (int i = 0; i < allX.getRowDimension(); i++) {
+            Jama.Matrix rowXi = allX.getMatrix(i, i, 0, allX.getColumnDimension() - 1);
+            Jama.Matrix rowZi = allZ.getMatrix(i, i, 0, allZ.getColumnDimension() - 1);
+            double Kh = Kh(pointX.minus(pmUtility.concatMatrix(rowXi, rowZi)), h);
+            if (i < -10) {
+                System.out.println("h = " + h + " Kh: " + Kh + " xi: " + pmUtility.stringPrettyPrint(pmUtility.concatMatrix(rowXi, rowZi)) + " pointXi: " + pmUtility.stringPrettyPrint(pointX));
+            }
+            nwTop += Kh * allY.get(i, 0);
+            nwBottom += Kh;
+        }
+        double nw = nwTop / nwBottom;
+        if (Double.isNaN(nw)) {
+            // System.out.println("nwTop: "+nwTop+" nwBottom: "+nwBottom);
+            return 0; // i'm not sure this is right!
+        }
+        return nwTop / nwBottom;
+    }
+
+    private double Kh(Jama.Matrix pointX, double h) {
+        NormalDistribution normal = new NormalDistribution();
+        double v = 1;
+        for (int i = 0; i < pointX.getColumnDimension(); i++) {
+            v *= (1.0 / h) * normal.probability(pointX.get(0, i) / h);
+        }
+        return v;
     }
 
     /**
@@ -626,6 +818,48 @@ public class LinearTestMain {
 
     public void setEstimatedHomogeneousParameters(Matrix estimatedHomogeneousParameters) {
         this.estimatedHomogeneousParameters = estimatedHomogeneousParameters;
+    }
+
+    /**
+     * @return the outOfSampleFitNWEstimator
+     */
+    public double getOutOfSampleFitNWEstimator() {
+        return outOfSampleFitNWEstimator;
+    }
+
+    /**
+     * @return the outOfSampleFitParametricEstimator
+     */
+    public double getOutOfSampleFitParametricEstimator() {
+        return outOfSampleFitParametricEstimator;
+    }
+
+    /**
+     * @return the parametricParameters
+     */
+    public Jama.Matrix getParametricParameters() {
+        return parametricParameters;
+    }
+
+    /**
+     * @param parametricParameters the parametricParameters to set
+     */
+    public void setParametricParameters(Jama.Matrix parametricParameters) {
+        this.parametricParameters = parametricParameters;
+    }
+
+    /**
+     * @return the betaMSE_parametric
+     */
+    public double getBetaMSE_parametric() {
+        return betaMSE_parametric;
+    }
+
+    /**
+     * @return the monteCarloIndex
+     */
+    public int getMonteCarloIndex() {
+        return monteCarloIndex;
     }
 
 }

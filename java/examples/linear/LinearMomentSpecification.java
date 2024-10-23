@@ -25,7 +25,7 @@ package examples.linear;
 
 // import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
-import core.ContainerMoment; 
+import core.ContainerMoment;
 import core.DataLens;
 import core.IntegerPartition;
 import core.MomentContinuousSplitObj;
@@ -33,7 +33,7 @@ import core.MomentPartitionObj;
 import core.MomentSpecification;
 import java.io.FileReader;
 import java.io.BufferedReader;
-import java.util.Random; 
+import java.util.Random;
 import utility.pmUtility;
 
 /**
@@ -52,8 +52,8 @@ public class LinearMomentSpecification implements MomentSpecification {
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean MONTE_CARLO = true;
-    
-    int dimensionX = 5;
+
+    int dimensionX;
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -68,8 +68,8 @@ public class LinearMomentSpecification implements MomentSpecification {
         this.dimensionX = dimX;
         // all these indices are hard-coded; want to change that down the road!
         homogeneityIndex = new boolean[dimensionX];
-        homogeneousParameterVector = new Jama.Matrix(dimensionX,1);
-        resetHomogeneityIndex();
+        homogeneousParameterVector = new Jama.Matrix(dimensionX, 1);
+        resetHomogeneityIndex(); 
         int[] vsi = {0, 1, 2}; //Search over z1, z2, z3 
         Boolean[] wvd = {false, false, true}; // z1, z2 continuous, z3 discrete
         variableSearchIndex = vsi;
@@ -86,15 +86,20 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
+    public int getNumParams() {
+        return dimensionX;
+    }
+
+    @Override
     public double getHomogeneousParameter(int parameterIndex) {
-        return homogeneousParameterVector.get(parameterIndex,0);
+        return homogeneousParameterVector.get(parameterIndex, 0);
     }
 
     @Override
     public int getNumMoments() {
         return X.getColumnDimension();
     }
-    
+
     @Override
     public void setHomogeneousParameter(int parameterIndex, double value) {
         homogeneousParameterVector.set(parameterIndex, 0, value);
@@ -117,13 +122,11 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public double getGoodnessOfFit(double yi, Matrix xi, Matrix beta) {
-        double fit = (xi.times(beta)).get(0,0);
-        double error = yi-fit;
+        double fit = (xi.times(beta)).get(0, 0);
+        double error = yi - fit;
         // System.out.println(fit+" "+yi);
-        return error*error;
+        return error * error;
     }
-    
-    
 
     @Override
     public Double getPredictedY(Matrix xi, Jama.Matrix beta, Random rng) {
@@ -163,7 +166,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public Matrix getY() {
-            return Y;
+        return Y;
     }
 
     @Override
@@ -192,13 +195,13 @@ public class LinearMomentSpecification implements MomentSpecification {
         Jama.Matrix beta = new Jama.Matrix(dimensionX, 1, 1); // Beta is a scalar
         beta.set(0, 0, -1);
         beta.set(1, 0, 1.0);
-        
+
         boolean partiallyLinearModel = true;
-        if(partiallyLinearModel) {
+        if (partiallyLinearModel) {
             // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
-            beta.set(0, 0, 2.5*Math.sin(zi.get(0,0)) + 0.25*Math.pow(zi.get(0,0),2));
+            beta.set(0, 0, 2.5 * Math.sin(zi.get(0, 0)) + 0.25 * Math.pow(zi.get(0, 0), 2));
             return beta;
-        }        
+        }
 
         boolean singleBeta = false;
         if (singleBeta) {
@@ -208,16 +211,16 @@ public class LinearMomentSpecification implements MomentSpecification {
         boolean oneDimensionHeterogeneity = false;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
-                beta.set(1, 0, -1.05);
+                beta.set(1, 0, -1.0);
             }
-            return beta; 
+            return beta;
         }
-        
+
         boolean twoDimensionHeterogeneity = false;
         if (twoDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
                 beta.set(0, 0, 0.33);
-                beta.set(1, 0, -1.05);
+                beta.set(1, 0, -1.0);
             }
             return beta;
         }
@@ -334,7 +337,7 @@ public class LinearMomentSpecification implements MomentSpecification {
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
         return "Group " + fixedEffectIndex;
     }
- 
+
     @Override
     public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
         if (beta == null) {
@@ -379,11 +382,12 @@ public class LinearMomentSpecification implements MomentSpecification {
     /**
      * @return the homogeneousParameterVector
      */
+    @Override
     public Jama.Matrix getHomogeneousParameterVector() {
         return homogeneousParameterVector;
     }
 
-    @Override 
+    @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
         return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false);
     }

@@ -521,4 +521,9 @@ public class GasolineSpecification implements MomentSpecification {
         return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false);
     }
 
+    @Override
+    public int getNumParams() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
 }

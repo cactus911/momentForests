@@ -26,7 +26,7 @@ public class ChartGenerator {
         axis.setAutoRangeIncludesZero(false);
         
         JFrame f = new JFrame("Plot");
-        f.setBounds(100+600*NUM_WINDOWS,100,500,500);
+        f.setBounds(100+60*NUM_WINDOWS,100,500,500);
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.getContentPane().setLayout(new BorderLayout());
         f.getContentPane().add(cp, BorderLayout.CENTER);

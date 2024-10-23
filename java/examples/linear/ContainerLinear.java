@@ -114,7 +114,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     if (useMeanY) {
                         xpls[1] = pmUtility.mean(Y, 0);
                     } else {
-                        boolean tryResidualizing = true;
+                        boolean tryResidualizing = false;
                         if (tryResidualizing) {
                             Jama.Matrix Yres = Y.copy();
                             Jama.Matrix Xres = null;
@@ -335,7 +335,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         return ((e.transpose()).times(e)).get(0, 0);
     }
 
-    private double getMoment(Jama.Matrix beta, boolean debugMoment) {
+    private double computeGMMObjectiveFunction(Jama.Matrix beta, boolean debugMoment) {
         /**
          * Let's implement the moment-based version of OLS here (need this for a
          * variety of reasons, also will extend nicely to other models more
@@ -446,7 +446,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     public double getMomentFunctionImposingHomogeneity(int k, double value) {
         Jama.Matrix betaHomogeneous = beta.copy();
         betaHomogeneous.set(k, 0, value);
-        return getMoment(betaHomogeneous, false);
+        return computeGMMObjectiveFunction(betaHomogeneous, false);
     }
 
     @Override
@@ -463,7 +463,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             }
         }
 
-        return getMoment(b, false);
+        return computeGMMObjectiveFunction(b, false);
     }
 
     @Override
@@ -478,7 +478,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public double getMomentFunctionValue(Jama.Matrix b) {
-        return getMoment(b, false);
+        return computeGMMObjectiveFunction(b, false);
     }
 
 }
