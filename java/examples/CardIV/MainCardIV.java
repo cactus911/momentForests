@@ -158,7 +158,7 @@ public class MainCardIV {
             // NEED TO UPDATE
             bestMinObservationsPerLeaf = 25;
             bestMinImprovement = 0.08;
-            bestMaxDepth = 1;
+            bestMaxDepth = 2;
         }
 
         mySpecification.resetHomogeneityIndex();

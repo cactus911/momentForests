@@ -419,7 +419,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
                         }
 
                         if (Z.get(i, 5) == 1.0 && Z.get(i, 4) == 1.0) {
-                            // beta2 = 2.0;
+                            beta2 = 2.0;
                         }
                     }
                     Y.set(i, 0, X.get(i, 0) * 1 + X.get(i, 1) * beta1 + X.get(i, 2) * beta2 + error);
