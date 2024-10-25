@@ -92,7 +92,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
          * single mother
          *
          */
-        int[] vsi = {4, 5, 6, 8, 9, 11, 12, 13, 14, 15};
+        int[] vsi = {2, 4, 5, 6, 8, 9, 11, 12, 13, 14, 15};
         Boolean[] whichVariablesAreDiscrete = {false, // 0
             false,
             false,
@@ -396,7 +396,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 14));
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 15));
 
-            boolean FAKE_DATA = true;
+            boolean FAKE_DATA = false;
             if (FAKE_DATA) {
                 Random rng = new Random(rngSeed);
                 NormalDistribution normal = new NormalDistribution();
