@@ -58,7 +58,6 @@ public class CardSpecification implements MomentSpecification {
     DataLens outSampleLens;
     // NEED TO UPDATE
     String[] varNames = {"constant", "ed76", "exp76", "exp762", "black", "reg76r", "smsa76r", "region_1966", "smsa66r", "daded", "momed", "nodaded", "nomomed", "famed", "momdad14", "sinmom14"};
-    //String[] varNames = {"constant", "x1", "x2", "x3", "x4", "x5"};
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -135,18 +134,7 @@ public class CardSpecification implements MomentSpecification {
             true,
             true
     };
-        
-    /*
-	    int[] vsi = {1, 2, 3, 4, 5}; 
-        Boolean[] wvd = {true,
-            false, 
-            false, 
-            true, 
-            true,
-            true          
-    };    
-    */ 
-        
+                
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -366,51 +354,7 @@ public class CardSpecification implements MomentSpecification {
                 }
             }
             
-        /*
-        Jama.Matrix dX = new Jama.Matrix(numObsFile, 6);
-        Jama.Matrix dY = new Jama.Matrix(numObsFile, 1);
-        try {
-            BufferedReader in = new BufferedReader(new FileReader(filename));
-            String line = in.readLine(); // headers
-            int i = 0;
-            for (int obs = 0; obs < numObs; obs++) {
-                line = in.readLine();
-                // System.out.println(line);
-                if (line != null) {
-                    int a = 0;
-                    int b = line.indexOf(",", a); //Returns the index within this string of the first occurrence of "," starting at 0; this is a comma delimited file
-                    // System.out.println(line);
-                    dY.set(i, 0, Double.valueOf(line.substring(a, b))); 
-
-                    a = b + 1;
-                    b = line.indexOf(",", a);
-                    dX.set(i, 0, Double.valueOf(line.substring(a, b))); 	// constant
-
-                    a = b + 1;
-                    b = line.indexOf(",", a);
-                    dX.set(i, 1, Double.valueOf(line.substring(a, b))); 	// x1
-                    
-                    a = b + 1;
-                    b = line.indexOf(",", a);
-                    dX.set(i, 2, Double.valueOf(line.substring(a, b))); 	// x2
-
-                    a = b + 1;
-                    b = line.indexOf(",", a);
-                    dX.set(i, 3, Double.valueOf(line.substring(a, b))); 	// x3
-
-                    a = b + 1;
-                    b = line.indexOf(",", a);
-                    dX.set(i, 4, Double.valueOf(line.substring(a, b))); 	// x4
-                                            
-                    a = b + 1;
-                    b = line.indexOf(",", a);
-                    dX.set(i, 5, Double.valueOf(line.substring(a))); 	// x5
-                                   
-                    i++;
-                }
-            }
-           */        
-            
+                          
             // NEED TO UPDATE
             X = pmUtility.getColumn(dX, 0);
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); 
@@ -521,8 +465,7 @@ public class CardSpecification implements MomentSpecification {
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 14)); 
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 15));
 			*/
-            
-                     
+                                
             // can split these into in-sample and out-of-sample here
             int cutoff = (int) Math.round(X.getRowDimension() * 0.9);
 

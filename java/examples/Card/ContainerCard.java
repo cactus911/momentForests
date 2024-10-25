@@ -115,7 +115,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                     if (useMeanY) {
                         xpls[1] = pmUtility.mean(Y, 0);
                     } else {
-                        boolean tryResidualizing = true;
+                        boolean tryResidualizing = false;
                         if (tryResidualizing) {
                             Jama.Matrix Yres = Y.copy();
                             Jama.Matrix Xres = null;
