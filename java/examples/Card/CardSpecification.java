@@ -32,6 +32,7 @@ import core.IntegerPartition;
 import core.MomentContinuousSplitObj;
 import core.MomentPartitionObj;
 import core.MomentSpecification;
+
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.util.Random;
@@ -101,9 +102,9 @@ public class CardSpecification implements MomentSpecification {
          *
          * 9. father's years of education
          * 
-         * 10. dummy = 1 if father's education is missing
+         * 10. mother's years of education
          *
-         * 11. mother's years of education
+         * 11. dummy = 1 if father's education is missing 
          *
          * 12. dummy = 1 if mother's education is missing
          *
@@ -114,8 +115,9 @@ public class CardSpecification implements MomentSpecification {
          * 15. dummy = 1 if household is a single mother
          *
          */
-	    int[] vsi = {1, 2, 3, 4, 5, 6, 9, 11}; 
-        Boolean[] wvd = {false,
+        
+	    int[] vsi = {1, 2, 4, 5, 6, 13, 14, 15}; 
+        Boolean[] wvd = {true,
             false, 
             false, 
             false, 
@@ -125,13 +127,14 @@ public class CardSpecification implements MomentSpecification {
             true,
             true, 
             false, 
-            true, 
-            false,
+            false, 
+            true,
             true,
             true,
             true,
             true
     };
+                
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
     }
@@ -266,7 +269,7 @@ public class CardSpecification implements MomentSpecification {
         }
 
         System.out.format("Number of observations = %,d %n", numObsFile);
-        
+           
         // NEED TO UPDATE
         Jama.Matrix dX = new Jama.Matrix(numObsFile, 16);
         Jama.Matrix dY = new Jama.Matrix(numObsFile, 1);
@@ -325,11 +328,11 @@ public class CardSpecification implements MomentSpecification {
                     
                     a = b + 1;
                     b = line.indexOf(",", a);
-                    dX.set(i, 10, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if father's education is missing  
+                    dX.set(i, 10, Double.valueOf(line.substring(a, b))); 	// mother's years of education    
                     
                     a = b + 1;
                     b = line.indexOf(",", a);
-                    dX.set(i, 11, Double.valueOf(line.substring(a, b))); 	// mother's years of education  
+                    dX.set(i, 11, Double.valueOf(line.substring(a, b))); 	// dummy = 1 if father's education is missing
                     
                     a = b + 1;
                     b = line.indexOf(",", a);
@@ -351,24 +354,26 @@ public class CardSpecification implements MomentSpecification {
                 }
             }
             
+                          
             // NEED TO UPDATE
             X = pmUtility.getColumn(dX, 0);
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); 
-            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); 
-            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); 
-            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); 
-            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); 
-            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8));
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); 
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); 
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); 
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); 
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8));
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 9)); 
-            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 10)); 
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 10)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 11)); 
-            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 12)); 
-            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); 
-            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); 
-            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15));
-            
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 12)); 
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); 
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); 
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15));
+           
+                      
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
              * categorical variables right now since they are stacked and not
@@ -441,7 +446,8 @@ public class CardSpecification implements MomentSpecification {
             System.out.println("Mean of Y: " + pmUtility.mean(Y, 0));
             
             // NEED TO UPDATE
-            //Z = dX.copy();  
+            Z = dX.copy();  
+            /*
             Z = pmUtility.getColumn(dX, 0);
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 1)); 
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 2)); 
@@ -458,7 +464,8 @@ public class CardSpecification implements MomentSpecification {
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 13)); 
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 14)); 
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 15));
-            
+			*/
+                                
             // can split these into in-sample and out-of-sample here
             int cutoff = (int) Math.round(X.getRowDimension() * 0.9);
 
@@ -492,12 +499,7 @@ public class CardSpecification implements MomentSpecification {
     
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-        //return "Group " + fixedEffectIndex;
-        if (variableIndex == 7) {
-            String[] year = {"1980", "1981", "1982", "1983", "1984", "1985", "1986", "1987", "1988", "1989", "1990", "1991", "1992", "1993", "1994", "1995", "1996", "1997", "1998", "1999"};
-            return year[fixedEffectIndex-1];
-        }
-        return varNames[variableIndex] + " " + fixedEffectIndex;
+        return " " + fixedEffectIndex;
     }
     
     @Override
@@ -555,7 +557,6 @@ public class CardSpecification implements MomentSpecification {
     
     @Override
     public int getNumParams() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    	//return 8;
+    	return X.getColumnDimension();
     }
 }
