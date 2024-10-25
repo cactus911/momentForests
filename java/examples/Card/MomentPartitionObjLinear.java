@@ -23,9 +23,9 @@
  */
 package examples.Card;
 
+import core.DataLens;
 import core.IntegerPartition;
 import core.MomentPartitionObj;
-import core.DataLens;
 import core.MomentSpecification;
 import core.SplitContainer;
 

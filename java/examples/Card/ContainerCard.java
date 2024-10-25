@@ -26,6 +26,7 @@ package examples.Card;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
+
 import java.awt.BorderLayout;
 import javax.swing.JFrame;
 import optimization.Uncmin_f77;
@@ -222,7 +223,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                     System.out.println("Divided by n:");
                     pmUtility.prettyPrint(B.inverse().times(1.0 / Y.getRowDimension()));
 
-                    System.exit(0);
+                    //System.exit(0);
                 }
             } catch (Exception e) {
                 if (allParametersHomogeneous) {

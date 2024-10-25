@@ -32,6 +32,7 @@ import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeMoment;
 import core.TreeOptions;
+
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.Random;
@@ -108,7 +109,7 @@ public class CardMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
         
-        boolean runCV = true;
+        boolean runCV = !true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -118,9 +119,9 @@ public class CardMain {
             
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 400; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 800; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 0.01; minImprovement <= 20; minImprovement *= 2) {
-                    for (int maxDepth = 2; maxDepth <= 11; maxDepth++) {
+                    for (int maxDepth = 2; maxDepth <= 13; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -157,13 +158,15 @@ public class CardMain {
 
             System.out.println("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
-            jt.append("Best in-sample fit: "+minInSampleFit);
+            jt.append("Best in-sample fit: "+minInSampleFit + "\n");
         } else {
         	// NEED TO UPDATE
             bestMinObservationsPerLeaf = 50;
             bestMinImprovement = 2.56;
-            bestMaxDepth = 2; 
+            bestMaxDepth = 0; 
         }
+        
+        
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity && 1 == 1) {
             if (verbose) {
