@@ -109,7 +109,7 @@ public class CardMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
         
-        boolean runCV = true;
+        boolean runCV = !true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -121,7 +121,7 @@ public class CardMain {
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
             for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 800; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 0.01; minImprovement <= 20; minImprovement *= 2) {
-                    for (int maxDepth = 0; maxDepth <= 0; maxDepth++) {
+                    for (int maxDepth = 1; maxDepth <= 11; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -161,7 +161,7 @@ public class CardMain {
             jt.append("Best in-sample fit: "+minInSampleFit + "\n");
         } else {
         	// NEED TO UPDATE
-            bestMinObservationsPerLeaf = 50;
+            bestMinObservationsPerLeaf = 200;
             bestMinImprovement = 2.56;
             bestMaxDepth = 0; 
         }

@@ -372,8 +372,7 @@ public class CardSpecification implements MomentSpecification {
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15));
-           
-                      
+                                 
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
              * categorical variables right now since they are stacked and not
