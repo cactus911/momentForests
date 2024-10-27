@@ -98,7 +98,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 }
 
                 double[] fscale = {0, 1.0E-8};
-                int[] method = {0, 1};
+                int[] method = {0, 3};
                 int[] iexp = {0, 0};
                 int[] msg = {0, 1};
                 int[] ndigit = {0, 8};
@@ -107,7 +107,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 int[] iahflg = {0, 0};
                 double[] dlt = {0, 1};
                 double[] gradtl = {0, 1E-8};
-                double[] stepmx = {0, 1E8};
+                double[] stepmx = {0, 1.0};
                 double[] steptl = {0, 1E-8};
 
                 if (numParams > 0 && !allParametersHomogeneous) {
