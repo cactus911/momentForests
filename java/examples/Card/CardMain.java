@@ -121,7 +121,7 @@ public class CardMain {
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
             for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 800; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 0.01; minImprovement <= 20; minImprovement *= 2) {
-                    for (int maxDepth = 0; maxDepth <= 0; maxDepth++) {
+                    for (int maxDepth = 1; maxDepth <= 11; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
