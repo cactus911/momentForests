@@ -177,9 +177,13 @@ public class TreeMoment {
          * a dumb way of doing it, but I'm not sure what else I could do easily
          * to get around this issue.
          */
-        // System.out.println("Computing baseline SSE");
+        if(verbose) {
+            System.out.println("Computing baseline SSE");
+        }
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
-        // System.out.println("Setting beta");
+        if(verbose) {
+            System.out.println("Setting beta");
+        }
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
         if (verbose) {
             System.out.println("Current node objective function value is " + currentNodeMoment.getGoodnessOfFit());
@@ -270,7 +274,7 @@ public class TreeMoment {
 
             for (int indexSplitVariable : momentSpec.getVariableIndicesToSearchOver()) {
                 if (debugOptimization) {
-                    echoLn("indexSplitVariable: " + indexSplitVariable + "(" + momentSpec.getVariableName(indexSplitVariable) + "); isDiscrete: " + discreteVector[indexSplitVariable] + "; In Tree: " + randomForestIndex.contains(indexSplitVariable));
+                    echoLn("indexSplitVariable: " + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + "); isDiscrete: " + discreteVector[indexSplitVariable] + "; In Tree: " + randomForestIndex.contains(indexSplitVariable));
                 }
                 if (randomForestIndex.contains(indexSplitVariable)) {
                     /**
@@ -429,7 +433,7 @@ public class TreeMoment {
                                     numObsLeft_Partition = obj.getEffectiveNumObsLeft();
                                     numObsRight_Partition = obj.getEffectiveNumObsRight();
                                     if (debugOptimization) {
-                                        echoLn("\tPartition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE + " set as within-variable current best.");
+                                        echoLn("\tPartition: " + i + " ("+momentSpec.getVariableName(i)+") " + partitions.get(i) + " SSE: " + partitionSSE + " set as within-variable current best.");
                                     }
                                 }
                             }

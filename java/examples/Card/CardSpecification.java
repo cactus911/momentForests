@@ -115,7 +115,7 @@ public class CardSpecification implements MomentSpecification {
          * 15. dummy = 1 if household is a single mother
          *
          */
-        int[] vsi = {4, 5, 6, 14, 15};
+        int[] vsi = {1, 2, 4, 5, 6, 8, 14, 15};
         Boolean[] wvd = {true,
             false,
             false,
@@ -360,19 +360,19 @@ public class CardSpecification implements MomentSpecification {
             X = pmUtility.getColumn(dX, 0); // constant
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // education 
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8));
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 9)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 10)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 11)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 12)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15));
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // exp^2
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // black
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // south
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // smsa76
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // region
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8)); // smsa66
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 9)); // father yrs edu
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 10)); // mother yrs edu
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 11)); // father edu missing
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 12)); // mother edu missing
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); // interaction fam edu categorical (which categorical?)
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); // both parents present
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15)); // single mother
 
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
@@ -417,7 +417,7 @@ public class CardSpecification implements MomentSpecification {
              */
 
             
-            boolean FAKE_DATA = true;
+            boolean FAKE_DATA = false;
             if (FAKE_DATA) {
                 NormalDistribution normal = new NormalDistribution();
                 Random rng = new Random(78710);

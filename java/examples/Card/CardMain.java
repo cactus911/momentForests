@@ -81,7 +81,7 @@ public class CardMain {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecification mySpecification = new CardSpecification("c:/git/momentforests/java/examples/card/table2.csv");
+        MomentSpecification mySpecification = new CardSpecification("d:/git/momentforests/java/examples/card/table2.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -97,7 +97,7 @@ public class CardMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 10;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -120,8 +120,8 @@ public class CardMain {
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
             for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 800; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.01; minImprovement <= 20; minImprovement *= 2) {
-                    for (int maxDepth = 1; maxDepth <= 11; maxDepth++) {
+                for (double minImprovement = 2; minImprovement <= 20; minImprovement *= 2) {
+                    for (int maxDepth = 1; maxDepth <= 9; maxDepth++) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -161,9 +161,9 @@ public class CardMain {
             jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
             // NEED TO UPDATE
-            bestMinObservationsPerLeaf = 50;
-            bestMinImprovement = 5.6;
-            bestMaxDepth = 3;
+            bestMinObservationsPerLeaf = 40;
+            bestMinImprovement = 1E-5;
+            bestMaxDepth = 4;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -186,10 +186,19 @@ public class CardMain {
 
             myForest.setTreeOptions(cvOptions);
             myForest.growForest();
-            myForest.testHomogeneity();
-            // TreeMoment loblolly = myForest.getTree(0);
-            // loblolly.testHomogeneity();
 
+            if (verbose) {
+                TreeMoment loblolly = myForest.getTree(0);
+                System.out.println("************************");
+                System.out.println("* Printing first tree  *");
+                System.out.println("************************");
+                loblolly.printTree();
+            }
+            
+
+            myForest.testHomogeneity();
+
+            // loblolly.testHomogeneity();
             // should I implement a voting scheme here across all the trees for discerning homogeneity?
             // idea is to take the majority vote across trees
             // then take the average value from those trees that voted yes
@@ -248,7 +257,6 @@ public class CardMain {
                     // pmUtility.prettyPrintVector(mySpecification.getHomogeneousParameterVector());
                     // holy smokes we aren't setting the homogeneous parameters in mySpec to be what we found here???
                     // doing so below, why wasn't this done before?!?!?
-                    
                     int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
                     System.out.println("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
                     Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
@@ -256,7 +264,7 @@ public class CardMain {
                     for (int k = 0; k < K; k++) {
                         if (mySpecification.getHomogeneousIndex()[k]) {
                             expandedHomogeneousParameterVector.set(k, 0, homogeneousParameters.get(counter, 0));
-                            mySpecification.setHomogeneousParameter(k, homogeneousParameters.get(counter,0));
+                            mySpecification.setHomogeneousParameter(k, homogeneousParameters.get(counter, 0));
                             counter++;
                         }
                     }
