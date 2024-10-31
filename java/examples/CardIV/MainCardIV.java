@@ -156,9 +156,9 @@ public class MainCardIV {
             jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
             // this is what CV gave me Oct 24 2024
-            bestMinObservationsPerLeaf = 50;
-            bestMinImprovement = 5.0;
-            bestMaxDepth = 0; // 3;
+            bestMinObservationsPerLeaf = 25;
+            bestMinImprovement = 2.0;
+            bestMaxDepth = 3; // 3;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -248,7 +248,7 @@ public class MainCardIV {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = false;
-        numberTreesInForest = 1000;
+        numberTreesInForest = 10;
 
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
@@ -342,6 +342,9 @@ public class MainCardIV {
              * Grow the moment forest
              */
             myForest.growForest();
+            System.out.println("**************");
+            System.out.println("* First tree *");
+            System.out.println("**************");
             myForest.getTree(0).printTree();
             /**
              * Test vectors for assessment
@@ -379,7 +382,7 @@ public class MainCardIV {
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
                 
-                if(i==0 && 1==1) {
+                if(i==0 && 1==2) {
                     for(int f=0;f<myForest.getForestSize();f++) {
                         pmUtility.prettyPrintVector(myForest.getTree(f).getEstimatedBeta(zi));
                     }

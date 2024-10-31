@@ -112,6 +112,10 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         }
 
         minimizer.optif9_f77(numHomogeneousParametersToSearchOver, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        
+        if(itrmcd[1]==4 || itrmcd[1]==5) {
+            System.out.println("***** CAUTION: Uncmin reported failing to find a minimum *****");
+        }
 
         Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numHomogeneousParametersToSearchOver, 1);
         for (int i = 0; i < numHomogeneousParametersToSearchOver; i++) {

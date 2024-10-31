@@ -184,7 +184,7 @@ public class TreeMoment {
         }
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
         if (momentSpec.didEstimatorFail()) {
-            System.out.println("TreeMoment setting itself to invalid");
+            // System.out.println("TreeMoment setting itself to invalid");
             validTree = false;
         }
         if (verbose) {
@@ -691,7 +691,7 @@ public class TreeMoment {
             } else {
                 ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest, allParametersHomogeneous);
                 if (momentSpec.didEstimatorFail()) {
-                    System.out.println("TreeMoment setting itself to invalid in honest tree");
+                    // System.out.println("TreeMoment setting itself to invalid in honest tree");
                     validTree = false;
                 }
 
@@ -751,7 +751,7 @@ public class TreeMoment {
                     } else {
                         ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest, allParametersHomogeneous);
                         if (momentSpec.didEstimatorFail()) {
-                            System.out.println("TreeMoment setting itself to invalid in honest tree pruning");
+                            // System.out.println("TreeMoment setting itself to invalid in honest tree pruning");
                             validTree = false;
                         }
                         setNodeEstimatedBeta(c.getBeta());

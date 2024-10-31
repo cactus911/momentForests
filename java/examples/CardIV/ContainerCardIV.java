@@ -157,9 +157,9 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
 //                    pmUtility.prettyPrintVector(betaOLS);
 
                 if (failedEstimation) {
-                    System.out.print("Optimizer flagged as failing [" + itrmcd[1] + "]: ");
-                    pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
-                    System.out.println("f_failed: " + f_to_minimize(xpls));
+                    // System.out.print("Optimizer flagged as failing [" + itrmcd[1] + "]: ");
+                    // pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+                    // System.out.println("f_failed: " + f_to_minimize(xpls));
                     beta = null;
                     goodnessOfFit = Double.POSITIVE_INFINITY;
                 }
