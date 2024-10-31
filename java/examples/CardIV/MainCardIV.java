@@ -92,7 +92,7 @@ public class MainCardIV {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 25;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -156,9 +156,9 @@ public class MainCardIV {
             jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
             // this is what CV gave me Oct 24 2024
-            bestMinObservationsPerLeaf = 25;
-            bestMinImprovement = 2.0;
-            bestMaxDepth = 3; // 3;
+            bestMinObservationsPerLeaf = 25; // 25;
+            bestMinImprovement = 1.0; // 2.0
+            bestMaxDepth = 2; // 3;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -247,8 +247,8 @@ public class MainCardIV {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        verbose = false;
-        numberTreesInForest = 10;
+        verbose = true;
+        numberTreesInForest = 5;
 
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
@@ -327,6 +327,9 @@ public class MainCardIV {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
 
+            // i can add k-fold validation here
+            // TODO: in the future try this out
+            
             DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
             DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
             DataLens estimatingLens = split[0];

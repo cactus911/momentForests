@@ -55,8 +55,9 @@ public class MomentSpecificationCardIV implements MomentSpecification {
     boolean failedEstimator = false;
 
     DataLens outSampleLens;
-    // NEED TO UPDATE
-    String[] varNames = {"ed76", "constant", "exp76", "exp762", "black", "south76", "city76", "region_1966", "smsa66r", "daded", "momed", "nodaded", "nomomed", "famed", "momdad14", "sinmom14", "near4"};
+    
+    // these are the variable names for the Z vector, not X (so that constant is in the first position here, but not in X)
+    String[] varNames = {"constant", "ed76", "exp76", "exp762", "black", "south76", "city76", "region_1966", "smsa66r", "daded", "momed", "nodaded", "nomomed", "famed", "momdad14", "sinmom14", "near4"};
 
     /**
      * We are going to control homogeneous parameters through these variables
@@ -75,24 +76,45 @@ public class MomentSpecificationCardIV implements MomentSpecification {
         homogeneousParameterVector = new Jama.Matrix(getNumParams(), 1);
         resetHomogeneityIndex();
 
-        // NEED TO UPDATE
         /**
          * These all refer to Z (not X)!!!
          *
          * Z =
          *
-         * 1. constant 0. education (flipped these below) 2. experience 3.
-         * experience^2 4. dummy = 1 if black 5. dummy = 1 if living in the
-         * South in 1976 6. dummy = 1 if living in SMSA in 1976 7. region in
-         * 1966, categorical 8. dummy = 1 if living in SMSA in 1966 9. father's
-         * years of education 10. mother's years of education 11. dummy = 1 if
-         * father's education is missing 12. dummy = 1 if mother's education is
-         * missing 13. interactions of family education, categorical 14. dummy =
-         * 1 if household contains both parents 15. dummy = 1 if household is a
-         * single mother
+         * 0. constant
+         *
+         * 1. education
+         *
+         * 2. experience
+         *
+         * 3. experience^2
+         *
+         * 4. dummy = 1 if black
+         *
+         * 5. dummy = 1 if living in the South in 1976
+         *
+         * 6. dummy = 1 if living in SMSA in 1976
+         *
+         * 7. region in 1966, categorical
+         *
+         * 8. dummy = 1 if living in SMSA in 1966
+         *
+         * 9. father's years of education
+         *
+         * 10. mother's years of education
+         *
+         * 11. dummy = 1 if father's education is missing
+         *
+         * 12. dummy = 1 if mother's education is missing
+         *
+         * 13. interactions of family education, categorical
+         *
+         * 14. dummy = 1 if household contains both parents
+         *
+         * 15. dummy = 1 if household is a single mother
          *
          */
-        int[] vsi = {2, 4, 5, 6, 8, 9, 11, 12, 13, 14, 15};
+        int[] vsi = {1, 2, 4, 5, 6, 7, 8, 9, 10, 14, 15};
         Boolean[] whichVariablesAreDiscrete = {false, // 0
             false,
             false,
@@ -417,14 +439,14 @@ public class MomentSpecificationCardIV implements MomentSpecification {
                     double beta2 = 3.0;
                     boolean observableHeterogeneity = true;
                     if (observableHeterogeneity) {
-                        if (Z.get(i, 4) == 1.0) {
+                        if (Z.get(i, 4) == 1.0) { // black
                             // System.out.println("black");
                             beta1 = 5.0;
                         } else {
                             // System.out.println("non-black");
                         }
 
-                        if (Z.get(i, 5) == 1.0 && Z.get(i, 4) == 1.0) {
+                        if (Z.get(i, 5) == 1.0 && Z.get(i, 4) == 1.0) { // south and black
                             beta2 = 2.0;
                         }
                     }

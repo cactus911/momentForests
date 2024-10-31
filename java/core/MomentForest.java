@@ -74,7 +74,7 @@ public class MomentForest {
          * forest each time we call growForest!
          */
         forest = new ArrayList<>();
-        double proportionObservationsToEstimateTreeStructure = 0.15;
+        double proportionObservationsToEstimateTreeStructure = 0.5;
 
         Random rng = new Random(forestSeed);
 
@@ -261,6 +261,8 @@ public class MomentForest {
     public void testHomogeneity() {
         boolean useParallel = false;
 
+        double[] averageTestValues = new double[spec.getNumParams()];
+        
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
                 // System.out.println("========== Tree "+i+" ==========");
@@ -271,6 +273,23 @@ public class MomentForest {
                 tree.testHomogeneity();
             });
         }
+        
+        for(TreeMoment tree : forest) {
+            double[] testValues_i = tree.getTestValues();
+            for(int k=0;k<testValues_i.length;k++) {
+                    averageTestValues[k] = averageTestValues[k] + testValues_i[k];
+                }
+        }
+        
+        /**
+         * Hmm, this doesn't seem to work, need more time to think about how
+         * to do this properly (should I be averaging something other than the objective function value?)
+         */
+        for(int k=0;k<averageTestValues.length;k++) {
+            averageTestValues[k] = averageTestValues[k] / forest.size();
+            System.out.println("parameter "+k+": average DM test statistic: "+averageTestValues[k]);
+        }
+        
     }
 
 }
