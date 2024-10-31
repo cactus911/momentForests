@@ -72,6 +72,8 @@ public class TreeMoment {
     private ArrayList<Double> valueHomogeneousParameters = new ArrayList<>();
 
     private boolean testParameterHomogeneity;
+    
+    private boolean validTree = true;
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
             Boolean[] discreteVector, boolean verbose, double minProportionEachPartition,
@@ -181,6 +183,9 @@ public class TreeMoment {
             // System.out.println("Computing baseline SSE");
         }
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
+        if(momentSpec.didEstimatorFail()) {
+            validTree = false;
+        }
         if(verbose) {
             // System.out.println("Setting beta");
         }
@@ -1044,5 +1049,19 @@ public class TreeMoment {
             childRight.getEnumerationOfAllSplitVariablesInThisTree(splitTree);
             splitTree.add(rule.getOptimalSplitVariableIndex());
         }
+    }
+
+    /**
+     * @return the validTree
+     */
+    public boolean isValidTree() {
+        return validTree;
+    }
+
+    /**
+     * @param validTree the validTree to set
+     */
+    public void setValidTree(boolean validTree) {
+        this.validTree = validTree;
     }
 }

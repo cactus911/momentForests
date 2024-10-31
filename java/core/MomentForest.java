@@ -112,6 +112,18 @@ public class MomentForest {
             });
         }
         // System.out.format("Memory usage: %,d bytes %n", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
+        
+        // prune out invalid trees? these would be ones where the minimizer failed?
+        ArrayList<TreeMoment> validForest = new ArrayList<>();
+        for(int i=0;i<numberTreesInForest;i++) {
+            if(forest.get(i).isValidTree()) {
+                validForest.add(forest.get(i));
+            } else {
+                System.out.println("Removing tree "+i+" due to failed estimation.");
+            }
+        }
+        forest = validForest;
+        numberTreesInForest = forest.size();
     }
 
     /**

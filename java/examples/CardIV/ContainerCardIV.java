@@ -38,10 +38,11 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
 
     double goodnessOfFit = -666; // make sure that we give back a crazy number if it is not called
     Jama.Matrix beta;
-    Jama.Matrix variance;
     boolean debugVerbose = false;
     Jama.Matrix X;
     Jama.Matrix Y;
+    
+    boolean failedEstimation = false;
 
     boolean[] homogeneityIndex;
     Jama.Matrix homogeneityParameters;
@@ -108,6 +109,29 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
 
                 minimizer.optif9_f77(numParamsToOptimize, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
 
+                // put in something here about a failed estimation
+                if(itrmcd[1]==4 || itrmcd[1]==5) {
+                    failedEstimation = true;
+                }
+                
+                // check that optimizer didn't shoot off into extremes
+                for(int i=0;i<xpls.length;i++) {
+                    if(xpls[i]< -10 || xpls[i]>10) {
+                        failedEstimation = true;
+                    }
+                }
+                
+                // objective should be close to zero in these exactly-identified cases
+                if(f_to_minimize(xpls)>10) {
+                    failedEstimation = true;
+                }
+                
+                if(failedEstimation) {
+                    System.out.print("Optimizer probably failed: ");
+                    pmUtility.prettyPrint(new Jama.Matrix(xpls,1));
+                    System.out.println("f_failed: "+f_to_minimize(xpls));
+                }
+                
                 Jama.Matrix betaUncmin = new Jama.Matrix(spec.getNumParams(), 1);
                 int counter = 0;
 
@@ -333,6 +357,10 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
     @Override
     public double getMomentFunctionValue(Jama.Matrix b) {
         return getMomentObjectiveFunction(b, false);
+    }
+
+    boolean didEstimatorFail() {
+        return failedEstimation;
     }
 
 }

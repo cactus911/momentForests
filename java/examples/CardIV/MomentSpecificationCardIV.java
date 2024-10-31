@@ -52,7 +52,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
     int[] variableSearchIndex; // this should be restricted to only Z
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
-    boolean MONTE_CARLO = false;
+    boolean failedEstimator = false;
 
     DataLens outSampleLens;
     // NEED TO UPDATE
@@ -179,7 +179,13 @@ public class MomentSpecificationCardIV implements MomentSpecification {
         // System.out.println("Are all parameters homogeneous? " + allParametersHomogeneous);
         ContainerCardIV l = new ContainerCardIV(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
         l.computeBetaAndErrors();
+        failedEstimator = l.didEstimatorFail();
         return l;
+    }
+
+    @Override
+    public boolean didEstimatorFail() {
+        return failedEstimator;
     }
 
     @Override

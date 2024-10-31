@@ -247,8 +247,8 @@ public class MainCardIV {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        verbose = true;
-        numberTreesInForest = 1500;
+        verbose = false;
+        numberTreesInForest = 1000;
 
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
@@ -260,7 +260,7 @@ public class MainCardIV {
         System.out.println("Best maximum depth: " + bestMaxDepth);
 
         System.out.println("Out of sample SSE: " + outOfSampleFit);
-        System.out.println("Number of trees in forest: " + numberTreesInForest);
+        System.out.println("Number of valid trees in forest: " + fitStats.myForest.getForestSize());
 
         double[] countVariableSplitsInForest = fitStats.getSplitVariables();
         System.out.println("Number of split variables: " + countVariableSplitsInForest.length);
@@ -352,7 +352,6 @@ public class MainCardIV {
             Jama.Matrix testX = oosDataLens.getX();
 
             double outOfSampleFit = 0;
-            Jama.Matrix oosMoments = new Jama.Matrix(mySpecification.getNumMoments(), 1);
             
             for (int i = 0; i < testZ.getRowDimension(); i++) {
                 Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
@@ -367,9 +366,7 @@ public class MainCardIV {
                     System.out.println(pmUtility.stringPrettyPrintVector(compositeEstimatedBeta)+"\t"+pmUtility.stringPrettyPrint(zi));
                 }
             }
-            // oosMoments.timesEquals(1.0 / testZ.getRowDimension());
-            // outOfSampleFit = ((oosMoments.transpose()).times(oosMoments)).get(0, 0);
-
+            
             inSampleFit = 0;
 
             // System.out.println(mySpecification.getNumMoments());
@@ -381,6 +378,12 @@ public class MainCardIV {
                 double yi = estimatingLens.getY().get(i, 0);
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+                
+                if(i==0) {
+                    for(int f=0;f<myForest.getForestSize();f++) {
+                        pmUtility.prettyPrintVector(myForest.getTree(f).getEstimatedBeta(zi));
+                    }
+                }
 
                 inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
                 // inMoments.plusEquals(civIn.getGi(compositeEstimatedBeta, i));
