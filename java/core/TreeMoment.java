@@ -72,7 +72,7 @@ public class TreeMoment {
     private ArrayList<Double> valueHomogeneousParameters = new ArrayList<>();
 
     private boolean testParameterHomogeneity;
-    
+
     private boolean validTree = true;
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
@@ -179,14 +179,15 @@ public class TreeMoment {
          * a dumb way of doing it, but I'm not sure what else I could do easily
          * to get around this issue.
          */
-        if(verbose) {
+        if (verbose) {
             // System.out.println("Computing baseline SSE");
         }
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
-        if(momentSpec.didEstimatorFail()) {
+        if (momentSpec.didEstimatorFail()) {
+            System.out.println("TreeMoment setting itself to invalid");
             validTree = false;
         }
-        if(verbose) {
+        if (verbose) {
             // System.out.println("Setting beta");
         }
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
@@ -292,7 +293,7 @@ public class TreeMoment {
                         double maxZ = lensGrowingTree.getMaximumValue(indexSplitVariable);
 
                         if (debugOptimization) {
-                            System.out.println("TreeMoment.java:224 -> min "+momentSpec.getVariableName(indexSplitVariable)+": " + minZ + " max "+momentSpec.getVariableName(optimalSplitVariableIndex)+": " + maxZ);
+                            System.out.println("TreeMoment.java:224 -> min " + momentSpec.getVariableName(indexSplitVariable) + ": " + minZ + " max " + momentSpec.getVariableName(optimalSplitVariableIndex) + ": " + maxZ);
                         }
                         double optimalZ_k = Double.POSITIVE_INFINITY;
                         double optimalZ_SSE_k = Double.POSITIVE_INFINITY;
@@ -426,7 +427,7 @@ public class TreeMoment {
                                 }
 
                                 if (debugOptimization) {
-                                    echoLn("\t "+ momentSpec.getVariableName(indexSplitVariable) + " Partition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE);
+                                    echoLn("\t " + momentSpec.getVariableName(indexSplitVariable) + " Partition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE);
                                 }
 
                                 //For every possible partition, we check which has the lowest SSE
@@ -438,7 +439,7 @@ public class TreeMoment {
                                     numObsLeft_Partition = obj.getEffectiveNumObsLeft();
                                     numObsRight_Partition = obj.getEffectiveNumObsRight();
                                     if (debugOptimization) {
-                                        echoLn("\tPartition: " + i + " ("+momentSpec.getVariableName(i)+") " + partitions.get(i) + " SSE: " + partitionSSE + " set as within-variable current best.");
+                                        echoLn("\tPartition: " + i + " (" + momentSpec.getVariableName(i) + ") " + partitions.get(i) + " SSE: " + partitionSSE + " set as within-variable current best.");
                                     }
                                 }
                             }
@@ -689,6 +690,11 @@ public class TreeMoment {
                 }
             } else {
                 ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest, allParametersHomogeneous);
+                if (momentSpec.didEstimatorFail()) {
+                    System.out.println("TreeMoment setting itself to invalid in honest tree");
+                    validTree = false;
+                }
+
                 Jama.Matrix oldBeta = getNodeEstimatedBeta(); //Not sure I understand why this is here... we don't have a beta estimate until we reach a terminal node? A. this is what it was the tree building sample, not the honest tree sample
                 setNodeEstimatedBeta(c.getBeta());
                 // setNodeEstimatedVariance(c.getVariance(c.getBeta()));
@@ -711,7 +717,7 @@ public class TreeMoment {
                     if (oldBeta != null) {
                         betaOldString = pmUtility.stringPrettyPrint(oldBeta.transpose());
                     }
-                    echoLn(betaCurrentString + " [ " + lensHonest.getNumObs() + " ] from " + betaOldString);
+                    echoLn(betaCurrentString + " [ " + lensHonest.getNumObs() + " ] from " + betaOldString + " [ " + lensGrowingTree.getNumObs() + " ]");
                 }
             }
         } else {
@@ -744,6 +750,10 @@ public class TreeMoment {
                         echoLn("null pruned");
                     } else {
                         ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest, allParametersHomogeneous);
+                        if (momentSpec.didEstimatorFail()) {
+                            System.out.println("TreeMoment setting itself to invalid in honest tree pruning");
+                            validTree = false;
+                        }
                         setNodeEstimatedBeta(c.getBeta());
                         // setNodeEstimatedVariance(c.getVariance(c.getBeta()));
                         if (verbose) {
@@ -769,6 +779,10 @@ public class TreeMoment {
             DataLens leafLens = v.get(leafLensList);
             totalObs += leafLens.getNumObs();
             ContainerMoment cm = momentSpec.computeOptimalBeta(leafLens, allParametersHomogeneous);
+            if (momentSpec.didEstimatorFail()) {
+                System.out.println("TreeMoment getTreeMomentObjectiveFunctionAtComputedParameters setting itself to invalid; should NEVER see this");
+                validTree = false;
+            }
             Jama.Matrix leafG = cm.getMomentGWithoutDivision(cm.getBeta());
             Jama.Matrix leafOmega = new Jama.Matrix(momentSpec.getNumMoments(), momentSpec.getNumMoments());
             for (int i = 0; i < leafLens.getNumObs(); i++) {
@@ -785,14 +799,14 @@ public class TreeMoment {
         G.timesEquals(1.0 / totalObs);
         omega.timesEquals(1.0 / totalObs);
 
-        if(verboseTreeGMMObjectiveFunction) {
+        if (verboseTreeGMMObjectiveFunction) {
             System.out.print("moment vector: ");
             pmUtility.prettyPrintVector(G);
             System.out.println("omega:");
             pmUtility.prettyPrint(omega);
-            System.out.println("objective function: "+(((G.transpose()).times(omega)).times(G)).get(0, 0));
+            System.out.println("objective function: " + (((G.transpose()).times(omega)).times(G)).get(0, 0));
         }
-        
+
         // not sure I should use omega here?
         return (((G.transpose()).times(omega)).times(G)).get(0, 0);
     }

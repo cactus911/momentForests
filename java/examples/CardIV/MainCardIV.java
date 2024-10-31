@@ -379,7 +379,7 @@ public class MainCardIV {
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
                 
-                if(i==0) {
+                if(i==0 && 1==1) {
                     for(int f=0;f<myForest.getForestSize();f++) {
                         pmUtility.prettyPrintVector(myForest.getTree(f).getEstimatedBeta(zi));
                     }
