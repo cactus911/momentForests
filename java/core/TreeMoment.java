@@ -178,11 +178,11 @@ public class TreeMoment {
          * to get around this issue.
          */
         if(verbose) {
-            System.out.println("Computing baseline SSE");
+            // System.out.println("Computing baseline SSE");
         }
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
         if(verbose) {
-            System.out.println("Setting beta");
+            // System.out.println("Setting beta");
         }
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
         if (verbose) {

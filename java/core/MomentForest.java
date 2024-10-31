@@ -74,7 +74,7 @@ public class MomentForest {
          * forest each time we call growForest!
          */
         forest = new ArrayList<>();
-        double proportionObservationsToEstimateTreeStructure = 0.50;
+        double proportionObservationsToEstimateTreeStructure = 0.5;
 
         Random rng = new Random(forestSeed);
 

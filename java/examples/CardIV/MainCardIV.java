@@ -53,7 +53,7 @@ public class MainCardIV {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        JFrame f = new JFrame("Card Partial Linear Model Application");
+        JFrame f = new JFrame("Card IV Partial Linear Application");
         f.setBounds(100, 100, 1500, 500);
         f.getContentPane().setLayout(new GridLayout(1, 2));
         JTextAreaAutoscroll jt1 = new JTextAreaAutoscroll();
@@ -76,7 +76,7 @@ public class MainCardIV {
     private void execute() {
         Random rng = new Random(777);
         // MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("d:/git/momentforests/java/examples/cardiv/IV test.csv");
-        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("c:/git/momentforests/java/examples/cardiv/table3.csv");
+        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("d:/git/momentforests/java/examples/cardiv/table3.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -92,7 +92,7 @@ public class MainCardIV {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 50;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -114,9 +114,9 @@ public class MainCardIV {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 1.0; minImprovement <= 25.0; minImprovement *= 5) {
-                    for (int maxDepth = 4; maxDepth >= 0; maxDepth--) {
+            for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 1.0; minImprovement <= 1.0; minImprovement *= 5) {
+                    for (int maxDepth = 1; maxDepth >= 0; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -158,7 +158,7 @@ public class MainCardIV {
             // this is what CV gave me Oct 24 2024
             bestMinObservationsPerLeaf = 50;
             bestMinImprovement = 5.0;
-            bestMaxDepth = 3; // 3;
+            bestMaxDepth = 0; // 3;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -248,7 +248,7 @@ public class MainCardIV {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 50; // 50
+        numberTreesInForest = 1500;
 
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
