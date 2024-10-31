@@ -231,7 +231,7 @@ public class MainCardIV {
                 pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
 
                 int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
-                System.out.print("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
+                // System.out.print("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
                 Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
                 int counter = 0;
                 for (int k = 0; k < K; k++) {

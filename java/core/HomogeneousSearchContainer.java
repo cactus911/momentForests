@@ -116,7 +116,13 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         if(itrmcd[1]==4 || itrmcd[1]==5) {
             System.out.println("***** CAUTION: Uncmin reported failing to find a minimum *****");
         }
-
+        
+        // System.out.print("<<<<<<<<< After search, parameter vector is: ");
+        // pmUtility.prettyPrint(new Jama.Matrix(xpls,1));
+        for (int i = 0; i < numHomogeneousParametersToSearchOver; i++) {
+            mySpecification.setHomogeneousParameter(homogeneousParameterList.get(i), xpls[i + 1]);
+        }
+        
         Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numHomogeneousParametersToSearchOver, 1);
         for (int i = 0; i < numHomogeneousParametersToSearchOver; i++) {
             compactHomogeneousParameterVector.set(i, 0, xpls[i + 1]);
