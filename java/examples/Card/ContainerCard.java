@@ -80,7 +80,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
             goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {
             try {
-                int numParams = X.getColumnDimension();
+                int numParams = spec.getNumParams();
                 if (!allParametersHomogeneous) {
                     for (boolean b : homogeneityIndex) {
                         if (b) {
@@ -135,10 +135,10 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                     failedEstimation = true;
                 }
 
-                Jama.Matrix betaUncmin = new Jama.Matrix(X.getColumnDimension(), 1);
+                Jama.Matrix betaUncmin = new Jama.Matrix(spec.getNumParams(), 1);
                 int counter = 0;
 
-                for (int i = 0; i < X.getColumnDimension(); i++) {
+                for (int i = 0; i < spec.getNumParams(); i++) {
                     if (homogeneityIndex[i]) {
                         betaUncmin.set(i, 0, homogeneityParameters.get(i, 0));
                     } else {
@@ -239,7 +239,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
          * directly this way)
          */
         // Jama.Matrix runningTotal = new Jama.Matrix(X.getRowDimension(), X.getColumnDimension());
-        int numMoments = X.getColumnDimension();
+        int numMoments = spec.getNumMoments();
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
@@ -271,7 +271,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
          * directly this way)
          */
         // Jama.Matrix runningTotal = new Jama.Matrix(X.getRowDimension(), X.getColumnDimension());
-        int numMoments = X.getColumnDimension();
+        int numMoments = spec.getNumMoments();
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
@@ -384,8 +384,8 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
     public double f_to_minimize(double[] x) {
 
         int counter = 0;
-        Jama.Matrix b = new Jama.Matrix(X.getColumnDimension(), 1);
-        for (int i = 0; i < X.getColumnDimension(); i++) {
+        Jama.Matrix b = new Jama.Matrix(spec.getNumParams(), 1);
+        for (int i = 0; i < spec.getNumParams(); i++) {
             if (homogeneityIndex[i]) {
                 b.set(i, 0, homogeneityParameters.get(i, 0));
             } else {
