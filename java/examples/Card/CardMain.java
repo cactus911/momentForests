@@ -81,7 +81,7 @@ public class CardMain {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecification mySpecification = new CardSpecification("d:/git/momentforests/java/examples/card/table2.csv");
+        MomentSpecification mySpecification = new CardSpecification("src/table2.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -121,7 +121,7 @@ public class CardMain {
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
             for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 800; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 2; minImprovement <= 20; minImprovement *= 2) {
-                    for (int maxDepth = 1; maxDepth <= 9; maxDepth++) {
+                    for (int maxDepth = 7; maxDepth >= 1; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -395,6 +395,13 @@ public class CardMain {
                 double yi = mySpecification.getY().get(i, 0);
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+                
+                if(i==0 && 1==2) {
+                    for(int f=0;f<myForest.getForestSize();f++) {
+                        pmUtility.prettyPrintVector(myForest.getTree(f).getEstimatedBeta(zi));
+                    }
+                }
+                
                 inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
             }
             inSampleFit /= mySpecification.getZ().getRowDimension();

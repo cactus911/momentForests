@@ -26,6 +26,7 @@ package examples.Card;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
+import examples.CardIV.MomentSpecificationCardIV;
 
 import java.awt.BorderLayout;
 import javax.swing.JFrame;
@@ -51,10 +52,14 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
     DataLens lens;
     Jama.Matrix X;
     Jama.Matrix Y;
+    
+    boolean failedEstimation = false;
+    
     boolean[] homogeneityIndex;
     Jama.Matrix homogeneityParameters;
     boolean allParametersHomogeneous;
-
+    CardSpecification spec;
+    
     public ContainerCard(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous) {
         this.lens = lens;
         // computeBetaAndErrors();
@@ -63,6 +68,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
         this.homogeneityIndex = homogeneityIndex;
         this.homogeneityParameters = homogeneityParameters;
         this.allParametersHomogeneous = allParametersHomogeneous;
+        this.spec = spec;
     }
 
     @Override
@@ -110,14 +116,24 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 double[] stepmx = {0, 1E8};
                 double[] steptl = {0, 1E-8};
 
-                // Jama.Matrix fitZero = X.times(new Jama.Matrix(numParams,1,0));
-                // Jama.Matrix error = Y.minus(fitZero);
-                // System.out.println("SSE at zero vector: "+error.normF());
-                
                 minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
                 
-                // System.out.println("Exit flag: "+itrmcd[1]);
-                // System.exit(0);
+                // put in something here about a failed estimation
+                if (itrmcd[1] == 4 || itrmcd[1] == 5) {
+                    failedEstimation = true;
+                }
+
+                // check that optimizer didn't shoot off into extremes
+                for (int i = 0; i < xpls.length; i++) {
+                    if (xpls[i] < -10 || xpls[i] > 10) {
+                        failedEstimation = true;
+                    }
+                }
+
+                // objective should be close to zero in these exactly-identified cases
+                if (f_to_minimize(xpls) > 10) {
+                    failedEstimation = true;
+                }
 
                 Jama.Matrix betaUncmin = new Jama.Matrix(X.getColumnDimension(), 1);
                 int counter = 0;
@@ -395,5 +411,10 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
     public double getMomentFunctionValue(Jama.Matrix b) {
         return getMomentObjectiveFunction(b, false);
     }
+    
+    boolean didEstimatorFail() {
+        return failedEstimation;
+    }
+
 
 }
