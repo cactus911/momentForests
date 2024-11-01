@@ -53,7 +53,7 @@ public class CardSpecification implements MomentSpecification {
     int[] variableSearchIndex; // this should be restricted to only Z
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
-    boolean failedEstimator = false;
+    boolean MONTE_CARLO = false;
 
     DataLens outSampleLens;
     // NEED TO UPDATE
@@ -204,13 +204,7 @@ public class CardSpecification implements MomentSpecification {
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
         ContainerCard l = new ContainerCard(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
         l.computeBetaAndErrors();
-        failedEstimator = l.didEstimatorFail();
         return l;
-    }
-    
-    @Override
-    public boolean didEstimatorFail() {
-        return failedEstimator;
     }
 
     @Override
