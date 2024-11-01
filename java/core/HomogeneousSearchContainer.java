@@ -103,7 +103,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         int[] iahflg = {0, 0};
         double[] dlt = {0, 1};
         double[] gradtl = {0, 1E-8};
-        double[] stepmx = {0, 1.0}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
+        double[] stepmx = {0, 1E8}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
         double[] steptl = {0, 1E-8};
 
         if (numHomogeneousParametersToSearchOver == 1) {

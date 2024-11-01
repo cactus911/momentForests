@@ -23,9 +23,7 @@
  */
 package examples.Card;
 
-import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
-import core.ChartGenerator;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
@@ -39,8 +37,6 @@ import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -109,7 +105,7 @@ public class CardMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -119,9 +115,9 @@ public class CardMain {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 800; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 2; minImprovement <= 20; minImprovement *= 2) {
-                    for (int maxDepth = 1; maxDepth <= 9; maxDepth++) {
+            for (int minObservationsPerLeaf = 30; minObservationsPerLeaf <= 120; minObservationsPerLeaf += 30) {
+                for (double minImprovement = 1; minImprovement <= 1; minImprovement *= 2) {
+                    for (int maxDepth = 7; maxDepth >= 0; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -161,9 +157,9 @@ public class CardMain {
             jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
             // NEED TO UPDATE
-            bestMinObservationsPerLeaf = 40;
-            bestMinImprovement = 1E-5;
-            bestMaxDepth = 4;
+            bestMinObservationsPerLeaf = 30;
+            bestMinImprovement = 1.0;
+            bestMaxDepth = 7;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -194,7 +190,6 @@ public class CardMain {
                 System.out.println("************************");
                 loblolly.printTree();
             }
-            
 
             myForest.testHomogeneity();
 
@@ -279,8 +274,8 @@ public class CardMain {
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
-        verbose = !true;
-        numberTreesInForest = 1; // 50
+        verbose = true;
+        numberTreesInForest = 100; // 50
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
         fitStats.computeOutOfSampleMSE();
@@ -356,23 +351,26 @@ public class CardMain {
         public void computeOutOfSampleMSE() {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
-
-            DataLens homogenizedForestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
-
-            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
+            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
+            DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
+            DataLens estimatingLens = split[0];
+            DataLens oosDataLens = split[1];
+            
+            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, estimatingLens, verbose, new TreeOptions());
             TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
             myForest.setTreeOptions(cvOptions);
             /**
              * Grow the moment forest
              */
             myForest.growForest();
-            System.out.println("First tree in forest estimated as:");
-            myForest.getTree(0).printTree();
+            if (verbose) {
+                System.out.println("First tree in forest estimated as:");
+                myForest.getTree(0).printTree();
+            }
             /**
              * Test vectors for assessment
              */
-            // NEED TO UPDATE
-            DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(1500, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+            // DataLens oosDataLens = mySpecification.getOutOfSampleXYZ(1500, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
             Jama.Matrix testZ = oosDataLens.getZ();
             Jama.Matrix testX = oosDataLens.getX();
             Jama.Matrix testY = oosDataLens.getY();

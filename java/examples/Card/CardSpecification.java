@@ -53,9 +53,7 @@ public class CardSpecification implements MomentSpecification {
     int[] variableSearchIndex; // this should be restricted to only Z
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
-    boolean MONTE_CARLO = false;
 
-    DataLens outSampleLens;
     // NEED TO UPDATE
     String[] varNames = {"constant", "ed76", "exp76", "exp762", "black", "reg76r", "smsa76r", "region_1966", "smsa66r", "daded", "momed", "nodaded", "nomomed", "famed", "momdad14", "sinmom14"};
 
@@ -115,7 +113,7 @@ public class CardSpecification implements MomentSpecification {
          * 15. dummy = 1 if household is a single mother
          *
          */
-        int[] vsi = {1, 2, 4, 5, 6, 8, 14, 15};
+        int[] vsi = {1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15};
         Boolean[] wvd = {true,
             false,
             false,
@@ -240,7 +238,7 @@ public class CardSpecification implements MomentSpecification {
 
     @Override
     public DataLens getOutOfSampleXYZ(int numObsOutOfSample, long rngSeed) {
-        return outSampleLens;
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
     @Override
@@ -358,8 +356,8 @@ public class CardSpecification implements MomentSpecification {
             // NEED TO UPDATE
 
             X = pmUtility.getColumn(dX, 0); // constant
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // education 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // education 
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // exp^2
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // black
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // south
@@ -457,18 +455,6 @@ public class CardSpecification implements MomentSpecification {
             System.out.print("OLS: ");
             pmUtility.prettyPrintVector(pmUtility.OLS(X, Y, false));
 
-            // can split these into in-sample and out-of-sample here
-            int cutoff = (int) Math.round(X.getRowDimension() * 0.9);
-
-            DataLens lens = new DataLens(X, Y, Z, null);
-            DataLens inSample = lens.getSubsetData(0, cutoff);
-            outSampleLens = lens.getSubsetData(cutoff, X.getRowDimension() - 1);
-            System.out.println("Using 10 percent sample for oos evaluation; should kill this and modernize since we are making multiple splits in various places.");
-
-            X = inSample.getX();
-            Y = inSample.getY();
-            Z = inSample.getZ();
-
 //            pmUtility.prettyPrint(dX, 10);
 //            System.out.println("----");
 //            pmUtility.prettyPrint(Z, 10);
@@ -491,6 +477,10 @@ public class CardSpecification implements MomentSpecification {
 
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
+        if(variableIndex==7) {
+            String[] regionNames = {"New England", "Mid Atlantic", "East North Central", "West North Central", "South Atlantic", "East South Central", "West South Central", "Mountain", "Pacific"};
+            return regionNames[fixedEffectIndex-1];
+        }
         return " " + fixedEffectIndex;
     }
 
