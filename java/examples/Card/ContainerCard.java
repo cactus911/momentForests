@@ -51,14 +51,14 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
     DataLens lens;
     Jama.Matrix X;
     Jama.Matrix Y;
-    
+
     boolean failedEstimation = false;
-    
+
     boolean[] homogeneityIndex;
     Jama.Matrix homogeneityParameters;
     boolean allParametersHomogeneous;
     CardSpecification spec;
-    
+
     public ContainerCard(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous, CardSpecification spec) {
         this.lens = lens;
         // computeBetaAndErrors();
@@ -73,7 +73,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
     @Override
     public void computeBetaAndErrors() {
         // System.out.println("In compute beta and errors");
-        if (Y.getRowDimension() < X.getColumnDimension()) {
+        if (Y.getRowDimension() < Math.max(30, X.getColumnDimension())) {
             // System.out.println("Too few observations");
             beta = null;
             goodnessOfFit = Double.POSITIVE_INFINITY;
@@ -86,7 +86,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                             numParams = numParams - 1; // homogeneous parameter imposed externally
                         }
                     }
-                }        
+                }
 
                 Uncmin_f77 minimizer = new Uncmin_f77(false);
                 double[] guess = new double[numParams + 1];
@@ -114,27 +114,30 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 double[] gradtl = {0, 1E-8};
                 double[] stepmx = {0, 1E8};
                 double[] steptl = {0, 1E-8};
-                
+
                 minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-                
-                // put in something here about a failed estimation
-                if (itrmcd[1] == 4 || itrmcd[1] == 5) {
-                    failedEstimation = true;
-                    System.out.println("failure: uncmin failed to converge");
-                }
 
-                // check that optimizer didn't shoot off into extremes
-                for (int i = 0; i < xpls.length; i++) {
-                    if (xpls[i] < -10 || xpls[i] > 10) {
+                boolean testFailure = false;
+                if (testFailure) {
+                    // put in something here about a failed estimation
+                    if (itrmcd[1] == 4 || itrmcd[1] == 5) {
                         failedEstimation = true;
-                        System.out.println("failure: parameter magnitude too large");
-                    }                    
-                }
+                        System.out.println("failure: uncmin failed to converge");
+                    }
 
-                // objective should be close to zero in these exactly-identified cases
-                if (f_to_minimize(xpls) > 10) {
-                    System.out.println("failure: fmin too large");
-                    failedEstimation = true;
+                    // check that optimizer didn't shoot off into extremes
+                    for (int i = 0; i < xpls.length; i++) {
+                        if (xpls[i] < -10 || xpls[i] > 10) {
+                            failedEstimation = true;
+                            System.out.println("failure: parameter magnitude too large");
+                        }
+                    }
+
+                    // objective should be close to zero in these exactly-identified cases
+                    if (f_to_minimize(xpls) > 10) {
+                        System.out.println("failure: fmin too large");
+                        failedEstimation = true;
+                    }
                 }
 
                 Jama.Matrix betaUncmin = new Jama.Matrix(spec.getNumParams(), 1);
@@ -156,7 +159,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                     sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
                 }
                 goodnessOfFit = sse;
-                
+
                 if (failedEstimation) {
                     beta = null;
                     goodnessOfFit = Double.POSITIVE_INFINITY;
@@ -354,7 +357,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public Matrix getVariance(Jama.Matrix b) {
-    	throw new UnsupportedOperationException("Should not be used.");
+        throw new UnsupportedOperationException("Should not be used.");
     }
 
     @Override
@@ -395,10 +398,9 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
     public double getMomentFunctionValue(Jama.Matrix b) {
         return getMomentObjectiveFunction(b, false);
     }
-    
+
     boolean didEstimatorFail() {
         return failedEstimation;
     }
-
 
 }

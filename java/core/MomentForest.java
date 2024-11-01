@@ -74,7 +74,7 @@ public class MomentForest {
          * forest each time we call growForest!
          */
         forest = new ArrayList<>();
-        double proportionObservationsToEstimateTreeStructure = 0.15;
+        double proportionObservationsToEstimateTreeStructure = 0.5;
 
         Random rng = new Random(forestSeed);
 
@@ -261,7 +261,7 @@ public class MomentForest {
     }
 
     public void testHomogeneity() {
-        boolean useParallel = false;
+        boolean useParallel = true;
 
         double[] averageTestValues = new double[spec.getNumParams()];
         

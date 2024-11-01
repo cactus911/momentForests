@@ -185,7 +185,7 @@ public class TreeMoment {
         }
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
         if (momentSpec.didEstimatorFail()) {
-            System.out.println("TreeMoment setting itself to invalid");
+            System.out.println("Node optimal beta computation failed; TreeMoment setting itself to invalid");
             validTree = false;
         }
         if (verbose) {

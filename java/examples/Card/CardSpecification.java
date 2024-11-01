@@ -114,7 +114,7 @@ public class CardSpecification implements MomentSpecification {
          * 15. dummy = 1 if household is a single mother
          *
          */
-        int[] vsi = {1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15};
+        int[] vsi = {1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15};
         Boolean[] wvd = {true,
             false,
             false,
@@ -206,7 +206,7 @@ public class CardSpecification implements MomentSpecification {
         failedEstimator = l.didEstimatorFail();
         return l;
     }
-    
+
     @Override
     public boolean didEstimatorFail() {
         return failedEstimator;
@@ -358,26 +358,24 @@ public class CardSpecification implements MomentSpecification {
                     i++;
                 }
             }
-            
-            
-            // NEED TO UPDATE
 
+            // NEED TO UPDATE
             X = pmUtility.getColumn(dX, 0); // constant
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // education 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // exp^2
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // black
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // south
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // smsa76
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // region
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8)); // smsa66
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 9)); // father yrs edu
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 10)); // mother yrs edu
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 11)); // father edu missing
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 12)); // mother edu missing
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); // interaction fam edu categorical (which categorical?)
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); // both parents present
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15)); // single mother
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // education 
+            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // exp^2
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // black
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // south
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // smsa76
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // region
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8)); // smsa66
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 9)); // father yrs edu
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 10)); // mother yrs edu
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 11)); // father edu missing
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 12)); // mother edu missing
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); // interaction fam edu categorical (which categorical?)
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); // both parents present
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15)); // single mother
 
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
@@ -421,11 +419,17 @@ public class CardSpecification implements MomentSpecification {
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 15));
              */
 
-            
+            Random rng = new Random(78710);
+            NormalDistribution normal = new NormalDistribution();
+            boolean SIMPLE_FAKE = false;
+            if (SIMPLE_FAKE) {
+                for (int id = 0; id < Y.getRowDimension(); id++) {
+                    Y.set(id, 0, 0.0 + Z.get(id, 1) * 1.0 + Z.get(id, 2) * 1.0 + normal.inverse(rng.nextDouble()));
+                }
+            }
+
             boolean FAKE_DATA = false;
             if (FAKE_DATA) {
-                NormalDistribution normal = new NormalDistribution();
-                Random rng = new Random(78710);
                 int counter = 0;
                 for (i = 0; i < Y.getRowDimension(); i++) {
                     double[] beta_fake = {1, 0, 0};
@@ -455,7 +459,7 @@ public class CardSpecification implements MomentSpecification {
                         pmUtility.prettyPrint(pmUtility.concatMatrix(Y.getMatrix(i, i, 0, 0), Z.getMatrix(i, i, 0, Z.getColumnDimension() - 1)));
                     }
                 }
-                System.out.println("Total counter = "+counter);
+                System.out.println("Total counter = " + counter);
             }
 
             System.out.println("Mean of Y: " + pmUtility.mean(Y, 0));
@@ -484,9 +488,9 @@ public class CardSpecification implements MomentSpecification {
 
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-        if(variableIndex==7) {
+        if (variableIndex == 7) {
             String[] regionNames = {"New England", "Mid Atlantic", "East North Central", "West North Central", "South Atlantic", "East South Central", "West South Central", "Mountain", "Pacific"};
-            return regionNames[fixedEffectIndex-1];
+            return regionNames[fixedEffectIndex - 1];
         }
         return " " + fixedEffectIndex;
     }

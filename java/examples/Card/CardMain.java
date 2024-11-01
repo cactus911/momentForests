@@ -30,6 +30,7 @@ import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeMoment;
 import core.TreeOptions;
+import java.awt.BorderLayout;
 
 import java.awt.GridLayout;
 import java.util.ArrayList;
@@ -37,6 +38,12 @@ import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -93,7 +100,7 @@ public class CardMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 2;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -115,9 +122,9 @@ public class CardMain {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 30; minObservationsPerLeaf <= 120; minObservationsPerLeaf += 30) {
-                for (double minImprovement = 1; minImprovement <= 1; minImprovement *= 2) {
-                    for (int maxDepth = 7; maxDepth >= 0; maxDepth--) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 1.0; minImprovement <= 1.0; minImprovement *= 10) {
+                    for (int maxDepth = 5; maxDepth >= 0; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -156,14 +163,16 @@ public class CardMain {
             jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
             jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
-            // NEED TO UPDATE
-            bestMinObservationsPerLeaf = 30;
-            bestMinImprovement = 1.0;
-            bestMaxDepth = 0;
+            // nov 1 2024
+            // minObs = 5, MSE = 0.1, depth = 6 for just the regression tree
+            // minObs = XXX, MSE = XXX, depth = XXX for just const/education
+            bestMinObservationsPerLeaf = 5; // (!!!!)
+            bestMinImprovement = 0.1;
+            bestMaxDepth = 6;
         }
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 1 && bestMaxDepth>0) {
+        if (detectHomogeneity && 1 == 1 && bestMaxDepth > 0) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
@@ -181,9 +190,7 @@ public class CardMain {
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
 
             myForest.setTreeOptions(cvOptions);
-            System.out.println("grow");
             myForest.growForest();
-            
 
             if (verbose) {
                 TreeMoment loblolly = myForest.getTree(0);
@@ -277,9 +284,9 @@ public class CardMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 1; // 50
+        numberTreesInForest = 15; // 50
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
-                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
+                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
         fitStats.computeOutOfSampleMSE();
         double outOfSampleFit = fitStats.getMSE();
 
@@ -357,7 +364,7 @@ public class CardMain {
             DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
             DataLens estimatingLens = split[0];
             DataLens oosDataLens = split[1];
-            
+
             myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, estimatingLens, verbose, new TreeOptions());
             TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
             myForest.setTreeOptions(cvOptions);
@@ -395,18 +402,98 @@ public class CardMain {
                 double yi = mySpecification.getY().get(i, 0);
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
-                
-                if(i==0 && 1==2) {
-                    for(int f=0;f<myForest.getForestSize();f++) {
+
+                if (i == 0 && 1 == 2) {
+                    for (int f = 0; f < myForest.getForestSize(); f++) {
                         pmUtility.prettyPrintVector(myForest.getTree(f).getEstimatedBeta(zi));
                     }
                 }
-                
+
                 inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
             }
             inSampleFit /= mySpecification.getZ().getRowDimension();
 
             MSE = outOfSampleFit / testZ.getRowDimension(); // mse
+
+            if (generatePlots) {
+                JFrame f = new JFrame("Plots");
+                f.setBounds(100, 100, 800, 800);
+                f.getContentPane().setLayout(new BorderLayout());
+                XYSeries expSeriesBlack = new XYSeries("Experience -- Black");
+                XYSeries eduSeriesBlack = new XYSeries("Education -- Black");
+                XYSeries expSeriesWhite = new XYSeries("Experience -- White");
+                XYSeries eduSeriesWhite = new XYSeries("Education -- White");
+
+                XYSeriesCollection expCollection = new XYSeriesCollection();
+                for (int experience = 0; experience <= 23; experience++) {
+                    double black = 1;
+                    double[][] demographics = {{1, 12, experience, 0, black, 1, 0, 1, 0, 12, 12, 0, 0, 0, 1, 0}};
+                    Jama.Matrix z_guy = new Jama.Matrix(demographics, 1, mySpecification.getZ().getColumnDimension());
+                    // pmUtility.prettyPrint(z_guy);
+                    Jama.Matrix x_guy = testX.getMatrix(0, 0, 0, testX.getColumnDimension() - 1);
+                    if(x_guy.getColumnDimension()>1) {
+                        x_guy.set(0, 1, 12);
+                    }
+                    if(x_guy.getColumnDimension()>2) {
+                        x_guy.set(0, 2, experience);
+                    }
+                    
+                    Jama.Matrix compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
+                    double estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0,0);
+                    expSeriesBlack.add(experience, (estimatedLogWage));
+                    
+                    z_guy.set(0, 4, 0.0); // white
+                    compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
+                    estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0,0);
+                    expSeriesWhite.add(experience, (estimatedLogWage));
+                }
+                expCollection.addSeries(expSeriesBlack);
+                expCollection.addSeries(expSeriesWhite);
+                
+                XYSeriesCollection eduCollection = new XYSeriesCollection();
+                for (int education = 8; education <= 18; education++) {
+                    double black = 1;
+                    double[][] demographics = {{1, education, 8, 0, black, 1, 0, 1, 0, 12, 12, 0, 0, 0, 1, 0}};
+                    Jama.Matrix z_guy = new Jama.Matrix(demographics, 1, mySpecification.getZ().getColumnDimension());
+                    // pmUtility.prettyPrint(z_guy);
+                    Jama.Matrix x_guy = testX.getMatrix(0, 0, 0, testX.getColumnDimension() - 1);
+                    if(x_guy.getColumnDimension()>1) {
+                        x_guy.set(0, 1, education);
+                    }
+                    if(x_guy.getColumnDimension()>2) {
+                        x_guy.set(0, 2, 8);
+                    }
+                    Jama.Matrix compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
+                    double estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0,0);
+                    eduSeriesBlack.add(education, (estimatedLogWage));
+                    
+                    z_guy.set(0, 4, 0.0); // white
+                    compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
+                    estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0,0);
+                    eduSeriesWhite.add(education, (estimatedLogWage));
+                }
+                eduCollection.addSeries(eduSeriesBlack);
+                eduCollection.addSeries(eduSeriesWhite);
+
+                JFreeChart chart = ChartFactory.createXYLineChart("Experience and Wages", "Experience", "Wages", expCollection);
+                NumberAxis axis = (NumberAxis) chart.getXYPlot().getRangeAxis();
+                axis.setAutoRangeIncludesZero(false);
+                ChartPanel panel = new ChartPanel(chart);
+                f.getContentPane().add(panel, BorderLayout.CENTER);
+                f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                f.setVisible(true);
+                
+                JFrame f2 = new JFrame("Plots");
+                f2.setBounds(900, 100, 800, 800);
+                f2.getContentPane().setLayout(new BorderLayout());
+                JFreeChart chart2 = ChartFactory.createXYLineChart("Education and Wages", "Education", "Wages", eduCollection);
+                NumberAxis axis2 = (NumberAxis) chart2.getXYPlot().getRangeAxis();
+                axis2.setAutoRangeIncludesZero(false);
+                ChartPanel panel2 = new ChartPanel(chart2);
+                f2.getContentPane().add(panel2, BorderLayout.CENTER);
+                f2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+                f2.setVisible(true);
+            }
         }
 
         private double getInSampleFit() {
