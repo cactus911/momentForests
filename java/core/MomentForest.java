@@ -74,7 +74,7 @@ public class MomentForest {
          * forest each time we call growForest!
          */
         forest = new ArrayList<>();
-        double proportionObservationsToEstimateTreeStructure = 0.5;
+        double proportionObservationsToEstimateTreeStructure = 0.15;
 
         Random rng = new Random(forestSeed);
 
@@ -107,7 +107,9 @@ public class MomentForest {
             }
         } else {
             forest.parallelStream().forEach((tree) -> {
+                // System.out.println("Split");
                 tree.determineSplit();
+                // System.out.println("Honest");
                 tree.estimateHonestTree();
             });
         }

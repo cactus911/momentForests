@@ -185,16 +185,16 @@ public class TreeMoment {
         }
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
         if (momentSpec.didEstimatorFail()) {
-            // System.out.println("TreeMoment setting itself to invalid");
+            System.out.println("TreeMoment setting itself to invalid");
             validTree = false;
         }
         if (verbose) {
-            // System.out.println("Setting beta");
+            System.out.println("Setting beta");
         }
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
         if (verbose) {
             System.out.println("Current node objective function value is " + currentNodeMoment.getGoodnessOfFit());
-            System.out.print("Current beta: ");
+            System.out.print("Current beta ["+lensGrowingTree.getNumObs()+"]: ");
             pmUtility.prettyPrintVector(currentNodeMoment.getBeta());
         }
         // System.out.println("Setting variance");

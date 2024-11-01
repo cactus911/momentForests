@@ -72,7 +72,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public void computeBetaAndErrors() {
-        // System.out.println("In here");
+        // System.out.println("In compute beta and errors");
         if (Y.getRowDimension() < X.getColumnDimension()) {
             // System.out.println("Too few observations");
             beta = null;
@@ -107,7 +107,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 int[] iexp = {0, 0};
                 int[] msg = {0, 1};
                 int[] ndigit = {0, 8};
-                int[] itnlim = {0, 150};
+                int[] itnlim = {0, 1500};
                 int[] iagflg = {0, 0};
                 int[] iahflg = {0, 0};
                 double[] dlt = {0, 1};
@@ -120,17 +120,20 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 // put in something here about a failed estimation
                 if (itrmcd[1] == 4 || itrmcd[1] == 5) {
                     failedEstimation = true;
+                    System.out.println("failure: uncmin failed to converge");
                 }
 
                 // check that optimizer didn't shoot off into extremes
                 for (int i = 0; i < xpls.length; i++) {
                     if (xpls[i] < -10 || xpls[i] > 10) {
                         failedEstimation = true;
-                    }
+                        System.out.println("failure: parameter magnitude too large");
+                    }                    
                 }
 
                 // objective should be close to zero in these exactly-identified cases
                 if (f_to_minimize(xpls) > 10) {
+                    System.out.println("failure: fmin too large");
                     failedEstimation = true;
                 }
 

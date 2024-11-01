@@ -77,7 +77,7 @@ public class CardMain {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecification mySpecification = new CardSpecification("src/table2.csv");
+        MomentSpecification mySpecification = new CardSpecification("examples/Card/table2.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -105,7 +105,7 @@ public class CardMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = true;
+        boolean runCV = false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -159,11 +159,11 @@ public class CardMain {
             // NEED TO UPDATE
             bestMinObservationsPerLeaf = 30;
             bestMinImprovement = 1.0;
-            bestMaxDepth = 7;
+            bestMaxDepth = 0;
         }
 
         mySpecification.resetHomogeneityIndex();
-        if (detectHomogeneity && 1 == 1) {
+        if (detectHomogeneity && 1 == 1 && bestMaxDepth>0) {
             if (verbose) {
                 System.out.println("************************");
                 System.out.println("* Test for Homogeneity *");
@@ -181,7 +181,9 @@ public class CardMain {
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
 
             myForest.setTreeOptions(cvOptions);
+            System.out.println("grow");
             myForest.growForest();
+            
 
             if (verbose) {
                 TreeMoment loblolly = myForest.getTree(0);
@@ -275,7 +277,7 @@ public class CardMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 100; // 50
+        numberTreesInForest = 1; // 50
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
         fitStats.computeOutOfSampleMSE();

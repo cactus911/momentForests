@@ -150,6 +150,11 @@ public class CardIVSpecificationBackup implements MomentSpecification {
     }
 
     @Override
+    public boolean didEstimatorFail() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
     public int getNumMoments() {
         return X.getColumnDimension(); // For one instrument
     }
