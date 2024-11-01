@@ -371,7 +371,7 @@ public class LinearTestMain {
         // partial linear model results from CV:
         // 500: 50, 10, 2
         // 
-        boolean runCV = false;
+        boolean runCV = !false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");

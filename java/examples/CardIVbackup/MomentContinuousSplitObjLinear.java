@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.Card;
+package examples.CardIVbackup;
 
 import core.MomentContinuousSplitObj;
 import core.DataLens;
@@ -40,9 +40,9 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
     int minCount;
     double minProportion;
     boolean debugVerbose = false;
-    CardSpecification spec;
+    MomentSpecification spec;
 
-    public MomentContinuousSplitObjLinear(int indexSplitVariable, DataLens lens, double minProportion, int minCount, CardSpecification spec) {
+    public MomentContinuousSplitObjLinear(int indexSplitVariable, DataLens lens, double minProportion, int minCount, MomentSpecification spec) {
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
         this.minCount = minCount;
@@ -68,8 +68,8 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerCard leftLinear = new ContainerCard(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec); //This object will compute the beta and MSE for the left split
-        ContainerCard rightLinear = new ContainerCard(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec);
+        ContainerIVBackup leftLinear = new ContainerIVBackup(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
+        ContainerIVBackup rightLinear = new ContainerIVBackup(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
         leftLinear.computeBetaAndErrors();
         rightLinear.computeBetaAndErrors();
 

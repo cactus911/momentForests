@@ -118,6 +118,11 @@ public class PerezGonzalezSpecification implements MomentSpecification {
     }
 
     @Override
+    public boolean didEstimatorFail() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+    
+    @Override
     public double getHomogeneousParameter(int parameterIndex) {
         return homogeneousParameterVector.get(parameterIndex, 0);
     }
