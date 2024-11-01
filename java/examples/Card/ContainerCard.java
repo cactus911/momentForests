@@ -26,6 +26,7 @@ package examples.Card;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
+import examples.CardIV.MomentSpecificationCardIV;
 
 import java.awt.BorderLayout;
 import javax.swing.JFrame;
@@ -46,16 +47,19 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
 
     double goodnessOfFit = -666; // make sure that we give back a crazy number if it is not called
     Jama.Matrix beta;
-    Jama.Matrix variance;
     boolean debugVerbose = false;
     DataLens lens;
     Jama.Matrix X;
     Jama.Matrix Y;
+    
+    boolean failedEstimation = false;
+    
     boolean[] homogeneityIndex;
     Jama.Matrix homogeneityParameters;
     boolean allParametersHomogeneous;
-
-    public ContainerCard(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous) {
+    CardSpecification spec;
+    
+    public ContainerCard(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous, CardSpecification spec) {
         this.lens = lens;
         // computeBetaAndErrors();
         X = lens.getX();
@@ -63,6 +67,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
         this.homogeneityIndex = homogeneityIndex;
         this.homogeneityParameters = homogeneityParameters;
         this.allParametersHomogeneous = allParametersHomogeneous;
+        this.spec = spec;
     }
 
     @Override
@@ -74,14 +79,14 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
             goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {
             try {
-                int numParams = X.getColumnDimension();
+                int numParams = spec.getNumParams();
                 if (!allParametersHomogeneous) {
                     for (boolean b : homogeneityIndex) {
                         if (b) {
                             numParams = numParams - 1; // homogeneous parameter imposed externally
                         }
                     }
-                }
+                }        
 
                 Uncmin_f77 minimizer = new Uncmin_f77(false);
                 double[] guess = new double[numParams + 1];
@@ -109,20 +114,30 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 double[] gradtl = {0, 1E-8};
                 double[] stepmx = {0, 1E8};
                 double[] steptl = {0, 1E-8};
-
-                // Jama.Matrix fitZero = X.times(new Jama.Matrix(numParams,1,0));
-                // Jama.Matrix error = Y.minus(fitZero);
-                // System.out.println("SSE at zero vector: "+error.normF());
                 
                 minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
                 
-                // System.out.println("Exit flag: "+itrmcd[1]);
-                // System.exit(0);
+                // put in something here about a failed estimation
+                if (itrmcd[1] == 4 || itrmcd[1] == 5) {
+                    failedEstimation = true;
+                }
 
-                Jama.Matrix betaUncmin = new Jama.Matrix(X.getColumnDimension(), 1);
+                // check that optimizer didn't shoot off into extremes
+                for (int i = 0; i < xpls.length; i++) {
+                    if (xpls[i] < -10 || xpls[i] > 10) {
+                        failedEstimation = true;
+                    }
+                }
+
+                // objective should be close to zero in these exactly-identified cases
+                if (f_to_minimize(xpls) > 10) {
+                    failedEstimation = true;
+                }
+
+                Jama.Matrix betaUncmin = new Jama.Matrix(spec.getNumParams(), 1);
                 int counter = 0;
 
-                for (int i = 0; i < X.getColumnDimension(); i++) {
+                for (int i = 0; i < spec.getNumParams(); i++) {
                     if (homogeneityIndex[i]) {
                         betaUncmin.set(i, 0, homogeneityParameters.get(i, 0));
                     } else {
@@ -138,6 +153,11 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                     sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
                 }
                 goodnessOfFit = sse;
+                
+                if (failedEstimation) {
+                    beta = null;
+                    goodnessOfFit = Double.POSITIVE_INFINITY;
+                }
 
             } catch (Exception e) {
                 if (allParametersHomogeneous) {
@@ -223,7 +243,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
          * directly this way)
          */
         // Jama.Matrix runningTotal = new Jama.Matrix(X.getRowDimension(), X.getColumnDimension());
-        int numMoments = X.getColumnDimension();
+        int numMoments = spec.getNumMoments();
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
@@ -255,7 +275,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
          * directly this way)
          */
         // Jama.Matrix runningTotal = new Jama.Matrix(X.getRowDimension(), X.getColumnDimension());
-        int numMoments = X.getColumnDimension();
+        int numMoments = spec.getNumMoments();
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
@@ -331,30 +351,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public Matrix getVariance(Jama.Matrix b) {
-        // System.out.print("Computing variance for OLS with beta = ");
-        // pmUtility.prettyPrintVector(b);
-        double sse = 0;
-        Jama.Matrix fit = X.times(b);
-        for (int i = 0; i < Y.getRowDimension(); i++) {
-            sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
-        }
-        System.out.println("sse in OLS: " + sse);
-        Jama.Matrix xpx = (X.transpose()).times(X);
-        Jama.Matrix xpxInv = xpx.inverse();
-        // double sigma2 = sse / (Y.getRowDimension() - X.getColumnDimension());
-        double sigma2 = sse / (Y.getRowDimension());
-        System.out.println("sigma2 in getVariance: " + sigma2 + " n = " + Y.getRowDimension());
-
-        boolean debugHere = false;
-        if (debugHere) {
-            System.out.println("X'X:");
-            pmUtility.prettyPrint(xpx);
-            System.out.println("X'X times sigma2");
-            pmUtility.prettyPrint(xpx.times(sigma2));
-        }
-
-        variance = xpxInv.times(sigma2);
-        return variance;
+    	throw new UnsupportedOperationException("Should not be used.");
     }
 
     @Override
@@ -368,8 +365,8 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
     public double f_to_minimize(double[] x) {
 
         int counter = 0;
-        Jama.Matrix b = new Jama.Matrix(X.getColumnDimension(), 1);
-        for (int i = 0; i < X.getColumnDimension(); i++) {
+        Jama.Matrix b = new Jama.Matrix(spec.getNumParams(), 1);
+        for (int i = 0; i < spec.getNumParams(); i++) {
             if (homogeneityIndex[i]) {
                 b.set(i, 0, homogeneityParameters.get(i, 0));
             } else {
@@ -395,5 +392,10 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
     public double getMomentFunctionValue(Jama.Matrix b) {
         return getMomentObjectiveFunction(b, false);
     }
+    
+    boolean didEstimatorFail() {
+        return failedEstimation;
+    }
+
 
 }
