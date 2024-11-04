@@ -100,7 +100,7 @@ public class CardMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 2;
+        int numberTreesInForest = 50;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -166,7 +166,7 @@ public class CardMain {
             // nov 1 2024
             // minObs = 5, MSE = 0.1, depth = 6 for just the regression tree
             // minObs = XXX, MSE = XXX, depth = XXX for just const/education
-            bestMinObservationsPerLeaf = 5; // (!!!!)
+            bestMinObservationsPerLeaf = 50; // (!!!!)
             bestMinImprovement = 0.1;
             bestMaxDepth = 6;
         }

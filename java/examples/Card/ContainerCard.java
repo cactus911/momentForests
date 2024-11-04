@@ -115,8 +115,47 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 double[] stepmx = {0, 1E8};
                 double[] steptl = {0, 1E-8};
 
-                minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                if (numParams == spec.getNumParams()) {
+                    // no homogeneous parameters, just use OLS
+                    Jama.Matrix olsBeta = pmUtility.OLSsvd(X, Y, false);
 
+                    // System.out.println("Average of Y is :"+pmUtility.mean(Y, 0));
+                    for (int i = 0; i < olsBeta.getRowDimension(); i++) {
+                        xpls[i + 1] = olsBeta.get(i, 0);
+                    }
+                } else {
+                    boolean tryResidualizing = true;
+                    if (tryResidualizing) {
+                        Jama.Matrix Yres = Y.copy();
+                        Jama.Matrix Xres = null;
+                        boolean first = true;
+                        for (int k = 0; k < X.getColumnDimension(); k++) {
+                            if (homogeneityIndex[k]) {
+                                for (int i = 0; i < Y.getRowDimension(); i++) {
+                                    Yres.set(i, 0, Yres.get(i, 0) - X.get(i, k) * homogeneityParameters.get(k, 0));
+                                }
+                            } else {
+                                if (first) {
+                                    first = false;
+                                    Xres = pmUtility.getColumn(X, k);
+                                } else {
+                                    Xres = pmUtility.concatMatrix(Xres, pmUtility.getColumn(X, k));
+                                }
+                            }
+                        }
+
+                        Jama.Matrix olsBeta = pmUtility.OLSsvd(Xres, Yres, false);
+
+                        // System.out.println("Average of Y is :"+pmUtility.mean(Y, 0));
+                        for (int i = 0; i < olsBeta.getRowDimension(); i++) {
+                            xpls[i + 1] = olsBeta.get(i, 0);
+                        }
+                    } else {
+                        minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                    }
+                }
+
+                // minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
                 boolean testFailure = false;
                 if (testFailure) {
                     // put in something here about a failed estimation

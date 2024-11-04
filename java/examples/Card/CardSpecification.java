@@ -361,8 +361,8 @@ public class CardSpecification implements MomentSpecification {
 
             // NEED TO UPDATE
             X = pmUtility.getColumn(dX, 0); // constant
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // education 
-            // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // education 
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // exp^2
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // black
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // south
