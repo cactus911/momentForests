@@ -60,7 +60,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     public void executeSearch() {
         // System.out.println("Inside executeSearch");
 
-        Uncmin_f77 minimizer = new Uncmin_f77(false);
+        Uncmin_f77 minimizer = new Uncmin_f77(true);
 
         if (debug) {
             System.out.println("Number of parameters: " + numHomogeneousParametersToSearchOver);
@@ -103,15 +103,25 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         int[] iahflg = {0, 0};
         double[] dlt = {0, 1};
         double[] gradtl = {0, 1E-8};
-        double[] stepmx = {0, 1.0}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
+        double[] stepmx = {0, 1E8}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
         double[] steptl = {0, 1E-8};
 
         if (numHomogeneousParametersToSearchOver == 1) {
             // just use the number passed from the legit optimizer that already did all the work in detecting the parameter
             xpls[1] = guess[1];
+        } else {
+            minimizer.optif9_f77(numHomogeneousParametersToSearchOver, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
         }
 
-        minimizer.optif9_f77(numHomogeneousParametersToSearchOver, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        if (itrmcd[1] == 4 || itrmcd[1] == 5) {
+            System.out.println("***** CAUTION: Uncmin reported failing to find a minimum *****");
+        }
+
+        // System.out.print("<<<<<<<<< After search, parameter vector is: ");
+        // pmUtility.prettyPrint(new Jama.Matrix(xpls,1));
+        for (int i = 0; i < numHomogeneousParametersToSearchOver; i++) {
+            mySpecification.setHomogeneousParameter(homogeneousParameterList.get(i), xpls[i + 1]);
+        }
 
         Jama.Matrix compactHomogeneousParameterVector = new Jama.Matrix(numHomogeneousParametersToSearchOver, 1);
         for (int i = 0; i < numHomogeneousParametersToSearchOver; i++) {
@@ -126,7 +136,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         for (int i = 0; i < numHomogeneousParametersToSearchOver; i++) {
             mySpecification.setHomogeneousParameter(homogeneousParameterList.get(i), x[i + 1]);
         }
-        
+
         boolean testParameterHomogeneity = false;
         // System.out.println("Initializing forest");
         MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngSeedBaseMomentForest, homogenizedForestLens, verbose, new TreeOptions());
@@ -154,8 +164,8 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
                 avgGMMObjectiveFunctionValue += tree.getTreeMomentObjectiveFunctionAtComputedParameters(verbose);
             }
             avgGMMObjectiveFunctionValue /= myForest.getForestSize();
-            if(verbose) {
-                
+            if (verbose) {
+
             }
             return avgGMMObjectiveFunctionValue;
         } else {

@@ -174,4 +174,6 @@ public interface MomentSpecification {
 
     public int getNumParams();
 
+    public boolean didEstimatorFail();
+
 }

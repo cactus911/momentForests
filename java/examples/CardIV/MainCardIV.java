@@ -53,7 +53,7 @@ public class MainCardIV {
      * @param args the command line arguments
      */
     public static void main(String[] args) {
-        JFrame f = new JFrame("Card Partial Linear Model Application");
+        JFrame f = new JFrame("Card IV Partial Linear Application");
         f.setBounds(100, 100, 1500, 500);
         f.getContentPane().setLayout(new GridLayout(1, 2));
         JTextAreaAutoscroll jt1 = new JTextAreaAutoscroll();
@@ -76,7 +76,7 @@ public class MainCardIV {
     private void execute() {
         Random rng = new Random(777);
         // MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("d:/git/momentforests/java/examples/cardiv/IV test.csv");
-        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("c:/git/momentforests/java/examples/cardiv/table3.csv");
+        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("d:/git/momentforests/java/examples/cardiv/table3.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -92,7 +92,7 @@ public class MainCardIV {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 50;
+        int numberTreesInForest = 25;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -114,9 +114,9 @@ public class MainCardIV {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 1.0; minImprovement <= 25.0; minImprovement *= 5) {
-                    for (int maxDepth = 4; maxDepth >= 0; maxDepth--) {
+            for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 1.0; minImprovement <= 1.0; minImprovement *= 5) {
+                    for (int maxDepth = 1; maxDepth >= 0; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -156,9 +156,9 @@ public class MainCardIV {
             jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
             // this is what CV gave me Oct 24 2024
-            bestMinObservationsPerLeaf = 50;
-            bestMinImprovement = 5.0;
-            bestMaxDepth = 3; // 3;
+            bestMinObservationsPerLeaf = 25; // 25;
+            bestMinImprovement = 1.0; // 2.0
+            bestMaxDepth = 2; // 3;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -231,7 +231,7 @@ public class MainCardIV {
                 pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
 
                 int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
-                System.out.print("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
+                // System.out.print("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
                 Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
                 int counter = 0;
                 for (int k = 0; k < K; k++) {
@@ -248,7 +248,7 @@ public class MainCardIV {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 50; // 50
+        numberTreesInForest = 5;
 
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, false);
@@ -260,7 +260,7 @@ public class MainCardIV {
         System.out.println("Best maximum depth: " + bestMaxDepth);
 
         System.out.println("Out of sample SSE: " + outOfSampleFit);
-        System.out.println("Number of trees in forest: " + numberTreesInForest);
+        System.out.println("Number of valid trees in forest: " + fitStats.myForest.getForestSize());
 
         double[] countVariableSplitsInForest = fitStats.getSplitVariables();
         System.out.println("Number of split variables: " + countVariableSplitsInForest.length);
@@ -327,6 +327,9 @@ public class MainCardIV {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
 
+            // i can add k-fold validation here
+            // TODO: in the future try this out
+            
             DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
             DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
             DataLens estimatingLens = split[0];
@@ -342,6 +345,9 @@ public class MainCardIV {
              * Grow the moment forest
              */
             myForest.growForest();
+            System.out.println("**************");
+            System.out.println("* First tree *");
+            System.out.println("**************");
             myForest.getTree(0).printTree();
             /**
              * Test vectors for assessment
@@ -352,7 +358,6 @@ public class MainCardIV {
             Jama.Matrix testX = oosDataLens.getX();
 
             double outOfSampleFit = 0;
-            Jama.Matrix oosMoments = new Jama.Matrix(mySpecification.getNumMoments(), 1);
             
             for (int i = 0; i < testZ.getRowDimension(); i++) {
                 Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
@@ -367,9 +372,7 @@ public class MainCardIV {
                     System.out.println(pmUtility.stringPrettyPrintVector(compositeEstimatedBeta)+"\t"+pmUtility.stringPrettyPrint(zi));
                 }
             }
-            // oosMoments.timesEquals(1.0 / testZ.getRowDimension());
-            // outOfSampleFit = ((oosMoments.transpose()).times(oosMoments)).get(0, 0);
-
+            
             inSampleFit = 0;
 
             // System.out.println(mySpecification.getNumMoments());
@@ -381,6 +384,12 @@ public class MainCardIV {
                 double yi = estimatingLens.getY().get(i, 0);
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+                
+                if(i==0 && 1==2) {
+                    for(int f=0;f<myForest.getForestSize();f++) {
+                        pmUtility.prettyPrintVector(myForest.getTree(f).getEstimatedBeta(zi));
+                    }
+                }
 
                 inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
                 // inMoments.plusEquals(civIn.getGi(compositeEstimatedBeta, i));

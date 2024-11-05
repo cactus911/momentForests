@@ -107,11 +107,25 @@ public class MomentForest {
             }
         } else {
             forest.parallelStream().forEach((tree) -> {
+                // System.out.println("Split");
                 tree.determineSplit();
+                // System.out.println("Honest");
                 tree.estimateHonestTree();
             });
         }
         // System.out.format("Memory usage: %,d bytes %n", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
+        
+        // prune out invalid trees? these would be ones where the minimizer failed?
+        ArrayList<TreeMoment> validForest = new ArrayList<>();
+        for(int i=0;i<numberTreesInForest;i++) {
+            if(forest.get(i).isValidTree()) {
+                validForest.add(forest.get(i));
+            } else {
+                System.out.println("Removing tree "+i+" due to failed estimation.");
+            }
+        }
+        forest = validForest;
+        numberTreesInForest = forest.size();
     }
 
     /**
@@ -247,8 +261,10 @@ public class MomentForest {
     }
 
     public void testHomogeneity() {
-        boolean useParallel = false;
+        boolean useParallel = true;
 
+        double[] averageTestValues = new double[spec.getNumParams()];
+        
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
                 // System.out.println("========== Tree "+i+" ==========");
@@ -259,6 +275,23 @@ public class MomentForest {
                 tree.testHomogeneity();
             });
         }
+        
+        for(TreeMoment tree : forest) {
+            double[] testValues_i = tree.getTestValues();
+            for(int k=0;k<testValues_i.length;k++) {
+                    averageTestValues[k] = averageTestValues[k] + testValues_i[k];
+                }
+        }
+        
+        /**
+         * Hmm, this doesn't seem to work, need more time to think about how
+         * to do this properly (should I be averaging something other than the objective function value?)
+         */
+        for(int k=0;k<averageTestValues.length;k++) {
+            averageTestValues[k] = averageTestValues[k] / forest.size();
+            System.out.println("parameter "+k+": average DM test statistic: "+averageTestValues[k]);
+        }
+        
     }
 
 }

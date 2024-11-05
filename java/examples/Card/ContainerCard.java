@@ -26,6 +26,7 @@ package examples.Card;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
+import examples.CardIV.MomentSpecificationCardIV;
 
 import java.awt.BorderLayout;
 import javax.swing.JFrame;
@@ -46,16 +47,19 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
 
     double goodnessOfFit = -666; // make sure that we give back a crazy number if it is not called
     Jama.Matrix beta;
-    Jama.Matrix variance;
     boolean debugVerbose = false;
     DataLens lens;
     Jama.Matrix X;
     Jama.Matrix Y;
+
+    boolean failedEstimation = false;
+
     boolean[] homogeneityIndex;
     Jama.Matrix homogeneityParameters;
     boolean allParametersHomogeneous;
+    CardSpecification spec;
 
-    public ContainerCard(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous) {
+    public ContainerCard(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous, CardSpecification spec) {
         this.lens = lens;
         // computeBetaAndErrors();
         X = lens.getX();
@@ -63,18 +67,19 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
         this.homogeneityIndex = homogeneityIndex;
         this.homogeneityParameters = homogeneityParameters;
         this.allParametersHomogeneous = allParametersHomogeneous;
+        this.spec = spec;
     }
 
     @Override
     public void computeBetaAndErrors() {
-        // System.out.println("In here");
-        if (Y.getRowDimension() < 30) {
+        // System.out.println("In compute beta and errors");
+        if (Y.getRowDimension() < Math.max(30, X.getColumnDimension())) {
             // System.out.println("Too few observations");
             beta = null;
             goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {
             try {
-                int numParams = X.getColumnDimension();
+                int numParams = spec.getNumParams();
                 if (!allParametersHomogeneous) {
                     for (boolean b : homogeneityIndex) {
                         if (b) {
@@ -98,58 +103,86 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 }
 
                 double[] fscale = {0, 1.0E-8};
-                int[] method = {0, 3};
+                int[] method = {0, 1};
                 int[] iexp = {0, 0};
                 int[] msg = {0, 1};
                 int[] ndigit = {0, 8};
-                int[] itnlim = {0, 150};
+                int[] itnlim = {0, 1500};
                 int[] iagflg = {0, 0};
                 int[] iahflg = {0, 0};
                 double[] dlt = {0, 1};
                 double[] gradtl = {0, 1E-8};
-                double[] stepmx = {0, 1.0};
+                double[] stepmx = {0, 1E8};
                 double[] steptl = {0, 1E-8};
 
-                if (numParams > 0 && !allParametersHomogeneous) {
-                    boolean useMeanY = false;
-                    if (useMeanY) {
-                        xpls[1] = pmUtility.mean(Y, 0);
-                    } else {
-                        boolean tryResidualizing = false;
-                        if (tryResidualizing) {
-                            Jama.Matrix Yres = Y.copy();
-                            Jama.Matrix Xres = null;
-                            boolean first = true;
-                            for (int k = 0; k < X.getColumnDimension(); k++) {
-                                if (homogeneityIndex[k]) {
-                                    for (int i = 0; i < Y.getRowDimension(); i++) {
-                                        Yres.set(i, 0, Yres.get(i, 0) - X.get(i, k) * homogeneityParameters.get(k, 0));
-                                    }
+                if (numParams == spec.getNumParams()) {
+                    // no homogeneous parameters, just use OLS
+                    Jama.Matrix olsBeta = pmUtility.OLSsvd(X, Y, false);
+
+                    // System.out.println("Average of Y is :"+pmUtility.mean(Y, 0));
+                    for (int i = 0; i < olsBeta.getRowDimension(); i++) {
+                        xpls[i + 1] = olsBeta.get(i, 0);
+                    }
+                } else {
+                    boolean tryResidualizing = true;
+                    if (tryResidualizing) {
+                        Jama.Matrix Yres = Y.copy();
+                        Jama.Matrix Xres = null;
+                        boolean first = true;
+                        for (int k = 0; k < X.getColumnDimension(); k++) {
+                            if (homogeneityIndex[k]) {
+                                for (int i = 0; i < Y.getRowDimension(); i++) {
+                                    Yres.set(i, 0, Yres.get(i, 0) - X.get(i, k) * homogeneityParameters.get(k, 0));
+                                }
+                            } else {
+                                if (first) {
+                                    first = false;
+                                    Xres = pmUtility.getColumn(X, k);
                                 } else {
-                                    if (first) {
-                                        first = false;
-                                        Xres = pmUtility.getColumn(X, k);
-                                    } else {
-                                        Xres = pmUtility.concatMatrix(Xres, pmUtility.getColumn(X, k));
-                                    }
+                                    Xres = pmUtility.concatMatrix(Xres, pmUtility.getColumn(X, k));
                                 }
                             }
-                            Jama.Matrix olsBeta = pmUtility.OLSsvd(Xres, Yres, false);
-
-                            // System.out.println("Average of Y is :"+pmUtility.mean(Y, 0));
-                            for (int i = 0; i < olsBeta.getRowDimension(); i++) {
-                                xpls[i + 1] = olsBeta.get(i, 0);
-                            }
-                        } else {
-                            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
                         }
+
+                        Jama.Matrix olsBeta = pmUtility.OLSsvd(Xres, Yres, false);
+
+                        // System.out.println("Average of Y is :"+pmUtility.mean(Y, 0));
+                        for (int i = 0; i < olsBeta.getRowDimension(); i++) {
+                            xpls[i + 1] = olsBeta.get(i, 0);
+                        }
+                    } else {
+                        minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
                     }
                 }
 
-                Jama.Matrix betaUncmin = new Jama.Matrix(X.getColumnDimension(), 1);
+                // minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+                boolean testFailure = false;
+                if (testFailure) {
+                    // put in something here about a failed estimation
+                    if (itrmcd[1] == 4 || itrmcd[1] == 5) {
+                        failedEstimation = true;
+                        System.out.println("failure: uncmin failed to converge");
+                    }
+
+                    // check that optimizer didn't shoot off into extremes
+                    for (int i = 0; i < xpls.length; i++) {
+                        if (xpls[i] < -10 || xpls[i] > 10) {
+                            failedEstimation = true;
+                            System.out.println("failure: parameter magnitude too large");
+                        }
+                    }
+
+                    // objective should be close to zero in these exactly-identified cases
+                    if (f_to_minimize(xpls) > 10) {
+                        System.out.println("failure: fmin too large");
+                        failedEstimation = true;
+                    }
+                }
+
+                Jama.Matrix betaUncmin = new Jama.Matrix(spec.getNumParams(), 1);
                 int counter = 0;
 
-                for (int i = 0; i < X.getColumnDimension(); i++) {
+                for (int i = 0; i < spec.getNumParams(); i++) {
                     if (homogeneityIndex[i]) {
                         betaUncmin.set(i, 0, homogeneityParameters.get(i, 0));
                     } else {
@@ -158,10 +191,6 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                     }
                 }
 
-                // produce the essentially same answer 
-//            pmUtility.prettyPrintVector(betaOLS);
-//            pmUtility.prettyPrintVector(betaUncmin);
-//            System.exit(0);
                 beta = betaUncmin.copy();
                 double sse = 0;
                 Jama.Matrix fit = X.times(beta);
@@ -170,61 +199,11 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 }
                 goodnessOfFit = sse;
 
-//                    System.out.print("\t\tFound uncmin beta: ");
-//                    pmUtility.prettyPrintVector(betaUncmin);
-//                    Jama.Matrix betaOLS = pmUtility.OLSsvd(X, Y, false);
-//                    System.out.print("\t\tCompared to betaOLS: ");
-//                    pmUtility.prettyPrintVector(betaOLS);
-                if (debugVerbose) {
-                    System.out.format("ContainerLinear.computeBetaAndErrors SSE: %g ", +goodnessOfFit);
-                    pmUtility.prettyPrintVector(beta);
-
-                    // ok i want to check that things are working here just for a single split of the data
-                    // compute the variance using the OLS formula, compute the variance using the GMM formula
-                    // make sure they are the same thing, and if not, figure out why not
-                    Jama.Matrix olsVariance = getVariance(beta);
-                    System.out.println("OLS variance:");
-                    pmUtility.prettyPrint(olsVariance);
-
-                    // compute variance formula, B = G'omega-1G, then B-1, compare to above
-                    // get G first
-                    Jama.Matrix G = getJacobianNoDivision(beta);
-                    G.timesEquals(1.0 / Y.getRowDimension());
-                    Jama.Matrix omega = new Jama.Matrix(X.getColumnDimension(), X.getColumnDimension());
-                    Jama.Matrix fits = X.times(beta);
-                    Jama.Matrix errors = fits.minus(Y);
-                    System.out.println("sigma2: " + pmUtility.sumSquaredElements(errors));
-                    for (int i = 0; i < Y.getRowDimension(); i++) {
-                        Jama.Matrix gi = getGi(beta, i);
-                        omega.plusEquals(gi.times(gi.transpose()));
-                    }
-                    omega.timesEquals(1.0 / Y.getRowDimension());
-                    Jama.Matrix B = (G.transpose()).times(omega.inverse()).times(G);
-
-                    // that line above why the numbers are not identical? we multiple X'X by X'Xinv by X'X. Maybe that cancellation is numerically imperfect?
-                    System.out.println("G:");
-                    pmUtility.prettyPrint(G);
-
-                    System.out.println("G'*omega.inverse:");
-                    pmUtility.prettyPrint(G.transpose().times(omega.inverse()));
-
-                    System.out.println("G'*omega.inverse*G:");
-                    pmUtility.prettyPrint(G.transpose().times(omega.inverse()).times(G));
-
-                    System.out.println("omega:");
-                    pmUtility.prettyPrint(omega);
-
-                    // i think that inversion, multiplication combination is why they are not identical
-                    // as the sample size grows, the covariance matrices get SUPER close (to the 6th decimal place) to each other
-                    System.out.println("B:");
-                    pmUtility.prettyPrint(B);
-                    System.out.println("B inverse:");
-                    pmUtility.prettyPrint(B.inverse());
-                    System.out.println("Divided by n:");
-                    pmUtility.prettyPrint(B.inverse().times(1.0 / Y.getRowDimension()));
-
-                    //System.exit(0);
+                if (failedEstimation) {
+                    beta = null;
+                    goodnessOfFit = Double.POSITIVE_INFINITY;
                 }
+
             } catch (Exception e) {
                 if (allParametersHomogeneous) {
                     e.printStackTrace();
@@ -232,7 +211,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                 if (debugVerbose) {
                     System.out.println("Matrix not invertible");
                 }
-                
+
                 beta = null;
                 goodnessOfFit = Double.POSITIVE_INFINITY;
             }
@@ -309,7 +288,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
          * directly this way)
          */
         // Jama.Matrix runningTotal = new Jama.Matrix(X.getRowDimension(), X.getColumnDimension());
-        int numMoments = X.getColumnDimension();
+        int numMoments = spec.getNumMoments();
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
@@ -334,14 +313,14 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
         return ((e.transpose()).times(e)).get(0, 0);
     }
 
-    private double getMoment(Jama.Matrix beta, boolean debugMoment) {
+    private double getMomentObjectiveFunction(Jama.Matrix beta, boolean debugMoment) {
         /**
          * Let's implement the moment-based version of OLS here (need this for a
          * variety of reasons, also will extend nicely to other models more
          * directly this way)
          */
         // Jama.Matrix runningTotal = new Jama.Matrix(X.getRowDimension(), X.getColumnDimension());
-        int numMoments = X.getColumnDimension();
+        int numMoments = spec.getNumMoments();
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
@@ -400,6 +379,8 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
         // key point here is that we estimate the model using GMM
         // but we report goodness-of-fit when searching over the splits
 //        System.exit(0);
+        // System.out.print(q + " ");
+        // pmUtility.prettyPrintVector(beta);
         return q;
     }
 
@@ -415,45 +396,22 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public Matrix getVariance(Jama.Matrix b) {
-        // System.out.print("Computing variance for OLS with beta = ");
-        // pmUtility.prettyPrintVector(b);
-        double sse = 0;
-        Jama.Matrix fit = X.times(b);
-        for (int i = 0; i < Y.getRowDimension(); i++) {
-            sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
-        }
-        System.out.println("sse in OLS: " + sse);
-        Jama.Matrix xpx = (X.transpose()).times(X);
-        Jama.Matrix xpxInv = xpx.inverse();
-        // double sigma2 = sse / (Y.getRowDimension() - X.getColumnDimension());
-        double sigma2 = sse / (Y.getRowDimension());
-        System.out.println("sigma2 in getVariance: " + sigma2 + " n = " + Y.getRowDimension());
-
-        boolean debugHere = false;
-        if (debugHere) {
-            System.out.println("X'X:");
-            pmUtility.prettyPrint(xpx);
-            System.out.println("X'X times sigma2");
-            pmUtility.prettyPrint(xpx.times(sigma2));
-        }
-
-        variance = xpxInv.times(sigma2);
-        return variance;
+        throw new UnsupportedOperationException("Should not be used.");
     }
 
     @Override
     public double getMomentFunctionImposingHomogeneity(int k, double value) {
         Jama.Matrix betaHomogeneous = beta.copy();
         betaHomogeneous.set(k, 0, value);
-        return getMoment(betaHomogeneous, false);
+        return getMomentObjectiveFunction(betaHomogeneous, false);
     }
 
     @Override
     public double f_to_minimize(double[] x) {
 
         int counter = 0;
-        Jama.Matrix b = new Jama.Matrix(X.getColumnDimension(), 1);
-        for (int i = 0; i < X.getColumnDimension(); i++) {
+        Jama.Matrix b = new Jama.Matrix(spec.getNumParams(), 1);
+        for (int i = 0; i < spec.getNumParams(); i++) {
             if (homogeneityIndex[i]) {
                 b.set(i, 0, homogeneityParameters.get(i, 0));
             } else {
@@ -462,7 +420,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
             }
         }
 
-        return getMoment(b, false);
+        return getMomentObjectiveFunction(b, false);
     }
 
     @Override
@@ -477,7 +435,11 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public double getMomentFunctionValue(Jama.Matrix b) {
-        return getMoment(b, false);
+        return getMomentObjectiveFunction(b, false);
+    }
+
+    boolean didEstimatorFail() {
+        return failedEstimation;
     }
 
 }

@@ -72,6 +72,9 @@ public class TreeMoment {
     private ArrayList<Double> valueHomogeneousParameters = new ArrayList<>();
 
     private boolean testParameterHomogeneity;
+    private double[] testValues;
+
+    private boolean validTree = true;
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
             Boolean[] discreteVector, boolean verbose, double minProportionEachPartition,
@@ -177,13 +180,21 @@ public class TreeMoment {
          * a dumb way of doing it, but I'm not sure what else I could do easily
          * to get around this issue.
          */
-        // System.out.println("Computing baseline SSE");
+        if (verbose) {
+            // System.out.println("Computing baseline SSE");
+        }
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
-        // System.out.println("Setting beta");
+        if (momentSpec.didEstimatorFail()) {
+            System.out.println("Node optimal beta computation failed; TreeMoment setting itself to invalid");
+            validTree = false;
+        }
+        if (verbose) {
+            System.out.println("Setting beta");
+        }
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
         if (verbose) {
             System.out.println("Current node objective function value is " + currentNodeMoment.getGoodnessOfFit());
-            System.out.print("Current beta: ");
+            System.out.print("Current beta ["+lensGrowingTree.getNumObs()+"]: ");
             pmUtility.prettyPrintVector(currentNodeMoment.getBeta());
         }
         // System.out.println("Setting variance");
@@ -270,7 +281,7 @@ public class TreeMoment {
 
             for (int indexSplitVariable : momentSpec.getVariableIndicesToSearchOver()) {
                 if (debugOptimization) {
-                    echoLn("indexSplitVariable: " + indexSplitVariable + "(" + momentSpec.getVariableName(indexSplitVariable) + "); isDiscrete: " + discreteVector[indexSplitVariable] + "; In Tree: " + randomForestIndex.contains(indexSplitVariable));
+                    echoLn("indexSplitVariable: " + indexSplitVariable + " (" + momentSpec.getVariableName(indexSplitVariable) + "); isDiscrete: " + discreteVector[indexSplitVariable] + "; In Tree: " + randomForestIndex.contains(indexSplitVariable));
                 }
                 if (randomForestIndex.contains(indexSplitVariable)) {
                     /**
@@ -283,7 +294,7 @@ public class TreeMoment {
                         double maxZ = lensGrowingTree.getMaximumValue(indexSplitVariable);
 
                         if (debugOptimization) {
-                            System.out.println("TreeMoment.java:224 -> min "+momentSpec.getVariableName(indexSplitVariable)+": " + minZ + " max "+momentSpec.getVariableName(optimalSplitVariableIndex)+": " + maxZ);
+                            System.out.println("TreeMoment.java:224 -> min " + momentSpec.getVariableName(indexSplitVariable) + ": " + minZ + " max " + momentSpec.getVariableName(optimalSplitVariableIndex) + ": " + maxZ);
                         }
                         double optimalZ_k = Double.POSITIVE_INFINITY;
                         double optimalZ_SSE_k = Double.POSITIVE_INFINITY;
@@ -417,7 +428,7 @@ public class TreeMoment {
                                 }
 
                                 if (debugOptimization) {
-                                    echoLn("\t "+ momentSpec.getVariableName(indexSplitVariable) + " Partition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE);
+                                    echoLn("\t " + momentSpec.getVariableName(indexSplitVariable) + " Partition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE);
                                 }
 
                                 //For every possible partition, we check which has the lowest SSE
@@ -429,7 +440,7 @@ public class TreeMoment {
                                     numObsLeft_Partition = obj.getEffectiveNumObsLeft();
                                     numObsRight_Partition = obj.getEffectiveNumObsRight();
                                     if (debugOptimization) {
-                                        echoLn("\tPartition: " + i + " " + partitions.get(i) + " SSE: " + partitionSSE + " set as within-variable current best.");
+                                        echoLn("\tPartition: " + i + " (" + momentSpec.getVariableName(i) + ") " + partitions.get(i) + " SSE: " + partitionSSE + " set as within-variable current best.");
                                     }
                                 }
                             }
@@ -680,6 +691,11 @@ public class TreeMoment {
                 }
             } else {
                 ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest, allParametersHomogeneous);
+                if (momentSpec.didEstimatorFail()) {
+                    // System.out.println("TreeMoment setting itself to invalid in honest tree");
+                    validTree = false;
+                }
+
                 Jama.Matrix oldBeta = getNodeEstimatedBeta(); //Not sure I understand why this is here... we don't have a beta estimate until we reach a terminal node? A. this is what it was the tree building sample, not the honest tree sample
                 setNodeEstimatedBeta(c.getBeta());
                 // setNodeEstimatedVariance(c.getVariance(c.getBeta()));
@@ -702,7 +718,7 @@ public class TreeMoment {
                     if (oldBeta != null) {
                         betaOldString = pmUtility.stringPrettyPrint(oldBeta.transpose());
                     }
-                    echoLn(betaCurrentString + " [ " + lensHonest.getNumObs() + " ] from " + betaOldString);
+                    echoLn(betaCurrentString + " [ " + lensHonest.getNumObs() + " ] from " + betaOldString + " [ " + lensGrowingTree.getNumObs() + " ]");
                 }
             }
         } else {
@@ -735,6 +751,10 @@ public class TreeMoment {
                         echoLn("null pruned");
                     } else {
                         ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest, allParametersHomogeneous);
+                        if (momentSpec.didEstimatorFail()) {
+                            // System.out.println("TreeMoment setting itself to invalid in honest tree pruning");
+                            validTree = false;
+                        }
                         setNodeEstimatedBeta(c.getBeta());
                         // setNodeEstimatedVariance(c.getVariance(c.getBeta()));
                         if (verbose) {
@@ -760,6 +780,10 @@ public class TreeMoment {
             DataLens leafLens = v.get(leafLensList);
             totalObs += leafLens.getNumObs();
             ContainerMoment cm = momentSpec.computeOptimalBeta(leafLens, allParametersHomogeneous);
+            if (momentSpec.didEstimatorFail()) {
+                System.out.println("TreeMoment getTreeMomentObjectiveFunctionAtComputedParameters setting itself to invalid; should NEVER see this");
+                validTree = false;
+            }
             Jama.Matrix leafG = cm.getMomentGWithoutDivision(cm.getBeta());
             Jama.Matrix leafOmega = new Jama.Matrix(momentSpec.getNumMoments(), momentSpec.getNumMoments());
             for (int i = 0; i < leafLens.getNumObs(); i++) {
@@ -776,18 +800,24 @@ public class TreeMoment {
         G.timesEquals(1.0 / totalObs);
         omega.timesEquals(1.0 / totalObs);
 
-        if(verboseTreeGMMObjectiveFunction) {
+        if (verboseTreeGMMObjectiveFunction) {
             System.out.print("moment vector: ");
             pmUtility.prettyPrintVector(G);
             System.out.println("omega:");
             pmUtility.prettyPrint(omega);
-            System.out.println("objective function: "+(((G.transpose()).times(omega)).times(G)).get(0, 0));
+            System.out.println("objective function: " + (((G.transpose()).times(omega)).times(G)).get(0, 0));
         }
-        
+
         // not sure I should use omega here?
         return (((G.transpose()).times(omega)).times(G)).get(0, 0);
     }
 
+    /**
+     * 
+     * Test homogeneity of each parameter one by one.
+     * 
+     * @return Double array of critical values (to average them and see if that works to improve power?)
+     */
     public void testHomogeneity() {
         System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
         ArrayList<DataLens> v = new ArrayList<>();
@@ -796,6 +826,8 @@ public class TreeMoment {
         if (verbose || 1 == 2) {
             System.out.println("Number of leaves: " + v.size());
         }
+        
+        testValues = new double[momentSpec.getNumParams()];
 
         // how to handle case with only a stump?
         // all parameters are classified as homogeneous
@@ -818,6 +850,7 @@ public class TreeMoment {
                 DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
                 // WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
                 double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
+                testValues[k] = dm2;
                 double pval = 1.0 - chi.cumulative(dm2);
                 if (verbose) {
                     System.out.println("p-value: " + pval);
@@ -1040,5 +1073,26 @@ public class TreeMoment {
             childRight.getEnumerationOfAllSplitVariablesInThisTree(splitTree);
             splitTree.add(rule.getOptimalSplitVariableIndex());
         }
+    }
+
+    /**
+     * @return the validTree
+     */
+    public boolean isValidTree() {
+        return validTree;
+    }
+
+    /**
+     * @param validTree the validTree to set
+     */
+    public void setValidTree(boolean validTree) {
+        this.validTree = validTree;
+    }
+
+    /**
+     * @return the testValues
+     */
+    public double[] getTestValues() {
+        return testValues;
     }
 }
