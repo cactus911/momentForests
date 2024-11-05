@@ -109,7 +109,7 @@ public class CardMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");

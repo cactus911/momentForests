@@ -417,7 +417,7 @@ public class CardSpecification implements MomentSpecification {
              */
 
             
-            boolean FAKE_DATA = true;
+            boolean FAKE_DATA = false;
             if (FAKE_DATA) {
                 NormalDistribution normal = new NormalDistribution();
                 Random rng = new Random(78710);
