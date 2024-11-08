@@ -33,6 +33,8 @@ import core.TreeOptions;
 import java.awt.BorderLayout;
 
 import java.awt.GridLayout;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Random;
 import javax.swing.JFrame;
@@ -112,7 +114,7 @@ public class CardMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = true;
+        boolean runCV = false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -169,7 +171,7 @@ public class CardMain {
             // minObs = 25; MSE = 1.0; depth = 5 for const/education/experience
             bestMinObservationsPerLeaf = 50; // (!!!!)
             bestMinImprovement = 0.1;
-            bestMaxDepth = 6;
+            bestMaxDepth = 3;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -307,6 +309,8 @@ public class CardMain {
                 System.out.format("%20s [%.2f%%] %n", mySpecification.getVariableName(i), 100.0 * countVariableSplitsInForest[i] / numberTreesInForest);
             }
         }
+        
+        fitStats.outputInSampleFits();
     }
 
     private class computeFitStatistics {
@@ -432,25 +436,25 @@ public class CardMain {
                     Jama.Matrix z_guy = new Jama.Matrix(demographics, 1, mySpecification.getZ().getColumnDimension());
                     // pmUtility.prettyPrint(z_guy);
                     Jama.Matrix x_guy = testX.getMatrix(0, 0, 0, testX.getColumnDimension() - 1);
-                    if(x_guy.getColumnDimension()>1) {
+                    if (x_guy.getColumnDimension() > 1) {
                         x_guy.set(0, 1, 12);
                     }
-                    if(x_guy.getColumnDimension()>2) {
+                    if (x_guy.getColumnDimension() > 2) {
                         x_guy.set(0, 2, experience);
                     }
-                    
+
                     Jama.Matrix compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
-                    double estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0,0);
+                    double estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0, 0);
                     expSeriesBlack.add(experience, (estimatedLogWage));
-                    
+
                     z_guy.set(0, 4, 0.0); // white
                     compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
-                    estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0,0);
+                    estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0, 0);
                     expSeriesWhite.add(experience, (estimatedLogWage));
                 }
                 expCollection.addSeries(expSeriesBlack);
                 expCollection.addSeries(expSeriesWhite);
-                
+
                 XYSeriesCollection eduCollection = new XYSeriesCollection();
                 for (int education = 8; education <= 18; education++) {
                     double black = 1;
@@ -458,19 +462,19 @@ public class CardMain {
                     Jama.Matrix z_guy = new Jama.Matrix(demographics, 1, mySpecification.getZ().getColumnDimension());
                     // pmUtility.prettyPrint(z_guy);
                     Jama.Matrix x_guy = testX.getMatrix(0, 0, 0, testX.getColumnDimension() - 1);
-                    if(x_guy.getColumnDimension()>1) {
+                    if (x_guy.getColumnDimension() > 1) {
                         x_guy.set(0, 1, education);
                     }
-                    if(x_guy.getColumnDimension()>2) {
+                    if (x_guy.getColumnDimension() > 2) {
                         x_guy.set(0, 2, 8);
                     }
                     Jama.Matrix compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
-                    double estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0,0);
+                    double estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0, 0);
                     eduSeriesBlack.add(education, (estimatedLogWage));
-                    
+
                     z_guy.set(0, 4, 0.0); // white
                     compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
-                    estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0,0);
+                    estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0, 0);
                     eduSeriesWhite.add(education, (estimatedLogWage));
                 }
                 eduCollection.addSeries(eduSeriesBlack);
@@ -483,7 +487,7 @@ public class CardMain {
                 f.getContentPane().add(panel, BorderLayout.CENTER);
                 f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 f.setVisible(true);
-                
+
                 JFrame f2 = new JFrame("Plots");
                 f2.setBounds(900, 100, 800, 800);
                 f2.getContentPane().setLayout(new BorderLayout());
@@ -495,6 +499,59 @@ public class CardMain {
                 f2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
                 f2.setVisible(true);
             }
+        }
+
+        public void outputInSampleFits() {
+            boolean verboseInSample = false;
+            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
+
+            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, overallLens, verboseInSample, new TreeOptions());
+            TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
+            myForest.setTreeOptions(cvOptions);
+            /**
+             * Grow the moment forest
+             */
+            myForest.growForest();
+            if (verbose) {
+                System.out.println("First tree in forest estimated as:");
+                myForest.getTree(0).printTree();
+            }
+
+            try {
+                BufferedWriter out = new BufferedWriter(new FileWriter("estimatedParametersByObservation.csv"));
+                inSampleFit = 0;
+                for (int i = 0; i < mySpecification.getZ().getRowDimension(); i++) {
+                    Jama.Matrix zi = mySpecification.getZ().getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
+                    Jama.Matrix xi = mySpecification.getX().getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
+                    double yi = mySpecification.getY().get(i, 0);
+                    // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
+                    Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+
+                    for(int j=0;j<compositeEstimatedBeta.getRowDimension();j++) {
+                        out.write(compositeEstimatedBeta.get(j,0)+",");
+                    }
+                    for(int j=0;j<xi.getColumnDimension();j++) {
+                        out.write(xi.get(0,j)+",");
+                    }
+                    for(int j=0;j<zi.getColumnDimension();j++) {
+                        out.write(zi.get(0,j)+"");
+                        if(j<zi.getColumnDimension()-1) {
+                            out.write(",");
+                        }
+                    }
+                    out.write("\n");
+                    
+                    
+                    inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
+                }
+                inSampleFit /= mySpecification.getZ().getRowDimension();
+                System.out.println("In-sample fit: " + inSampleFit);
+                out.close();
+            } catch (Exception e) {
+                e.printStackTrace();
+                System.exit(0);
+            }
+
         }
 
         private double getInSampleFit() {
