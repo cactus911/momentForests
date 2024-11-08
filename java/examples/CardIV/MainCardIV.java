@@ -158,7 +158,7 @@ public class MainCardIV {
             // this is what CV gave me Oct 24 2024
             bestMinObservationsPerLeaf = 25; // 25;
             bestMinImprovement = 1.0; // 2.0
-            bestMaxDepth = 2; // 3;
+            bestMaxDepth = 0; // 3;
         }
 
         mySpecification.resetHomogeneityIndex();

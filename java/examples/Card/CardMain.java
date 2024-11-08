@@ -122,9 +122,9 @@ public class CardMain {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 1.0; minImprovement <= 1.0; minImprovement *= 10) {
-                    for (int maxDepth = 5; maxDepth >= 0; maxDepth--) {
+            for (int minObservationsPerLeaf = 90; minObservationsPerLeaf <= 90; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.1; minImprovement <= 0.1; minImprovement *= 10) {
+                    for (int maxDepth = 5; maxDepth >= 5; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -166,6 +166,7 @@ public class CardMain {
             // nov 1 2024
             // minObs = 5, MSE = 0.1, depth = 6 for just the regression tree
             // minObs = XXX, MSE = XXX, depth = XXX for just const/education
+            // minObs = 25; MSE = 1.0; depth = 5 for const/education/experience
             bestMinObservationsPerLeaf = 50; // (!!!!)
             bestMinImprovement = 0.1;
             bestMaxDepth = 6;
@@ -361,7 +362,7 @@ public class CardMain {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
             DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
-            DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
+            DataLens[] split = overallLens.randomlySplitSample(0.85, 383);
             DataLens estimatingLens = split[0];
             DataLens oosDataLens = split[1];
 
