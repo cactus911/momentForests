@@ -884,7 +884,7 @@ public class TreeMoment {
                     }
                     if (d.getP() > adjustedPValue || addSuccessiveParameters) {
                         if (verbose) {
-                            System.out.println("Holm-Bonferroni -> Accepting null; Adding parameter index " + d.getK() + " to homogeneity list.");
+                            System.out.println("Holm-Bonferroni -> Failing to reject null; Adding parameter index " + d.getK() + " to homogeneity list.");
                         }
                         indexHomogeneousParameters.add(d.getK());
 
@@ -907,6 +907,8 @@ public class TreeMoment {
 //                    System.out.println("DEBUG: ending Holm Bonferroni method");
             } else {
                 // easier bonferroni procedure (for checking what's going on here)
+                System.out.println("*** Did not implement homogeneous parameter storage, do not use as-is ***");
+                System.exit(0);
                 for (int k = 0; k < pList.size(); k++) {
                     PValue d = pList.get(k);
                     System.out.println(d);
@@ -914,7 +916,7 @@ public class TreeMoment {
                     System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
                     if (d.getP() > criticalValue) {
                         if (verbose) {
-                            System.out.println("Straight Bonferroni -> Accepting null; adding parameter index " + d.getK() + " to homogeneity list.");
+                            System.out.println("Straight Bonferroni -> Failing to reject null; adding parameter index " + d.getK() + " to homogeneity list.");
                         }
                         indexHomogeneousParameters.add(d.getK());
                     } else {
