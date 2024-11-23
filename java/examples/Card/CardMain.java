@@ -86,7 +86,7 @@ public class CardMain {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecification mySpecification = new CardSpecification("examples/Card/table2.csv");
+        MomentSpecification mySpecification = new CardSpecification("C:/Users/natha/Documents/GitHub/momentForests/java/examples/Card/table2.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -102,7 +102,7 @@ public class CardMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 50;
+        int numberTreesInForest = 10;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -114,7 +114,7 @@ public class CardMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -124,9 +124,9 @@ public class CardMain {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 90; minObservationsPerLeaf <= 90; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.1; minImprovement <= 0.1; minImprovement *= 10) {
-                    for (int maxDepth = 5; maxDepth >= 5; maxDepth--) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 150; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.05; minImprovement <= 1.6; minImprovement *= 2) {
+                    for (int maxDepth = 7; maxDepth >= 1; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -169,7 +169,14 @@ public class CardMain {
             // minObs = 5, MSE = 0.1, depth = 6 for just the regression tree
             // minObs = XXX, MSE = XXX, depth = XXX for just const/education
             // minObs = 25; MSE = 1.0; depth = 5 for const/education/experience
-            bestMinObservationsPerLeaf = 50; // (!!!!)
+        	
+        	/* Nov 23 2024
+        	 * Include region_1996 in Z, numberTreesInForest = 50, proportionObservationsToEstimateTreeStructure = 0.15
+        	 * Just constant: minObs = 25, MSE = 0.05, depth = 7
+        	 * Constant/education: minObs = 25, MSE = 0.05, depth = 7
+        	 * Constant/education/experience: minObs = 25, MSE = 0.2, depth = 6
+        	 */
+            bestMinObservationsPerLeaf = 50;
             bestMinImprovement = 0.1;
             bestMaxDepth = 3;
         }

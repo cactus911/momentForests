@@ -114,7 +114,7 @@ public class CardSpecification implements MomentSpecification {
          * 15. dummy = 1 if household is a single mother
          *
          */
-        int[] vsi = {1, 2, 4, 5, 6, 8, 9, 10, 11, 12, 14, 15};
+        int[] vsi = {1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15};
         Boolean[] wvd = {true,
             false,
             false,
