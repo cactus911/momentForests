@@ -114,7 +114,7 @@ public class CardMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = true;
+        boolean runCV = false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -171,14 +171,14 @@ public class CardMain {
             // minObs = 25; MSE = 1.0; depth = 5 for const/education/experience
         	
         	/* Nov 23 2024
-        	 * Include region_1996 in Z, numberTreesInForest = 50, proportionObservationsToEstimateTreeStructure = 0.15
+        	 * Include region_1966 in Z, numberTreesInForest = 50, proportionObservationsToEstimateTreeStructure = 0.15
         	 * Just constant: minObs = 25, MSE = 0.05, depth = 7
         	 * Constant/education: minObs = 25, MSE = 0.05, depth = 7
         	 * Constant/education/experience: minObs = 25, MSE = 0.2, depth = 6
         	 */
-            bestMinObservationsPerLeaf = 50;
-            bestMinImprovement = 0.1;
-            bestMaxDepth = 3;
+            bestMinObservationsPerLeaf = 25;
+            bestMinImprovement = 0.2;
+            bestMaxDepth = 0;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -373,7 +373,7 @@ public class CardMain {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
             DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
-            DataLens[] split = overallLens.randomlySplitSample(0.85, 383);
+            DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
             DataLens estimatingLens = split[0];
             DataLens oosDataLens = split[1];
 

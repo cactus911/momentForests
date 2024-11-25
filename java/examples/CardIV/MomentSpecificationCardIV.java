@@ -475,7 +475,11 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-        return "" + fixedEffectIndex;
+        if (variableIndex == 7) {
+            String[] regionNames = {"New England", "Mid Atlantic", "East North Central", "West North Central", "South Atlantic", "East South Central", "West South Central", "Mountain", "Pacific"};
+            return regionNames[fixedEffectIndex - 1];
+        }
+        return " " + fixedEffectIndex;
     }
 
     @Override

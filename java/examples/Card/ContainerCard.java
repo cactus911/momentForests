@@ -124,7 +124,7 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
                         xpls[i + 1] = olsBeta.get(i, 0);
                     }
                 } else {
-                    boolean tryResidualizing = true;
+                    boolean tryResidualizing = false;
                     if (tryResidualizing) {
                         Jama.Matrix Yres = Y.copy();
                         Jama.Matrix Xres = null;

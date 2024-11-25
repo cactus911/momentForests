@@ -27,6 +27,7 @@ import Jama.Matrix;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
+import core.TreeMoment;
 import core.TreeOptions;
 import java.awt.GridLayout;
 import java.util.ArrayList;
@@ -103,7 +104,7 @@ public class MainCardIV {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = true;
+        boolean runCV = false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -184,6 +185,15 @@ public class MainCardIV {
 
             myForest.setTreeOptions(cvOptions);
             myForest.growForest();
+            
+            if (verbose) {
+                TreeMoment loblolly = myForest.getTree(0);
+                System.out.println("************************");
+                System.out.println("* Printing first tree  *");
+                System.out.println("************************");
+                loblolly.printTree();
+            }
+            
             myForest.testHomogeneity();
 
             ArrayList<Integer> hpl = new ArrayList<>();
@@ -222,29 +232,35 @@ public class MainCardIV {
             /*
              * Estimate values of those homogeneous parameters
              */
-            if (!hpl.isEmpty() && !allParametersHomogeneous) {
-                System.out.println("Initializing search container");
-                numberTreesInForest = 1; // 10
-                HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
-                        getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
-                System.out.println("Calling execute search");
-                con.executeSearch();
-                System.out.println("Post search");
-                Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
-                System.out.print("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
-                pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
+            if (!hpl.isEmpty()) {
+                if (hpl.size() == mySpecification.getNumParams()) {
+                    // all homogenous, don't need to optimize, just set to stump and let it run
+                    bestMaxDepth = 0;
+                } else {
 
-                int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
-                // System.out.print("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
-                Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
-                int counter = 0;
-                for (int k = 0; k < K; k++) {
-                    if (mySpecification.getHomogeneousIndex()[k]) {
-                        expandedHomogeneousParameterVector.set(k, 0, homogeneousParameters.get(counter, 0));
-                        counter++;
-                    }
+	                System.out.println("Initializing search container");
+	                numberTreesInForest = 1; // 10
+	                HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
+	                        getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
+	                System.out.println("Calling execute search");
+	                con.executeSearch();
+	                System.out.println("Post search");
+	                Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
+	                System.out.print("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
+	                pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
+	
+	                int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
+	                System.out.print("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
+	                Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
+	                int counter = 0;
+	                for (int k = 0; k < K; k++) {
+	                    if (mySpecification.getHomogeneousIndex()[k]) {
+	                        expandedHomogeneousParameterVector.set(k, 0, homogeneousParameters.get(counter, 0));
+	                        counter++;
+	                    }
+	                }
+	                setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
                 }
-                setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
             }
         }
 
@@ -275,7 +291,6 @@ public class MainCardIV {
                 System.out.format("%20s [%.2f%%] %n", mySpecification.getVariableName(i), 100.0 * countVariableSplitsInForest[i] / numberTreesInForest);
             }
         }
-        
     }
 
     private class computeFitStatistics {
