@@ -28,7 +28,6 @@ import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.TreeOptions;
-import examples.PartialLinearGasDemand.HomogeneousParameterSorter;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.Random;
@@ -76,7 +75,7 @@ public class MainCardIV {
     private void execute() {
         Random rng = new Random(777);
         // MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("d:/git/momentforests/java/examples/cardiv/IV test.csv");
-        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("d:/git/momentforests/java/examples/cardiv/table3.csv");
+        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("C:/Users/natha/Documents/GitHub/momentForests/java/examples/CardIV/table3.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -92,7 +91,7 @@ public class MainCardIV {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 25;
+        int numberTreesInForest = 10;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -104,7 +103,7 @@ public class MainCardIV {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -114,9 +113,9 @@ public class MainCardIV {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 1.0; minImprovement <= 1.0; minImprovement *= 5) {
-                    for (int maxDepth = 1; maxDepth >= 0; maxDepth--) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 150; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.05; minImprovement <= 1.6; minImprovement *= 2) {
+                    for (int maxDepth = 7; maxDepth >= 1; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -156,6 +155,11 @@ public class MainCardIV {
             jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
             // this is what CV gave me Oct 24 2024
+        	
+        	/* Nov 24 2024
+        	 * Include region_1966 in Z, numberTreesInForest = 10, proportionObservationsToEstimateTreeStructure = 0.15
+        	 * Constant/education/experience: minObs = 50, MSE = 0.8, depth = 3
+        	 */
             bestMinObservationsPerLeaf = 25; // 25;
             bestMinImprovement = 1.0; // 2.0
             bestMaxDepth = 0; // 3;
