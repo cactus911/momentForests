@@ -353,12 +353,12 @@ public class CardSpecification implements MomentSpecification {
 
                     a = b + 1;
                     b = line.indexOf(",", a);
-                    dX.set(i, 15, Double.valueOf(line.substring(a))); 		// dummy = 1 if household is a single mother  
-
+                    dX.set(i, 15, Double.valueOf(line.substring(a))); 	// dummy = 1 if household is a single mother  
+                                  
                     i++;
                 }
             }
-
+            
             // NEED TO UPDATE
             X = pmUtility.getColumn(dX, 0); // constant
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // education 
@@ -376,7 +376,21 @@ public class CardSpecification implements MomentSpecification {
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); // interaction fam edu categorical (which categorical?)
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); // both parents present
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15)); // single mother
+                  
+            //One-hot encoding of categorical variables (e.g., region_1966)
+            int numValues = 9; // region_1966 takes values 1 to 9
+            Jama.Matrix valueDummies = new Jama.Matrix(numObsFile, numValues - 1); 
+            
+            for (int obs = 0; obs < numObsFile; obs++) {
+                int region = (int) dX.get(obs, 7); // Get region_1966 value
 
+                if (region > 1) { // Skip region 1 to avoid multicollinearity
+                	valueDummies.set(obs, region - 2, 1); 
+                }
+            }
+            
+            X = pmUtility.concatMatrix(X, valueDummies);
+            
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
              * categorical variables right now since they are stacked and not
@@ -399,8 +413,8 @@ public class CardSpecification implements MomentSpecification {
             Y = dY;
 
             // NEED TO UPDATE
-            Z = dX.copy();
-            /*
+            //Z = dX.copy();
+            
             Z = pmUtility.getColumn(dX, 0);
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 1)); 
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 2)); 
@@ -417,8 +431,7 @@ public class CardSpecification implements MomentSpecification {
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 13)); 
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 14)); 
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 15));
-             */
-
+            
             Random rng = new Random(78710);
             NormalDistribution normal = new NormalDistribution();
             boolean SIMPLE_FAKE = false;
