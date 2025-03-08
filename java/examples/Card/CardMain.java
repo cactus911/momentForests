@@ -114,7 +114,7 @@ public class CardMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean runCV = false;
+        boolean runCV = true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -124,8 +124,8 @@ public class CardMain {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 150; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.05; minImprovement <= 1.6; minImprovement *= 2) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.1; minImprovement <= 2.0; minImprovement *= 2) {
                     for (int maxDepth = 7; maxDepth >= 1; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
@@ -175,10 +175,19 @@ public class CardMain {
         	 * Just constant: minObs = 25, MSE = 0.05, depth = 7
         	 * Constant/education: minObs = 25, MSE = 0.05, depth = 7
         	 * Constant/education/experience: minObs = 25, MSE = 0.2, depth = 6
+        	 * 
+        	 * Feb 2025
+        	 * numberTreesInForest = 10
+        	 * constant/education/experience/region_1966: minObs = 100, MSE = 0.8, depth = 2
+        	 * 
+        	 * March 2025
+        	 * numberTreesInForest = 10
+        	 * constant/education/experience/experience##region_1966: minObs = 25, MSE = 0.8, depth = 3
+        	 * constant/education/experience/region_1966/experience##region_1966: minObs = 25, MSE = 0.2, depth = 4
         	 */
             bestMinObservationsPerLeaf = 25;
             bestMinImprovement = 0.2;
-            bestMaxDepth = 0;
+            bestMaxDepth = 4;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -294,7 +303,7 @@ public class CardMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 50; // 50
+        numberTreesInForest = 1; // 50
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
         fitStats.computeOutOfSampleMSE();

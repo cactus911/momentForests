@@ -376,21 +376,38 @@ public class CardSpecification implements MomentSpecification {
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); // interaction fam edu categorical (which categorical?)
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); // both parents present
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15)); // single mother
-                  
+            
+            
             //One-hot encoding of categorical variables (e.g., region_1966)
             int numValues = 9; // region_1966 takes values 1 to 9
             Jama.Matrix valueDummies = new Jama.Matrix(numObsFile, numValues - 1); 
             
+            // Omit category 8
             for (int obs = 0; obs < numObsFile; obs++) {
-                int region = (int) dX.get(obs, 7); // Get region_1966 value
+                int region = (int) dX.get(obs, 7); 
 
-                if (region > 1) { // Skip region 1 to avoid multicollinearity
-                	valueDummies.set(obs, region - 2, 1); 
+                if (region < 8) { 
+                    valueDummies.set(obs, region - 1, 1);
+                } else if (region == 9) {
+                    valueDummies.set(obs, 7, 1); 
                 }
             }
             
             X = pmUtility.concatMatrix(X, valueDummies);
-            
+
+			// Interaction terms between experience and region
+            Jama.Matrix experienceInteraction = new Jama.Matrix(numObsFile, numValues - 1);
+
+            for (int obs = 0; obs < numObsFile; obs++) {
+                double experience = dX.get(obs, 2); // Experience column
+
+                for (int region = 0; region < numValues - 1; region++) {
+                    experienceInteraction.set(obs, region, experience * valueDummies.get(obs, region));
+                }
+            }
+
+            X = pmUtility.concatMatrix(X, experienceInteraction);
+
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
              * categorical variables right now since they are stacked and not
