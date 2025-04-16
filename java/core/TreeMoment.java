@@ -904,7 +904,7 @@ public class TreeMoment {
                         }
                     }
                 }
-//                    System.out.println("DEBUG: ending Holm Bonferroni method");
+                    System.out.println("DEBUG: ending Holm Bonferroni method");
             } else {
                 // easier bonferroni procedure (for checking what's going on here)
                 System.out.println("*** Did not implement homogeneous parameter storage, do not use as-is ***");

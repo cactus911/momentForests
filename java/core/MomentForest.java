@@ -74,7 +74,7 @@ public class MomentForest {
          * forest each time we call growForest!
          */
         forest = new ArrayList<>();
-        double proportionObservationsToEstimateTreeStructure = 0.15;
+        double proportionObservationsToEstimateTreeStructure = 0.40;
 
         Random rng = new Random(forestSeed);
 
@@ -84,8 +84,10 @@ public class MomentForest {
             DataLens[] split;
             if (forestLens.balancingVector == null) {
                 resampled = forestLens.getResampledDataLens(rng.nextLong());
-                split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+                //split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());           
+                split = resampled.randomlySplitSampleByStrata(7,proportionObservationsToEstimateTreeStructure, rng.nextLong());
             } else {
+            	System.out.println("Tree " + i + ": Using balancing vector");
                 resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
                 split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
             }
@@ -267,7 +269,7 @@ public class MomentForest {
         
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
-                // System.out.println("========== Tree "+i+" ==========");
+                System.out.println("========== Tree "+i+" ==========");
                 forest.get(i).testHomogeneity();
             }
         } else {

@@ -102,7 +102,7 @@ public class CardMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 10;
+        int numberTreesInForest = 50;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -165,12 +165,14 @@ public class CardMain {
             jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
             jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
-            // nov 1 2024
-            // minObs = 5, MSE = 0.1, depth = 6 for just the regression tree
-            // minObs = XXX, MSE = XXX, depth = XXX for just const/education
-            // minObs = 25; MSE = 1.0; depth = 5 for const/education/experience
-        	
-        	/* Nov 23 2024
+       	
+        	/* 
+        	 * nov 1 2024
+             * minObs = 5, MSE = 0.1, depth = 6 for just the regression tree
+             * minObs = XXX, MSE = XXX, depth = XXX for just const/education
+             * minObs = 25; MSE = 1.0; depth = 5 for const/education/experience
+             * 
+        	 * Nov 23 2024
         	 * Include region_1966 in Z, numberTreesInForest = 50, proportionObservationsToEstimateTreeStructure = 0.15
         	 * Just constant: minObs = 25, MSE = 0.05, depth = 7
         	 * Constant/education: minObs = 25, MSE = 0.05, depth = 7
@@ -181,13 +183,40 @@ public class CardMain {
         	 * constant/education/experience/region_1966: minObs = 100, MSE = 0.8, depth = 2
         	 * 
         	 * March 2025
-        	 * numberTreesInForest = 10
+        	 * numberTreesInForest = 50
         	 * constant/education/experience/experience##region_1966: minObs = 25, MSE = 0.8, depth = 3
-        	 * constant/education/experience/region_1966/experience##region_1966: minObs = 25, MSE = 0.2, depth = 4
+        	 * constant/education/experience/region_1966/experience##region_1966: minObs = 25, MSE = 0.2, depth = 3
+        	 * 
+        	 * April 2025
+        	 * Stratified random sampling
+        	 * numberTreesInForest = 100 
+        	 * constant/education/experience/region_1966: minObs = 25, MSE = 1.6, depth = 7
+        	 * constant/education/experience/region_1966/experience##region_1966: minObs = 25, MSE = 0.1, depth = 5
+        	 * 
+        	 * proportionObservationsToEstimateTreeStructure = 0.30
+        	 * numberTreesInForest = 50
+        	 * constant/education/experience/region_1966: minObs = 50, MSE = 1.6, depth = 7
+        	 * constant/education/experience/region_1966/experience##region_1966: minObs = 100, MSE = 1.6, depth = 3
+        	 * 
+        	 * proportionObservationsToEstimateTreeStructure = 0.40
+        	 * numberTreesInForest = 50
+        	 * constant/education/experience/region_1966: minObs = 100, MSE = 1.6, depth = 2
+        	 * constant/education/experience/region_1966/experience##region_1966: minObs = 200, MSE = 1.6, depth = 1
+        	 * 
+        	 * proportionObservationsToEstimateTreeStructure = 0.50
+        	 * numberTreesInForest = 50
+        	 * constant/education/experience/region_1966: minObs = 100, MSE = 1.6, depth = 6
+        	 * constant/education/experience/region_1966/experience##region_1966: minObs = 200, MSE = 1.6, depth = 1
+        	 * 
+        	 * April 2025
+        	 * Stratified random sampling, aggregated regions (this finds that many things are heterogeneous)
+        	 * numberTreesInForest = 50 
+        	 * constant/education/experience/region_1966: minObs = 25, MSE = 0.8, depth = 7
+        	 * constant/education/experience/region_1966/experience##region_1966: minObs = 25, MSE = 0.4, depth = 6
         	 */
             bestMinObservationsPerLeaf = 25;
-            bestMinImprovement = 0.2;
-            bestMaxDepth = 4;
+            bestMinImprovement = 0.1;
+            bestMaxDepth = 5;
         }
 
         mySpecification.resetHomogeneityIndex();
@@ -382,7 +411,8 @@ public class CardMain {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
             DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
-            DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
+            //DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
+            DataLens[] split = overallLens.randomlySplitSampleByStrata(7, 0.9, rngBaseSeedMomentForest);
             DataLens estimatingLens = split[0];
             DataLens oosDataLens = split[1];
 

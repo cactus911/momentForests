@@ -27,6 +27,7 @@ import Jama.Matrix;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
+import java.util.Collections;
 
 /**
  *
@@ -280,6 +281,54 @@ public class DataLens {
         splitLens[0] = new DataLens(this, indicesFirst); //Creates resampled datalens for growing tree
         splitLens[1] = new DataLens(this, indicesSecond); //Creates resampled datalens for estimating tree
 
+        return splitLens;
+    }
+    
+    /**
+    *
+    * Randomly split the sample into two parts depending on parameters below.
+    * This method performs stratified random sampling based on region_1966
+    *
+    * @param proportionFirstSample What proportion of the sample to split into
+    * the first chunk.
+    * @param seed A random number seed.
+    * @return
+    */
+    public DataLens[] randomlySplitSampleByStrata(int strataColumnIndex, double proportionFirstSample, long seed) {
+    	    	
+        Random rng = new Random(seed);
+        ArrayList<Integer> indicesFirstList = new ArrayList<>();
+        ArrayList<Integer> indicesSecondList = new ArrayList<>();
+
+        // Assume region values are 1 through 9
+        for (int region = 1; region <= 9; region++) {
+            ArrayList<Integer> regionIndices = new ArrayList<>();
+
+            // Collect all observations in the current region
+            for (int i = 0; i < dataIndex.length; i++) {
+                int obsIndex = dataIndex[i];
+                if ((int) originalDataZ.get(obsIndex, strataColumnIndex) == region) {
+                    regionIndices.add(obsIndex);
+                }
+            }
+
+            // Shuffle and split
+            Collections.shuffle(regionIndices, rng);
+            int cutoff = (int) Math.round(regionIndices.size() * proportionFirstSample);
+
+            indicesFirstList.addAll(regionIndices.subList(0, cutoff));
+            indicesSecondList.addAll(regionIndices.subList(cutoff, regionIndices.size()));
+        }
+
+        // Convert to int[]
+        int[] indicesFirst = indicesFirstList.stream().mapToInt(Integer::intValue).toArray();
+        int[] indicesSecond = indicesSecondList.stream().mapToInt(Integer::intValue).toArray();
+
+        // Return split DataLens objects
+        DataLens[] splitLens = new DataLens[2];
+        splitLens[0] = new DataLens(this, indicesFirst);
+        splitLens[1] = new DataLens(this, indicesSecond);
+        
         return splitLens;
     }
 
