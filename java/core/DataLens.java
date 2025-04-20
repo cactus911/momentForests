@@ -39,14 +39,28 @@ public class DataLens {
     final Jama.Matrix originalDataY;
     final Jama.Matrix originalDataZ;
     final Jama.Matrix balancingVector;
+    final int strataColumnIndex;
     int[] dataIndex;
-
+    
     //DataLens for original data
     public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, Jama.Matrix balanceVector) {
         originalDataX = X;
         originalDataY = Y;
         originalDataZ = Z;
+        strataColumnIndex = -1;
         balancingVector = balanceVector; // Is the balance vector specific to RCT and natural experiment settings?
+        dataIndex = new int[originalDataX.getRowDimension()];
+        for (int i = 0; i < originalDataX.getRowDimension(); i++) {
+            dataIndex[i] = i;
+        }
+    }
+    
+    public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, Jama.Matrix balanceVector, int strataColIndex) {
+        originalDataX = X;
+        originalDataY = Y;
+        originalDataZ = Z;
+        balancingVector = balanceVector;
+        strataColumnIndex = strataColIndex;
         dataIndex = new int[originalDataX.getRowDimension()];
         for (int i = 0; i < originalDataX.getRowDimension(); i++) {
             dataIndex[i] = i;
@@ -71,6 +85,7 @@ public class DataLens {
         originalDataY = d.getOriginalDataY();
         originalDataZ = d.getOriginalDataZ();
         balancingVector = d.getBalancingVector();
+        strataColumnIndex = d.getStrataColumnIndex(); 
         dataIndex = new int[resampleIndex.length];
         for (int i = 0; i < resampleIndex.length; i++) {
             dataIndex[i] = resampleIndex[i];
@@ -100,6 +115,10 @@ public class DataLens {
 
     private Matrix getOriginalDataZ() {
         return originalDataZ;
+    }
+    
+    public int getStrataColumnIndex() {
+        return strataColumnIndex;
     }
 
     //Prints the original data Y X B, where B is the balancing vector
@@ -294,25 +313,34 @@ public class DataLens {
     * @param seed A random number seed.
     * @return
     */
-    public DataLens[] randomlySplitSampleByStrata(int strataColumnIndex, double proportionFirstSample, long seed) {
-    	    	
+    public DataLens[] randomlySplitSampleByStrata(double proportionFirstSample, long seed) {
+        if (strataColumnIndex == -1) {
+            throw new IllegalStateException("Strata column index not set in DataLens.");
+        }
+
         Random rng = new Random(seed);
         ArrayList<Integer> indicesFirstList = new ArrayList<>();
         ArrayList<Integer> indicesSecondList = new ArrayList<>();
 
-        // Assume region values are 1 through 9
-        for (int region = 1; region <= 9; region++) {
+        // Step 1: Identify all unique strata values
+        TreeSet<Integer> uniqueStrataValues = new TreeSet<>();
+        for (int i = 0; i < dataIndex.length; i++) {
+            int obsIndex = dataIndex[i];
+            int strataValue = (int) originalDataZ.get(obsIndex, strataColumnIndex);
+            uniqueStrataValues.add(strataValue);
+        }
+
+        // Step 2: Within each stratum, shuffle and split
+        for (int strata : uniqueStrataValues) {
             ArrayList<Integer> regionIndices = new ArrayList<>();
 
-            // Collect all observations in the current region
             for (int i = 0; i < dataIndex.length; i++) {
                 int obsIndex = dataIndex[i];
-                if ((int) originalDataZ.get(obsIndex, strataColumnIndex) == region) {
+                if ((int) originalDataZ.get(obsIndex, strataColumnIndex) == strata) {
                     regionIndices.add(obsIndex);
                 }
             }
 
-            // Shuffle and split
             Collections.shuffle(regionIndices, rng);
             int cutoff = (int) Math.round(regionIndices.size() * proportionFirstSample);
 
@@ -320,17 +348,16 @@ public class DataLens {
             indicesSecondList.addAll(regionIndices.subList(cutoff, regionIndices.size()));
         }
 
-        // Convert to int[]
         int[] indicesFirst = indicesFirstList.stream().mapToInt(Integer::intValue).toArray();
         int[] indicesSecond = indicesSecondList.stream().mapToInt(Integer::intValue).toArray();
 
-        // Return split DataLens objects
         DataLens[] splitLens = new DataLens[2];
-        splitLens[0] = new DataLens(this, indicesFirst);
-        splitLens[1] = new DataLens(this, indicesSecond);
-        
+        splitLens[0] = new DataLens(this, indicesFirst);   
+        splitLens[1] = new DataLens(this, indicesSecond);  
+
         return splitLens;
     }
+
 
     /**
      * Obtain the number of observations in the DataLens.

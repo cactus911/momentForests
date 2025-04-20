@@ -231,7 +231,7 @@ public class CardMain {
              */
             double minProportionInEachLeaf = 0.01;
 
-            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, 7);
 
             testParameterHomogeneity = true;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
@@ -410,9 +410,9 @@ public class CardMain {
         public void computeOutOfSampleMSE() {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
-            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
+            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, 7);
             //DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
-            DataLens[] split = overallLens.randomlySplitSampleByStrata(7, 0.9, rngBaseSeedMomentForest);
+            DataLens[] split = overallLens.randomlySplitSampleByStrata(0.9, rngBaseSeedMomentForest);
             DataLens estimatingLens = split[0];
             DataLens oosDataLens = split[1];
 
@@ -549,7 +549,7 @@ public class CardMain {
 
         public void outputInSampleFits() {
             boolean verboseInSample = false;
-            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
+            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, 7);
 
             myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, overallLens, verboseInSample, new TreeOptions());
             TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1

@@ -82,14 +82,20 @@ public class MomentForest {
             // resample the forestLens, then split it
             DataLens resampled;
             DataLens[] split;
-            if (forestLens.balancingVector == null) {
-                resampled = forestLens.getResampledDataLens(rng.nextLong());
-                //split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());           
-                split = resampled.randomlySplitSampleByStrata(7,proportionObservationsToEstimateTreeStructure, rng.nextLong());
-            } else {
-            	System.out.println("Tree " + i + ": Using balancing vector");
+            if (forestLens.balancingVector != null) {
+                //System.out.println("Tree " + i + ": Using balancing vector");
                 resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
                 split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+
+            } else if (forestLens.strataColumnIndex >= 0) {
+                //System.out.println("Tree " + i + ": Using strata column " + forestLens.strataColumnIndex);
+                resampled = forestLens.getResampledDataLens(rng.nextLong());
+                split = resampled.randomlySplitSampleByStrata(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+
+            } else {
+                //System.out.println("Tree " + i + ": Using simple random sampling");
+                resampled = forestLens.getResampledDataLens(rng.nextLong());
+                split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
             }
 
             DataLens lensGrow = split[0];
