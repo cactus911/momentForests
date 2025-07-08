@@ -306,7 +306,7 @@ public class DataLens {
     /**
     *
     * Randomly split the sample into two parts depending on parameters below.
-    * This method performs stratified random sampling based on region_1966
+    * This method performs stratified random sampling based on a column index
     *
     * @param proportionFirstSample What proportion of the sample to split into
     * the first chunk.

@@ -175,5 +175,7 @@ public interface MomentSpecification {
     public int getNumParams();
 
     public boolean didEstimatorFail();
+    
+    public int getStratificationIndex();
 
 }
