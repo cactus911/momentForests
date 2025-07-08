@@ -36,33 +36,35 @@ import utility.pmUtility;
 /*
     TO DO:
         1. BootstrapForest takes a balancing vector as input and uses it for each forest in the bootstrap. See lines 45 and 55.
-*/
+ */
 public class BootstrapForest {
 
     ArrayList<MomentForest> forestList = new ArrayList<>();
 
     public BootstrapForest(MomentSpecification spec, int numberBootstraps, int numberTreesInForest, long randomSeed, TreeOptions options) {
         // DataLens originalLens = new DataLens(spec.getX(), spec.getY(), pmUtility.getColumn(spec.getX(), 0));
-        DataLens originalLens = new DataLens(spec.getX(), spec.getY(), spec.getBalancingVector());
-        
+        DataLens originalLens = new DataLens(spec.getX(), spec.getY(), spec.getZ(), spec.getBalancingVector());
+
         Random rng = new Random(randomSeed);
         for (int i = 0; i < numberBootstraps; i++) {
-            long seed = rng.nextLong();
-//            forestList.add(new MomentForest(spec, numberTreesInForest, rng.nextLong(), 
-//                    MomentForest.resample(spec.getX(), seed, pmUtility.getColumn(spec.getX(), 0)), 
-//                    MomentForest.resample(spec.getY(), seed, pmUtility.getColumn(spec.getX(), 0)), 
-//                    false, options));
+            DataLens resampledDataLens;            
+            if (originalLens.balancingVector == null) {
+                resampledDataLens = originalLens.getResampledDataLens(rng.nextLong());
+            } else {
+                resampledDataLens = originalLens.getResampledDataLensWithBalance(rng.nextLong());
+            }
+            
             forestList.add(new MomentForest(spec, numberTreesInForest, rng.nextLong(),
-                    originalLens.getResampledDataLensWithBalance(seed),
+                    resampledDataLens,
                     false, options));
         }
         forestList.parallelStream().forEach((forest) -> forest.growForest());
     }
 
     public Jama.Matrix computeStandardErrors(Matrix xi) {
-        Jama.Matrix results = new Jama.Matrix(forestList.size(), forestList.get(0).getEstimatedParameters(xi).getRowDimension());
+        Jama.Matrix results = new Jama.Matrix(forestList.size(), forestList.get(0).getEstimatedParameterForest(xi).getRowDimension());
         for (int r = 0; r < forestList.size(); r++) {
-            Jama.Matrix estimatedParameter = forestList.get(r).getEstimatedParameters(xi);
+            Jama.Matrix estimatedParameter = forestList.get(r).getEstimatedParameterForest(xi);
             for (int i = 0; i < estimatedParameter.getRowDimension(); i++) {
                 results.set(r, i, estimatedParameter.get(i, 0));
             }

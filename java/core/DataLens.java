@@ -32,23 +32,19 @@ import java.util.TreeSet;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-
-/* TO DO:
-    1. DataLens class takes balancingVector as input. Need to generalize this to non-RCT setting.
-    2. Need to fix randomlySplitSample method. It splits according to treatment status in order to keep the number of treated obs in the growing and honest lens balanced. One
-        possibility would be to make a method randomlySplitSample and randomlySplitSampleWithBalance. This was done with getResampledDataLens and getResampledDataLensWithBalance.
- */
 public class DataLens {
 
     final Jama.Matrix originalDataX;
     final Jama.Matrix originalDataY;
+    final Jama.Matrix originalDataZ;
     final Jama.Matrix balancingVector;
     int[] dataIndex;
 
     //DataLens for original data
-    public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix balanceVector) {
+    public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, Jama.Matrix balanceVector) {
         originalDataX = X;
         originalDataY = Y;
+        originalDataZ = Z;
         balancingVector = balanceVector; // Is the balance vector specific to RCT and natural experiment settings?
         dataIndex = new int[originalDataX.getRowDimension()];
         for (int i = 0; i < originalDataX.getRowDimension(); i++) {
@@ -56,21 +52,23 @@ public class DataLens {
         }
     }
 
-    public DataLens(Jama.Matrix X, Jama.Matrix Y) {
-        originalDataX = X;
-        originalDataY = Y;
-        balancingVector = null;
-        dataIndex = new int[originalDataX.getRowDimension()];
-        for (int i = 0; i < originalDataX.getRowDimension(); i++) {
-            dataIndex[i] = i;
-        }
-    }
+//    public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z) {
+//        originalDataX = X;
+//        originalDataY = Y;
+//        originalDataZ = Z;
+//        balancingVector = null;
+//        dataIndex = new int[originalDataX.getRowDimension()];
+//        for (int i = 0; i < originalDataX.getRowDimension(); i++) {
+//            dataIndex[i] = i;
+//        }
+//    }
 
     //Datalens for the resampled tree data or for a leaf once split
     //Does each leaf carry around the original data then an index of the observations currently in that leaf?
     public DataLens(DataLens d, int[] resampleIndex) {
         originalDataX = d.getOriginalDataX();
         originalDataY = d.getOriginalDataY();
+        originalDataZ = d.getOriginalDataZ();
         balancingVector = d.getBalancingVector();
         dataIndex = new int[resampleIndex.length];
         for (int i = 0; i < resampleIndex.length; i++) {
@@ -99,6 +97,10 @@ public class DataLens {
         return originalDataY;
     }
 
+    private Matrix getOriginalDataZ() {
+        return originalDataZ;
+    }
+
     //Prints the original data Y X B, where B is the balancing vector
     @Override
     public String toString() {
@@ -109,6 +111,9 @@ public class DataLens {
             s.append("{ ").append(getY(i)).append(" ");
             for (int j = 0; j < originalDataX.getColumnDimension(); j++) {
                 s.append(getX(i, j)).append(" ");
+            }
+            for (int j = 0; j < originalDataZ.getColumnDimension(); j++) {
+                s.append(getZ(i, j)).append(" ");
             }
             if (balancingVector != null) {
                 s.append(balancingVector.get(dataIndex[i], 0)).append(" }\n");
@@ -135,6 +140,7 @@ public class DataLens {
     public DataLens getResampledDataLensWithBalance(long seed) {
         if (balancingVector == null) {
             System.out.println("Trying to resample with average balancing vector when it is null.");
+            new Exception().printStackTrace();
             System.exit(0);
         }
         Random rng = new Random(seed);
@@ -286,17 +292,49 @@ public class DataLens {
         return dataIndex.length;
     }
 
-    public double getXsum(int rowEnd) {
-        double totalsum = 0;
-        for (int i = 0; i < rowEnd; i++) {
-            totalsum += originalDataX.get(dataIndex[i], 0);
+    public Jama.Matrix getX() {
+        // generate a new matrix using the dataIndex
+        Jama.Matrix tempX = new Jama.Matrix(getNumObs(), getColumnDimensionX());
+        for (int i = 0; i < getNumObs(); i++) {
+            for (int j = 0; j < getColumnDimensionX(); j++) {
+                tempX.set(i, j, originalDataX.get(dataIndex[i], j));
+            }
         }
-        return totalsum;
+        return tempX;
+    }
+
+    public Jama.Matrix getZ() {
+        // generate a new matrix using the dataIndex
+        Jama.Matrix tempZ = new Jama.Matrix(getNumObs(), getColumnDimensionZ());
+        for (int i = 0; i < getNumObs(); i++) {
+            for (int j = 0; j < getColumnDimensionZ(); j++) {
+                tempZ.set(i, j, originalDataZ.get(dataIndex[i], j));
+            }
+        }
+        return tempZ;
+    }
+    
+    public double getZ(int i, int j) {
+        return originalDataZ.get(dataIndex[i], j);
+    }
+
+    public Jama.Matrix getY() {
+        // generate a new matrix using the dataIndex
+        Jama.Matrix tempY = new Jama.Matrix(getNumObs(), 1);
+        for (int i = 0; i < getNumObs(); i++) {
+            tempY.set(i, 0, originalDataY.get(dataIndex[i], 0));
+        }
+        return tempY;
     }
 
     public int getColumnDimensionX() {
         // System.out.println("Getting column dimension");
         return originalDataX.getColumnDimension();
+    }
+
+    public int getColumnDimensionZ() {
+        // System.out.println("Getting column dimension");
+        return originalDataZ.getColumnDimension();
     }
 
     public DataLens getSubsetData(int rowStart, int rowEnd) {
@@ -318,15 +356,20 @@ public class DataLens {
         return originalDataX.get(dataIndex[i], j);
     }
 
+
     public Jama.Matrix getRowX(int row) {
         return originalDataX.getMatrix(dataIndex[row], dataIndex[row], 0, originalDataX.getColumnDimension() - 1);
     }
 
+    public Jama.Matrix getRowZ(int row) {
+        return originalDataZ.getMatrix(dataIndex[row], dataIndex[row], 0, originalDataZ.getColumnDimension() - 1);
+    }
+
     //Returns the minimum value of the split variable
     double getMinimumValue(int indexSplitVariable) {
-        double minimumValue = getX(0, indexSplitVariable);
+        double minimumValue = getZ(0, indexSplitVariable);
         for (int i = 1; i < getNumObs(); i++) {
-            double v = getX(i, indexSplitVariable);
+            double v = getZ(i, indexSplitVariable);
             if (v < minimumValue) {
                 minimumValue = v;
             }
@@ -335,9 +378,9 @@ public class DataLens {
     }
 
     double getMaximumValue(int indexSplitVariable) {
-        double maximumValue = getX(0, indexSplitVariable);
+        double maximumValue = getZ(0, indexSplitVariable);
         for (int i = 1; i < getNumObs(); i++) {
-            double v = getX(i, indexSplitVariable);
+            double v = getZ(i, indexSplitVariable);
             if (v > maximumValue) {
                 maximumValue = v;
             }
@@ -345,12 +388,20 @@ public class DataLens {
         return maximumValue;
     }
 
-    Matrix getRowAsJamaMatrix(int i) {
+    Matrix getRowXAsJamaMatrix(int i) {
         Jama.Matrix rowX = new Jama.Matrix(1, originalDataX.getColumnDimension());
         for (int j = 0; j < originalDataX.getColumnDimension(); j++) {
             rowX.set(0, j, getX(i, j));
         }
         return rowX;
+    }
+
+    Matrix getRowZAsJamaMatrix(int i) {
+        Jama.Matrix rowZ = new Jama.Matrix(1, originalDataZ.getColumnDimension());
+        for (int j = 0; j < originalDataZ.getColumnDimension(); j++) {
+            rowZ.set(0, j, getZ(i, j));
+        }
+        return rowZ;
     }
 
     //Performs the splitting of the data based on the optimal splitting rule and returns the datalens for each leaf
@@ -359,8 +410,8 @@ public class DataLens {
         ArrayList<Integer> leftList = new ArrayList<>();
         ArrayList<Integer> rightList = new ArrayList<>();
         for (int i = 0; i < getNumObs(); i++) {
-            Jama.Matrix xi = getRowAsJamaMatrix(i);
-            if (rule.isLeft(xi)) {
+            Jama.Matrix zi = getRowZAsJamaMatrix(i);
+            if (rule.isLeft(zi)) {
                 leftList.add(dataIndex[i]);
             } else {
                 rightList.add(dataIndex[i]);

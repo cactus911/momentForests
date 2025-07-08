@@ -24,6 +24,7 @@
 package core;
 
 import Jama.Matrix;
+import utility.pmUtility;
 
 /**
  *
@@ -35,6 +36,7 @@ public class SplitRule {
     private final int optimalSplitVariableIndex;
     private final double splitPoint;
     private final IntegerPartition partition;
+    private final MomentSpecification spec;
 
     /**
      *
@@ -42,14 +44,15 @@ public class SplitRule {
      *
      * @param splitOnDiscreteVariable Is the split on a discrete variable?
      * @param optimalSplitVariableIndex Index of the splitting covariate
-     * @param optimalX Point of X to split if continuous
-     * @param partition Partition of X to split if discrete
+     * @param optimalZ Point of Z to split if continuous
+     * @param partition Partition of Z to split if discrete
      */
-    SplitRule(boolean splitOnDiscreteVariable, int optimalSplitVariableIndex, double optimalX, IntegerPartition partition) {
+    SplitRule(boolean splitOnDiscreteVariable, int optimalSplitVariableIndex, double optimalZ, IntegerPartition partition, MomentSpecification spec) {
         this.splitOnDiscreteVariable = splitOnDiscreteVariable;
         this.optimalSplitVariableIndex = optimalSplitVariableIndex;
-        this.splitPoint = optimalX;
+        this.splitPoint = optimalZ;
         this.partition = partition;
+        this.spec = spec;
     }
 
     @Override
@@ -57,7 +60,7 @@ public class SplitRule {
         if (splitOnDiscreteVariable) {
             return partition.toString();
         }
-        return "x" + optimalSplitVariableIndex + " < " + splitPoint;
+        return spec.getVariableName(optimalSplitVariableIndex) + " < " + splitPoint;
     }
 
     public int getOptimalSplitVariableIndex() {
@@ -77,27 +80,38 @@ public class SplitRule {
     }
 
     //Returns 1 if the observation is on the left side of the partition, 0 otherwise
-    public boolean isLeft(Matrix xi) {
+    public boolean isLeft(Matrix zi) {
         if (splitOnDiscreteVariable) {
-            Integer xc = new Integer((int) xi.get(0, optimalSplitVariableIndex));
+            Integer xc = (int) zi.get(0, optimalSplitVariableIndex);
             return partition.getLeft().contains(xc);
         } else {
-            return xi.get(0, optimalSplitVariableIndex) < splitPoint;
+//            boolean answer = true;
+//            try {
+//                answer = xi.get(0, optimalSplitVariableIndex) < splitPoint;
+//            } catch (Exception e) {
+//                e.printStackTrace();
+//                pmUtility.prettyPrint(xi);
+//                System.out.println(optimalSplitVariableIndex + " " + splitPoint);
+//                System.exit(0);
+//            }
+//
+//            return answer;
+            return zi.get(0, optimalSplitVariableIndex) < splitPoint;
         }
     }
-    
+
     // Returns the values of the variable that are in the left side of the partition
     String getLeftSplit() {
         if (splitOnDiscreteVariable) {
             String s = "";
-            s = s.concat("x" + optimalSplitVariableIndex + " in { ");
+            s = s.concat("z" + optimalSplitVariableIndex + " in { ");
             for (int i = 0; i < partition.getLeft().size(); i++) {
                 s = s.concat(partition.getLeft().get(i) + " ");
             }
             s = s.concat("}");
             return s;
         } else {
-            return "x" + optimalSplitVariableIndex + " < " + splitPoint;
+            return "z" + optimalSplitVariableIndex + " < " + splitPoint;
         }
     }
 
@@ -132,14 +146,14 @@ public class SplitRule {
     String getRightSplit() {
         if (splitOnDiscreteVariable) {
             String s = "";
-            s = s.concat("x" + optimalSplitVariableIndex + " in { ");
+            s = s.concat("z" + optimalSplitVariableIndex + " in { ");
             for (int i = 0; i < partition.getRight().size(); i++) {
                 s = s.concat(partition.getRight().get(i) + " ");
             }
             s = s.concat("}");
             return s;
         } else {
-            return "x" + optimalSplitVariableIndex + " > " + splitPoint;
+            return "z" + optimalSplitVariableIndex + " > " + splitPoint;
         }
     }
 

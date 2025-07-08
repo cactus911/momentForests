@@ -25,50 +25,138 @@ package core;
 
 import Jama.Matrix;
 import java.util.Random;
+import utility.pmUtility;
 
 /**
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-    public interface MomentSpecification {
+public interface MomentSpecification {
 
-    public Double getPredictedY(Jama.Matrix xi, Jama.Matrix beta);
-    
+    public Double getPredictedY(Jama.Matrix xi, Jama.Matrix beta, Random rng);
+
     public int[] getVariableIndicesToSearchOver();
 
     public MomentContinuousSplitObj getFminObjective(DataLens lens, int k, double minProportionEachPartition, int minCountEachPartition);
 
     public MomentPartitionObj getMomentPartitionObj(DataLens lens, int k, IntegerPartition get);
 
-    public ContainerMoment computeOptimalBeta(DataLens lens);
+    public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous);
 
-   //  public void generateData(int numObs, Random rng, boolean addNoise);
+    //  public void generateData(int numObs, Random rng, boolean addNoise);
+    // public Jama.Matrix getY(boolean residualizeY);
+    public Jama.Matrix getY();
 
-   public Jama.Matrix getY();
+    public Jama.Matrix getX();
 
-   public Jama.Matrix getX();
-   
-   public Jama.Matrix getBalancingVector();
-   
-   public Jama.Matrix getXoriginal();
-   
-   public Jama.Matrix cvparameters();
-   
-   public int numberoftrees();
+    public Jama.Matrix getZ();
+
+    public Jama.Matrix getBalancingVector();
+
+    public int numberoftrees();
 
     public Boolean[] getDiscreteVector();
 
-    public Matrix getBetaTruth(Matrix xi);
-    
-    public Jama.Matrix getOutOfSampleX();
-    
-    public void loadData();
+    /**
+     * Return the true \beta at a given vector z_i
+     * 
+     * @param zi Observable vector that determines the parameters.
+     * @param rng Random number generator for drawing random coefficients
+     * @return 
+     */
+    public Matrix getBetaTruth(Matrix zi, Random rng);
+
+    public DataLens getOutOfSampleXYZ(int numObsOutOfSample, long rngSeed);
+
+    public void loadData(long rngSeed);
     
     public String getVariableName(int variableIndex);
-    
+
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex);
 
     public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance);
     
+    public void setHomogeneousParameter(int parameterIndex, double value);
+    public double getHomogeneousParameter(int parameterIndex);
+
+    // public double getHomogeneousComponent(Jama.Matrix xi); // this doesn't make sense in general
+
+    public void resetHomogeneityIndex();
+
+    public void setHomogeneousIndex(Integer i);
+    public boolean[] getHomogeneousIndex();
+    public Jama.Matrix getHomogeneousParameterVector();
+    
+    // public Jama.Matrix residualizeX(Jama.Matrix Xp);
+
+    public ContainerMoment getContainerMoment(DataLens lens);
+    public abstract int getNumMoments();
+    
+    public double getGoodnessOfFit(double yi, Jama.Matrix xi, Jama.Matrix beta);
+    
+    default OutOfSampleStatisticsContainer computeOutOfSampleStatistics(int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
+            int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample) {
+
+        double outOfSampleResultsY = 0;
+        double outOfSampleResultsBeta = 0;
+
+        MomentForest myForest;
+
+               
+        DataLens originalDataLens = new DataLens(getX(), getY(), getZ(), null);
+        DataLens[] twoLenses = originalDataLens.randomlySplitSample(0.8, rngBaseSeedOutOfSample);
+        
+        DataLens homogenizedForestLens = twoLenses[0];
+
+        myForest = new MomentForest(this, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
+        TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
+        myForest.setTreeOptions(cvOptions);
+        /**
+         * Grow the moment forest
+         */
+        myForest.growForest();
+
+        // myForest.getTree(0).printTree();
+        // debugOutputArea.append(myForest.getTree(0).toString());
+        /**
+         * Test vectors for assessment
+         */
+        
+        DataLens oosDataLens = twoLenses[1]; // getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        Jama.Matrix testZ = oosDataLens.getZ();
+        Jama.Matrix testX = oosDataLens.getX();
+        Jama.Matrix testY = oosDataLens.getY();
+
+        Random rng = new Random(rngBaseSeedOutOfSample - 3);
+
+        for (int i = 0; i < testZ.getRowDimension(); i++) {
+            Jama.Matrix zi = testZ.getMatrix(i, i, 0, testZ.getColumnDimension() - 1);
+            Jama.Matrix xi = testX.getMatrix(i, i, 0, testX.getColumnDimension() - 1);
+
+            Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+
+            outOfSampleResultsY += getGoodnessOfFit(testY.get(i, 0), xi, compositeEstimatedBeta);
+
+            if (i < 10) {
+                String hString = "[ ";
+                for (int k = 0; k < getNumParams(); k++) {
+                    if (getHomogeneousIndex()[k]) {
+                        hString = hString + "X ";
+                    } else {
+                        hString = hString + "O ";
+                    }
+                }
+                hString = hString + "]";
+                System.out.print("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + " "+testY.get(i,0)+" "+getPredictedY(xi, compositeEstimatedBeta, rng)+ "\n");
+            }
+            //pmUtility.prettyPrintVector(compositeEstimatedBeta);    
+        }
+
+        outOfSampleResultsY /= testZ.getRowDimension();
+
+        return new OutOfSampleStatisticsContainer(outOfSampleResultsBeta, outOfSampleResultsY);
+    }
+
+    public int getNumParams();
 
 }

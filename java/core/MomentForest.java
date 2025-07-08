@@ -25,7 +25,8 @@ package core;
 
 import java.util.ArrayList;
 import java.util.Random;
-import utility.pmUtility;
+import java.util.TreeSet;
+import javax.swing.JTextArea;
 
 /**
  * Class containing a collection of trees and utility classes for interacting
@@ -67,23 +68,37 @@ public class MomentForest {
     }
 
     public void growForest() {
-        double proportionObservationsToEstimateTreeStructure = 0.5;
+        /**
+         * Reinitialize the forest in case we are doing a CV (or whatever). Do
+         * not want to be stacking a bunch of trees of various options into the
+         * forest each time we call growForest!
+         */
+        forest = new ArrayList<>();
+        double proportionObservationsToEstimateTreeStructure = 0.35;
 
         Random rng = new Random(forestSeed);
 
         for (int i = 0; i < numberTreesInForest; i++) {
             // resample the forestLens, then split it
-            DataLens resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
-            DataLens[] split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+            DataLens resampled;
+            DataLens[] split;
+            if (forestLens.balancingVector == null) {
+                resampled = forestLens.getResampledDataLens(rng.nextLong());
+                split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+            } else {
+                resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
+                split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+            }
+
             DataLens lensGrow = split[0];
             DataLens lensHonest = split[1];
 
             forest.add(new TreeMoment(null, spec, lensGrow,
                     spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
-                    lensHonest));
+                    lensHonest, treeOptions.isTestParameterHomogeneity()));
         }
 
-        boolean useParallel = false;
+        boolean useParallel = true;
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
@@ -99,126 +114,156 @@ public class MomentForest {
         // System.out.format("Memory usage: %,d bytes %n", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
     }
 
-    public Jama.Matrix getEstimatedParameters(Jama.Matrix x) {
-        Jama.Matrix estimatedParameters = forest.get(0).getEstimatedBeta(x);
-        // String s = "[ " + forest.get(0).getEstimatedBeta(x).get(0, 0) + " "; //Assuming beta is 1 by 1?
+    /**
+     * Get parameters associated with a given vector of observables zi
+     *
+     * @param zi Observable vector
+     * @return
+     */
+    public Jama.Matrix getEstimatedParameterForest(Jama.Matrix zi) {
+        Jama.Matrix estimatedParameters = forest.get(0).getEstimatedBeta(zi);
+        // String s = "[ " + forest.get(0).getEstimatedBeta(zi).get(0, 0) + " "; //Assuming beta is 1 by 1?
         for (int i = 1; i < forest.size(); i++) {
-            estimatedParameters = estimatedParameters.plus(forest.get(i).getEstimatedBeta(x));
-            // s = s.concat(forest.get(i).getEstimatedBeta(x).get(0, 0) + " ");
+            estimatedParameters = estimatedParameters.plus(forest.get(i).getEstimatedBeta(zi));
+            // s = s.concat(forest.get(i).getEstimatedBeta(zi).get(0, 0) + " ");
         }
         // s = s.concat("]");
         // System.out.println(s);
+//        System.exit(0);
+        if (forest.size() == 1) {
+            System.out.println(zi.get(0, 0) + " " + estimatedParameters.get(0, 0));
+        }
         estimatedParameters.timesEquals(1.0 / forest.size());
         return estimatedParameters;
     }
 
-    public TreeOptions performCrossValidation(int numTrees, Jama.Matrix CVparameters2) {
-        Random rng = new Random(forestSeed);
-        DataLens[] split = forestLens.randomlySplitSampleWithBalance(0.5, rng.nextLong());
-        DataLens growLens = split[0];
-        DataLens predictLens = split[1];
-
-        // System.out.println(growLens.getNumObs()+" "+predictLens.getNumObs());
-        // System.out.println("sum treeX: " + pmUtility.sum(treeX, 0) + " mean treeX: " + pmUtility.mean(treeX, 0) + " mean honestX: " + pmUtility.mean(honestX, 0) + " mean predictX: " + pmUtility.mean(predictX, 0));
-        // System.exit(0);
-        boolean verboseTreeConstruction = false;
-        double bestMSPE = 0;
-        double bestMSEBar = 0;
-        boolean first = true;
-        int bestK = 5;
-
-        TreeOptions options = new TreeOptions();
-        options.setMaxDepth(100);
-        options.setMinMSEImprovement(1E-10);
-
-        // for (double improvementThreshold = 0.01; improvementThreshold <= 0.5; improvementThreshold += 0.05) {
-        // for (int minCountEachPartition = 10; minCountEachPartition <= growLens.getNumObs() / 2; minCountEachPartition *= 2) {
-        for (double improvementThreshold = (double) CVparameters2.get(0, 3); improvementThreshold <= (double) CVparameters2.get(0, 5); improvementThreshold += (double) CVparameters2.get(0, 4)) {
-            for (int minCountEachPartition = (int) CVparameters2.get(0, 0); minCountEachPartition <= (int) CVparameters2.get(0, 2); minCountEachPartition += (int) CVparameters2.get(0, 1)) {
-                rng = new Random(667);
-                options.setMinCount(minCountEachPartition);
-                options.setMinMSEImprovement(improvementThreshold);
-
-                MomentForest momentForest = new MomentForest(spec, numTrees, rng.nextLong(), growLens, verboseTreeConstruction, options);
-                momentForest.growForest();
-                /**
-                 * We can easily implement cross-fitting here by swapping the
-                 * prediction and estimation data sets and adding another MSPE
-                 * component
-                 */
-                MomentForest momentForestSwitch = new MomentForest(spec, numTrees, rng.nextLong(), predictLens, verboseTreeConstruction, options);
-                momentForestSwitch.growForest();
-
-                double MSPE = 0;
-
-                int counter = 0;
-                int nullCounterMSPE = 0;
-                for (int i = 0; i < predictLens.getNumObs(); i++) {
-                    Jama.Matrix xi = predictLens.getRowAsJamaMatrix(i);
-                    Double predictedY = spec.getPredictedY(xi, momentForest.getEstimatedParameters(xi));
-                    if (predictedY != null) {
-                        MSPE += Math.pow(predictLens.getY(i) - predictedY, 2);
-                        counter++;
-                    } else {
-                        pmUtility.prettyPrint(xi);
-                        nullCounterMSPE++;
-                    }
-                }
-                /**
-                 * Cross-fitting part (reverse estimation data with prediction
-                 * data)
-                 */
-                for (int i = 0; i < growLens.getNumObs(); i++) {
-                    Jama.Matrix xi = growLens.getRowAsJamaMatrix(i);
-                    Double predictedY = spec.getPredictedY(xi, momentForestSwitch.getEstimatedParameters(xi));
-                    if (predictedY != null) {
-                        MSPE += Math.pow(growLens.getY(i) - predictedY, 2);
-                        counter++;
-                    } else {
-                        pmUtility.prettyPrint(xi);
-                        nullCounterMSPE++;
-                    }
-                }
-
-                MSPE /= counter;
-
-                // System.out.print("maxDepth: " + options.getMaxDepth() + " " + " k: " + options.getMinCount() + " " + " alpha: " + options.getMinProportion()
-                //  + " " + " mse_bar: " + options.getMinMSEImprovement() + " ");
-                // System.out.print("MSPE: " + MSPE + " nulls: " + nullCounterMSPE + " ");
-                String s = "";
-                if (MSPE == bestMSPE) {
-                    s = " - ";
-                }
-                if (MSPE <= bestMSPE || first) {
-                    s = " * ";
-                    bestK = minCountEachPartition;
-                    // best = minProportionEachPartition;
-                    bestMSEBar = improvementThreshold;
-                    // bestDepth = maxDepth;
-                    bestMSPE = MSPE;
-                    // bestProportion = proportion;
-                    first = false;
-
-                    System.out.format("maxDepth: %d k: %d mse_bar: %g mspe: %g nulls: %d %s %n", options.getMaxDepth(), options.getMinCount(), options.getMinMSEImprovement(), MSPE, nullCounterMSPE, s);
-                    System.out.println("MSPE: " + MSPE + " nulls: " + nullCounterMSPE);
-                    System.out.println("Example tree:");
-                    momentForest.getTree(0).printTree();
-                    System.out.println("---------------");
-                }
-
-            }
+    public ArrayList<Jama.Matrix> getAllEstimatedParametersFromForest(Jama.Matrix zi) {
+        ArrayList<Jama.Matrix> parameterList = new ArrayList<>();
+        for (int i = 0; i < forest.size(); i++) {
+            parameterList.add(forest.get(i).getEstimatedBeta(zi));
         }
-        System.out.print("Optimal minimum number of observations in each leaf: " + bestK + " MSPE: " + bestMSPE);
-        System.out.println(" Optimal improvement threshold: " + bestMSEBar);
+        return parameterList;
+    }
 
-        options.setMinCount(bestK);
-        options.setMinMSEImprovement(bestMSEBar);
-
-        return options;
+    public int getForestSize() {
+        return forest.size();
     }
 
     public void setTreeOptions(TreeOptions cvOptions) {
         this.treeOptions = cvOptions;
+    }
+
+    public double[] getNumberTimesTreesInForestSplitOnAGivenVariableIndex() {
+
+        double countEachVariableSplit[] = new double[spec.getDiscreteVector().length];
+
+        for (TreeMoment tree : forest) {
+            TreeSet<Integer> splitTree = new TreeSet<>();
+            tree.getEnumerationOfAllSplitVariablesInThisTree(splitTree);
+
+            for (int i : splitTree) {
+                countEachVariableSplit[i] = countEachVariableSplit[i] + 1.0;
+            }
+        }
+        return countEachVariableSplit;
+    }
+
+    public boolean[] getHomogeneityVotes(JTextArea jt, boolean verboseVoting) {
+
+        int[] voteCounts = new int[spec.getHomogeneousIndex().length];
+        for (int i = 0; i < numberTreesInForest; i++) {
+            ArrayList<Integer> hpl = getTree(i).getIndexHomogeneousParameters();
+            // ArrayList<Double> hplStartingValues = getTree(i).getValueHomogeneousParameters();
+            for (Integer h : hpl) {
+                voteCounts[h] = voteCounts[h] + 1;
+            }
+        }
+        boolean[] votes = new boolean[voteCounts.length];
+        for (int i = 0; i < votes.length; i++) {
+            votes[i] = voteCounts[i] > Math.floorDiv(numberTreesInForest, 2);
+        }
+        if (verboseVoting) {
+            System.out.print("votes: ");
+        }
+        for (int i = 0; i < voteCounts.length; i++) {
+            // System.out.print(voteCounts[i]+"/"+votes[i]+" ");
+            if (verboseVoting) {
+                System.out.format("%.2f%% ", (100.0 * voteCounts[i] / numberTreesInForest));
+            }
+            double pct = 100.0 * voteCounts[i] / numberTreesInForest;
+            if (verboseVoting) {
+                jt.append(i + ". votes: " + voteCounts[i] + " out of " + numberTreesInForest + " (" + pct + "): " + votes[i] + "\n");
+            }
+            if (voteCounts[i] < numberTreesInForest) {
+                // System.out.println("Detected variance in voting on parameter "+i+": "+voteCounts[i]);
+                // System.exit(0);
+            }
+        }
+        if (verboseVoting) {
+            System.out.println("");
+        }
+
+        return votes;
+    }
+
+    public double[] getHomogeneityStartingValues() {
+        double[] startingValues = new double[spec.getHomogeneousIndex().length];
+        double[] voteCounts = new double[spec.getHomogeneousIndex().length];
+        for (int i = 0; i < numberTreesInForest; i++) {
+            ArrayList<Integer> hpl = getTree(i).getIndexHomogeneousParameters();
+            ArrayList<Double> hplStartingValues = getTree(i).getValueHomogeneousParameters();
+//            for(Double d : hplStartingValues) {
+//                System.out.print(d+" ");
+//            }
+            // System.out.println();
+            for (int j = 0; j < hpl.size(); j++) {
+                int index = hpl.get(j);
+                voteCounts[index] = voteCounts[index] + 1;
+                startingValues[index] = startingValues[index] + hplStartingValues.get(j);
+            }
+        }
+        for (int i = 0; i < startingValues.length; i++) {
+            if (voteCounts[i] > 0) {
+                startingValues[i] = startingValues[i] / voteCounts[i];
+            }
+            if (Double.isNaN(startingValues[i])) {
+                System.out.println("Detected starting value of NaN:");
+                System.out.println("voteCounts: " + voteCounts[i]);
+
+                for (int t = 0; t < numberTreesInForest; t++) {
+                    System.out.println("Tree " + t + ": ");
+                    ArrayList<Integer> hpl = getTree(t).getIndexHomogeneousParameters();
+                    ArrayList<Double> hplStartingValues = getTree(t).getValueHomogeneousParameters();
+                    for (Double d : hplStartingValues) {
+                        System.out.print(d + " ");
+                    }
+                    System.out.println("");
+                    System.out.print("Index homogeneous parameters: ");
+                    for (Integer h : hpl) {
+                        System.out.print(h + " ");
+                    }
+
+                    System.out.println("");
+                }
+                System.exit(0);
+            }
+        }
+        return startingValues;
+    }
+
+    public void testHomogeneity() {
+        boolean useParallel = false;
+
+        if (!useParallel) {
+            for (int i = 0; i < numberTreesInForest; i++) {
+                // System.out.println("========== Tree "+i+" ==========");
+                forest.get(i).testHomogeneity();
+            }
+        } else {
+            forest.parallelStream().forEach((tree) -> {
+                tree.testHomogeneity();
+            });
+        }
     }
 
 }

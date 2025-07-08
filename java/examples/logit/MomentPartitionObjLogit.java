@@ -21,26 +21,28 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.SimpleRCT;
+package examples.logit;
 
-import examples.SimpleRCT.ContainerRCT;
 import core.IntegerPartition;
 import core.MomentPartitionObj;
 import core.DataLens;
+import core.MomentSpecification;
 import core.SplitContainer;
 
 /**
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class MomentPartitionObjRCT extends MomentPartitionObj {
+public class MomentPartitionObjLogit extends MomentPartitionObj {
 
     SplitContainer container;
+    MomentSpecification spec;
     
-    public MomentPartitionObjRCT(IntegerPartition partition, int indexSplitVariable, DataLens lens) {
+    public MomentPartitionObjLogit(IntegerPartition partition, int indexSplitVariable, DataLens lens, LogitMomentSpecification spec) {
         this.partition = partition;
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
+        this.spec = spec;
         
         initialize();
     }
@@ -52,43 +54,31 @@ public class MomentPartitionObjRCT extends MomentPartitionObj {
     }
     
     @Override
-    public int getNumObsLeft() {
-        // in the rct context, care about the minimum of count of 0's and 1's in each partition
-        int count = 0;
-        for (int i = 0; i < numObsLeft; i++) {
-            if (container.getLeft().getX(i, 0) == 0) {
-                count++;
-            }
-        }
-        return Math.min(count, numObsLeft - count);
+    public int getEffectiveNumObsLeft() {
+        return numObsLeft;
     }
 
     @Override
-    public int getNumObsRight() {
-        int count = 0;
-        for (int i = 0; i < numObsRight; i++) {
-            if (container.getRight().getX(i, 0) == 0) {
-                count++;
-            }
-        }
-        return Math.min(count, numObsRight - count);
+    public int getEffectiveNumObsRight() {
+        return numObsRight;
     }
     
     @Override
-    public double getMSE() {
+    public double getSSE() {
         leftMSE = 0;
         rightMSE = 0;
 
-        /**
-         * RCT regresses outcome on indicator for treatment; there are no X's
-         * There is a constant, and we measure the coefficient on the W
-         * So in this implementation just use the first column to get OLS fits and errors, etc.
-         */
-        ContainerRCT leftRCT = new ContainerRCT(container.getLeft()); //This object will compute the beta and MSE for the left split
-        ContainerRCT rightRCT = new ContainerRCT(container.getRight());
+        ContainerLogit leftLogit = new ContainerLogit(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
+        ContainerLogit rightLogit = new ContainerLogit(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
         
-        leftMSE = leftRCT.getMSE();
-        rightMSE = rightRCT.getMSE();
+        leftLogit.computeBetaAndErrors();
+        rightLogit.computeBetaAndErrors();
+        
+        // pmUtility.prettyPrintVector(leftLogit.getBeta());
+        // pmUtility.prettyPrintVector(rightLogit.getBeta());
+        
+        leftMSE = leftLogit.getGoodnessOfFit();
+        rightMSE = rightLogit.getGoodnessOfFit();
                 
         // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
         // return (leftMSE + rightMSE) / X.getNumObs();

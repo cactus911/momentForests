@@ -21,90 +21,94 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.SimpleRCT;
+package examples.logit;
 
-import examples.SimpleRCT.ContainerRCT;
 import core.MomentContinuousSplitObj;
 import core.DataLens;
+import core.MomentSpecification;
 import core.SplitContainer;
 
 /**
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class MomentContinuousSplitObjRCT extends MomentContinuousSplitObj {
+public class MomentContinuousSplitObjLogit extends MomentContinuousSplitObj {
 
-    SplitContainer container;
+    SplitContainer container; 
     DataLens lens;
     int minCount;
     double minProportion;
+    boolean debugVerbose = false;
+    MomentSpecification spec;
 
-    public MomentContinuousSplitObjRCT(int indexSplitVariable, DataLens lens, double minProportion, int minCount) {
+    public MomentContinuousSplitObjLogit(int indexSplitVariable, DataLens lens, double minProportion, int minCount, LogitMomentSpecification spec) {
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
         this.minCount = minCount;
         this.minProportion = minProportion;
+        this.spec = spec;
 
         // System.out.println("MomentContinuousSplitObjBart.java:26 -> min/max x_1 = "+pmUtility.min(X, 1)+" "+pmUtility.max(X,1));
     }
 
     @Override
-    public int getNumObsLeft() {
+    public int getEffectiveNumObsLeft() {
         // in the rct context, care about the minimum of count of 0's and 1's in each partition
-        int count = 0;
-        for (int i = 0; i < container.getLeft().getNumObs(); i++) {
-            if (container.getLeft().getX(i, 0) == 0) {
-                count++;
-            }
-        }
-        return Math.min(count, container.getLeft().getNumObs() - count);
+        // here, total N is fine
+        return numObsLeft;
     }
 
     @Override
-    public int getNumObsRight() {
-        int count = 0;
-        for (int i = 0; i < container.getRight().getNumObs(); i++) {
-            if (container.getRight().getX(i, 0) == 0) {
-                count++;
-            }
-        }
-        return Math.min(count, container.getRight().getNumObs() - count);
+    public int getEffectiveNumObsRight() {
+        return numObsRight;
     }
 
     @Override
-    public double getMSE() {
+    public double getSSE() {
 
         leftMSE = 0;
         rightMSE = 0;
 
-        /**
-         * RCT regresses outcome on indicator for treatment; there are no X's
-         * There is a constant, and we measure the coefficient on the W So in
-         * this implementation just use the first column to get OLS fits and
-         * errors, etc.
-         */
-        ContainerRCT leftRCT = new ContainerRCT(container.getLeft()); //This object will compute the beta and MSE for the left split
-        ContainerRCT rightRCT = new ContainerRCT(container.getRight());
+        ContainerLogit leftLogit = new ContainerLogit(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
+        ContainerLogit rightLogit = new ContainerLogit(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
+        // System.out.println("Compute left");
+        leftLogit.computeBetaAndErrors();
+        // System.out.println("Compute right");
+        rightLogit.computeBetaAndErrors();
+        // System.out.println("Compute out");
 
-        leftMSE = leftRCT.getMSE();
-        rightMSE = rightRCT.getMSE();
+        leftMSE = leftLogit.getGoodnessOfFit();
+        rightMSE = rightLogit.getGoodnessOfFit();
 
-        if (getNumObsLeft() < minCount || getNumObsRight() < minCount) {
-            return Double.POSITIVE_INFINITY;
+        if (debugVerbose) {
+            System.out.println("MSE = " + (leftMSE + rightMSE) + " n_Left: " + numObsLeft + " n_Right: " + numObsRight + " MSE_Left: " + leftMSE + " MSE_Right: " + rightMSE + " minCount: " + minCount);
         }
 
-        // System.out.println(numObsLeft+" "+numObsRight+" "+leftMSE+" "+rightMSE);
+        if (getEffectiveNumObsLeft() < minCount) {
+            if (debugVerbose) {
+                System.out.println("Not enough n_left = " + getEffectiveNumObsLeft() + " ==> Triggered positive infinity");
+            }
+            leftMSE = Double.POSITIVE_INFINITY;
+            // return Double.POSITIVE_INFINITY;
+        }
+        if (getEffectiveNumObsRight() < minCount) {
+            if (debugVerbose) {
+                System.out.println("Not enough n_right = " + getEffectiveNumObsRight() + " ==> Triggered positive infinity");
+            }
+            rightMSE = Double.POSITIVE_INFINITY;
+            // return Double.POSITIVE_INFINITY;
+        }
+
         // return (leftMSE + rightMSE) / X.getNumObs();
         return (leftMSE + rightMSE);
     }
 
-    
     @Override
     public double f_to_minimize(double splitPoint) {
         container = SplitContainer.getContinuousDataSplit(lens, splitPoint, indexSplitVariable); //This returns the data split into each leaf based on splitpoint and index of split variable
         numObsLeft = container.getLeft().getNumObs();
         numObsRight = container.getRight().getNumObs();
-        return getMSE();
+        return getSSE();
     }
 
 }

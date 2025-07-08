@@ -35,12 +35,22 @@ public abstract class ContainerMoment {
      * @return
      */
     public abstract Jama.Matrix getBeta();
-
+    public abstract double computeMeasureOfFit(Jama.Matrix beta);
+    public abstract double getGoodnessOfFit();
+    public abstract Jama.Matrix getVariance(Jama.Matrix beta);
+    public abstract double getMomentFunctionValue(Jama.Matrix beta);
+    public abstract double getMomentFunctionImposingHomogeneity(int k, double value);        
+    public abstract Jama.Matrix getMomentGWithoutDivision(Jama.Matrix beta);
+    public abstract Jama.Matrix getGi(Jama.Matrix beta, int observationIndex);
+    
     /**
-     * Returns the error within this partition.
-     * @return
+     * The no division part of this is that we are going to stack blockwise Jacobians,
+     * so we need to divide by the total sample size in front of the block diagonal matrix.
+     * Do not divide the Jacobian by the leaf sample size!!!
+     * @param beta
+     * @return 
      */
-    public abstract double getMSE();
-    public abstract Jama.Matrix getVariance();
+    public abstract Jama.Matrix getJacobianNoDivision(Jama.Matrix beta);
+    public abstract void computeBetaAndErrors();
     
 }
