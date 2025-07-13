@@ -181,7 +181,7 @@ public class TreeMoment {
          * to get around this issue.
          */
         if (verbose) {
-            // System.out.println("Computing baseline SSE");
+            System.out.println("Computing baseline SSE");
         }
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
         if (momentSpec.didEstimatorFail()) {
@@ -819,11 +819,11 @@ public class TreeMoment {
      * @return Double array of critical values (to average them and see if that works to improve power?)
      */
     public void testHomogeneity() {
-        System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
+        //System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);
         // printTree();
-        if (verbose || 1 == 2) {
+        if (verbose) {
             System.out.println("Number of leaves: " + v.size());
         }
         
@@ -838,7 +838,7 @@ public class TreeMoment {
             }
         } else {
             double degreesFreedom = v.size() - 1; // basically saying that if we have 2 leaves, we have one restriction (param_k0 = param_k1)
-            if (verbose || 1 == 1) {
+            if (verbose) {
                 System.out.println("Degrees of freedom in chi-squared test: " + degreesFreedom);
             }
             ChiSqrDistribution chi = new ChiSqrDistribution(degreesFreedom);
@@ -904,7 +904,7 @@ public class TreeMoment {
                         }
                     }
                 }
-                    System.out.println("DEBUG: ending Holm Bonferroni method");
+                    //System.out.println("DEBUG: ending Holm Bonferroni method");
             } else {
                 // easier bonferroni procedure (for checking what's going on here)
                 System.out.println("*** Did not implement homogeneous parameter storage, do not use as-is ***");

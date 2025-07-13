@@ -16,7 +16,9 @@ import utility.pmUtility;
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
 public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
-
+	
+	boolean verbose = false;
+	
     ArrayList<DataLens> v;
     int indexConstrainedParameter = -1;
     private double valueConstrainedParameter;
@@ -33,8 +35,9 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
     }
 
     public double computeStatistic(int indexConstrainedParameter) {
-        System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameter + " ------------------------");
-
+    	if (verbose) {
+    		System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameter + " ------------------------");
+    	}
         double dm = 0;
 
         // let's test this unconstrained first to make sure that we get the same parameters back
@@ -43,13 +46,14 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         double[] unconstrainedX = computeParameters(numParamsEachSplit * v.size());
         double fminUnconstrained = f_to_minimize(unconstrainedX);
 
-        System.out.print("Unconstrained Estimates: ");
-        pmUtility.prettyPrint(new Jama.Matrix(unconstrainedX, 1));
-        for (Jama.Matrix beta : convertToBetaList(unconstrainedX)) {
-            pmUtility.prettyPrintVector(beta);
+        if (verbose) {
+	        System.out.print("Unconstrained Estimates: ");
+	        pmUtility.prettyPrint(new Jama.Matrix(unconstrainedX, 1));
+	        for (Jama.Matrix beta : convertToBetaList(unconstrainedX)) {
+	            pmUtility.prettyPrintVector(beta);
+	        }
+	        System.out.println("SSE (unconstrained): " + computeSSE(unconstrainedX));
         }
-        System.out.println("SSE (unconstrained): " + computeSSE(unconstrainedX));
-
         // then impose constraint on indexParameterConstrain, report twice the difference
         this.indexConstrainedParameter = indexConstrainedParameter;
         double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1);
@@ -59,27 +63,33 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         for (DataLens h : v) {
             numObs += h.getNumObs();
         }
-
-        System.out.print("Constrained Estimates: ");
-        pmUtility.prettyPrint(new Jama.Matrix(constrainedX, 1));
-
-        valueConstrainedParameter = constrainedX[1];
-
-        for (Jama.Matrix beta : convertToBetaList(constrainedX)) {
-            pmUtility.prettyPrintVector(beta);
+        
+        if (verbose) {
+        	System.out.print("Constrained Estimates: ");
+        	pmUtility.prettyPrint(new Jama.Matrix(constrainedX, 1));
         }
-        System.out.println("SSE (constrained): " + computeSSE(constrainedX));
-
+        valueConstrainedParameter = constrainedX[1];
+        
+        if (verbose) {
+        	for (Jama.Matrix beta : convertToBetaList(constrainedX)) {
+            	pmUtility.prettyPrintVector(beta);
+        	}
+        	System.out.println("SSE (constrained): " + computeSSE(constrainedX));
+        }
         dm = 2.0 * numObs * (fminConstrained - fminUnconstrained);
-
-        System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " dm: " + dm);
-
+        
+        if (verbose ) {
+        	System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " dm: " + dm);
+        }
         return dm;
     }
 
     private double[] computeParameters(int numParams) {
-        System.out.println("Number of parameters: " + numParams);
-
+    	
+    	if (verbose) {
+    		System.out.println("Number of parameters: " + numParams);
+    	}
+    	
         Uncmin_f77 minimizer = new Uncmin_f77(false);
 
         double[] guess = new double[numParams + 1];
@@ -136,8 +146,11 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
                 }
             }
         }
-        System.out.print("Seeded starting values: ");
-        pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+        
+        if (verbose) {
+        	System.out.print("Seeded starting values: ");
+        	pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+        }
         for (int i = 0; i < xpls.length; i++) {
             xpls[i] = guess[i];
         }
@@ -200,17 +213,17 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         if (useOptimalTwoStepWeightingMatrix) {
             for (int i = 0; i < 2; i++) {
                 // with optimal weighting matrix (Step 2)
-                System.out.print("Computing inverse optimal weighting matrix...");
+                //System.out.print("Computing inverse optimal weighting matrix...");
                 omegaInverse = computeOptimalOmegaInverse(xpls);
-                System.out.println("done.");
+                //System.out.println("done.");
 
-                System.out.println("With inverse optimal weighting matrix:");
-                pmUtility.prettyPrint(omegaInverse);
+                //System.out.println("With inverse optimal weighting matrix:");
+                //pmUtility.prettyPrint(omegaInverse);
 
                 minimizer = new Uncmin_f77(false);
                 minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-                System.out.print("after second step with fixed Omega: ");
-                pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+               // System.out.print("after second step with fixed Omega: ");
+                //pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
                 System.arraycopy(xpls, 0, guess, 0, guess.length);
             }
         }
@@ -316,10 +329,11 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             SSE += c.computeMeasureOfFit(cellBetaList.get(leaf));
         }
         g.timesEquals(1.0 / numObs);
-        System.out.println("Moment Vector:");
-        pmUtility.prettyPrint(g);
-        System.out.println("g'g: " + ((g.transpose()).times(g)).get(0, 0));
-
+        if (verbose) {
+        	System.out.println("Moment Vector:");
+        	pmUtility.prettyPrint(g);
+        	System.out.println("g'g: " + ((g.transpose()).times(g)).get(0, 0));
+        }
         return SSE;
     }
 
