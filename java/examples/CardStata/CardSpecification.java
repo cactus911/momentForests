@@ -48,8 +48,8 @@ public class CardSpecification implements MomentSpecification {
     int numObs;
     int numtrees;
     String[] varNames;
-    int[] variableSearchIndex; // this should be restricted to only Z
-    Boolean[] DiscreteVariables; // also this should be restricted to only Z
+    int[] variableSearchIndex; 
+    Boolean[] DiscreteVariables; 
     String filename;
     boolean failedEstimator = false;
     int numTrees = 100;
@@ -77,11 +77,12 @@ public class CardSpecification implements MomentSpecification {
         resetHomogeneityIndex();
         failedEstimator = false;
         
+        /*
         variableSearchIndex = new int[Z.getColumnDimension()];
         for (int i = 0; i < Z.getColumnDimension(); i++) {
             variableSearchIndex[i] = i;
         }
-        
+        */
     }
 
     @Override
@@ -130,12 +131,7 @@ public class CardSpecification implements MomentSpecification {
         }
         return null;
     }
-
-    @Override
-    public int[] getVariableIndicesToSearchOver() {
-        return variableSearchIndex;
-    }
-
+    
     @Override
     public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
         return new MomentContinuousSplitObjLinear(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition, this);
@@ -180,61 +176,6 @@ public class CardSpecification implements MomentSpecification {
     }
 
     @Override
-    public Boolean[] getDiscreteVector() {
-        return DiscreteVariables;
-    }
-    
-    public void setDiscreteVariables(String[] zVars, Jama.Matrix Z, String[] discreteVarNames) {
-        int numVars = Z.getColumnDimension();
-        int numObs = Z.getRowDimension();
-
-        DiscreteVariables = new Boolean[numVars];
-
-        //Store discrete variable names in a lookup map
-        Map<String, Boolean> isDiscreteExplicit = new HashMap<>();
-        for (int i = 0; i < discreteVarNames.length; i++) {
-            isDiscreteExplicit.put(discreteVarNames[i], true);
-        }
-
-        //Loop over each Z variable
-        for (int j = 0; j < numVars; j++) {
-            String varName = zVars[j];
-
-            // Case 1: explicitly marked discrete in Stata
-            if (isDiscreteExplicit.containsKey(varName)) {
-                DiscreteVariables[j] = true;
-                continue;
-            }
-
-            // Case 2: infer based on number of unique values, assume discrete if fewer than 10
-            double[] colValues = new double[numObs];
-            for (int i = 0; i < numObs; i++) {
-                colValues[i] = Z.get(i, j);
-            }
-
-            int uniqueCount = 0;
-            for (int i = 0; i < numObs; i++) {
-                if (Double.isNaN(colValues[i])) continue;
-
-                boolean isNew = true;
-                for (int k = 0; k < i; k++) {
-                    if (!Double.isNaN(colValues[k]) && colValues[i] == colValues[k]) {
-                        isNew = false;
-                        break;
-                    }
-                }
-
-                if (isNew) {
-                    uniqueCount++;
-                    if (uniqueCount > 10) break;
-                }
-            }
-
-            DiscreteVariables[j] = uniqueCount < 10;
-        }
-    }
-
-    @Override
     public Matrix getBetaTruth(Matrix zi, Random rng) {
         // we don't know, this shouldn't be called in a real application
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
@@ -267,7 +208,45 @@ public class CardSpecification implements MomentSpecification {
         }
         return " " + fixedEffectIndex;
     }
+    
+    @Override
+    public int[] getVariableIndicesToSearchOver() {
+        return variableSearchIndex;
+    }
 
+    public void setVariableIndicesToSearchOver(int[] variableSearchIndex) {
+    	this.variableSearchIndex = variableSearchIndex;
+    }    
+    
+    @Override
+    public Boolean[] getDiscreteVector() {
+        return DiscreteVariables;
+    }
+    
+    public void setDiscreteVariables(String[] zVars, Jama.Matrix Z, String[] discreteVarNames, int[] variableSearchIndex) {
+        int numZVars = zVars.length;
+
+        DiscreteVariables = new Boolean[Z.getColumnDimension()];  
+        Arrays.fill(DiscreteVariables, false);  
+
+        // Store variable names
+        Set<String> isDiscrete = new HashSet<>();
+        for (String name : discreteVarNames) {
+        	isDiscrete.add(name);
+        }
+        
+        // Check if variable name matches with list of discrete variables
+        for (int j = 0; j < numZVars; j++) {
+            String varName = zVars[j];
+            int colIndex = variableSearchIndex[j];
+
+            if (isDiscrete.contains(varName)) {
+                DiscreteVariables[colIndex] = true;
+                continue;
+            }
+        }
+    }
+    
     @Override
     public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
         if (beta == null) {

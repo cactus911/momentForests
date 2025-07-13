@@ -151,7 +151,7 @@ public class CardMain {
             }
             
             if (mySpecification.getStratificationIndex() >= 0) {
-            	SFIToolkit.displayln("Splitting sample using stratified random sampling on column index: " + mySpecification.getStratificationIndex());
+            	SFIToolkit.displayln("Splitting sample using stratified random sampling on variable " + mySpecification.getVariableName(mySpecification.getStratificationIndex()));
             } else {
             	SFIToolkit.displayln("Splitting sample using simple random sampling.");
             }

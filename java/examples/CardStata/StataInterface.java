@@ -15,6 +15,8 @@ import java.util.*;
 public class StataInterface {
 	public static int RunCardModel(String[] args) {
 		
+		boolean debug = true;
+		
 		// Block of code to replace system.out.println to work with Stata
 		System.setOut(new java.io.PrintStream(new java.io.OutputStream() {
 		    private StringBuilder buffer = new StringBuilder();
@@ -59,15 +61,35 @@ public class StataInterface {
             String yVar = opts.get("y");
             String[] xVars = opts.get("x").split(" ");
             String[] zVars = opts.get("z").split(" ");
-
+            
+            int varCount = Data.getVarCount();
             int N = (int) Data.getObsTotal();
-            int Kx = xVars.length;
-            int Kz = zVars.length;
-
+            
             Matrix Y = new Matrix(N, 1);
-            Matrix X = new Matrix(N, Kx);
-            Matrix Z = new Matrix(N, Kz);
+            Matrix X = new Matrix(N, xVars.length);
+            Matrix Z = new Matrix(N, varCount-1);
             Matrix balance = new Matrix(N, 1, 1.0); // default weight of 1.0
+            
+            // Variable names, skipping the y variable 
+            List<String> zNames = new ArrayList<>();
+            for (int i = 1; i <= varCount; i++) {
+                String varName = Data.getVarName(i);
+                if (!varName.equals(yVar)) {
+                	zNames.add(varName);
+                }
+            }
+            zNames.removeIf(name -> name == null || name.trim().isEmpty());
+            String[] varNames = zNames.toArray(new String[0]);
+                 
+            if (debug) {
+                SFIToolkit.displayln("varCount: " + varCount);
+                SFIToolkit.displayln("varNames.length: " + varNames.length);
+                SFIToolkit.displayln("Stored variable names:");
+                SFIToolkit.displayln("--------------------");
+                for(int i = 0; i < varNames.length; i++) {
+                    SFIToolkit.displayln("varNames[" + i + "]: " + varNames[i]);
+                }
+            }
 
             // Load Y 
             int yIndex = Data.getVarIndex(yVar);
@@ -80,7 +102,7 @@ public class StataInterface {
             }
 
             // Load X
-            for (int j = 0; j < Kx; j++) {
+            for (int j = 0; j < xVars.length; j++) {
                 int xIndex = Data.getVarIndex(xVars[j]);
                 for (int i = 0; i < N; i++) {
                     double val = Data.getNum(xIndex, i + 1);
@@ -92,8 +114,8 @@ public class StataInterface {
             }
 
             // Load Z
-            for (int j = 0; j < Kz; j++) {
-                int zIndex = Data.getVarIndex(zVars[j]);
+            for (int j = 0; j < zNames.size(); j++) {
+                int zIndex = Data.getVarIndex(zNames.get(j));
                 for (int i = 0; i < N; i++) {
                     double val = Data.getNum(zIndex, i + 1);
                     if (Data.isValueMissing(val)) {
@@ -102,11 +124,18 @@ public class StataInterface {
                     Z.set(i, j, val);
                 }
             }
+            int[] variableSearchIndex = new int[zVars.length];
+            for (int j = 0; j < zVars.length; j++) {
+            	variableSearchIndex[j] = zNames.indexOf(zVars[j]); 
+            }                      
             
-            // Variable names 
-            String[] varNames = new String[0];
-            if (opts.containsKey("varnames")) {
-                varNames = opts.get("varnames").split(" ");
+            if (debug) {
+	            //This is supposed to skip the y-variable
+	            SFIToolkit.displayln("Z matrix column indices:");
+	            SFIToolkit.displayln("----------------");
+	            for (int i = 0; i < variableSearchIndex.length; i++) {
+	                SFIToolkit.displayln("Column " + (i + 1) + ": " + variableSearchIndex[i]);
+	            }
             }
             
             // Discrete variables
@@ -114,16 +143,30 @@ public class StataInterface {
             if (opts.containsKey("discretevars")) {
                 discreteVars = opts.get("discretevars").split(" ");
             }
-            
+
             // Construct CardSpecification
             CardSpecification spec = new CardSpecification(X, Y, Z, balance);
             spec.setVarNames(varNames);
-            spec.setDiscreteVariables(zVars, Z, discreteVars);
-
+            spec.setVariableIndicesToSearchOver(variableSearchIndex);
+            spec.setDiscreteVariables(zVars, Z, discreteVars, variableSearchIndex);
+            
+            if (debug) {
+            	SFIToolkit.displayln("Discrete variables:");
+            	for (int j = 0; j < spec.getDiscreteVector().length; j++) {
+            	    SFIToolkit.displayln("Z[" + j + "] = " + varNames[j] + " -> " + spec.getDiscreteVector()[j]);
+            	}
+            }
+                        
             // Optional: set stratification column
             if (opts.containsKey("strata")) {
                 String stratVar = opts.get("strata");
-                int stratIndex = Data.getVarIndex(stratVar);
+                int stratIndex = -1;
+                for (int j = 0; j < varNames.length; j++) {
+                    if (varNames[j].equals(stratVar)) {
+                        stratIndex = j;
+                        break;
+                    }
+                }         
                 if (stratIndex >= 0) {
                 	spec.setStratificationIndex(stratIndex);
                 } else {
