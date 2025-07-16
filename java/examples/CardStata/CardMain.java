@@ -116,11 +116,9 @@ public class CardMain {
 
         boolean runCV = spec.doCrossValidation();
         if (runCV) {
-            if (verbose) {
-                SFIToolkit.displayln("************************");
-                SFIToolkit.displayln("* Run Cross-Validation *");
-                SFIToolkit.displayln("************************");
-            }
+            SFIToolkit.displayln("****************************");
+            SFIToolkit.displayln("* Running Cross-Validation *");
+            SFIToolkit.displayln("****************************");
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
@@ -137,11 +135,11 @@ public class CardMain {
                 }
             }
             */
-            if (verbose) {
-	            SFIToolkit.displayln("Grid for minLeaf: " + gridMinLeaf.toString());
-	            SFIToolkit.displayln("Grid for minImprovement: " + gridMinImprovement.toString());
-	            SFIToolkit.displayln("Grid for maxDepth: " + gridMaxDepth.toString());
-            }
+ 
+            SFIToolkit.displayln("Grid for minLeaf: " + gridMinLeaf.toString());
+            SFIToolkit.displayln("Grid for minImprovement: " + gridMinImprovement.toString());
+            SFIToolkit.displayln("Grid for maxDepth: " + gridMaxDepth.toString());
+
             for (int minObservationsPerLeaf : gridMinLeaf) {
                 for (double minImprovement : gridMinImprovement) {
                     for (int maxDepth : gridMaxDepth) {
@@ -170,8 +168,8 @@ public class CardMain {
                     bestMaxDepth = s.getMaxTreeDepth();
                     star = "(*)";
                 }
-                SFIToolkit.display("best: " + minInSampleFit + " this: " + s.getInSampleFit() + " " + (minInSampleFit > s.getInSampleFit()));
-                if (s.getInSampleFit() < minInSampleFit || first) {
+                //SFIToolkit.display("best: " + String.format("%.6f", minInSampleFit) + " this: " + String.format("%.6f", s.getInSampleFit()) + " " + (minInSampleFit > s.getInSampleFit()));
+                if (s.getInSampleFit() < minInSampleFit) {
                     SFIToolkit.displayln("detected lower");
                     minInSampleFit = s.getInSampleFit();
                     starIn = "(**)";
@@ -181,13 +179,13 @@ public class CardMain {
                     first = false;
                 }
                 SFIToolkit.displayln(starIn);
-                SFIToolkit.displayln("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star);
-                jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star + " In-Sample Fit: " + s.getInSampleFit() + " " + starIn + "\n");
+                SFIToolkit.displayln("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + String.format("%.10f", combinationMSE) + " " + star);
+                //jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star + " In-Sample Fit: " + s.getInSampleFit() + " " + starIn + "\n");
             }
 
-            SFIToolkit.displayln("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
-            jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
-            jt.append("Best in-sample fit: " + minInSampleFit + "\n");
+            SFIToolkit.displayln("Lowest MSE: " + String.format("%.10f", minOutOfSampleFit) + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
+            //jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
+            //jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
        	
         	/* 
@@ -245,11 +243,10 @@ public class CardMain {
         
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity && 1 == 1 && bestMaxDepth > 0) {
-            if (verbose) {
-                SFIToolkit.displayln("************************");
-                SFIToolkit.displayln("* Test for Homogeneity *");
-                SFIToolkit.displayln("************************");
-            }
+            SFIToolkit.displayln("***************************");
+            SFIToolkit.displayln("* Testing for Homogeneity *");
+            SFIToolkit.displayln("***************************");
+
             /**
              * Step 2: determine homogeneous parameters post-CV
              */
@@ -356,6 +353,9 @@ public class CardMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = false;
+        SFIToolkit.displayln("*******************************************");
+        SFIToolkit.displayln("* Computing out-of-sample measures of fit *");
+        SFIToolkit.displayln("*******************************************");
         numberTreesInForest = spec.getNumTrees(); 
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
@@ -459,7 +459,7 @@ public class CardMain {
              */
             myForest.growForest();
             if (verbose) {
-                //SFIToolkit.displayln("First tree in forest estimated as:");
+                SFIToolkit.displayln("First tree in forest estimated as:");
                 myForest.getTree(0).printTree();
             }
             /**
@@ -593,10 +593,8 @@ public class CardMain {
              * Grow the moment forest
              */
             myForest.growForest();
-            if (verbose) {
-                //SFIToolkit.displayln("First tree in forest estimated as:");
-                myForest.getTree(0).printTree();
-            }
+            SFIToolkit.displayln("First tree in forest estimated as:");
+            myForest.getTree(0).printTree();
 
             try {
                 BufferedWriter out = new BufferedWriter(new FileWriter("estimatedParametersByObservation.csv"));

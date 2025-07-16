@@ -15,7 +15,7 @@ import java.util.*;
 public class StataInterface {
 	public static int RunCardModel(String[] args) {
 		
-		boolean debug = true;
+		boolean debug = false;
 		
 		// Block of code to replace system.out.println to work with Stata
 		System.setOut(new java.io.PrintStream(new java.io.OutputStream() {
