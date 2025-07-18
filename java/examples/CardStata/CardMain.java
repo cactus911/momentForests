@@ -170,7 +170,9 @@ public class CardMain {
                 }
                 //SFIToolkit.display("best: " + String.format("%.6f", minInSampleFit) + " this: " + String.format("%.6f", s.getInSampleFit()) + " " + (minInSampleFit > s.getInSampleFit()));
                 if (s.getInSampleFit() < minInSampleFit) {
-                    SFIToolkit.displayln("detected lower");
+                	if (verbose) {
+                		SFIToolkit.displayln("detected lower");
+                	}
                     minInSampleFit = s.getInSampleFit();
                     starIn = "(**)";
                 }
@@ -178,11 +180,12 @@ public class CardMain {
                 if (first) {
                     first = false;
                 }
-                SFIToolkit.displayln(starIn);
-                SFIToolkit.displayln("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + String.format("%.10f", combinationMSE) + " " + star);
-                //jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star + " In-Sample Fit: " + s.getInSampleFit() + " " + starIn + "\n");
+                if (verbose) {
+                	SFIToolkit.displayln(starIn);
+                	SFIToolkit.displayln("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + String.format("%.10f", combinationMSE) + " " + star);
+                	//jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star + " In-Sample Fit: " + s.getInSampleFit() + " " + starIn + "\n");
+                }
             }
-
             SFIToolkit.displayln("Lowest MSE: " + String.format("%.10f", minOutOfSampleFit) + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             //jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
             //jt.append("Best in-sample fit: " + minInSampleFit + "\n");

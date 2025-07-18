@@ -50,7 +50,8 @@ public class CardSpecification implements MomentSpecification {
     String[] varNames;
     int[] variableSearchIndex; 
     Boolean[] DiscreteVariables; 
-    String filename;
+    // July 15, 2015 attempt to automate value labels for discrete variables
+    //Map<String, Map<Integer, String>> valueLabels = new HashMap<>();
     boolean failedEstimator = false;
     int numTrees = 100;
     boolean crossValidation = true;
@@ -202,11 +203,33 @@ public class CardSpecification implements MomentSpecification {
     
     @Override
     public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
+    	
+    	/*
+    	// Hard-coded version
         if (variableIndex == 7) {
             String[] regionNames = {"New England", "Mid Atlantic", "East North Central", "West North Central", "South Atlantic", "East South Central", "West South Central", "Mountain", "Pacific"};
             return regionNames[fixedEffectIndex - 1];
         }
+        */
+    	
+    	/*
+    	// July 15, 2025 attempt to automate
+        if (variableSearchIndex == null || varNames == null || variableIndex >= variableSearchIndex.length)
+            return String.valueOf(fixedEffectIndex);
+
+        int originalIndex = variableSearchIndex[variableIndex];
+        String varName = varNames[originalIndex];
+
+        if (valueLabels.containsKey(varName)) {
+            return valueLabels.get(varName).getOrDefault(fixedEffectIndex, String.valueOf(fixedEffectIndex));
+        }
+
+        return String.valueOf(fixedEffectIndex);
+        */
+    	
         return " " + fixedEffectIndex;
+
+
     }
     
     @Override
@@ -246,6 +269,13 @@ public class CardSpecification implements MomentSpecification {
             }
         }
     }
+    
+    // July 15, 2015 attempt to automate value labels for discrete variables
+    /*
+    public void setValueLabels(Map<String, Map<Integer, String>> valueLabels) {
+        this.valueLabels = valueLabels;
+    }
+    */
     
     @Override
     public String formatTreeLeafOutput(Matrix beta, Matrix variance) {

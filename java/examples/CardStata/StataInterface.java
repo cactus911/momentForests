@@ -34,10 +34,10 @@ public class StataInterface {
 		
         int rc = 0;
         
-        // Default CV grid
-        List<Integer> cvGridMinLeaf = Arrays.asList(25, 50, 100, 200);      
-        List<Double> cvGridMinImprovement = Arrays.asList(0.1, 0.2, 0.4, 0.8, 1.6); 
-        List<Integer> cvGridMaxDepth = Arrays.asList(7, 6, 5, 4, 3, 2, 1);   
+        // CV grid
+        List<Integer> cvGridMinLeaf = new ArrayList<>();
+        List<Double> cvGridMinImprovement = new ArrayList<>();
+        List<Integer> cvGridMaxDepth = new ArrayList<>();
         
         try {
             // Parse arguments into key-value pairs 
@@ -130,7 +130,7 @@ public class StataInterface {
             }                      
             
             if (debug) {
-	            //This is supposed to skip the y-variable
+	            // This is supposed to skip the y-variable
 	            SFIToolkit.displayln("Z matrix column indices:");
 	            SFIToolkit.displayln("----------------");
 	            for (int i = 0; i < variableSearchIndex.length; i++) {
@@ -142,8 +142,8 @@ public class StataInterface {
             String[] discreteVars = new String[0];
             if (opts.containsKey("discretevars")) {
                 discreteVars = opts.get("discretevars").split(" ");
-            }
-
+            }            
+            
             // Construct CardSpecification
             CardSpecification spec = new CardSpecification(X, Y, Z, balance);
             spec.setVarNames(varNames);
@@ -211,6 +211,40 @@ public class StataInterface {
 				spec.setCVGridMaxDepth(cvGridMaxDepth);
 			}
 			
+			// July 15, 2015 attempt to automate value labels for discrete variables
+			/*
+			// Optional: value labels for discrete variables
+			if (opts.containsKey("value_labels")) {
+				Map<String, Map<Integer, String>> valueLabels = new HashMap<>();
+			    String raw = opts.get("value_labels");
+			    String[] varBlocks = raw.split(";");
+			    for (String block : varBlocks) {
+			        if (block.trim().isEmpty()) continue;
+			        String[] varSplit = block.split("=", 2);
+			        if (varSplit.length < 2) continue;
+
+			        String varName = varSplit[0].trim();
+			        String mappingStr = varSplit[1];
+			        Map<Integer, String> labelMap = new HashMap<>();
+
+			        for (String pair : mappingStr.split(",")) {
+			            String[] kv = pair.split("=", 2);
+			            if (kv.length < 2) continue;
+			            try {
+			                int val = Integer.parseInt(kv[0].trim());
+			                String label = kv[1].trim();
+			                labelMap.put(val, label);
+			            } catch (NumberFormatException e) {
+			                // skip malformed entries
+			            }
+			        }
+
+			        valueLabels.put(varName, labelMap);
+			    }
+			    spec.setValueLabels(valueLabels);
+			}
+			*/
+
             // Run the model
             CardMain.execute(spec);
 
