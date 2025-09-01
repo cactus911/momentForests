@@ -80,32 +80,6 @@ program define momentforest
 		local args `args' cvgrid_maxdepth=`cvgridmaxdepth'
 	}
 	
-	
-	* July 15, 2015 attempt to automate value labels for discrete variables
-	/*
-	local value_labels ""
-
-	foreach var of local discrete_list {
-		local lblname : value label `var'
-		if "`lblname'" != "" {
-			qui levelsof `var', local(levels)
-			local mapstr ""
-			local first = 1
-			foreach val of local levels {
-				local lbl : label `lblname' `val'
-				local lbl : subinstr local lbl `"""' `"\\""', all
-				if `first' {
-					local mapstr = "`val'=`lbl'"
-					local first = 0
-				}
-				else {
-					local mapstr = "`mapstr',`val'=`lbl'"
-				}
-			}
-			local value_labels = "`value_labels'`var'=`mapstr';"
-		}
-	}
-
 	local value_labels_clean : subinstr local value_labels `"""' `"\\""' , all
 	local args `args' value_labels=`value_labels_clean'
 	di as txt "value_labels_clean = `value_labels_clean'"
@@ -118,3 +92,4 @@ program define momentforest
         args("`args'")
 
 end
+
