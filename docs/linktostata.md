@@ -8,7 +8,7 @@ The codes are grouped into two directories: [jars and java](https://github.com/c
 Folder “jars” contains relevant java utilities, the moment forest jar file compiled from the Moment Forests java files, and a Stata ado file. 
 Folder “java” contains all the java source codes that implement moment forests. The common components that can be applied to any appliations are stored in the subdirectory "core", while specific application files including the Card (1995) example are in the subdirectory "examples".
 
-<br>
+
 ## II. How to run Moment Forests on Stata
 
 ### Step 1/3. Find Stata personal directory
@@ -21,7 +21,6 @@ Stata personal directory can be found by typing “adopath” in the Stata comma
 ![](./adopath.png)
 {% endcomment %}
 
-<br>
 ### Step 2/3. Download related files to Stata personal directory
 
 Download the needed files to the Stata personal directory mentioned in Step 1/3.
@@ -30,12 +29,10 @@ Download the needed files to the Stata personal directory mentioned in Step 1/3.
 
 Download the .jar files from [“jars”](https://github.com/cactus911/momentForests/tree/master/jars) and save them in the Stata personal directory. 
 
-<br>
 #### b. STATA files
 
 Download the STATA .do and .ado files from [“for_Stata”](https://github.com/cactus911/momentForests/tree/master/for_Stata)
 
-<br>
 ### Step 3/3.
 
 Close then reopen Stata. Now you are ready to use Moment Forests on Stata!
