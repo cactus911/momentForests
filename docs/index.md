@@ -10,7 +10,7 @@ This website is a work in progress but will be updated regularly.
 
 ### The Paper
 
-The paper can be found here \[[PDF](https://sites.wustl.edu/stephenpryan/files/2016/10/momentTrees.pdf)\].
+The paper can be found here \[[PDF](https://bpb-us-w2.wpmucdn.com/sites.wustl.edu/dist/7/3643/files/2024/04/Semiparametric-Project-Slides-2024-5bfa05ddae06dfd4.pdf)\].
 
 <img src="./examplegraph.PNG" width="500" >
 
