@@ -38,16 +38,19 @@ The java source code is contained in two separate folders on the Github reposito
 
 Jar files are various helper utilities, and their license information is as follows.
 
-Jama-1.0.3.jar is in the public domain and it is from https://math.nist.gov/javanumerics/jama/
-optimization.jar is in the public domain and it is from https://github.com/rwl/optimization and http://www1.fpl.fs.fed.us/optimization.html
-utility.jar is written by us for this project.
+Jama-1.0.3.jar is in the public domain and is from https://math.nist.gov/javanumerics/jama/
+optimization.jar is in the public domain and is from https://github.com/rwl/optimization and http://www1.fpl.fs.fed.us/optimization.html
+itext-1.3.jar is in the public domain and is from https://sourceforge.net/projects/itext/
+jfreechart-1.0.19.jar is in the public domain and is from https://sourceforge.net/projects/jfreechart/files/1.%20JFreeChart/1.0.19/
+jsci-core.jar is in the public domain and is from http://jsci.sourceforge.net/
+utility.jar and momentforests.jar are written by us for this project.
 
 ### Link to STATA
 
-We have also developed a link between the functionality contained in the Java code and STATA. [STATA interface for RCT](./linktostata.md)
+We have also developed a link between the functionality contained in the Java code and STATA. [STATA interface](./linktostata.md)
 
-### Worked Examples
+### Worked Example
 
-A simple "Hello, world" style example is [here](./workedexamples.md).
+An example of using moment forests for Card (1995) can be found [here](./workedexamples.md).
 
 
