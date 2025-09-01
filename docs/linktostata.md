@@ -37,8 +37,6 @@ Download the STATA .do and .ado files from [“for_Stata”](https://github.com/
 
 Close then reopen Stata. Now you are ready to use Moment Forests on Stata!
 
-
-<br>
 ## III. Stata command “momentforest”
 
 {% comment %} 
