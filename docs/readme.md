@@ -3,4 +3,4 @@ Java source code implementing moment forests from Nekipelov, Novosad, and Ryan (
 
 GitHub webpage for Moment Forests: https://cactus911.github.io/momentForests/
 
-Copyright 2018-2020 Stephen P. Ryan.
+Copyright 2018-2025 Stephen P. Ryan.
