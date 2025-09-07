@@ -47,6 +47,7 @@ public class CardSpecification implements MomentSpecification {
     Jama.Matrix balancingVector; // is treatment status in the RCT setting
     int numObs;
     int numtrees;
+    double proportionObservationsToEstimateTreeStructure;
     String[] varNames;
     int[] variableSearchIndex; 
     Boolean[] DiscreteVariables; 
@@ -58,7 +59,8 @@ public class CardSpecification implements MomentSpecification {
     List<Integer> cvGridMinLeaf;
     List<Double> cvGridMinImprovement;
     List<Integer> cvGridMaxDepth;
-    int stratificationIndex = -1;     
+    int stratificationIndex = -1;   
+    String betaPrefixes = "";
     
     /**
      * We are going to control homogeneous parameters through these variables
@@ -228,8 +230,6 @@ public class CardSpecification implements MomentSpecification {
         */
     	
         return " " + fixedEffectIndex;
-
-
     }
     
     @Override
@@ -342,7 +342,15 @@ public class CardSpecification implements MomentSpecification {
     public int getNumTrees() {
         return this.numTrees;
     }
+    
+    public void setProportionObservationsToEstimateTreeStructure(double b) {
+        this.proportionObservationsToEstimateTreeStructure = b;
+    }
 
+    public double getProportionObservationsToEstimateTreeStructure() {
+        return this.proportionObservationsToEstimateTreeStructure;
+    }
+    
     public void setCrossValidation(boolean b) {
         this.crossValidation = b;
     }
@@ -381,6 +389,16 @@ public class CardSpecification implements MomentSpecification {
 
     public int getStratificationIndex() {
         return this.stratificationIndex;
+    }
+    
+    
+    public void setBetaPrefixes(String varname) {
+        this.betaPrefixes = varname;
+    }
+    
+    @Override
+    public String getBetaPrefixes() {
+        return this.betaPrefixes;
     }
 }
 	

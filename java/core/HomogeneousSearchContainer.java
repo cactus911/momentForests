@@ -96,7 +96,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
         double[] fscale = {0, 1.0E-8};
         int[] method = {0, 1};
         int[] iexp = {0, 0};
-        int[] msg = {0, 1};
+        int[] msg = {0, 0};
         int[] ndigit = {0, 8};
         int[] itnlim = {0, 150};
         int[] iagflg = {0, 0};

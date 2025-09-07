@@ -156,7 +156,19 @@ public class StataInterface {
             	    SFIToolkit.displayln("Z[" + j + "] = " + varNames[j] + " -> " + spec.getDiscreteVector()[j]);
             	}
             }
-                        
+            
+            if (opts.containsKey("numtrees")) {
+                int numTrees = Integer.parseInt(opts.get("numtrees"));
+                spec.setNumTrees(numTrees);
+            }
+            
+            // Optional: set stratification column
+            double propstructure = 0.35; // default value
+            if (opts.containsKey("propstructure")) {
+            	propstructure = Double.parseDouble(opts.get("propstructure"));
+                spec.setProportionObservationsToEstimateTreeStructure(propstructure);
+            }            
+            
             // Optional: set stratification column
             if (opts.containsKey("strata")) {
                 String stratVar = opts.get("strata");
@@ -172,12 +184,6 @@ public class StataInterface {
                 } else {
                 	SFIToolkit.errorln("Strata variable '" + stratVar + "' not found in dataset.");
                 }
-            }
-
-            // Optional: number of trees
-            if (opts.containsKey("numtrees")) {
-                int numTrees = Integer.parseInt(opts.get("numtrees"));
-                spec.setNumTrees(numTrees);
             }
 
             // Optional: cross-validation flag
@@ -209,6 +215,11 @@ public class StataInterface {
                         .map(Integer::parseInt)
                         .collect(Collectors.toList());
 				spec.setCVGridMaxDepth(cvGridMaxDepth);
+			}
+			
+			if (opts.containsKey("gen")) {
+				String betaPrefix = opts.get("gen");
+				spec.setBetaPrefixes(betaPrefix);
 			}
 			
 			// July 15, 2015 attempt to automate value labels for discrete variables
@@ -247,6 +258,8 @@ public class StataInterface {
 
             // Run the model
             CardMain.execute(spec);
+            
+            
 
         } catch (Exception e) {
             java.io.StringWriter sw = new java.io.StringWriter();

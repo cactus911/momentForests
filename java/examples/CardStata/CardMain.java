@@ -49,6 +49,8 @@ import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
+
+import com.stata.sfi.Data;
 import com.stata.sfi.SFIToolkit;
 
 /**
@@ -61,7 +63,7 @@ public class CardMain {
     private Jama.Matrix estimatedHomogeneousParameters;
     private final boolean detectHomogeneity;
     final private JTextArea jt;
-
+    
     /**
      * @param args the command line arguments
      */
@@ -95,7 +97,7 @@ public class CardMain {
         double minOutOfSampleFit = 0;
         double minInSampleFit = 0;
         boolean first = true;
-
+        
         /**
          * Make sure that cross-validation is run on completely unrestricted
          * model; set all parameters to heterogeneous
@@ -103,6 +105,7 @@ public class CardMain {
         mySpecification.resetHomogeneityIndex();
 
         int numberTreesInForest = spec.getNumTrees();
+        double proportionObservationsToEstimateTreeStructure = spec.getProportionObservationsToEstimateTreeStructure();
         // SFIToolkit.displayln("numTrees: " + numberTreesInForest);
 
         /*
@@ -143,7 +146,7 @@ public class CardMain {
             for (int minObservationsPerLeaf : gridMinLeaf) {
                 for (double minImprovement : gridMinImprovement) {
                     for (int maxDepth : gridMaxDepth) {
-                    	cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
+                    	cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
             }
@@ -186,7 +189,7 @@ public class CardMain {
                 	//jt.append("minMSE: " + s.getMinImprovement() + " minObs: " + s.getMinObservationsPerLeaf() + " maxDepth: " + s.getMaxTreeDepth() + " Out-of-sample MSE: " + combinationMSE + " " + star + " In-Sample Fit: " + s.getInSampleFit() + " " + starIn + "\n");
                 }
             }
-            SFIToolkit.displayln("Lowest MSE: " + String.format("%.10f", minOutOfSampleFit) + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
+            SFIToolkit.displayln("Lowest MSE: " + String.format("%.10f", minOutOfSampleFit) + " at min_N = " + bestMinObservationsPerLeaf + " min_improvement = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             //jt.append("Lowest MSE: " + minOutOfSampleFit + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
             //jt.append("Best in-sample fit: " + minInSampleFit + "\n");
         } else {
@@ -259,7 +262,7 @@ public class CardMain {
 
             testParameterHomogeneity = true;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
-            MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
+            MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
 
             myForest.setTreeOptions(cvOptions);
             myForest.growForest();
@@ -359,8 +362,7 @@ public class CardMain {
         SFIToolkit.displayln("*******************************************");
         SFIToolkit.displayln("* Computing out-of-sample measures of fit *");
         SFIToolkit.displayln("*******************************************");
-        numberTreesInForest = spec.getNumTrees(); 
-        computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
+        computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
         fitStats.computeOutOfSampleMSE();
         double outOfSampleFit = fitStats.getMSE();
@@ -392,6 +394,7 @@ public class CardMain {
 
         MomentSpecification mySpecification;
         int numberTreesInForest;
+        double proportionObservationsToEstimateTreeStructure;
         long rngBaseSeedMomentForest;
         boolean verbose;
         int minObservationsPerLeaf;
@@ -405,9 +408,10 @@ public class CardMain {
 
         MomentForest myForest;
 
-        public computeFitStatistics(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose, int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
+        public computeFitStatistics(MomentSpecification mySpecification, int numberTreesInForest, double proportionObservationsToEstimateTreeStructure, long rngBaseSeedMomentForest, boolean verbose, int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
             this.mySpecification = mySpecification;
             this.numberTreesInForest = numberTreesInForest;
+            this.proportionObservationsToEstimateTreeStructure = proportionObservationsToEstimateTreeStructure;
             this.rngBaseSeedMomentForest = rngBaseSeedMomentForest;
             this.verbose = verbose;
             this.minObservationsPerLeaf = minObservationsPerLeaf;
@@ -453,8 +457,8 @@ public class CardMain {
             
             DataLens estimatingLens = split[0];
             DataLens oosDataLens = split[1];
-
-            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, estimatingLens, verbose, new TreeOptions());
+            
+            myForest = new MomentForest(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, estimatingLens, verbose, new TreeOptions());
             TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
             myForest.setTreeOptions(cvOptions);
             /**
@@ -589,7 +593,7 @@ public class CardMain {
             boolean verboseInSample = false;
             DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
 
-            myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, overallLens, verboseInSample, new TreeOptions());
+            myForest = new MomentForest(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, overallLens, verboseInSample, new TreeOptions());
             TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
             myForest.setTreeOptions(cvOptions);
             /**
@@ -598,37 +602,32 @@ public class CardMain {
             myForest.growForest();
             SFIToolkit.displayln("First tree in forest estimated as:");
             myForest.getTree(0).printTree();
-
+            
             try {
-                BufferedWriter out = new BufferedWriter(new FileWriter("estimatedParametersByObservation.csv"));
-                inSampleFit = 0;
-                for (int i = 0; i < mySpecification.getZ().getRowDimension(); i++) {
-                    Jama.Matrix zi = mySpecification.getZ().getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
-                    Jama.Matrix xi = mySpecification.getX().getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
-                    double yi = mySpecification.getY().get(i, 0);
-                    // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
-                    Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
-
-                    for(int j=0;j<compositeEstimatedBeta.getRowDimension();j++) {
-                        out.write(compositeEstimatedBeta.get(j,0)+",");
-                    }
-                    for(int j=0;j<xi.getColumnDimension();j++) {
-                        out.write(xi.get(0,j)+",");
-                    }
-                    for(int j=0;j<zi.getColumnDimension();j++) {
-                        out.write(zi.get(0,j)+"");
-                        if(j<zi.getColumnDimension()-1) {
-                            out.write(",");
+            	if(mySpecification.getBetaPrefixes() != "") {
+            		
+            		// Create variables in Stata dataset
+            		for(int j=0; j < mySpecification.getX().getColumnDimension(); j++) {
+            			String betaVarName = mySpecification.getBetaPrefixes() + j;
+            			if (Data.getVarIndex(betaVarName) != 0) {
+            				throw new IllegalStateException("Variable " + betaVarName + " already exists.");   
+            			} else {
+            				Data.addVarDouble(betaVarName);
+            			}
+            		}
+            		
+            		// Store beta values into Stata
+            		for (int i = 0; i < Data.getObsTotal(); i++) {
+            			Jama.Matrix zi = mySpecification.getZ().getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
+            			Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
+            			
+                        for(int j=0; j < mySpecification.getX().getColumnDimension(); j++) {
+                        	String betaVar = mySpecification.getBetaPrefixes() + j;
+                        	Data.storeNum(Data.getVarIndex(betaVar), i+1, compositeEstimatedBeta.get(j,0));
                         }
-                    }
-                    out.write("\n");
-                    
-                    
-                    inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
-                }
-                inSampleFit /= mySpecification.getZ().getRowDimension();
-                SFIToolkit.displayln("In-sample fit: " + inSampleFit);
-                out.close();
+            		}
+            	}
+            	
             } catch (Exception e) {
                 e.printStackTrace();
                 System.exit(0);
