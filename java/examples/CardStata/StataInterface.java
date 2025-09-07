@@ -258,8 +258,6 @@ public class StataInterface {
 
             // Run the model
             CardMain.execute(spec);
-            
-            
 
         } catch (Exception e) {
             java.io.StringWriter sw = new java.io.StringWriter();

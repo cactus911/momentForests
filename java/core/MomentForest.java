@@ -53,11 +53,11 @@ public class MomentForest {
 
     // TreeMoment momentTree = new TreeMoment(null, spec, treeX, treeY, spec.getDiscreteVector(), verbose,
     // minProportionEachPartition, minCountEachPartition, improvementThreshold, true, maxDepth, null, null);
-    public MomentForest(MomentSpecification spec, int numberTreesInForest, double proportionObservationsToEstimateTreeStructure, long forestSeed, DataLens forestLens,
+    public MomentForest(MomentSpecification spec, int numberTreesInForest, long forestSeed, DataLens forestLens,
             boolean verbose, TreeOptions options) {
         this.spec = spec;
         this.numberTreesInForest = numberTreesInForest;
-        this.proportionObservationsToEstimateTreeStructure = proportionObservationsToEstimateTreeStructure;
+        this.proportionObservationsToEstimateTreeStructure = spec.getProportionObservationsToEstimateTreeStructure();
         this.verbose = verbose;
         numObs = forestLens.getNumObs();
         this.forestLens = forestLens;

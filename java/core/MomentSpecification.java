@@ -54,6 +54,8 @@ public interface MomentSpecification {
     public Jama.Matrix getBalancingVector();
 
     public int numberoftrees();
+    
+    public double getProportionObservationsToEstimateTreeStructure();
 
     public Boolean[] getDiscreteVector();
 
