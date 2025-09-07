@@ -84,3 +84,6 @@ Z : observables that are a source of heterogeneity in the effects of X on Y
 - If a user wants to modify the codes, one should compile the modified codes into a jar file named “momentforests.jar”. Then, by replacing this jar file in their own Stata personal directory, one can use own version of Moment Forests.
 {% endcomment %}
 
+## IV. Worked example
+
+This section works through Card (1995)

@@ -45,12 +45,7 @@ jfreechart-1.0.19.jar is in the public domain and is from https://sourceforge.ne
 jsci-core.jar is in the public domain and is from http://jsci.sourceforge.net/
 utility.jar and momentforests.jar are written by us for this project.
 
-### Link to STATA
+### Link to STATA and worked example
 
-We have also developed a link between the functionality contained in the Java code and STATA. [STATA interface](./linktostata.md)
-
-### Worked Example
-
-An example of using moment forests for Card (1995) can be found [here](./workedexamples.md).
-
-
+We have also developed a link between the functionality contained in the Java code and STATA. 
+[STATA interface](./linktostata.md)
