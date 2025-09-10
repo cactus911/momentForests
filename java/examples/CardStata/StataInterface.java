@@ -157,32 +157,61 @@ public class StataInterface {
             	}
             }
             
+			// July 15, 2015 attempt to automate value labels for discrete variables
+			/*
+			// Optional: value labels for discrete variables
+			if (opts.containsKey("value_labels")) {
+				Map<String, Map<Integer, String>> valueLabels = new HashMap<>();
+			    String raw = opts.get("value_labels");
+			    String[] varBlocks = raw.split(";");
+			    for (String block : varBlocks) {
+			        if (block.trim().isEmpty()) continue;
+			        String[] varSplit = block.split("=", 2);
+			        if (varSplit.length < 2) continue;
+
+			        String varName = varSplit[0].trim();
+			        String mappingStr = varSplit[1];
+			        Map<Integer, String> labelMap = new HashMap<>();
+
+			        for (String pair : mappingStr.split(",")) {
+			            String[] kv = pair.split("=", 2);
+			            if (kv.length < 2) continue;
+			            try {
+			                int val = Integer.parseInt(kv[0].trim());
+			                String label = kv[1].trim();
+			                labelMap.put(val, label);
+			            } catch (NumberFormatException e) {
+			                // skip malformed entries
+			            }
+			        }
+
+			        valueLabels.put(varName, labelMap);
+			    }
+			    spec.setValueLabels(valueLabels);
+			}
+			*/
+                   
             if (opts.containsKey("numtrees")) {
                 int numTrees = Integer.parseInt(opts.get("numtrees"));
                 spec.setNumTrees(numTrees);
             }
-            
-            // Optional: set stratification column
-            double propstructure = 0.35; // default value
-            if (opts.containsKey("propstructure")) {
-            	propstructure = Double.parseDouble(opts.get("propstructure"));
-                spec.setProportionObservationsToEstimateTreeStructure(propstructure);
-            }            
-            
+                      
             // Optional: set stratification column
             if (opts.containsKey("strata")) {
                 String stratVar = opts.get("strata");
-                int stratIndex = -1;
-                for (int j = 0; j < varNames.length; j++) {
-                    if (varNames[j].equals(stratVar)) {
-                        stratIndex = j;
-                        break;
+                if (stratVar != null && !stratVar.isEmpty()) {
+                    int stratIndex = -1;
+                    for (int j = 0; j < varNames.length; j++) {
+                        if (varNames[j].equals(stratVar)) {
+                            stratIndex = j;
+                            break;
+                        }
+                    }         
+                    if (stratIndex >= 0) {
+                        spec.setStratificationIndex(stratIndex);
+                    } else {
+                        SFIToolkit.errorln("Strata variable '" + stratVar + "' not found in dataset.");
                     }
-                }         
-                if (stratIndex >= 0) {
-                	spec.setStratificationIndex(stratIndex);
-                } else {
-                	SFIToolkit.errorln("Strata variable '" + stratVar + "' not found in dataset.");
                 }
             }
 
@@ -217,47 +246,28 @@ public class StataInterface {
 				spec.setCVGridMaxDepth(cvGridMaxDepth);
 			}
 			
+			// Optional: generating betas
 			if (opts.containsKey("gen")) {
 				String betaPrefix = opts.get("gen");
 				spec.setBetaPrefixes(betaPrefix);
 			}
 			
-			// July 15, 2015 attempt to automate value labels for discrete variables
-			/*
-			// Optional: value labels for discrete variables
-			if (opts.containsKey("value_labels")) {
-				Map<String, Map<Integer, String>> valueLabels = new HashMap<>();
-			    String raw = opts.get("value_labels");
-			    String[] varBlocks = raw.split(";");
-			    for (String block : varBlocks) {
-			        if (block.trim().isEmpty()) continue;
-			        String[] varSplit = block.split("=", 2);
-			        if (varSplit.length < 2) continue;
-
-			        String varName = varSplit[0].trim();
-			        String mappingStr = varSplit[1];
-			        Map<Integer, String> labelMap = new HashMap<>();
-
-			        for (String pair : mappingStr.split(",")) {
-			            String[] kv = pair.split("=", 2);
-			            if (kv.length < 2) continue;
-			            try {
-			                int val = Integer.parseInt(kv[0].trim());
-			                String label = kv[1].trim();
-			                labelMap.put(val, label);
-			            } catch (NumberFormatException e) {
-			                // skip malformed entries
-			            }
-			        }
-
-			        valueLabels.put(varName, labelMap);
-			    }
-			    spec.setValueLabels(valueLabels);
-			}
-			*/
-
+			// Optional: proportion of observations to estimate tree structure 
+			double propstructure = 0.35;
+            if (opts.containsKey("propstructure")) {
+            	propstructure = Double.parseDouble(opts.get("propstructure"));
+            }  
+            spec.setProportionObservationsToEstimateTreeStructure(propstructure);
+            
+			// Optional: random seed
+			Random rand = new Random();
+			int seed = rand.nextInt();
+            if (opts.containsKey("seed")) {
+                seed = Integer.parseInt(opts.get("seed"));
+            }
+			
             // Run the model
-            CardMain.execute(spec);
+            CardMain.execute(spec, seed);
 
         } catch (Exception e) {
             java.io.StringWriter sw = new java.io.StringWriter();

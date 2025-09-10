@@ -73,7 +73,7 @@ public class CardMain {
         detectHomogeneity = true;
     }
     
-    public static void execute(CardSpecification spec) {
+    public static void execute(CardSpecification spec, int seed) {
         // Redirect GUI output (JTextArea) to System.out for headless use
         JTextArea dummy = new JTextAreaAutoscroll() {
             @Override
@@ -83,11 +83,12 @@ public class CardMain {
         };
 
         CardMain model = new CardMain(dummy);
-        model.executeWithSpec(spec);
+        model.executeWithSpec(spec, seed);
     }
 
-    public void executeWithSpec(CardSpecification spec) {
-        Random rng = new Random(777);
+    public void executeWithSpec(CardSpecification spec, int seed) {
+    	//Random rng = new Random(777);
+        Random rng = new Random(seed);
         MomentSpecification mySpecification = spec;
 
         double bestMinImprovement = 4.0;
