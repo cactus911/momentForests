@@ -198,19 +198,28 @@ public class StataInterface {
                       
             // Optional: set stratification column
             if (opts.containsKey("strata")) {
-                String stratVar = opts.get("strata");
-                if (stratVar != null && !stratVar.isEmpty()) {
-                    int stratIndex = -1;
-                    for (int j = 0; j < varNames.length; j++) {
-                        if (varNames[j].equals(stratVar)) {
-                            stratIndex = j;
-                            break;
+                String stratVars = opts.get("strata");
+                if (stratVars != null && !stratVars.isEmpty()) {
+                    String[] stratVarArray = stratVars.trim().split("\\s+"); // split by whitespace
+                    List<Integer> stratIndices = new ArrayList<>();
+
+                    for (String stratVar : stratVarArray) {
+                        boolean found = false;
+                        for (int j = 0; j < varNames.length; j++) {
+                            if (varNames[j].equals(stratVar)) {
+                                stratIndices.add(j);
+                                found = true;
+                                break;
+                            }
                         }
-                    }         
-                    if (stratIndex >= 0) {
-                        spec.setStratificationIndex(stratIndex);
-                    } else {
-                        SFIToolkit.errorln("Strata variable '" + stratVar + "' not found in dataset.");
+                        if (!found) {
+                            SFIToolkit.errorln("Strata variable '" + stratVar + "' not found in dataset.");
+                        }
+                    }
+
+                    if (!stratIndices.isEmpty()) {
+                        int[] indicesArray = stratIndices.stream().mapToInt(Integer::intValue).toArray();
+                        spec.setStratificationIndex(indicesArray);
                     }
                 }
             }

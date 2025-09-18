@@ -59,7 +59,7 @@ public class CardSpecification implements MomentSpecification {
     List<Integer> cvGridMinLeaf;
     List<Double> cvGridMinImprovement;
     List<Integer> cvGridMaxDepth;
-    int stratificationIndex = -1;   
+    int[] stratificationIndex = null;   
     String betaPrefixes = "";
     
     /**
@@ -383,14 +383,13 @@ public class CardSpecification implements MomentSpecification {
         this.cvGridMaxDepth = grid;
     }
 
-    public void setStratificationIndex(int index) {
+    public void setStratificationIndex(int[] index) {
         this.stratificationIndex = index;
     }
 
-    public int getStratificationIndex() {
+    public int[] getStratificationIndex() {
         return this.stratificationIndex;
     }
-    
     
     public void setBetaPrefixes(String varname) {
         this.betaPrefixes = varname;

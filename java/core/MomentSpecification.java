@@ -178,7 +178,7 @@ public interface MomentSpecification {
 
     public boolean didEstimatorFail();
     
-    public int getStratificationIndex();
+    public int[] getStratificationIndex();
     
     public String getBetaPrefixes();
 

@@ -28,6 +28,9 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
 import java.util.Collections;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
 
 /**
  *
@@ -39,7 +42,7 @@ public class DataLens {
     final Jama.Matrix originalDataY;
     final Jama.Matrix originalDataZ;
     final Jama.Matrix balancingVector;
-    final int strataColumnIndex;
+    final int[] strataColumnIndex;
     int[] dataIndex;
     
     //DataLens for original data
@@ -47,7 +50,7 @@ public class DataLens {
         originalDataX = X;
         originalDataY = Y;
         originalDataZ = Z;
-        strataColumnIndex = -1;
+        strataColumnIndex = null;
         balancingVector = balanceVector; // Is the balance vector specific to RCT and natural experiment settings?
         dataIndex = new int[originalDataX.getRowDimension()];
         for (int i = 0; i < originalDataX.getRowDimension(); i++) {
@@ -55,7 +58,7 @@ public class DataLens {
         }
     }
     
-    public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, Jama.Matrix balanceVector, int strataColIndex) {
+    public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, Jama.Matrix balanceVector, int[] strataColIndex) {
         originalDataX = X;
         originalDataY = Y;
         originalDataZ = Z;
@@ -117,7 +120,7 @@ public class DataLens {
         return originalDataZ;
     }
     
-    public int getStrataColumnIndex() {
+    public int[] getStrataColumnIndex() {
         return strataColumnIndex;
     }
 
@@ -306,7 +309,7 @@ public class DataLens {
     /**
     *
     * Randomly split the sample into two parts depending on parameters below.
-    * This method performs stratified random sampling based on a column index
+    * This method performs stratified random sampling based on column indices
     *
     * @param proportionFirstSample What proportion of the sample to split into
     * the first chunk.
@@ -314,49 +317,51 @@ public class DataLens {
     * @return
     */
     public DataLens[] randomlySplitSampleByStrata(double proportionFirstSample, long seed) {
-        if (strataColumnIndex == -1) {
-            throw new IllegalStateException("Strata column index not set in DataLens.");
+        if (strataColumnIndex == null || strataColumnIndex.length == 0) {
+            throw new IllegalStateException("Strata column indices not set in DataLens.");
         }
 
         Random rng = new Random(seed);
         ArrayList<Integer> indicesFirstList = new ArrayList<>();
         ArrayList<Integer> indicesSecondList = new ArrayList<>();
 
-        // Step 1: Identify all unique strata values
-        TreeSet<Integer> uniqueStrataValues = new TreeSet<>();
-        for (int i = 0; i < dataIndex.length; i++) {
-            int obsIndex = dataIndex[i];
-            int strataValue = (int) originalDataZ.get(obsIndex, strataColumnIndex);
-            uniqueStrataValues.add(strataValue);
+        // Group observations by combined strata key
+        Map<String, List<Integer>> strataGroups = new HashMap<>();
+        for (int obsIndex : dataIndex) {
+            String key = buildStrataKey(obsIndex, strataColumnIndex);
+            List<Integer> group = strataGroups.get(key);
+            if (group == null) {
+                group = new ArrayList<>();
+                strataGroups.put(key, group);
+            }
+            group.add(obsIndex);
         }
 
-        // Step 2: Within each stratum, shuffle and split
-        for (int strata : uniqueStrataValues) {
-            ArrayList<Integer> regionIndices = new ArrayList<>();
-
-            for (int i = 0; i < dataIndex.length; i++) {
-                int obsIndex = dataIndex[i];
-                if ((int) originalDataZ.get(obsIndex, strataColumnIndex) == strata) {
-                    regionIndices.add(obsIndex);
-                }
-            }
-
-            Collections.shuffle(regionIndices, rng);
-            int cutoff = (int) Math.round(regionIndices.size() * proportionFirstSample);
-
-            indicesFirstList.addAll(regionIndices.subList(0, cutoff));
-            indicesSecondList.addAll(regionIndices.subList(cutoff, regionIndices.size()));
+        // Split within each group
+        for (List<Integer> group : strataGroups.values()) {
+            Collections.shuffle(group, rng);
+            int cutoff = (int) Math.round(group.size() * proportionFirstSample);
+            indicesFirstList.addAll(group.subList(0, cutoff));
+            indicesSecondList.addAll(group.subList(cutoff, group.size()));
         }
 
         int[] indicesFirst = indicesFirstList.stream().mapToInt(Integer::intValue).toArray();
         int[] indicesSecond = indicesSecondList.stream().mapToInt(Integer::intValue).toArray();
 
         DataLens[] splitLens = new DataLens[2];
-        splitLens[0] = new DataLens(this, indicesFirst);   
-        splitLens[1] = new DataLens(this, indicesSecond);  
-
+        splitLens[0] = new DataLens(this, indicesFirst);
+        splitLens[1] = new DataLens(this, indicesSecond);
         return splitLens;
     }
+
+    private String buildStrataKey(int obsIndex, int[] strataColumnIndices) {
+        StringBuilder sb = new StringBuilder();
+        for (int col : strataColumnIndices) {
+            sb.append(originalDataZ.get(obsIndex, col)).append("_");
+        }
+        return sb.toString();
+    }
+
 
 
     /**

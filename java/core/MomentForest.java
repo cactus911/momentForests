@@ -88,7 +88,7 @@ public class MomentForest {
                 resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
                 split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
 
-            } else if (forestLens.strataColumnIndex >= 0) {
+            } else if (forestLens.strataColumnIndex != null) {
                 //System.out.println("Tree " + i + ": Using strata column " + forestLens.strataColumnIndex);
                 resampled = forestLens.getResampledDataLens(rng.nextLong());
                 split = resampled.randomlySplitSampleByStrata(proportionObservationsToEstimateTreeStructure, rng.nextLong());

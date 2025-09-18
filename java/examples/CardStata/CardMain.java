@@ -38,6 +38,7 @@ import java.io.FileWriter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
+import java.util.StringJoiner;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
@@ -152,8 +153,15 @@ public class CardMain {
                 }
             }
             
-            if (mySpecification.getStratificationIndex() >= 0) {
-            	SFIToolkit.displayln("Splitting sample using stratified random sampling on variable " + mySpecification.getVariableName(mySpecification.getStratificationIndex()));
+            int[] stratIndices = mySpecification.getStratificationIndex();
+            if (stratIndices != null && stratIndices.length > 0) {
+                StringJoiner sj = new StringJoiner(", ");
+                for (int idx : stratIndices) {
+                    sj.add(mySpecification.getVariableName(idx));
+                }
+                SFIToolkit.displayln(
+                    "Splitting sample using stratified random sampling on variables: " + sj.toString()
+                );
             } else {
             	SFIToolkit.displayln("Splitting sample using simple random sampling.");
             }
@@ -448,7 +456,7 @@ public class CardMain {
             DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
 
             DataLens[] split;
-            if (mySpecification.getStratificationIndex() >= 0) {
+            if (mySpecification.getStratificationIndex() != null) {
             	//SFIToolkit.displayln("Splitting sample using stratified random sampling on column index: " + mySpecification.getStratificationIndex());
                 split = overallLens.randomlySplitSampleByStrata(0.9, rngBaseSeedMomentForest);
             } else {
@@ -497,97 +505,12 @@ public class CardMain {
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
 
-                if (i == 0 && 1 == 2) {
-                    for (int f = 0; f < myForest.getForestSize(); f++) {
-                        pmUtility.prettyPrintVector(myForest.getTree(f).getEstimatedBeta(zi));
-                    }
-                }
-
                 inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
             }
             inSampleFit /= mySpecification.getZ().getRowDimension();
 
             MSE = outOfSampleFit / testZ.getRowDimension(); // mse
-
-            if (generatePlots & 1 == 0) {
-                JFrame f = new JFrame("Plots");
-                f.setBounds(100, 100, 800, 800);
-                f.getContentPane().setLayout(new BorderLayout());
-                XYSeries expSeriesBlack = new XYSeries("Experience -- Black");
-                XYSeries eduSeriesBlack = new XYSeries("Education -- Black");
-                XYSeries expSeriesWhite = new XYSeries("Experience -- White");
-                XYSeries eduSeriesWhite = new XYSeries("Education -- White");
-
-                XYSeriesCollection expCollection = new XYSeriesCollection();
-                for (int experience = 0; experience <= 23; experience++) {
-                    double black = 1;
-                    double[][] demographics = {{1, 12, experience, 0, black, 1, 0, 1, 0, 12, 12, 0, 0, 0, 1, 0}};
-                    Jama.Matrix z_guy = new Jama.Matrix(demographics, 1, mySpecification.getZ().getColumnDimension());
-                    // pmUtility.prettyPrint(z_guy);
-                    Jama.Matrix x_guy = testX.getMatrix(0, 0, 0, testX.getColumnDimension() - 1);
-                    if (x_guy.getColumnDimension() > 1) {
-                        x_guy.set(0, 1, 12);
-                    }
-                    if (x_guy.getColumnDimension() > 2) {
-                        x_guy.set(0, 2, experience);
-                    }
-
-                    Jama.Matrix compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
-                    double estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0, 0);
-                    expSeriesBlack.add(experience, (estimatedLogWage));
-
-                    z_guy.set(0, 4, 0.0); // white
-                    compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
-                    estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0, 0);
-                    expSeriesWhite.add(experience, (estimatedLogWage));
-                }
-                expCollection.addSeries(expSeriesBlack);
-                expCollection.addSeries(expSeriesWhite);
-
-                XYSeriesCollection eduCollection = new XYSeriesCollection();
-                for (int education = 8; education <= 18; education++) {
-                    double black = 1;
-                    double[][] demographics = {{1, education, 8, 0, black, 1, 0, 1, 0, 12, 12, 0, 0, 0, 1, 0}};
-                    Jama.Matrix z_guy = new Jama.Matrix(demographics, 1, mySpecification.getZ().getColumnDimension());
-                    // pmUtility.prettyPrint(z_guy);
-                    Jama.Matrix x_guy = testX.getMatrix(0, 0, 0, testX.getColumnDimension() - 1);
-                    if (x_guy.getColumnDimension() > 1) {
-                        x_guy.set(0, 1, education);
-                    }
-                    if (x_guy.getColumnDimension() > 2) {
-                        x_guy.set(0, 2, 8);
-                    }
-                    Jama.Matrix compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
-                    double estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0, 0);
-                    eduSeriesBlack.add(education, (estimatedLogWage));
-
-                    z_guy.set(0, 4, 0.0); // white
-                    compositeEstimatedBetaGuy = myForest.getEstimatedParameterForest(z_guy);
-                    estimatedLogWage = (x_guy.times(compositeEstimatedBetaGuy)).get(0, 0);
-                    eduSeriesWhite.add(education, (estimatedLogWage));
-                }
-                eduCollection.addSeries(eduSeriesBlack);
-                eduCollection.addSeries(eduSeriesWhite);
-
-                JFreeChart chart = ChartFactory.createXYLineChart("Experience and Wages", "Experience", "Wages", expCollection);
-                NumberAxis axis = (NumberAxis) chart.getXYPlot().getRangeAxis();
-                axis.setAutoRangeIncludesZero(false);
-                ChartPanel panel = new ChartPanel(chart);
-                f.getContentPane().add(panel, BorderLayout.CENTER);
-                f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                f.setVisible(true);
-
-                JFrame f2 = new JFrame("Plots");
-                f2.setBounds(900, 100, 800, 800);
-                f2.getContentPane().setLayout(new BorderLayout());
-                JFreeChart chart2 = ChartFactory.createXYLineChart("Education and Wages", "Education", "Wages", eduCollection);
-                NumberAxis axis2 = (NumberAxis) chart2.getXYPlot().getRangeAxis();
-                axis2.setAutoRangeIncludesZero(false);
-                ChartPanel panel2 = new ChartPanel(chart2);
-                f2.getContentPane().add(panel2, BorderLayout.CENTER);
-                f2.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-                f2.setVisible(true);
-            }
+     
         }
 
         public void outputInSampleFits() {
