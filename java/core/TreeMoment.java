@@ -847,21 +847,27 @@ public class TreeMoment {
             ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
 
             for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
-                DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
-                // WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
-                double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
-                testValues[k] = dm2;
-                double pval = 1.0 - chi.cumulative(dm2);
-                if (verbose) {
-                    System.out.println("p-value: " + pval);
-                }
-                pList.add(new PValue(k, pval));
-                constrainedParameterList.add(new PValue(k, big.getValueConstrainedParameter()));
-                if (dm2 < chi.inverse(0.95)) {
-                    if (verbose) {
-                        System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k + " constrained parameter guess: " + big.getValueConstrainedParameter());
-                    }
-                }
+            	try {
+	                DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
+	                // WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
+	                double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
+	                testValues[k] = dm2;
+	                double pval = 1.0 - chi.cumulative(dm2);
+	                if (verbose) {
+	                    System.out.println("p-value: " + pval);
+	                }
+	                pList.add(new PValue(k, pval));
+	                constrainedParameterList.add(new PValue(k, big.getValueConstrainedParameter()));
+	                if (dm2 < chi.inverse(0.95)) {
+	                    if (verbose) {
+	                        System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k + " constrained parameter guess: " + big.getValueConstrainedParameter());
+	                    }
+	                }
+            	} catch (IllegalStateException e) {
+            	    System.out.println("TreeMoment invalid due to matrix singularity");
+            	    validTree = false;
+            	    return;
+            	}
             }
 
             // now sort the p-values from lowest to highest

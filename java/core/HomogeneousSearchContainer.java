@@ -93,19 +93,19 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             typsiz[i] = 1.0;
         }
 
-        double[] fscale = {0, 1.0E-8};
-        int[] method = {0, 1};
+        double[] fscale = {0, 1.0}; //was {0, 1.0E-8}
+        int[] method = {0, 2}; //was {0, 1} (Newton), now BFGS
         int[] iexp = {0, 0};
-        int[] msg = {0, 0};
+        int[] msg = {0, 1};
         int[] ndigit = {0, 8};
-        int[] itnlim = {0, 150};
+        int[] itnlim = {0, 300};
         int[] iagflg = {0, 0};
         int[] iahflg = {0, 0};
         double[] dlt = {0, 1};
-        double[] gradtl = {0, 1E-8};
-        double[] stepmx = {0, 1E8}; // size of maximum step (default is 1E8! Making this MUCH smaller to prevent this thing from blowing up into outer space)
-        double[] steptl = {0, 1E-8};
-
+        double[] gradtl = {0, 1E-6}; //was {0, 1.0E-8}
+        double[] stepmx = {0, 1E6}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
+        double[] steptl = {0, 1E-6}; //was {0, 1.0E-8}
+        
         if (numHomogeneousParametersToSearchOver == 1) {
             // just use the number passed from the legit optimizer that already did all the work in detecting the parameter
             xpls[1] = guess[1];

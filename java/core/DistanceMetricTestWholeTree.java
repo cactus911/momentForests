@@ -105,18 +105,18 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             typsiz[i] = 1.0;
         }
 
-        double[] fscale = {0, 1.0E-8};
-        int[] method = {0, 1};
+        double[] fscale = {0, 1.0}; //was {0, 1.0E-8}
+        int[] method = {0, 2}; //was {0, 1} (Newton), now BFGS
         int[] iexp = {0, 0};
         int[] msg = {0, 1};
         int[] ndigit = {0, 8};
-        int[] itnlim = {0, 150};
+        int[] itnlim = {0, 300};
         int[] iagflg = {0, 0};
         int[] iahflg = {0, 0};
         double[] dlt = {0, 1};
-        double[] gradtl = {0, 1E-8};
-        double[] stepmx = {0, 1E8}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
-        double[] steptl = {0, 1E-8};
+        double[] gradtl = {0, 1E-6}; //was {0, 1.0E-8}
+        double[] stepmx = {0, 1E6}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
+        double[] steptl = {0, 1E-6}; //was {0, 1.0E-8}
 
         int xCounter = 0;
         boolean first = true;
@@ -210,6 +210,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         }
 
         boolean useOptimalTwoStepWeightingMatrix = true;
+        /*
         if (useOptimalTwoStepWeightingMatrix) {
             for (int i = 0; i < 2; i++) {
                 // with optimal weighting matrix (Step 2)
@@ -226,6 +227,22 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
                 //pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
                 System.arraycopy(xpls, 0, guess, 0, guess.length);
             }
+        }*/
+        if (useOptimalTwoStepWeightingMatrix) {
+        	//System.out.println("Starting first stage");
+        	omegaInverse = Jama.Matrix.identity(numMoments, numMoments);
+        	minimizer = new Uncmin_f77(false);
+        	method[1] = 1;
+        	minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        	System.arraycopy(xpls, 0, guess, 0, guess.length);
+        	//System.out.println("Finished first stage");
+        	
+        	//System.out.println("Starting second stage");
+        	minimizer = new Uncmin_f77(false);
+        	omegaInverse = computeOptimalOmegaInverse(xpls);
+        	method[1] = 2;
+        	minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+        	//System.out.println("Finished second stage");
         }
 
         return xpls;
@@ -431,7 +448,14 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
                 ggprime_lens.plusEquals(leafGi.times(leafGi.transpose()));
             }
             
-            Jama.Matrix ggprime_lens_inverse = ggprime_lens.inverse();
+            Jama.Matrix ggprime_lens_inverse;
+            try {
+                ggprime_lens_inverse = ggprime_lens.inverse();
+            } catch (RuntimeException e) {
+                throw new IllegalStateException(
+                    "Singular matrix encountered in DistanceMetricTestWholeTree.computeOptimalOmegaInverse", e
+                );
+            }
             
             for (int i = 0; i < spec.getNumMoments(); i++) {
                 for (int j = 0; j < spec.getNumMoments(); j++) {

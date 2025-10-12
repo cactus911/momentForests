@@ -382,9 +382,9 @@ public class CardMain {
 
         SFIToolkit.displayln("Out of sample SSE: " + outOfSampleFit);
         SFIToolkit.displayln("Number of trees in forest: " + numberTreesInForest);
-
+        
         double[] countVariableSplitsInForest = fitStats.getSplitVariables();
-        SFIToolkit.displayln("Number of split variables: " + countVariableSplitsInForest.length);
+        //SFIToolkit.displayln("Number of split variables: " + countVariableSplitsInForest.length);
 
         SFIToolkit.displayln("Forest split on the following variables:");
         for (int i = 0; i < countVariableSplitsInForest.length; i++) {
