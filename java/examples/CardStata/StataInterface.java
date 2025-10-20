@@ -223,7 +223,13 @@ public class StataInterface {
                     }
                 }
             }
-
+            
+            // Optional: testing for homogeneity
+            if (opts.containsKey("testhomogeneity")) {
+                boolean doDetectHomogeneity = Boolean.parseBoolean(opts.get("testhomogeneity"));
+                spec.setDetectHomogeneity(doDetectHomogeneity);
+            }
+            
             // Optional: cross-validation flag
             if (opts.containsKey("cv")) {
                 boolean doCV = Boolean.parseBoolean(opts.get("cv"));

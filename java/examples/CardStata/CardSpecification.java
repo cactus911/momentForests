@@ -55,6 +55,7 @@ public class CardSpecification implements MomentSpecification {
     //Map<String, Map<Integer, String>> valueLabels = new HashMap<>();
     boolean failedEstimator = false;
     int numTrees = 100;
+    boolean detectHomogeneity = true;
     boolean crossValidation = true;
     List<Integer> cvGridMinLeaf;
     List<Double> cvGridMinImprovement;
@@ -298,7 +299,15 @@ public class CardSpecification implements MomentSpecification {
 //        return String.format("%.2f (%.2f) %s", b, se, stars);
         return pmUtility.stringPrettyPrintVector(beta);
     }
+      
+    public void setDetectHomogeneity(boolean b) {
+        this.detectHomogeneity = b;
+    }
 
+    public boolean doDetectHomogeneity() {
+        return this.detectHomogeneity;
+    }
+    
     /**
      * @return the homogeneityIndex
      */
@@ -324,7 +333,7 @@ public class CardSpecification implements MomentSpecification {
     public Jama.Matrix getHomogeneousParameterVector() {
         return homogeneousParameterVector;
     }
-
+    
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
         return new ContainerCard(lens, homogeneityIndex, homogeneousParameterVector, false, this);
