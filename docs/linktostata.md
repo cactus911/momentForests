@@ -89,7 +89,43 @@ Z : observables that are a source of heterogeneity in the effects of X on Y
 
 ## IV. Monte Carlo simulations
 
-This section works through the Monte Carlo simulations in the paper.
+This section works through the Monte Carlo simulations in the paper. Consider the following linear model:  
+
+$$
+Y = X'\beta(Z) + \epsilon.
+$$
+
+Let $X = \{X_1, X_2\}$, where $X_1$ is a vector of ones, $X_2 \sim N(0,2)$, and $\epsilon$ is an idiosyncratic error term that is distributed as a standard normal. Let $Z = \{Z_1, Z_2, Z_3 \}$, with $Z_1 \sim N(0,1)$, $Z_2 \sim U[0,1]$, and $Z_3$ is a discrete variable taking on two values (1,2) with probability (0.3,0.7). There are four sample sizes, $n \in$ {500, 1000, 2000, 4000}, and three different $\beta(Z)$ corresponding to the cases of no parameter heterogeneity, heterogeneity in only one dimension of $X$, and heterogeneity in both dimensions of $X$. For each configuration, the code contrast the performance of the estimator against the unrestricted model where no parameters are identified as being universally homogeneous. Each Monte Carlo experiment is repeated 500 times to obtain distributions of the statistics of interest.
+
+The estimator faces several simultaneous challenges: first, the moment forest has to correctly classify which components of $Z$ best improve the fit of the model without overfitting. Second, given those splits, it has to consistently estimate the parameters that best match the empirical moments. Third, it has to correctly classify and estimate parameters that are restricted to be homogeneous across the state space. Errors in one stage directly lead to errors in the other stages, so this is a good test of how each of the stages of the estimator work separately and in conjunction.
+
+To test these three stages, we simulate three scenarios. First, we consider a fully heterogeneous parameter specification:  
+
+$$
+\beta(Z) =
+\begin{cases}
+    (-1.0, 1.0) & \text{ if } Z_1 > 0 \\
+    (0.33, -1.0) & \text{ else.}
+\end{cases}
+$$
+
+In the second scenario, we restrict one of the parameters to be homogeneous across the state space:  
+
+$$
+\beta(Z) =
+\begin{cases}
+    (-1.0, 1.0) & \text{ if } Z_1 > 0 \\
+    (-1.0, -1.0) & \text{ else.}
+\end{cases}
+$$
+
+And in the third case, we fix parameters to be homogeneous everywhere:  
+
+$$
+\beta(Z) = (-1.0, 1.0).
+$$
+
+
 
 [back](./index.md)
 
