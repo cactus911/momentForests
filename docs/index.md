@@ -36,14 +36,14 @@ In our theory, we prove several useful theoretical properties of moment forests.
 
 The java source code is contained in two separate folders on the Github repository: [jars and java](https://github.com/cactus911/momentForests) 
 
-Jar files are various helper utilities, and their license information is as follows.
+Jar files are various helper utilities, and their license information is as follows:
 
-Jama-1.0.3.jar is in the public domain and is from https://math.nist.gov/javanumerics/jama/  
-optimization.jar is in the public domain and is from https://github.com/rwl/optimization and http://www1.fpl.fs.fed.us/optimization.html  
-itext-1.3.jar is in the public domain and is from https://sourceforge.net/projects/itext/  
-jfreechart-1.0.19.jar is in the public domain and is from https://sourceforge.net/projects/jfreechart/files/1.%20JFreeChart/1.0.19/  
-jsci-core.jar is in the public domain and is from http://jsci.sourceforge.net/  
-utility.jar and momentforests.jar are written by us for this project.
+1. Jama-1.0.3.jar is in the public domain and is from https://math.nist.gov/javanumerics/jama/  
+2. optimization.jar is in the public domain and is from https://github.com/rwl/optimization and http://www1.fpl.fs.fed.us/optimization.html  
+3. itext-1.3.jar is in the public domain and is from https://sourceforge.net/projects/itext/  
+4. jfreechart-1.0.19.jar is in the public domain and is from https://sourceforge.net/projects/jfreechart/files/1.%20JFreeChart/1.0.19/  
+5. jsci-core.jar is in the public domain and is from http://jsci.sourceforge.net/  
+6. utility.jar and momentforests.jar are written by us for this project.
 
 ### Link to STATA and worked example
 
