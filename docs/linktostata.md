@@ -54,8 +54,8 @@ X : explanatory variables that have a direct effect on the outcome variable
 Z : observables that are a source of heterogeneity in the effects of X on Y
 
 ### Syntax
-`momentforest y [x] [if] [in] [, options]`
-
+<!-- `momentforest y [x] [if] [in] [, options]` -->
+`momentforest y x [, options]`
 <br>
 
 | Options | Description |
