@@ -74,7 +74,7 @@ Z : observables that are a source of heterogeneity in the effects of X on Y
 | `testhomogeneity(string)` | Flag for whether the moment forest should test for homogeneity. Default is `true`. |
 | `cv(string)` | Flag for whether the moment forest should perform cross-validation. If `cv(true)` is used, you must also supply all three `cvgrid()` options below. |
 | `cvgridminleaf(string)` | Space-separated values for the minimum leaf size grid (e.g., `5 10 20`). Only allowed when `cv(true)` is set. If `cv()` is false, default is `25`. |
-| `cvgridminimp(string)` | Space-separated values for the minimum MSE improvement grid for a split (e.g., `0.0 1e-4 1e-3`). Only allowed when `cv(true)` is set. If `cv()` is false, default is `0.1`. |
+| `cvgridminimp(string)` | Space-separated values for the minimum MSE improvement grid for a split (e.g., `0.1 1 10`). Only allowed when `cv(true)` is set. If `cv()` is false, default is `0.1`. |
 | `cvgridmaxdepth(string)` | Space-separated values for the maximum tree depth grid (e.g., `3 4 5 6`). Only allowed when `cv(true)` is set. If `cv()` is false, default is `5`. |
 | `gen(string)` | Stub for names of generated parameter-estimate variables. |
 
