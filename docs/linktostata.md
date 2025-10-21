@@ -3,13 +3,13 @@
 <br>
 ## I. Components
 
-The source code is organized into two main directories: [jars and java](https://github.com/cactus911/momentForests)
+The source code is organized into two main directories: [jars and for_Stata](https://github.com/cactus911/momentForests). The most recent and actively updated files are available in the Refactor branch of the repository.
 
-The `jars` folder contains supporting Java utilities, the compiled `momentforests.jar` file (built from the Java source code), and a Stata .ado file for integration with Stata.
+1. The `jars` folder contains supporting Java utilities, including the compiled `momentforests.jar` file (built from the Java source code).
 
-The `java` folder includes all Java source files that implement the Moment Forests framework. Within this folder, the `core` subdirectory contains general-purpose components applicable to a wide range of applications, while the `examples` subdirectory holds application-specific files, including the example implementation of Card (1995) in Stata.
+2. The `for_Stata` folder contains the Stata .ado file necessary for moment forest integration with Stata. It also contains the code to replicate the Monte Carlo exercises and the implementation of Card (1995) described in the sections below.
 
-The most recent and actively updated files are available in the Refactor branch of the repository.
+In addition, the `java` folder includes all Java source files that implement the Moment Forests framework. Within this folder, the `core` subdirectory contains general-purpose components applicable to a wide range of applications, while the `examples` subdirectory holds application-specific files.
 
 ## II. How to run Moment Forests on Stata
 
