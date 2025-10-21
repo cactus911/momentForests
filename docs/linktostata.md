@@ -60,7 +60,6 @@ Z : observables that are a source of heterogeneity in the effects of X on Y
 ### Syntax
 <!-- `momentforest y [x] [if] [in] [, options]` -->
 `momentforest y x [, options]`
-<br>
 
 | **Option** | **Description** |
 |:--|:--|
@@ -68,18 +67,16 @@ Z : observables that are a source of heterogeneity in the effects of X on Y
 | `z(varlist)` | List of variables in Z. |
 | `numtrees(integer)` | Number of trees in the moment forest. |
 | `seed(integer)` | Random-number seed. |
-|  |  |
 | **Optional** |  |
 | `discretevars(varlist)` | Variables in Z that are treated as discrete. |
 | `strata(varlist)` | One or more stratification variables in Z for stratified random sampling. |
-| `propstructure(string)` | Proportion of observations used to estimate the structure of the trees. Default is 0.35.|
-| `testhomogeneity(string)` | Flag for whether the moment forest should test for homogeneity. Default is true. |
+| `propstructure(string)` | Proportion of observations used to estimate the structure of the trees. Default is `0.35`. |
+| `testhomogeneity(string)` | Flag for whether the moment forest should test for homogeneity. Default is `true`. |
 | `cv(string)` | Flag for whether the moment forest should perform cross-validation. If `cv(true)` is used, you must also supply all three `cvgrid()` options below. |
-| `cvgridminleaf(string)` | Space-separated values for the minimum leaf size grid (e.g., `5 10 20`). Only allowed when `cv(true)` is set. If `cv()` is false, default is 25.|
-| `cvgridminimp(string)` | Space-separated values for the minimum MSE improvement grid for a split (e.g., `0.0 1e-4 1e-3`). Only allowed when `cv(true)` is set. If `cv()` is false, default is 0.1.|
-| `cvgridmaxdepth(string)` | Space-separated values for the maximum tree depth grid (e.g., `3 4 5 6`). Only allowed when `cv(true)` is set. If `cv()` is false, default is 5.|
+| `cvgridminleaf(string)` | Space-separated values for the minimum leaf size grid (e.g., `5 10 20`). Only allowed when `cv(true)` is set. If `cv()` is false, default is `25`. |
+| `cvgridminimp(string)` | Space-separated values for the minimum MSE improvement grid for a split (e.g., `0.0 1e-4 1e-3`). Only allowed when `cv(true)` is set. If `cv()` is false, default is `0.1`. |
+| `cvgridmaxdepth(string)` | Space-separated values for the maximum tree depth grid (e.g., `3 4 5 6`). Only allowed when `cv(true)` is set. If `cv()` is false, default is `5`. |
 | `gen(string)` | Stub for names of generated parameter-estimate variables. |
-<br>
 
 [back](./index.md)
 
