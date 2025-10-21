@@ -3,11 +3,13 @@
 <br>
 ## I. Components
 
-The codes are grouped into two directories: [jars and java](https://github.com/cactus911/momentForests)
+The source code is organized into two main directories: [jars and java](https://github.com/cactus911/momentForests)
 
-Folder “jars” contains relevant java utilities, the moment forest jar file compiled from the Moment Forests java files, and a Stata ado file. 
-Folder “java” contains all the java source codes that implement moment forests. The common components that can be applied to any appliations are stored in the subdirectory "core", while specific application files including the Card (1995) example are in the subdirectory "examples".
+The `jars` folder contains supporting Java utilities, the compiled `momentforests.jar` file (built from the Java source code), and a Stata .ado file for integration with Stata.
 
+The `java` folder includes all Java source files that implement the Moment Forests framework. Within this folder, the `core` subdirectory contains general-purpose components applicable to a wide range of applications, while the `examples` subdirectory holds application-specific files, including the example implementation of Card (1995) in Stata.
+
+The most recent and actively updated files are available in the Refactor branch of the repository.
 
 ## II. How to run Moment Forests on Stata
 
@@ -37,6 +39,8 @@ Download the STATA .do and .ado files from [“for_Stata”](https://github.com/
 
 Close then reopen Stata. Now you are ready to use Moment Forests on Stata!
 
+[back](./index.md)
+
 ## III. Stata command “momentforest”
 
 {% comment %} 
@@ -58,24 +62,26 @@ Z : observables that are a source of heterogeneity in the effects of X on Y
 `momentforest y x [, options]`
 <br>
 
-| Options | Description |
-|:-----------|:------------|
-| | Required |
-| `z(varlist)` | list of variables in Z | 
-| `numtrees(#)` | number of trees in the moment forest | 
-| `cv(boolean)` | `false` = do not perform cross-validation for hyper-parameters, `true` = do perform cross-validation for hyper-parameters |
-| `gen(stub)` | stub for variables names of parameter estimates | 
-| |
-| | Optional | 
-| `cvgridminleaf(range)` | grid search for the minimum number of observations in each leaf | 
-| `cvgridminimp(range)` | grid search for the minimum MSE improvement for a split | 
-| `cvgridmaxdepth(range)` | grid search for the maximum depth of a tree | 
-| `discretevars(varlist)` | list of variables in Z that are discrete |
-| `strata(varname)` | stratification variable for stratified random sampling  |
-
+| **Option** | **Description** |
+|:--|:--|
+| **Required** |  |
+| `z(varlist)` | List of variables in Z. |
+| `numtrees(integer)` | Number of trees in the moment forest. |
+| `seed(integer)` | Random-number seed. |
+|  |  |
+| **Optional** |  |
+| `discretevars(varlist)` | Variables in Z that are treated as discrete. |
+| `strata(varlist)` | One or more stratification variables in Z for stratified random sampling. |
+| `propstructure(string)` | Proportion of observations used to estimate the structure of the trees. Default is 0.35.|
+| `testhomogeneity(string)` | Flag for whether the moment forest should test for homogeneity. Default is true. |
+| `cv(string)` | Flag for whether the moment forest should perform cross-validation. If `cv(true)` is used, you must also supply all three `cvgrid()` options below. |
+| `cvgridminleaf(string)` | Space-separated values for the minimum leaf size grid (e.g., `5 10 20`). Only allowed when `cv(true)` is set. If `cv()` is false, default is 25.|
+| `cvgridminimp(string)` | Space-separated values for the minimum MSE improvement grid for a split (e.g., `0.0 1e-4 1e-3`). Only allowed when `cv(true)` is set. If `cv()` is false, default is 0.1.|
+| `cvgridmaxdepth(string)` | Space-separated values for the maximum tree depth grid (e.g., `3 4 5 6`). Only allowed when `cv(true)` is set. If `cv()` is false, default is 5.|
+| `gen(string)` | Stub for names of generated parameter-estimate variables. |
 <br>
-[back](./index.md)
 
+[back](./index.md)
 
 
 {% comment %} 
@@ -86,8 +92,12 @@ Z : observables that are a source of heterogeneity in the effects of X on Y
 
 ## IV. Monte Carlo simulations
 
-This section works through the Monte Carlo simulations in the paper
+This section works through the Monte Carlo simulations in the paper.
+
+[back](./index.md)
 
 ## V. Worked example
 
-This section works through Card (1995)
+This section works through Card (1995).
+
+[back](./index.md)
