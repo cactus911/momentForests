@@ -52,6 +52,8 @@ public class LinearMomentSpecification implements MomentSpecification {
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean MONTE_CARLO = true;
+    
+    boolean failedEstimatorIndicator = false;
 
     int dimensionX;
 
@@ -161,6 +163,7 @@ public class LinearMomentSpecification implements MomentSpecification {
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
         ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
         l.computeBetaAndErrors();
+        failedEstimatorIndicator = l.didEstimatorFail();
         return l;
     }
 
@@ -196,7 +199,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         beta.set(0, 0, -1);
         beta.set(1, 0, 1.0);
 
-        boolean partiallyLinearModel = true;
+        boolean partiallyLinearModel = false;
         if (partiallyLinearModel) {
             // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
             beta.set(0, 0, 2.5 * Math.sin(zi.get(0, 0)) + 0.25 * Math.pow(zi.get(0, 0), 2));
@@ -208,7 +211,7 @@ public class LinearMomentSpecification implements MomentSpecification {
             return beta;
         }
 
-        boolean oneDimensionHeterogeneity = false;
+        boolean oneDimensionHeterogeneity = true;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
                 beta.set(1, 0, -1.0);
@@ -390,6 +393,26 @@ public class LinearMomentSpecification implements MomentSpecification {
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
         return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false);
+    }
+
+    @Override
+    public double getProportionObservationsToEstimateTreeStructure() {
+        return 0.35;
+    }
+
+    @Override
+    public boolean didEstimatorFail() {
+        return failedEstimatorIndicator;
+    }
+
+    @Override
+    public int[] getStratificationIndex() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public String getBetaPrefixes() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 }

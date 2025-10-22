@@ -53,6 +53,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     boolean[] homogeneityIndex;
     Jama.Matrix homogeneityParameters;
     boolean allParametersHomogeneous;
+    boolean failedEstimation = false;
 
     public ContainerLinear(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous) {
         this.lens = lens;
@@ -412,6 +413,10 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     @Override
     public double getGoodnessOfFit() {
         return goodnessOfFit;
+    }
+    
+    public boolean didEstimatorFail() {
+        return failedEstimation;
     }
 
     @Override
