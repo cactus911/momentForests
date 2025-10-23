@@ -819,6 +819,7 @@ public class TreeMoment {
      * @return Double array of critical values (to average them and see if that works to improve power?)
      */
     public void testHomogeneity() {
+        // verbose = true;
         //System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);

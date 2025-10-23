@@ -102,10 +102,13 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 1;
+        int numMonteCarlos = 5;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 8000; numObs <= 8000; numObs *= 2) {
+            for (int numObs = 500; numObs <= 2000; numObs *= 2) {
+                System.out.println("-----------------------");
+                System.out.println(" numObs = " + numObs);
+                System.out.println("-----------------------");
 
                 double YMSE_unrestricted = 0;
                 double YMSE_SD_unrestricted = 0;
@@ -135,10 +138,10 @@ public class LinearTestMain {
                     // boolean detectHomogeneity = !true;
                     if (detectHomogeneity) {
                         jam = jt1;
-                        jam.append("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
+                        System.out.println("***** ESTIMATING HOMOGENEOUS PARAMETERS *****\n");
                     } else {
                         jam = jt2;
-                        jam.append("***** UNRESTRICTED MODEL *****\n");
+                        System.out.println("***** UNRESTRICTED MODEL *****\n");
                     }
                     jam.append("\\\\ \n");
 
@@ -340,7 +343,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 50;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -353,9 +356,8 @@ public class LinearTestMain {
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
         boolean verbose = false;
         if (numberTreesInForest == 1) {
-            verbose = !true;
+            verbose = false;
         }
-        boolean testParameterHomogeneity;
 
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
@@ -380,40 +382,54 @@ public class LinearTestMain {
             }
 
             // for (int minObservationsPerLeaf = numObs/10; minObservationsPerLeaf <= 4 * numObs/10; minObservationsPerLeaf *= 2) {
-            for (int minObservationsPerLeaf = 2; minObservationsPerLeaf <= 2; minObservationsPerLeaf *= 2) {
-                // for (double minImprovement = 0.1; minImprovement <= 10.0; minImprovement *= 10) {
-                double[] improvementLevels = {10.0}; // {1,2,5,10}; // , 10, 20, 50}; // 0.1, 0.5, 1.0}; // {1, 5, 10, 20}; // , 10.0, 20.0};
-                for (double minImprovement : improvementLevels) {
-                    // for (int maxDepth = Math.min(5, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 0; maxDepth--) {
-                    for (int maxDepth = 1; maxDepth >= 0; maxDepth--) {
+            for (int imposeTruth = 1; imposeTruth <= 1; imposeTruth++) {
+                mySpecification.resetHomogeneityIndex();
+                if (imposeTruth == 0 && !detectHomogeneity) {
+                    // just to make sure that this is working 100%, I should run an oracle
+                    // test to see how well it does if I spot it the correct homogeneous
+                    // parameter                    
+                    mySpecification.setHomogeneousIndex(1);
+                    mySpecification.setHomogeneousParameter(1, 1.0); 
+                } else {
+                    first = true; // don't want to record the infeasible CV parameters
+                }
+                if (detectHomogeneity) {
+                    imposeTruth = 1;
+                }
 
-                        mySpecification.resetHomogeneityIndex();
-                        if (detectHomogeneity) {
-                            executeHomogeneousParameterClassificationAndSearch(mySpecification, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
-                        }
-                        computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
-                        double combinationMSE = outOfSampleYMSE;
-                        String star = "";
-                        if (combinationMSE <= lowestSSE || first) {
-                            lowestSSE = combinationMSE;
-                            first = false;
-                            bestMinImprovement = minImprovement;
-                            bestMinObservationsPerLeaf = minObservationsPerLeaf;
-                            bestMaxDepth = maxDepth;
-                            star = "(*)";
-                        }
-                        if (star.contains("*") || 1 == 1) {
-                            System.out.println(monteCarloIndex + ". minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
+                for (int minObservationsPerLeaf = 2; minObservationsPerLeaf <= 2; minObservationsPerLeaf *= 2) {
+                    // for (double minImprovement = 0.1; minImprovement <= 10.0; minImprovement *= 10) {
+                    double[] improvementLevels = {1}; // ,2,5,10}; // , 10, 20, 50}; // 0.1, 0.5, 1.0}; // {1, 5, 10, 20}; // , 10.0, 20.0};
+                    for (double minImprovement : improvementLevels) {
+                        // for (int maxDepth = Math.min(5, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 0; maxDepth--) {
+                        for (int maxDepth = 5; maxDepth >= 0; maxDepth--) {
+                            if (detectHomogeneity && maxDepth > 0 && imposeTruth == 1) {
+                                executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
+                            }
+                            computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample);
+                            double combinationMSE = outOfSampleYMSE;
+                            String star = "";
+                            if (combinationMSE <= lowestSSE || first) {
+                                lowestSSE = combinationMSE;
+                                first = false;
+                                bestMinImprovement = minImprovement;
+                                bestMinObservationsPerLeaf = minObservationsPerLeaf;
+                                bestMaxDepth = maxDepth;
+                                star = "(*)";
+                            }
+                            if (star.contains("*") || 1 == 1) {
+                                System.out.println(monteCarloIndex + ". minMSE: " + minImprovement + " minObs: " + minObservationsPerLeaf + " maxDepth: " + maxDepth + " Out-of-sample MSE: " + combinationMSE + " " + star);
+                            }
                         }
                     }
                 }
+                String cheatedString = "[UNRESTRICTED] ";
+                if (imposeTruth == 0) {
+                    cheatedString = "[ORACLE]       ";
+                }
+                System.out.println(cheatedString + " Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             }
-
-            System.out.println("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth);
             // jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth+"\n");
-            if (numberTreesInForest == 10) {
-                // jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth + "\n");
-            }
         } else {
             bestMinObservationsPerLeaf = 50;
             bestMinImprovement = 10;
@@ -430,30 +446,32 @@ public class LinearTestMain {
                 bestMaxDepth = 6;
             }
 
-            bestMinObservationsPerLeaf = 50;
+            bestMinObservationsPerLeaf = 2;
             bestMinImprovement = 10.0;
-            bestMaxDepth = 1;
+            bestMaxDepth = 3;
         }
 
         /**
          * Compute out-of-sample measures of fit
          */
         System.out.println("Computing final trees...");
-        numberTreesInForest = 1; // using larger numbers here really improves fit!
+        // numberTreesInForest = 10; // using larger numbers here really improves fit!
         verbose = false;
-        
-        if(detectHomogeneity) {
-            mySpecification.resetHomogeneityIndex();
-            executeHomogeneousParameterClassificationAndSearch(mySpecification, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
-        }        
+
+        mySpecification.resetHomogeneityIndex();
+        if (detectHomogeneity && bestMaxDepth > 0) {
+            executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
+        }
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
         System.out.println("Final out-of-sample MSE in Y: " + outOfSampleYMSE);
         System.out.println("Finished execute.");
+
     }
 
-    private void executeHomogeneousParameterClassificationAndSearch(MomentSpecification mySpecification, boolean verbose,
+    private void executeHomogeneousParameterClassificationAndSearch(MomentSpecification mySpecification, int numberTreesInForest, boolean verbose,
             int minObservationsPerLeaf, double minImprovement, int maxDepth, long rngBaseSeedMomentForest, long rngBaseSeedOutOfSample) {
+        mySpecification.resetHomogeneityIndex();
         if (verbose) {
             System.out.println("************************");
             System.out.println("* Test for Homogeneity *");
@@ -464,17 +482,15 @@ public class LinearTestMain {
          */
         double minProportionInEachLeaf = 0.01;
 
-        int numberTreesInForest = 1;
-
         DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
         boolean testParameterHomogeneity = false;
         TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, minObservationsPerLeaf, minImprovement, maxDepth, testParameterHomogeneity); // k = 1
         MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
         myForest.setTreeOptions(cvOptions);
-        System.out.println("Growing forest for homogeneity testing...");
+        // System.out.println("Growing forest for homogeneity testing...");
         myForest.growForest();
-        System.out.println("----- Call to testHomogeneity -----");
+        // System.out.println("----- Call to testHomogeneity -----");
         myForest.testHomogeneity();
 
         ArrayList<Integer> hpl = new ArrayList<>();
@@ -507,39 +523,27 @@ public class LinearTestMain {
             mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
             // System.out.println(i);
         }
-        System.out.println(hpl);
+        // System.out.println(hpl);
         setHomogeneousParameterList(hpl);
 
         boolean executeSearch = true;
         /**
          * Estimate values of homogeneous parameters
          */
-        boolean cheatToVerifyWorking = false;
-        if (cheatToVerifyWorking) {
-            // this is here to verify that the code is working in that we should get a lower OOS MSE when the truth is imposed (it works)
-            hpl.clear();
-            hpl.add(1);
-            // hpl.add(1);
-            mySpecification.resetHomogeneityIndex();
-            mySpecification.setHomogeneousIndex(0);
-            mySpecification.setHomogeneousParameter(0, -1.0);
-            // mySpecification.setHomogeneousIndex(1);
-            // mySpecification.setHomogeneousParameter(1, 1.0);
-            setEstimatedHomogeneousParameters(mySpecification.getHomogeneousParameterVector());
-        } else if (executeSearch) {
+        if (executeSearch) {
             if (!hpl.isEmpty()) {
-                System.out.println("Initializing search container");
+                // System.out.println("Initializing search container");
                 numberTreesInForest = 1;
                 HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, minImprovement, minObservationsPerLeaf, maxDepth,
                         getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
-                System.out.println("Calling execute search");
+                // System.out.println("Calling execute search");
 
                 // this runs the search and then sets the parameter values inside the specification
                 con.executeSearch();
 
-                System.out.println("Post search");
+                // System.out.println("Post search");
                 Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
-                if (verbose || 1 == 1) {
+                if (verbose || 1 == 1 && 1 == 2) {
                     System.out.print("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
                     jt.append("Post search: " + pmUtility.stringPrettyPrintVector(homogeneousParameters) + "\n");
                     pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
@@ -583,7 +587,7 @@ public class LinearTestMain {
                 Jama.Matrix xi = testX.getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
                 Jama.Matrix zi = testZ.getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
                 double nwEstimatorY = getNWEstimatorY(pmUtility.concatMatrix(xi, zi), mySpecification.getY(), mySpecification.getX(), mySpecification.getZ(), bandwidth);
-                if (i < -10) {
+                if (i < 10) {
                     System.out.println("y_i: " + testY.get(i, 0) + " yhat_i: " + nwEstimatorY + " x_i: " + pmUtility.stringPrettyPrint(xi) + " zi: " + pmUtility.stringPrettyPrint(zi));
                 }
                 bVal += Math.pow(testY.get(i, 0) - nwEstimatorY, 2);

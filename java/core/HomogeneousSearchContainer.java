@@ -60,7 +60,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
     public void executeSearch() {
         // System.out.println("Inside executeSearch");
 
-        Uncmin_f77 minimizer = new Uncmin_f77(true);
+        Uncmin_f77 minimizer = new Uncmin_f77(false);
 
         if (debug) {
             System.out.println("Number of parameters: " + numHomogeneousParametersToSearchOver);
