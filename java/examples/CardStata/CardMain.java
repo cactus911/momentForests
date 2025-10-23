@@ -53,6 +53,7 @@ import utility.pmUtility;
 
 import com.stata.sfi.Data;
 import com.stata.sfi.SFIToolkit;
+import com.stata.sfi.Macro;
 
 /**
  *
@@ -106,50 +107,26 @@ public class CardMain {
 
         int numberTreesInForest = spec.getNumTrees();
         double proportionObservationsToEstimateTreeStructure = spec.getProportionObservationsToEstimateTreeStructure();
+        boolean detectHomogeneity = spec.doDetectHomogeneity();
         // SFIToolkit.displayln("numTrees: " + numberTreesInForest);
 
         /*
          * Initialize the moment forest
          */
         boolean verbose = false;
-        boolean testParameterHomogeneity;
-
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
-
+        
         boolean runCV = spec.doCrossValidation();
         if (runCV) {
             SFIToolkit.displayln("****************************");
             SFIToolkit.displayln("* Running Cross-Validation *");
             SFIToolkit.displayln("****************************");
 
-            // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
             List<Integer> gridMinLeaf = spec.getCVGridMinLeaf();
             List<Double> gridMinImprovement = spec.getCVGridMinImprovement();
             List<Integer> gridMaxDepth = spec.getCVGridMaxDepth();
-            
-            /*
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.1; minImprovement <= 2.0; minImprovement *= 2) {
-                    for (int maxDepth = 7; maxDepth >= 1; maxDepth--) {
-                    	cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
-                    }
-                }
-            }
-            */
- 
-            SFIToolkit.displayln("Grid for minLeaf: " + gridMinLeaf.toString());
-            SFIToolkit.displayln("Grid for minImprovement: " + gridMinImprovement.toString());
-            SFIToolkit.displayln("Grid for maxDepth: " + gridMaxDepth.toString());
-
-            for (int minObservationsPerLeaf : gridMinLeaf) {
-                for (double minImprovement : gridMinImprovement) {
-                    for (int maxDepth : gridMaxDepth) {
-                    	cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
-                    }
-                }
-            }
             
             int[] stratIndices = mySpecification.getStratificationIndex();
             if (stratIndices != null && stratIndices.length > 0) {
@@ -163,10 +140,46 @@ public class CardMain {
             } else {
             	SFIToolkit.displayln("Splitting sample using simple random sampling.");
             }
+            
+            /*
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.1; minImprovement <= 2.0; minImprovement *= 2) {
+                    for (int maxDepth = 7; maxDepth >= 1; maxDepth--) {
+                    	cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
+                    }
+                }
+            }
+            */
+       
+            SFIToolkit.displayln("Grid for minLeaf: " + gridMinLeaf.toString());
+            SFIToolkit.displayln("Grid for minImprovement: " + gridMinImprovement.toString());
+            SFIToolkit.displayln("Grid for maxDepth: " + gridMaxDepth.toString());
+            SFIToolkit.displayln("Proportion of observations to estimate tree structure: " + proportionObservationsToEstimateTreeStructure);
+                             
+            for (int minObservationsPerLeaf : gridMinLeaf) {
+                for (double minImprovement : gridMinImprovement) {
+                    for (int maxDepth : gridMaxDepth) {
+                    	
+                    	
+                    	SFIToolkit.displayln("Parameters before detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));                	
+                    	mySpecification.resetHomogeneityIndex();
+                        if (detectHomogeneity) {
+                            executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
+                        }                      
+                        SFIToolkit.displayln("Parameters flags after detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));
+                        computeFitStatistics s = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false);
+                        s.computeOutOfSampleMSE();
+                        cvList.add(s);
+                    }
+                }
+            }
+            
+            /*
             cvList.parallelStream().forEach(s -> {
                 s.computeOutOfSampleMSE();
             });
-
+			*/
+                 
             for (computeFitStatistics s : cvList) {
                 double combinationMSE = s.getMSE();
                 String star = "";
@@ -204,123 +217,18 @@ public class CardMain {
             bestMinImprovement = 0.1;
             bestMaxDepth = 5;
         }
-        
-        mySpecification.resetHomogeneityIndex();
-        boolean detectHomogeneity = spec.doDetectHomogeneity();
+                           
         if (detectHomogeneity && bestMaxDepth > 0) {
-            SFIToolkit.displayln("***************************");
-            SFIToolkit.displayln("* Testing for Homogeneity *");
-            SFIToolkit.displayln("***************************");
-
-            /**
-             * Step 2: determine homogeneous parameters post-CV
-             */
-            double minProportionInEachLeaf = 0.01;
-
-            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
-
-            testParameterHomogeneity = true;
-            TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
-            MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
-
-            myForest.setTreeOptions(cvOptions);
-            myForest.growForest();
-
-            if (verbose) {
-                TreeMoment loblolly = myForest.getTree(0);
-                SFIToolkit.displayln("************************");
-                SFIToolkit.displayln("* Printing first tree  *");
-                SFIToolkit.displayln("************************");
-                loblolly.printTree();
-            }
-
-            myForest.testHomogeneity();
-
-            // loblolly.testHomogeneity();
-            // should I implement a voting scheme here across all the trees for discerning homogeneity?
-            // idea is to take the majority vote across trees
-            // then take the average value from those trees that voted yes
-            // let's try it and see what happens to classification rates
-            ArrayList<Integer> hpl = new ArrayList<>();
-            ArrayList<Double> hplStartingValues = new ArrayList<>();
-            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, true);
-            double[] startingValues = myForest.getHomogeneityStartingValues();
-            for (int i = 0; i < voteIndexHomogeneity.length; i++) {
-                if (voteIndexHomogeneity[i]) {
-                    SFIToolkit.displayln("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i]);
-                    hpl.add(i);
-                    hplStartingValues.add(startingValues[i]);
-                }
-            }
-
-            HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
-            sorter.sort(hpl, hplStartingValues);
-            mySpecification.resetHomogeneityIndex();
-            for (int i = 0; i < hpl.size(); i++) {
-                mySpecification.setHomogeneousIndex(hpl.get(i));
-                mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
-            }
-            setHomogeneousParameterList(hpl);
-            // SFIToolkit.displayln("After setting hp list");
-            // this seems to be working
-            boolean testPostClassificationConvergence = !true;
-            if (testPostClassificationConvergence) {
-                hpl.clear();
-                hpl.add(0);
-                mySpecification.resetHomogeneityIndex();
-                mySpecification.setHomogeneousIndex(0);
-                mySpecification.setHomogeneousParameter(0, -1.0);
-            }
-
-
-            /*
-             * Estimate values of those homogeneous parameters
-             */
-            if (!hpl.isEmpty()) {
-                if (hpl.size() == mySpecification.getNumParams()) {
-                    // all homogenous, don't need to optimize, just set to stump and let it run
-                    bestMaxDepth = 0;
-                } else {
-                    SFIToolkit.displayln("Initializing search container");
-                    numberTreesInForest = spec.getNumTrees(); // 10
-                    HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
-                            getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
-                    SFIToolkit.displayln("Calling execute search");
-                    con.executeSearch();
-                    SFIToolkit.displayln("Post search");
-                    Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
-                    SFIToolkit.display("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
-                    pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
-
-                    // pmUtility.prettyPrintVector(mySpecification.getHomogeneousParameterVector());
-                    // holy smokes we aren't setting the homogeneous parameters in mySpec to be what we found here???
-                    // doing so below, why wasn't this done before?!?!?
-                    int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
-                    SFIToolkit.displayln("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
-                    Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
-                    int counter = 0;
-                    for (int k = 0; k < K; k++) {
-                        if (mySpecification.getHomogeneousIndex()[k]) {
-                            expandedHomogeneousParameterVector.set(k, 0, homogeneousParameters.get(counter, 0));
-                            mySpecification.setHomogeneousParameter(k, homogeneousParameters.get(counter, 0));
-                            counter++;
-                        }
-                    }
-                    SFIToolkit.displayln("Specification homogeneous parameter vector: ");
-                    pmUtility.prettyPrintVector(mySpecification.getHomogeneousParameterVector());
-                    // System.exit(0);
-                    setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
-                }
-            }
+            executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, true);
         }
-
+        
         /**
          * Compute out-of-sample measures of fit (against Y, and true beta)
-         */
-        verbose = false;
+         */      
         SFIToolkit.displayln("*******************************************");
         SFIToolkit.displayln("* Computing out-of-sample measures of fit *");
         SFIToolkit.displayln("*******************************************");
+        
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
         fitStats.computeOutOfSampleMSE();
@@ -330,7 +238,9 @@ public class CardMain {
         SFIToolkit.displayln("Best minimum improvement: " + bestMinImprovement);
         SFIToolkit.displayln("Best maximum depth: " + bestMaxDepth);
 
-        SFIToolkit.displayln("Out of sample SSE: " + outOfSampleFit);
+        SFIToolkit.displayln("Out of sample SSE: " + String.format("%.10f", outOfSampleFit));
+        Macro.setLocal("mf_oos_fit", String.valueOf(outOfSampleFit));
+        
         SFIToolkit.displayln("Number of trees in forest: " + numberTreesInForest);
         
         double[] countVariableSplitsInForest = fitStats.getSplitVariables();
@@ -347,6 +257,107 @@ public class CardMain {
         }
         
         fitStats.outputInSampleFits();
+    }
+      
+    private void executeHomogeneousParameterClassificationAndSearch(MomentSpecification mySpecification, int numberTreesInForest, double minImprovement, int minObservationsPerLeaf, int maxDepth, long rngBaseSeedMomentForest, long rngBaseSeedOutOfSample, boolean verbose, boolean verboselast) {        	
+        
+    	if (verboselast) {
+        	SFIToolkit.displayln("***************************");
+            SFIToolkit.displayln("* Testing for Homogeneity *");
+            SFIToolkit.displayln("***************************");
+        }
+
+        double minProportionInEachLeaf = 0.01;
+
+        // Create forest over current specification
+        DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
+        TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, minObservationsPerLeaf, minImprovement, maxDepth, true); 
+        MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
+        
+        myForest.setTreeOptions(cvOptions);
+        myForest.growForest();
+            
+        if (verbose) {
+            TreeMoment loblolly = myForest.getTree(0);
+            SFIToolkit.displayln("************************");
+            SFIToolkit.displayln("* Printing first tree  *");
+            SFIToolkit.displayln("************************");
+            loblolly.printTree();
+        }
+           
+        myForest.testHomogeneity(verboselast);
+        
+        // Collect homogeneity votes and starting values
+        ArrayList<Integer> hpl = new ArrayList<>();
+        ArrayList<Double> hplStartingValues = new ArrayList<>();
+        boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, verboselast);
+        
+        double[] startingValues = myForest.getHomogeneityStartingValues();
+        for (int i = 0; i < voteIndexHomogeneity.length; i++) {
+            if (voteIndexHomogeneity[i]) {
+            	if (verboselast) {
+            		SFIToolkit.displayln("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i]);
+            	}
+                hpl.add(i);
+                hplStartingValues.add(startingValues[i]);
+            }
+        }
+
+        // Sort and set indices
+        HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
+        sorter.sort(hpl, hplStartingValues);
+        
+        mySpecification.resetHomogeneityIndex();
+        for (int i = 0; i < hpl.size(); i++) {
+            mySpecification.setHomogeneousIndex(hpl.get(i));
+            mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
+        }
+        setHomogeneousParameterList(hpl);
+        boolean testPostClassificationConvergence = !true;
+        if (testPostClassificationConvergence) {
+            hpl.clear();
+            hpl.add(0);
+            mySpecification.resetHomogeneityIndex();
+            mySpecification.setHomogeneousIndex(0);
+            mySpecification.setHomogeneousParameter(0, -1.0);
+        }
+        
+        
+        /*
+         * Estimate values of those homogeneous parameters
+         */
+        if (!hpl.isEmpty()) {
+            if (hpl.size() == mySpecification.getNumParams()) {
+                // all homogenous, don't need to optimize, just set to stump and let it run
+            	maxDepth = 0;
+            } else {
+                SFIToolkit.displayln("Initializing search container");
+                HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, minImprovement, minObservationsPerLeaf, maxDepth, getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
+                SFIToolkit.displayln("Calling execute search");
+                con.executeSearch();
+                SFIToolkit.displayln("Post search");
+                
+                Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
+                SFIToolkit.display("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
+                pmUtility.prettyPrintVector(homogeneousParameters);
+
+                int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
+                SFIToolkit.displayln("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
+                Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
+                int counter = 0;
+                for (int k = 0; k < K; k++) {
+                    if (mySpecification.getHomogeneousIndex()[k]) {
+                        expandedHomogeneousParameterVector.set(k, 0, homogeneousParameters.get(counter, 0));
+                        mySpecification.setHomogeneousParameter(k, homogeneousParameters.get(counter, 0));
+                        counter++;
+                    }
+                }
+                SFIToolkit.displayln("Specification homogeneous parameter vector: ");
+                pmUtility.prettyPrintVector(mySpecification.getHomogeneousParameterVector());
+                // System.exit(0);
+                setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
+            }
+        }
     }
     
     private class computeFitStatistics {

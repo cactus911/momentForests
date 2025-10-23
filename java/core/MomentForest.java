@@ -76,7 +76,7 @@ public class MomentForest {
          * forest each time we call growForest!
          */
         forest = new ArrayList<>();
-        
+
         Random rng = new Random(forestSeed);
 
         for (int i = 0; i < numberTreesInForest; i++) {
@@ -123,14 +123,14 @@ public class MomentForest {
             });
         }
         // System.out.format("Memory usage: %,d bytes %n", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
-        
+
         // prune out invalid trees? these would be ones where the minimizer failed?
         ArrayList<TreeMoment> validForest = new ArrayList<>();
-        for(int i=0;i<numberTreesInForest;i++) {
-            if(forest.get(i).isValidTree()) {
+        for (int i = 0; i < numberTreesInForest; i++) {
+            if (forest.get(i).isValidTree()) {
                 validForest.add(forest.get(i));
             } else {
-                System.out.println("Removing tree "+i+" due to failed estimation.");
+                System.out.println("Removing tree " + i + " due to failed estimation.");
             }
         }
         forest = validForest;
@@ -150,7 +150,7 @@ public class MomentForest {
             estimatedParameters = estimatedParameters.plus(forest.get(i).getEstimatedBeta(zi));
             // s = s.concat(forest.get(i).getEstimatedBeta(zi).get(0, 0) + " ");
         }
-        
+
         estimatedParameters.timesEquals(1.0 / forest.size());
         return estimatedParameters;
     }
@@ -269,14 +269,14 @@ public class MomentForest {
         return startingValues;
     }
 
-    public void testHomogeneity() {
+    public void testHomogeneity(boolean verbose) {
         boolean useParallel = true;
 
         double[] averageTestValues = new double[spec.getNumParams()];
-        
+
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
-                System.out.println("========== Tree "+i+" ==========");
+                System.out.println("========== Tree " + i + " ==========");
                 forest.get(i).testHomogeneity();
             }
         } else {
@@ -286,8 +286,8 @@ public class MomentForest {
             });
         }
         // System.out.println("Finished testing homogeneity in all the trees");
-        
-        // Prune out invalid trees
+
+        // Prune out invalid 
         // System.out.println("Prune out invalid trees");
         ArrayList<TreeMoment> validForest = new ArrayList<>();
         for (int i = 0; i < forest.size(); i++) {
@@ -300,8 +300,11 @@ public class MomentForest {
         }
         forest = validForest;
         numberTreesInForest = forest.size();
-        // System.out.println("Number of valid trees after homogeneity testing: " + numberTreesInForest);
-        
+
+        if (verbose) {
+            System.out.println("Number of valid trees after homogeneity testing: " + numberTreesInForest);
+        }
+
         // Compute average test values over remaining valid trees
         for (TreeMoment tree : forest) {
             double[] testValues_i = tree.getTestValues();
@@ -312,10 +315,12 @@ public class MomentForest {
                     System.out.println("Skipping invalid test value (NaN or Inf) for parameter " + k);
                 }
             }
-        }        
+        }
         for (int k = 0; k < averageTestValues.length; k++) {
-        	averageTestValues[k] = averageTestValues[k] / numberTreesInForest;
-            // System.out.println("parameter " + k + ": average DM test statistic: " + averageTestValues[k]);
-        }  
+            averageTestValues[k] = averageTestValues[k] / numberTreesInForest;
+            if (verbose) {
+                System.out.println("parameter " + k + ": average DM test statistic: " + averageTestValues[k]);
+            }
+        }
     }
 }

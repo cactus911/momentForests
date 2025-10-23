@@ -46,7 +46,7 @@ public class CardSpecification implements MomentSpecification {
     Jama.Matrix Z;
     Jama.Matrix balancingVector; // is treatment status in the RCT setting
     int numObs;
-    int numtrees;
+    int numTrees;
     double proportionObservationsToEstimateTreeStructure;
     String[] varNames;
     int[] variableSearchIndex; 
@@ -54,7 +54,6 @@ public class CardSpecification implements MomentSpecification {
     // July 15, 2015 attempt to automate value labels for discrete variables
     //Map<String, Map<Integer, String>> valueLabels = new HashMap<>();
     boolean failedEstimator = false;
-    int numTrees = 100;
     boolean detectHomogeneity = true;
     boolean crossValidation = true;
     List<Integer> cvGridMinLeaf;
@@ -172,11 +171,6 @@ public class CardSpecification implements MomentSpecification {
     @Override
     public Matrix getZ() {
         return Z;
-    }
-
-    @Override
-    public int numberoftrees() {
-        return numtrees;
     }
 
     @Override
@@ -342,6 +336,11 @@ public class CardSpecification implements MomentSpecification {
     @Override
     public int getNumParams() {
         return X.getColumnDimension();
+    }
+    
+    @Override
+    public int numberoftrees() {
+        return numTrees;
     }
     
     public void setNumTrees(int n) {
