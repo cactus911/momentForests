@@ -237,29 +237,35 @@ public class StataInterface {
             }
             
             // Optional: CV grid
-			if (opts.containsKey("cvgrid_minleaf")) {
-			    cvGridMinLeaf = Arrays.stream(opts.get("cvgrid_minleaf").split(","))
+            if (opts.containsKey("cvgrid_minleaf")) {
+                cvGridMinLeaf = Arrays.stream(opts.get("cvgrid_minleaf").split(","))
                         .map(String::trim)
                         .map(Integer::parseInt)
                         .collect(Collectors.toList());
-			    spec.setCVGridMinLeaf(cvGridMinLeaf);
-			}
+            } else {
+                cvGridMinLeaf = Collections.singletonList(25);
+            }
+            spec.setCVGridMinLeaf(cvGridMinLeaf);
 			
-			if (opts.containsKey("cvgrid_minimp")) {
-			    cvGridMinImprovement = Arrays.stream(opts.get("cvgrid_minimp").split(","))
+            if (opts.containsKey("cvgrid_minimp")) {
+                cvGridMinImprovement = Arrays.stream(opts.get("cvgrid_minimp").split(","))
                         .map(String::trim)
                         .map(Double::parseDouble)
                         .collect(Collectors.toList());
-			    spec.setCVGridMinImprovement(cvGridMinImprovement);
-			}
+            } else {
+                cvGridMinImprovement = Collections.singletonList(0.1);
+            }
+            spec.setCVGridMinImprovement(cvGridMinImprovement);
 			
-			if (opts.containsKey("cvgrid_maxdepth")) {
-			    cvGridMaxDepth = Arrays.stream(opts.get("cvgrid_maxdepth").split(","))
+            if (opts.containsKey("cvgrid_maxdepth")) {
+                cvGridMaxDepth = Arrays.stream(opts.get("cvgrid_maxdepth").split(","))
                         .map(String::trim)
                         .map(Integer::parseInt)
                         .collect(Collectors.toList());
-				spec.setCVGridMaxDepth(cvGridMaxDepth);
-			}
+            } else {
+                cvGridMaxDepth = Collections.singletonList(5);
+            }
+            spec.setCVGridMaxDepth(cvGridMaxDepth);
 			
 			// Optional: generating betas
 			if (opts.containsKey("gen")) {
