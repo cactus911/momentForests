@@ -269,7 +269,7 @@ public class MomentForest {
         return startingValues;
     }
 
-    public void testHomogeneity() {
+    public void testHomogeneity(boolean verbose) {
         boolean useParallel = true;
 
         double[] averageTestValues = new double[spec.getNumParams()];
@@ -282,13 +282,13 @@ public class MomentForest {
         } else {
             forest.parallelStream().forEach((tree) -> {
                 tree.testHomogeneity();
-                System.out.println("Finished testing homogeneity in a tree");
+                //System.out.println("Finished testing homogeneity in a tree");
             });
         }
-        System.out.println("Finished testing homogeneity in all the trees");
+        //System.out.println("Finished testing homogeneity in all the trees");
         
         // Prune out invalid trees
-        System.out.println("Prune out invalid trees");
+        //System.out.println("Prune out invalid trees");
         ArrayList<TreeMoment> validForest = new ArrayList<>();
         for (int i = 0; i < forest.size(); i++) {
             TreeMoment t = forest.get(i);
@@ -300,7 +300,10 @@ public class MomentForest {
         }
         forest = validForest;
         numberTreesInForest = forest.size();
-        System.out.println("Number of valid trees after homogeneity testing: " + numberTreesInForest);
+        
+        if (verbose) {
+        	System.out.println("Number of valid trees after homogeneity testing: " + numberTreesInForest);
+        }
         
         // Compute average test values over remaining valid trees
         for (TreeMoment tree : forest) {
@@ -315,7 +318,10 @@ public class MomentForest {
         }        
         for (int k = 0; k < averageTestValues.length; k++) {
         	averageTestValues[k] = averageTestValues[k] / numberTreesInForest;
-            System.out.println("parameter " + k + ": average DM test statistic: " + averageTestValues[k]);
+        	
+        	if (verbose) {
+        		System.out.println("parameter " + k + ": average DM test statistic: " + averageTestValues[k]);
+        	}
         }  
     }
 }
