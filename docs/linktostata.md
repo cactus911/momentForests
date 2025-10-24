@@ -173,6 +173,8 @@ $$
 
 We start with this specification as it allows for model-free exploration of the data. This model is a universal approximator, so we are not imposing any restrictions on the underlying DGP by using just a constant. The patterns that this specification reveals can be useful in guiding further exploration. The moment forest split on the respondent's years of education, work experience, and living region in almost all of its trees, and it split on the indicator for Black in 70% of them. This suggests that these variables are highly correlated with hourly wages. In addition, the moment forest split on the father's and mother's years of education in 32% and 60% of the 50 trees respectively. This is in line with Card's supposition that parental education levels can affect children's future earnings. 
 
+<img src="./Moment tree alpha.png" width="700" >
+
 The moment forest split on education in all but one of it's trees. This is reassuring, as it shows that years of schooling is strongly related to earnings. If the moment forest did not split on our primary explanatory variable of interest, our analysis would already be finished. In the next exercise, we include both a constant and years of education in $X$:
 
 $$
@@ -180,6 +182,8 @@ $$
 $$
 
 We find that $\alpha(Z)$ was overwhelmingly voted as heterogeneous across the trees in the forest. Education was heterogeneous in 60\% of the trees and hence determined to be heterogeneous in the moment forest. This suggests that the returns to education varied across subgroups in the data. 
+
+<img src="./Moment tree alpha education.png" width="700" >
 
 The objective of these first exercises is to search for patterns in the data and help determine which variables should be interest. It also finds observable heterogeneity in the reduced form and sets the stage for further data exploration and analysis. The moment forest split on years of worked experience and living region in 1966 in all of its trees. This suggests that those have important correlation with earnings. Therefore, we next implement a moment forest with those variables in the $X$ matrix. Note that although some categorical variables are frequently split on in the moment forest, we don't need to include them in $X$. This is because they are just nuisance parameters and will be captured in splits on the constant.
 
@@ -190,6 +194,6 @@ $$
 
 We find that $\alpha(Z)$ was determined to be heterogeneous in 90% of the trees in the forest and $\beta_2(Z)$ was heterogeneous in all of them. $\beta_1(Z)$ was also heterogeneous but only so in 60% of the trees. This suggests that subgroups in the data had different mean hourly wages and returns to both education and work experience. 
 
-
+<img src="./Moment tree alpha education experience.png" width="700" >
 
 [back](./index.md)
