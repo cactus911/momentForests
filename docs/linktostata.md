@@ -188,6 +188,7 @@ We find that $\alpha(Z)$ was overwhelmingly voted as heterogeneous across the tr
 The objective of these first exercises is to search for patterns in the data and help determine which variables should be interest. It also finds observable heterogeneity in the reduced form and sets the stage for further data exploration and analysis. The moment forest split on years of worked experience and living region in 1966 in all of its trees. This suggests that those have important correlation with earnings. Therefore, we next implement a moment forest with those variables in the $X$ matrix. Note that although some categorical variables are frequently split on in the moment forest, we don't need to include them in $X$. This is because they are just nuisance parameters and will be captured in splits on the constant.
 
 First, we add years of work experience into $X$: 
+
 $$
     m(X;\beta(Z)) = \alpha(Z) + \beta_1(Z)\cdot education + \beta_2(Z)\cdot experience
 $$
