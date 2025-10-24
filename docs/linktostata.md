@@ -199,4 +199,20 @@ We find that $\alpha(Z)$ was determined to be heterogeneous in 90% of the trees 
 
 <img src="./Moment tree alpha education experience.png" width="700" >
 
+Next, we add a categorical variable for living region in 1966 in $X$. This is because, as shown in the third column of Table~\ref{tab:moment forest splitting criteron}, the prior moment forest split on this variable in all but one of it's trees.
+
+$$
+    m(X;\beta(Z)) = \alpha(Z) + \beta_1(Z)\cdot education + \beta_2(Z)\cdot experience + \sum\limits_{r=1}^{8} \delta_r(Z) \cdot 1\{region\_1966 = r\}
+$$
+
+where $\delta_r(Z)$ represents the set of fixed effects for living region in 1966 with region $r=9$, the Pacific, omitted. $\beta_2(Z)$ was voted as heterogeneous, but all the other parameters were determined to be homogeneous. It estimated a value for the constant of $\alpha = 4.240$ and a homogeneous value to the returns to education at $\beta_1 = 0.095$. The results show that the variables that the forest is still splitting on geographic indicator variables. This motivates that there may be interaction effects between the heterogeneous work experience and living region. As such,  we add interaction terms between work experience and living region in 1966 in $X$: 
+
+$$
+    m(X;\beta(Z)) = \alpha(Z) + \beta_1(Z)\cdot educ + \beta_2(Z)\cdot exp + \sum\limits_{r=1}^{8}\left( \delta_r(Z) + \gamma_r(Z)\cdot exp\right)\cdot 1\{reg\_1966 = r\}  
+$$
+
+where $\alpha(Z)$ represents possible group-specific intercepts, $\delta_r(Z)$ represent the set of fixed effects for living region in 1966, and $\gamma_r(Z)$ represent the set of fixed effects for the interaction between work experience and living region in 1966. The forest finds that all the parameters are homogeneous and does not make any splits. Hence, we determine that this moment specification is our "final" specification and we terminate our iterative process.
+
+Our methodology reveals that the true linear specification for estimating a respondent's log earnings is to use years of education and work experience as explanatory variables and to include fixed effects for living region in 1966 and the interaction between work experience and living region in 1966. This specification has some important differences from the ones considered in Card (1993). Notably, we do not find any nonlinearity in the returns to years of work experience. Furthermore, we do not find any evidence that parental education affects the returns to education. While prior forests split on variables such as parental education and race indicators, the final specification suggests that what those forests perceived to be heterogeneity were captured by geographic differences.
+
 [back](./index.md)
