@@ -157,6 +157,8 @@ Card (1993) utilizes data from the National Longitudinal Survey of Young Men (NL
 
 Revisiting Card (1993) using moment forests provides a more flexible and data-driven approach to estimating the returns to education, addressing some of the limitations in the methods used in the original paper. For one, while Card had to hypothesize at the beginning of the analysis that returns to education varied by parental background, moment forests allow us to detect heterogeneous effects without any presuppositions. Instead, the moment forest employs a data-driven approach to determine heterogeneity. Additionally, the traditional approach to working with regressions relies on multiple model specifications to perform robustness checks on the results. This approach is both ad hoc and prone to researcher discretions. Moment forests mitigate this issue by finding the best specification within the class of linear models. Moreover, they provide semiparametric estimation that can capture nonlinearity in the relationships of the variables.
 
+The file `CardStata dofile.do` in the `for_Stata` directory contains the code necessary to perform these Monte Carlo simulations and replicate the figures in the paper. 
+
 Consider the empirical specification given by 
 
 $$
