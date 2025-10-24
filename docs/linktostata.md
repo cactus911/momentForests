@@ -7,7 +7,7 @@ The source code is organized into two main directories: [jars and for_Stata](htt
 
 1. The `jars` folder contains supporting Java utilities, including the compiled `momentforests.jar` file (built from the Java source code).
 
-2. The `for_Stata` folder contains the Stata .ado file necessary for moment forest integration with Stata. It also contains the code to replicate the Monte Carlo exercises and the implementation of Card (1995) described in the sections below.
+2. The `for_Stata` folder contains the Stata .ado file necessary for moment forest integration with Stata. It also contains the code to replicate the Monte Carlo exercises and the implementation of Card (1993) described in the sections below.
 
 In addition, the `java` folder includes all Java source files that implement the Moment Forests framework. Within this folder, the `core` subdirectory contains general-purpose components applicable to a wide range of applications, while the `examples` subdirectory holds application-specific files.
 
@@ -129,6 +129,6 @@ The file `Monte Carlo.do` in the `for_Stata` directory contains the code necessa
 
 ## V. Worked example
 
-This section works through Card (1995).
+This section works through Card (1993).
 
 [back](./index.md)
