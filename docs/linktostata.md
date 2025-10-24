@@ -171,7 +171,7 @@ $$
     m(X;\beta(Z)) = \alpha(Z).
 $$
 
-We start with this specification as it allows for model-free exploration of the data. This model is a universal approximator, so we are not imposing any restrictions on the underlying DGP by using just a constant. The patterns that this specification reveals can be useful in guiding further exploration. The moment forest split on the respondent's years of education, work experience, and living region in almost all of its trees, and it split on the indicator for Black in 70% of them. This suggests that these variables are highly correlated with hourly wages. In addition, the moment forest split on the father's and mother's years of education in 32% and 60% of the 50 trees respectively. This is in line with Card's supposition that parental education levels can affect children's future earnings. 
+We start with this specification as it allows for model-free exploration of the data. This model is a universal approximator, so we are not imposing any restrictions on the underlying DGP by using just a constant. The patterns that this specification reveals can be useful in guiding further exploration. The moment forest split on the respondent's years of education, work experience, and living region in almost all of its trees, and it split on the indicator for Black in 70% of them. This suggests that these variables are highly correlated with hourly wages. In addition, the moment forest split on the father's and mother's years of education in 32% and 60% of the 50 trees respectively. This is in line with Card's supposition that parental education levels can affect children's future earnings. The figure below plots the first regression tree in the forest with CV parameters on OLS. It shows that Black respondents received lower wages than White respondents. Exponentiating the estimates from the moment tree, average hourly wages were $3.37 for Black respondents not living in an SMSA in 1976 and around $4.39 for those living in one. Average hourly wages varied significantly for White respondents but were all higher than those of Black respondents.
 
 <img src="./Moment tree alpha.png" width="700" >
 
@@ -181,7 +181,7 @@ $$
     m(X;\beta(Z)) = \alpha(Z) + \beta(Z)\cdot education
 $$
 
-We find that $\alpha(Z)$ was overwhelmingly voted as heterogeneous across the trees in the forest. Education was heterogeneous in 60\% of the trees and hence determined to be heterogeneous in the moment forest. This suggests that the returns to education varied across subgroups in the data. 
+We find that $\alpha(Z)$ was overwhelmingly voted as heterogeneous across the trees in the forest. Education was heterogeneous in 60\% of the trees and hence determined to be heterogeneous in the moment forest. This suggests that the returns to education varied across subgroups in the data. The following figure plots the first tree in the moment forest.
 
 <img src="./Moment tree alpha education.png" width="700" >
 
@@ -192,7 +192,7 @@ $$
     m(X;\beta(Z)) = \alpha(Z) + \beta_1(Z)\cdot education + \beta_2(Z)\cdot experience
 $$
 
-We find that $\alpha(Z)$ was determined to be heterogeneous in 90% of the trees in the forest and $\beta_2(Z)$ was heterogeneous in all of them. $\beta_1(Z)$ was also heterogeneous but only so in 60% of the trees. This suggests that subgroups in the data had different mean hourly wages and returns to both education and work experience. 
+We find that $\alpha(Z)$ was determined to be heterogeneous in 90% of the trees in the forest and $\beta_2(Z)$ was heterogeneous in all of them. $\beta_1(Z)$ was also heterogeneous but only so in 60% of the trees. This suggests that subgroups in the data had different mean hourly wages and returns to both education and work experience. The plot of the first tree shows that Black respondents generally had lower hourly wages and received lower returns, especially in work experience. It also demonstrates a large degree of heterogeneity in returns to education and work experience across parental education levels. Black respondents living in the Atlantic or Central South West regions differed by whether their father’s level of education was missing or not. For White respondents, the returns to schooling were heterogeneous across both parents’ levels of education.
 
 <img src="./Moment tree alpha education experience.png" width="700" >
 
