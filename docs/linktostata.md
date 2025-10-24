@@ -147,8 +147,49 @@ with $\beta_1(Z) = 2.5 \sin{Z} + 0.25 Z^2$ and $\beta_2=1.0$.
 
 [back](./index.md)
 
-## V. Worked example
+## V. Worked example - Card (1993)
 
-This section works through Card (1993).
+To further illustrate the model, this section  revisit the classic study of Card (1993), which investigates the relationship between schooling and income.  He uses two empirical techniques with a variety of parametric
+specifications: a baseline assessment of correlations using ordinary least squares (OLS) and a causal estimate using instrumental variables.  The OLS estimates, controlling for a variety of demographic variables and fixed effects, show that higher levels of education are correlated with higher wages. The study is typical of most, if not all, empirical papers, in that Card conducts “robustness checks” by reporting results under various (ad
+hoc) parametric specifications. Further, the issue of finding the correct specification, particularly with regard to observable heterogeneity in the relationship between wages and education across different subgroups, is a first-order concern in this literature. In his landmark overview of the literature on education and wages in the Handbook of Labor Economics, Card (1999) poses two critical and interrelated issues: What functional form should the wage regression take and how should it vary across different subgroups? This estimator is designed to answer these types of questions. 
+
+Card (1993) utilizes data from the National Longitudinal Survey of Young Men (NLSYM), a panel dataset tracking men aged 14 to 24 from 1966 to 1981. The NLSYM provides information on educational attainment, wages, work experience, and the socioeconomic background of the respondents. It also includes geographic variables, specifying the region of the United States where the respondent has resided, whether they have lived in a Standard Metropolitan Statistical Area (SMSA), and local labor market conditions. The outcome variable is the log of hourly wages in 1976, and the primary explanatory variable of interest is total years of schooling. Control variables include work experience and socioeconomic and regional indicators. In particular, years of parental education are used as proxies for the respondent’s family background.
+
+Revisiting Card (1993) using moment forests provides a more flexible and data-driven approach to estimating the returns to education, addressing some of the limitations in the methods used in the original paper. For one, while Card had to hypothesize at the beginning of the analysis that returns to education varied by parental background, moment forests allow us to detect heterogeneous effects without any presuppositions. Instead, the moment forest employs a data-driven approach to determine heterogeneity. Additionally, the traditional approach to working with regressions relies on multiple model specifications to perform robustness checks on the results. This approach is both ad hoc and prone to researcher discretions. Moment forests mitigate this issue by finding the best specification within the class of linear models. Moreover, they provide semiparametric estimation that can capture nonlinearity in the relationships of the variables.
+
+Consider the empirical specification given by 
+
+$$
+    Y = X'\beta(Z) + \epsilon
+$$
+
+Here, $X$ contains the explanatory variables that have a direct effect on the outcome $Y$, and $Z$ consists of the observables that are a source of heterogeneity in the effects of $X$ on $Y$. Moment forests bring two important innovations to Card's process. First, the moment forest can identify which variables exhibit heterogeneity. As discussed earlier in the paper, the Holm-Bonferroni procedure is used to determine which variables in $X$ are homogeneous and which are heterogeneous. Second, rather than testing multiple specifications, the moment forest directly identifies the most relevant variables. The variables in $Z$ that the forest selects for splitting are the ones pertinent for analysis. In this application, we find the best specification among the models of the form given by the equation above. In other words, we find the simplest model that is not statistically rejected by the data. To accomplish this, we perform an iterative analysis using moment forests. We begin with the most flexible model and add variables into $X$ based on the splitting behavior of the forest. This process terminates when the moment forest no longer makes any splits. At that point, the forest will have captured all the observable heterogeneity in the data. 
+
+We begin our analysis with a purely descriptive exercise. We set the moment function to be just the constant, which generates the classic regression tree:
+
+$$
+    m(X;\beta(Z)) = \alpha(Z).
+$$
+
+We start with this specification as it allows for model-free exploration of the data. This model is a universal approximator, so we are not imposing any restrictions on the underlying DGP by using just a constant. The patterns that this specification reveals can be useful in guiding further exploration. The moment forest split on the respondent's years of education, work experience, and living region in almost all of its trees, and it split on the indicator for Black in 70% of them. This suggests that these variables are highly correlated with hourly wages. In addition, the moment forest split on the father's and mother's years of education in 32% and 60% of the 50 trees respectively. This is in line with Card's supposition that parental education levels can affect children's future earnings. 
+
+The moment forest split on education in all but one of it's trees. This is reassuring, as it shows that years of schooling is strongly related to earnings. If the moment forest did not split on our primary explanatory variable of interest, our analysis would already be finished. In the next exercise, we include both a constant and years of education in $X$:
+
+$$
+    m(X;\beta(Z)) = \alpha(Z) + \beta(Z)\cdot education
+$$
+
+We find that $\alpha(Z)$ was overwhelmingly voted as heterogeneous across the trees in the forest. Education was heterogeneous in 60\% of the trees and hence determined to be heterogeneous in the moment forest. This suggests that the returns to education varied across subgroups in the data. 
+
+The objective of these first exercises is to search for patterns in the data and help determine which variables should be interest. It also finds observable heterogeneity in the reduced form and sets the stage for further data exploration and analysis. The moment forest split on years of worked experience and living region in 1966 in all of its trees. This suggests that those have important correlation with earnings. Therefore, we next implement a moment forest with those variables in the $X$ matrix. Note that although some categorical variables are frequently split on in the moment forest, we don't need to include them in $X$. This is because they are just nuisance parameters and will be captured in splits on the constant.
+
+First, we add years of work experience into $X$: 
+$$
+    m(X;\beta(Z)) = \alpha(Z) + \beta_1(Z)\cdot education + \beta_2(Z)\cdot experience
+$$
+
+We find that $\alpha(Z)$ was determined to be heterogeneous in 90% of the trees in the forest and $\beta_2(Z)$ was heterogeneous in all of them. $\beta_1(Z)$ was also heterogeneous but only so in 60% of the trees. This suggests that subgroups in the data had different mean hourly wages and returns to both education and work experience. 
+
+
 
 [back](./index.md)
