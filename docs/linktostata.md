@@ -89,7 +89,18 @@ Z : observables that are a source of heterogeneity in the effects of X on Y
 
 ## IV. Monte Carlo simulations
 
-This section works through the Monte Carlo simulations in the paper. Consider the following linear model:  
+This section works through the Monte Carlo simulations in the paper. The estimator faces several simultaneous challenges: first, the moment forest has to correctly classify which components of $Z$ best improve the fit of the model without overfitting. Second, given those splits, it has to consistently estimate the parameters that best match the empirical moments. Third, it has to correctly classify and estimate parameters that are restricted to be homogeneous across the state space. Errors in one stage directly lead to errors in the other stages, so this is good test of how each of the stages of the estimator work separately and in conjunction.
+
+The results of the simulations show the following:
+
+1. The mean-squared prediction error of the outcome variable converges rapidly in all cases to its irreducible error, suggesting that the model selection component of the estimator captures the true data-generating process very well.
+2. The classification rate of homogenous parameters as homogeneous is nearly 100 percent for all the replications. More importantly, the model never classifies the heterogeneous parameters as homogeneous. That matters since missing the homogeneous parameter leads to inefficiency but not bias, while incorrectly classifying the heterogeneous parameter does. 
+
+The file `Monte Carlo.do` in the `for_Stata` directory contains the code necessary to perform these Monte Carlo simulations and replicate the figures in the paper. 
+
+### Linear model
+
+Consider the following linear model:  
 
 $$
 Y = X'\beta(Z) + \epsilon.
@@ -123,7 +134,16 @@ $$
 \beta(Z) = (-1.0, 1.0).
 $$
 
-The file `Monte Carlo.do` in the `for_Stata` directory contains the code necessary to perform these Monte Carlo simulations and replicate the figures in the paper.
+### Partially linear model
+
+Next, consider a more complex model where one of the components is infinite-dimensional. The challenge here is to ensure that the estimator continues to classify the components appropriately and to see how well it can do in approximating the infinite-dimensional part. The data-generating process is more involved:
+
+$$
+    Y = \beta_1(Z) + \beta_2 X_2,
+$$
+
+with $\beta_1(Z) = 2.5 \sin{Z} + 0.25 Z^2$ and $\beta_2=1.0$.
+
 
 [back](./index.md)
 
