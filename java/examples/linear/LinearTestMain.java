@@ -102,7 +102,7 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 5;
+        int numMonteCarlos = 50;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
             for (int numObs = 500; numObs <= 2000; numObs *= 2) {
@@ -491,7 +491,7 @@ public class LinearTestMain {
         // System.out.println("Growing forest for homogeneity testing...");
         myForest.growForest();
         // System.out.println("----- Call to testHomogeneity -----");
-        myForest.testHomogeneity();
+        myForest.testHomogeneity(false);
 
         ArrayList<Integer> hpl = new ArrayList<>();
         ArrayList<Double> hplStartingValues = new ArrayList<>();
