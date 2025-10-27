@@ -5,13 +5,13 @@
 
 log using "logfile_montecarlo.log", replace
 
-local totaln = 100
-local nlist 500 1000 2000 4000
-
 *------------------------------*
 * Linear DGP (Sec. 4.1)       *
 * scenarios: 1=fully het, 2=one hom, 3=both hom
 *------------------------------*
+
+local totaln = 100
+local nlist 500 1000 2000 4000
 
 forvalues scenario = 1/3 {
 	di as error "====================================="
@@ -20,9 +20,9 @@ forvalues scenario = 1/3 {
 
 	foreach n of local nlist {
 		
-		local n1 = `n'/20
-		local n2 = `n'/10
-		local n3 = `n'/5
+		local n1 = min(`n'/25, 70)
+		local n2 = min(`n'/20, 70)
+		local n3 = min(`n'/10, 70)
 		
 		di as error "===================================="
 		di as error "  Running simulations for n = `n'   "
@@ -49,7 +49,7 @@ forvalues scenario = 1/3 {
 				cvgridminimp(10 20 40) ///
 				cvgridmaxdepth(3 4 5) ///
 				gen("beta_mf_unrestricted_")				
-			qui gen y_fitted_mf_unrestricted = beta_mf_unrestricted_0*x1 + beta_mf_unrestricted_1*x2
+			qui gen mse_y_mf_unrestricted = `r(oosfit)'
 			
 			* Moment forest (restricted)
 			qui momentforest y x1 x2, ///
@@ -64,7 +64,7 @@ forvalues scenario = 1/3 {
 				cvgridminimp(10 20 40) ///
 				cvgridmaxdepth(3 4 5) ///
 				gen("beta_mf_restricted_")				
-			qui gen y_fitted_mf_restricted = beta_mf_restricted_0*x1 + beta_mf_restricted_1*x2
+			qui gen mse_y_mf_restricted = `r(oosfit)'
 			
 			qui gen iteration = `iteration'
 			qui gen obs = _n
@@ -91,9 +91,7 @@ forvalues scenario = 1/3 {
 		tab flag_beta1_homogeneous
 		
 		* Compute MSE
-		qui gen mse_y_mf_unrestricted = (y - y_fitted_mf_unrestricted)^2
 		qui gen mse_b_mf_unrestricted = ((b1 - beta_mf_unrestricted_0)^2 + (b2-beta_mf_unrestricted_1)^2)/2
-		qui gen mse_y_mf_restricted = (y - y_fitted_mf_restricted)^2
 		qui gen mse_b_mf_restricted = ((b1 - beta_mf_restricted_0)^2 + (b2-beta_mf_restricted_1)^2)/2
 
 		* Collapse and compute summary stats
@@ -103,6 +101,8 @@ forvalues scenario = 1/3 {
 		di "Results for moment forest (unrestricted)"
 		summ mse_y_mf_unrestricted
 		summ mse_b_mf_unrestricted
+		summ beta_mf_unrestricted_0 if flag_beta0_homogeneous == 1
+		summ beta_mf_unrestricted_1 if flag_beta1_homogeneous == 1
 		
 		di "Results for moment forest (restricted)"
 		summ mse_y_mf_restricted
@@ -127,9 +127,22 @@ foreach n of local nlist {
 	di as error "  Running simulations for n = `n'   "
 	di as error "===================================="
 	
-	local n1 = `n'/50
-	local n2 = `n'/20
-	local n3 = `n'/10
+	if `n' == 500 {
+		local n1 = min(`n'/25, 70)
+		local max = 3
+	}
+	if `n' == 1000 {
+		local n1 = min(`n'/25, 70)
+		local max = 4
+	}
+	if `n' == 2000 {
+		local n1 = min(`n'/25, 70)
+		local max = 5
+	}
+	if `n' == 4000 {
+		local n1 = min(`n'/25, 70)
+		local max = 6
+	}
 	
 	* Run moment forests
 	forvalues iteration = 1/`totaln' {
@@ -149,11 +162,11 @@ foreach n of local nlist {
 			testhomogeneity(false) ///
 			propstructure(0.35) ///
 			cv(true) ///
-			cvgridminleaf(`n1' `n2' `n3') ///
-			cvgridminimp(10 20 40) ///
-			cvgridmaxdepth(3 4 5) ///
+			cvgridminleaf(`n1') ///
+			cvgridminimp(10) ///
+			cvgridmaxdepth(`max') ///
 			gen("beta_mf_unrestricted_")				
-		qui gen y_fitted_mf_unrestricted = beta_mf_unrestricted_0*x1 + beta_mf_unrestricted_1*x2
+		qui gen mse_y_mf_unrestricted = `r(oosfit)'
 		
 		* Moment forest (restricted)
 		qui momentforest y x1 x2, ///
@@ -163,11 +176,11 @@ foreach n of local nlist {
 			testhomogeneity(true) ///
 			propstructure(0.35) ///
 			cv(true) ///
-			cvgridminleaf(`n1' `n2' `n3') ///
-			cvgridminimp(10 20 40) ///
-			cvgridmaxdepth(3 4 5) ///
+			cvgridminleaf(`n1') ///
+			cvgridminimp(10) ///
+			cvgridmaxdepth(`max') ///
 			gen("beta_mf_restricted_")				
-		qui gen y_fitted_mf_restricted = beta_mf_restricted_0*x1 + beta_mf_restricted_1*x2
+		qui gen mse_y_mf_restricted = `r(oosfit)'
 		
 		qui gen iteration = `iteration'
 		qui gen obs = _n
@@ -184,6 +197,7 @@ foreach n of local nlist {
 	
 	* Save for n = 4000
 	if `n' == 4000 {
+		keep if `iteration' == 1
 		save "Partial linear model estimates n = 4000.dta", replace
 	}
 	
@@ -198,12 +212,8 @@ foreach n of local nlist {
 	tab flag_beta0_homogeneous
 	tab flag_beta1_homogeneous
 	
-	drop if flag_beta1_homogeneous == 0
-	
 	* Compute MSE
-	qui gen mse_y_mf_unrestricted = (y - y_fitted_mf_unrestricted)^2
 	qui gen mse_b_mf_unrestricted = ((b1 - beta_mf_unrestricted_0)^2 + (b2-beta_mf_unrestricted_1)^2)/2
-	qui gen mse_y_mf_restricted = (y - y_fitted_mf_restricted)^2
 	qui gen mse_b_mf_restricted = ((b1 - beta_mf_restricted_0)^2 + (b2-beta_mf_restricted_1)^2)/2
 
 	* Collapse and compute summary stats
@@ -212,6 +222,8 @@ foreach n of local nlist {
 	di "Results for moment forest (unrestricted)"
 	summ mse_y_mf_unrestricted
 	summ mse_b_mf_unrestricted
+	summ beta_mf_unrestricted_0 if flag_beta0_homogeneous == 1
+	summ beta_mf_unrestricted_1 if flag_beta1_homogeneous == 1
 	
 	di "Results for moment forest (restricted)"
 	summ mse_y_mf_restricted
@@ -225,15 +237,21 @@ log close
 *************
 
 use "Partial linear model estimates n = 4000.dta", clear
-gen z_bin = round(z, 0.01)
-collapse (mean) b1 beta_mf_mean = beta_mf_restricted_0 (sd) beta_mf_sd = beta_mf_restricted_0, by(z_bin)	
-gen beta_mean_plus  = beta_mf_mean + beta_mf_sd
-gen beta_mean_minus = beta_mf_mean - beta_mf_sd
 twoway ///
-    (scatter b1 z_bin, mcolor(blue) msymbol(o) legend(label(1 "b1"))) ///
-    (rcap beta_mean_plus beta_mean_minus z_bin, lcolor(red)) ///
-    (scatter beta_mean_plus z_bin, mcolor(red) msymbol(D) legend(label(2 "Mean ± SD of estimated beta")))
-	
+    (scatter beta_mf_unrestricted_0 z, ///
+        mcolor(blue) ///
+        lcolor(blue) ///
+        legend(label(1 "Estimated beta"))) ///
+    (scatter b1 z, ///
+        mcolor(red) ///
+        lcolor(red) ///
+        legend(label(2 "True beta"))), ///
+    legend(position(6) col(2)) ///
+    xlabel(, labsize(medlarge)) ///
+    ylabel(, labsize(medlarge)) ///
+    xtitle("Z") ///
+    ytitle("beta")
+
 ** End of file **
 
 
