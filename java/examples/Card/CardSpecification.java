@@ -50,6 +50,7 @@ public class CardSpecification implements MomentSpecification {
     Jama.Matrix balancingVector; // is treatment status in the RCT setting
     int numObs;
     int numtrees;
+    double proportionObservationsToEstimateTreeStructure = 0.35;
     int[] variableSearchIndex; // this should be restricted to only Z
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
@@ -231,7 +232,11 @@ public class CardSpecification implements MomentSpecification {
     public int numberoftrees() {
         return numtrees;
     }
-
+    
+    public double getProportionObservationsToEstimateTreeStructure() {
+        return this.proportionObservationsToEstimateTreeStructure;
+    }
+    
     @Override
     public Boolean[] getDiscreteVector() {
         return DiscreteVariables;
