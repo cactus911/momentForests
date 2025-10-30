@@ -39,7 +39,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>, Nathan Jiang <jiang.n@wustl.edu>
  */
-public class CardSpecification implements MomentSpecification {
+public class CardStataSpecification implements MomentSpecification {
 
     Jama.Matrix X;
     Jama.Matrix Y;
@@ -68,7 +68,7 @@ public class CardSpecification implements MomentSpecification {
     final private boolean[] homogeneityIndex; // = new boolean[X.getColumnDimension()];
     final private Jama.Matrix homogeneousParameterVector; // = new Jama.Matrix(X.getColumnDimension(), 1); // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
  
-    public CardSpecification(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, Jama.Matrix balancingVector) {
+    public CardStataSpecification(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, Jama.Matrix balancingVector) {
         this.X = X;
         this.Y = Y;
         this.Z = Z;
@@ -147,7 +147,7 @@ public class CardSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerCard l = new ContainerCard(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
+        ContainerCardStata l = new ContainerCardStata(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
         l.computeBetaAndErrors();
         failedEstimator = l.didEstimatorFail();
         return l;
@@ -330,7 +330,7 @@ public class CardSpecification implements MomentSpecification {
     
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerCard(lens, homogeneityIndex, homogeneousParameterVector, false, this);
+        return new ContainerCardStata(lens, homogeneityIndex, homogeneousParameterVector, false, this);
     }
 
     @Override

@@ -36,9 +36,9 @@ import core.SplitContainer;
 public class MomentPartitionObjLinear extends MomentPartitionObj {
 
     SplitContainer container;
-    CardSpecification spec;
+    CardStataSpecification spec;
     
-    public MomentPartitionObjLinear(IntegerPartition partition, int indexSplitVariable, DataLens lens, CardSpecification spec) {
+    public MomentPartitionObjLinear(IntegerPartition partition, int indexSplitVariable, DataLens lens, CardStataSpecification spec) {
         this.partition = partition;
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
@@ -68,8 +68,8 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerCard leftLinear = new ContainerCard(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec); //This object will compute the beta and MSE for the left split
-        ContainerCard rightLinear = new ContainerCard(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec);
+        ContainerCardStata leftLinear = new ContainerCardStata(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec); //This object will compute the beta and MSE for the left split
+        ContainerCardStata rightLinear = new ContainerCardStata(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec);
         
         leftLinear.computeBetaAndErrors();
         rightLinear.computeBetaAndErrors();

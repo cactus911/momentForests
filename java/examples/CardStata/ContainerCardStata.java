@@ -42,7 +42,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>, Nathan Jiang <jiang.n@wustl.edu>
  */
-public class ContainerCard extends ContainerMoment implements Uncmin_methods {
+public class ContainerCardStata extends ContainerMoment implements Uncmin_methods {
 
     double goodnessOfFit = -666; // make sure that we give back a crazy number if it is not called
     Jama.Matrix beta;
@@ -56,9 +56,9 @@ public class ContainerCard extends ContainerMoment implements Uncmin_methods {
     boolean[] homogeneityIndex;
     Jama.Matrix homogeneityParameters;
     boolean allParametersHomogeneous;
-    CardSpecification spec;
+    CardStataSpecification spec;
 
-    public ContainerCard(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous, CardSpecification spec) {
+    public ContainerCardStata(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous, CardStataSpecification spec) {
         this.lens = lens;
         // computeBetaAndErrors();
         X = lens.getX();
