@@ -231,8 +231,7 @@ public class CardMain {
              */
             double minProportionInEachLeaf = 0.01;
             
-            int[] strataColIndex = {7};
-            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, strataColIndex);
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
 
             testParameterHomogeneity = true;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
@@ -411,8 +410,7 @@ public class CardMain {
         public void computeOutOfSampleMSE() {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
-        	int[] strataColIndex = {7};
-            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, strataColIndex);
+            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
             //DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
             DataLens[] split = overallLens.randomlySplitSampleByStrata(0.9, rngBaseSeedMomentForest);
             DataLens estimatingLens = split[0];
@@ -551,8 +549,7 @@ public class CardMain {
 
         public void outputInSampleFits() {
             boolean verboseInSample = false;
-            int[] strataColIndex = {7};
-            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, strataColIndex);
+            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
 
             myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, overallLens, verboseInSample, new TreeOptions());
             TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1

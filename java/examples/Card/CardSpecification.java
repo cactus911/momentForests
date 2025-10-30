@@ -55,6 +55,8 @@ public class CardSpecification implements MomentSpecification {
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean failedEstimator = false;
+    int[] stratificationIndex = {7};   
+    String betaPrefixes = "";
 
     // NEED TO UPDATE
     String[] varNames = {"constant", "ed76", "exp76", "exp762", "black", "reg76r", "smsa76r", "region_1966", "smsa66r", "daded", "momed", "nodaded", "nomomed", "famed", "momdad14", "sinmom14"};
@@ -586,5 +588,14 @@ public class CardSpecification implements MomentSpecification {
     @Override
     public int getNumParams() {
         return X.getColumnDimension();
+    }
+    
+    public int[] getStratificationIndex() {
+        return this.stratificationIndex;
+    }
+    
+    @Override
+    public String getBetaPrefixes() {
+    	return this.betaPrefixes;
     }
 }
