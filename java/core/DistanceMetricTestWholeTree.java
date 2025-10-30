@@ -18,7 +18,7 @@ import utility.pmUtility;
  */
 public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
-    boolean verbose = false;
+    boolean verbose = true;
 
     ArrayList<DataLens> v;
     int indexConstrainedParameter = -1;
@@ -26,8 +26,8 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
 
     // Jama.Matrix omega; // weighting matrix in GMM
     Jama.Matrix omegaInverse; // we don't need to recompute omega each time, so why recompute its inverse?
-    boolean useCUE = false; // utilize continuously-updated weighting matrix
-    boolean useSumOfSquaredErrors = false; // use SSE to get a starting value for GMM, which can be sensitive in small samples
+    boolean useCUE = true; // utilize continuously-updated weighting matrix
+    // boolean useSumOfSquaredErrors = false; // use SSE to get a starting value for GMM, which can be sensitive in small samples
     private final MomentSpecification spec;
 
     public DistanceMetricTestWholeTree(ArrayList<DataLens> v, MomentSpecification spec) {
@@ -162,14 +162,14 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
 
         boolean minimizeSSEFirst = false;
         if (minimizeSSEFirst) {
-            useSumOfSquaredErrors = true;
+            // useSumOfSquaredErrors = true;
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             for (int i = 0; i < guess.length; i++) {
                 guess[i] = xpls[i];
             }
             System.out.print("After using SSE+Uncmin: ");
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
-            useSumOfSquaredErrors = false;
+            // useSumOfSquaredErrors = false;
         }
 
         boolean useUncminFirst = false;
@@ -322,7 +322,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             System.exit(0);
         }
 
-        if (useCUE) {
+        if (useCUE && 1==2) {
             System.out.println("-----------");
             System.out.print("f: " + q + " ");
             pmUtility.prettyPrint(new Jama.Matrix(x, 1));
