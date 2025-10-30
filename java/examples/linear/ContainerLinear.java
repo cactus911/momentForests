@@ -176,6 +176,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 //                    Jama.Matrix betaOLS = pmUtility.OLSsvd(X, Y, false);
 //                    System.out.print("\t\tCompared to betaOLS: ");
 //                    pmUtility.prettyPrintVector(betaOLS);
+                
                 if (debugVerbose) {
                     System.out.format("ContainerLinear.computeBetaAndErrors SSE: %g ", +goodnessOfFit);
                     pmUtility.prettyPrintVector(beta);
@@ -225,7 +226,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     pmUtility.prettyPrint(B.inverse().times(1.0 / Y.getRowDimension()));
 
                     System.exit(0);
-                }
+                } 
             } catch (Exception e) {
                 if (allParametersHomogeneous) {
                     e.printStackTrace();
@@ -362,7 +363,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         // double q = (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0); // this is the continuous updating estimator (CUE)
         // that appears to sometimes generate perverse decreases in fit when splitting (probably due to some numerical instability in inversion, and the confounding of fits versus variance)
         double q = ((g.transpose()).times(g)).get(0, 0); // this is gmm with identity weighting matrix
-
+        
         if (debugMoment) {
             System.out.println("beta:");
             pmUtility.prettyPrint(beta);
@@ -398,7 +399,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
             f.getContentPane().setLayout(new BorderLayout());
             f.getContentPane().add(new ChartPanel(chart));
         }
-
+        
         // key point here is that we estimate the model using GMM
         // but we report goodness-of-fit when searching over the splits
 //        System.exit(0);
