@@ -102,10 +102,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 50;
+        int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 500; numObs <= 2000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 1280000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.println(" numObs = " + numObs);
                 System.out.println("-----------------------");
@@ -131,8 +131,8 @@ public class LinearTestMain {
 
                 JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-                // boolean[] d = {false};
-                boolean[] d = {false, true};
+                boolean[] d = {true};
+                // boolean[] d = {false, true};
 
                 for (boolean detectHomogeneity : d) {
                     // boolean detectHomogeneity = !true;
@@ -343,7 +343,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 50;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -373,7 +373,7 @@ public class LinearTestMain {
         // partial linear model results from CV:
         // 500: 50, 10, 2
         // 
-        boolean runCV = true;
+        boolean runCV = !true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -389,7 +389,7 @@ public class LinearTestMain {
                     // test to see how well it does if I spot it the correct homogeneous
                     // parameter                    
                     mySpecification.setHomogeneousIndex(1);
-                    mySpecification.setHomogeneousParameter(1, 1.0); 
+                    mySpecification.setHomogeneousParameter(1, 1.0);
                 } else {
                     first = true; // don't want to record the infeasible CV parameters
                 }
@@ -446,9 +446,9 @@ public class LinearTestMain {
                 bestMaxDepth = 6;
             }
 
-            bestMinObservationsPerLeaf = 2;
-            bestMinImprovement = 10.0;
-            bestMaxDepth = 3;
+            bestMinObservationsPerLeaf = 100;
+            bestMinImprovement = 1.0;
+            bestMaxDepth = 2;
         }
 
         /**
@@ -456,7 +456,7 @@ public class LinearTestMain {
          */
         System.out.println("Computing final trees...");
         // numberTreesInForest = 10; // using larger numbers here really improves fit!
-        verbose = false;
+        // verbose = false;
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity && bestMaxDepth > 0) {
@@ -465,6 +465,7 @@ public class LinearTestMain {
         setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
         System.out.println("Final out-of-sample MSE in Y: " + outOfSampleYMSE);
+
         System.out.println("Finished execute.");
 
     }
@@ -526,14 +527,14 @@ public class LinearTestMain {
         // System.out.println(hpl);
         setHomogeneousParameterList(hpl);
 
-        boolean executeSearch = true;
+        boolean executeSearch = false;
         /**
          * Estimate values of homogeneous parameters
          */
         if (executeSearch) {
             if (!hpl.isEmpty()) {
                 // System.out.println("Initializing search container");
-                numberTreesInForest = 1;
+                // numberTreesInForest = 1;
                 HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, minImprovement, minObservationsPerLeaf, maxDepth,
                         getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                 // System.out.println("Calling execute search");

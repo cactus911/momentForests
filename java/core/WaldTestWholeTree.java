@@ -24,10 +24,9 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
     Jama.Matrix omega; // weighting matrix in GMM
     boolean useCUE = false; // utilize continuously-updated weighting matrix
-    boolean useSumOfSquaredErrors = false; // use SSE to get a starting value for GMM, which can be sensitive in small samples
+    
     private final MomentSpecification spec;
-
-    boolean debug = false;
+    boolean debug = true;
 
     public WaldTestWholeTree(ArrayList<DataLens> v, MomentSpecification spec) {
         this.v = v;
@@ -200,18 +199,6 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         int numMoments = v.get(0).getX().getColumnDimension() * v.size();
         omega = Jama.Matrix.identity(numMoments, numMoments);
 
-        boolean minimizeSSEFirst = false;
-        if (minimizeSSEFirst && !constrainedEstimation) {
-            useSumOfSquaredErrors = true;
-            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-            for (int i = 0; i < guess.length; i++) {
-                guess[i] = xpls[i];
-            }
-            System.out.print("After using SSE+Uncmin: ");
-            pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
-            useSumOfSquaredErrors = false;
-        }
-
         boolean useUncminFirst = false;
         if (useUncminFirst && !constrainedEstimation) {
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
@@ -280,6 +267,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             System.out.print("after second step with CUE: ");
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+            useCUE = false;
         }
 
         return xpls;

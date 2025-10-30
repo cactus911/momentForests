@@ -210,7 +210,7 @@ public class MomentForest {
             }
             double pct = 100.0 * voteCounts[i] / numberTreesInForest;
             if (verboseVoting) {
-                jt.append(i + ". votes: " + voteCounts[i] + " out of " + numberTreesInForest + " (" + pct + "): " + votes[i] + "\n");
+                jt.append(i + ". votes: " + voteCounts[i] + " out of " + numberTreesInForest + " (" + pct + "%): " + votes[i] + "\n");
             }
             if (voteCounts[i] < numberTreesInForest) {
                 // System.out.println("Detected variance in voting on parameter "+i+": "+voteCounts[i]);
