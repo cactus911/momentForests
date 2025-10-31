@@ -82,8 +82,13 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         pmUtility.prettyPrint(x1px1);
         System.out.println("This is X'X/n:");
         pmUtility.prettyPrint(x1px1.times(1.0 / numObs));
+        System.out.println("This is X'X/n_leaf:");
+        pmUtility.prettyPrint(x1px1.times(1.0 / v.get(0).getNumObs()));
         System.out.println("n in that leaf = "+v.get(0).getNumObs());
         System.out.println(x1.getRowDimension());
+        System.out.println("B:");
+        pmUtility.prettyPrint(B);
+        System.exit(0);
 
         if (debug) {
             System.out.print("Constrained Estimates: ");
@@ -537,6 +542,8 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             numObs += lens.getNumObs();
             ContainerMoment c = spec.getContainerMoment(lens);
             Jama.Matrix leafJacobian = c.getJacobianNoDivision(cellBetaList.get(leaf));
+            System.out.println("leaf "+leaf+" Jacobian:");
+            pmUtility.prettyPrint(leafJacobian);
             if (debug) {
                 System.out.print("beta in leaf " + leaf + " ");
                 pmUtility.prettyPrintVector(cellBetaList.get(leaf));
@@ -549,7 +556,15 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
         G.timesEquals(1.0 / numObs);
 
+        System.out.println("G after division by overall numObs");
+        pmUtility.prettyPrint(G);
+        
         omega = computeOptimalOmega(x);
+        
+        System.out.println("omega:");
+        pmUtility.prettyPrint(omega);
+        System.out.println("omega inverse:");
+        pmUtility.prettyPrint(omega.inverse());
 
         boolean debugHere = false;
         if (debugHere) {
