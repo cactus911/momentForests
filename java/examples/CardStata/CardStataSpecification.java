@@ -32,6 +32,9 @@ import core.IntegerPartition;
 import core.MomentContinuousSplitObj;
 import core.MomentPartitionObj;
 import core.MomentSpecification;
+import examples.linear.ContainerLinear;
+import examples.linear.MomentContinuousSplitObjLinear;
+import examples.linear.MomentPartitionObjLinear;
 import java.util.*;
 import utility.pmUtility;
 
@@ -147,7 +150,7 @@ public class CardStataSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerCardStata l = new ContainerCardStata(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
+        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
         l.computeBetaAndErrors();
         failedEstimator = l.didEstimatorFail();
         return l;
@@ -330,7 +333,7 @@ public class CardStataSpecification implements MomentSpecification {
     
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerCardStata(lens, homogeneityIndex, homogeneousParameterVector, false, this);
+        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false, this);
     }
 
     @Override
