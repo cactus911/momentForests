@@ -76,9 +76,11 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         Jama.Matrix x1 = v.get(0).getX();
-        pmUtility.prettyPrint(x1);
+        // pmUtility.prettyPrint(x1);
         Jama.Matrix x1px1 = (x1.transpose()).times(x1);
+        System.out.println("This is X'X:");
         pmUtility.prettyPrint(x1px1);
+        System.out.println("This is X'X/n:");
         pmUtility.prettyPrint(x1px1.times(1.0 / numObs));
         System.out.println("n in that leaf = "+v.get(0).getNumObs());
         System.out.println(x1.getRowDimension());

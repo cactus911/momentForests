@@ -21,10 +21,11 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.CardStata;
+package examples.linearStata;
 
 import Jama.Matrix;
 import core.DataLens;
+import core.HomogeneousParameterSorter;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.MomentSpecification;
@@ -59,7 +60,7 @@ import com.stata.sfi.Macro;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>, Nathan Jiang <jiang.n@wustl.edu>
  */
-public class CardMain {
+public class CardStataMain {
 
     private ArrayList<Integer> homogeneousParameterList;
     private Jama.Matrix estimatedHomogeneousParameters;
@@ -69,11 +70,11 @@ public class CardMain {
      * @param args the command line arguments
      */
     
-    public CardMain(JTextArea jt) {
+    public CardStataMain(JTextArea jt) {
         this.jt = jt;
     }
     
-    public static void execute(CardSpecification spec, int seed) {
+    public static void execute(CardStataSpecification spec, int seed) {
         // Redirect GUI output (JTextArea) to System.out for headless use
         JTextArea dummy = new JTextAreaAutoscroll() {
             @Override
@@ -82,11 +83,11 @@ public class CardMain {
             }
         };
 
-        CardMain model = new CardMain(dummy);
+        CardStataMain model = new CardStataMain(dummy);
         model.executeWithSpec(spec, seed);
     }
 
-    public void executeWithSpec(CardSpecification spec, int seed) {
+    public void executeWithSpec(CardStataSpecification spec, int seed) {
     	//Random rng = new Random(777);
         Random rng = new Random(seed);
         MomentSpecification mySpecification = spec;
@@ -161,12 +162,12 @@ public class CardMain {
                     for (int maxDepth : gridMaxDepth) {
                     	
                     	
-                    	SFIToolkit.displayln("Parameters before detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));                	
+                    	//SFIToolkit.displayln("Parameters before detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));                	
                     	mySpecification.resetHomogeneityIndex();
                         if (detectHomogeneity) {
                             executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
                         }                      
-                        SFIToolkit.displayln("Parameters flags after detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));
+                        //SFIToolkit.displayln("Parameters flags after detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));
                         computeFitStatistics s = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false);
                         s.computeOutOfSampleMSE();
                         cvList.add(s);

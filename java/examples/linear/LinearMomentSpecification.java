@@ -161,7 +161,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
+        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
         l.computeBetaAndErrors();
         failedEstimatorIndicator = l.didEstimatorFail();
         return l;
@@ -399,7 +399,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false);
+        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false, this);
     }
 
     @Override

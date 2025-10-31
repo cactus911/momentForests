@@ -105,7 +105,7 @@ public class LinearTestMain {
         int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
+            for (int numObs = 100000; numObs <= 100000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.println(" numObs = " + numObs);
                 System.out.println("-----------------------");
@@ -631,7 +631,7 @@ public class LinearTestMain {
         for (int i = 0; i < fillerIndex.length; i++) {
             fillerIndex[i] = false;
         }
-        ContainerLinear cl = new ContainerLinear(new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null), fillerIndex, null, false);
+        ContainerLinear cl = new ContainerLinear(new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null), fillerIndex, null, false, mySpecification);
         cl.computeBetaAndErrors();
         Jama.Matrix beta = cl.getBeta();
         setParametricParameters(beta);
@@ -753,8 +753,8 @@ public class LinearTestMain {
             outOfSampleFit += pmUtility.sumSquaredElements((compositeEstimatedBeta.minus(bTruth)));
         }
 
-        XYSeriesCollection xyc = new XYSeriesCollection(betaTruthXY);
-        xyc.addSeries(betaEstimateXY);
+        // XYSeriesCollection xyc = new XYSeriesCollection(betaTruthXY);
+        // xyc.addSeries(betaEstimateXY);
         // xyc.addSeries(betaEstimateXY5);
         // xyc.addSeries(betaEstimateXY95);
 

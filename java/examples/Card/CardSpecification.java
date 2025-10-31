@@ -32,6 +32,9 @@ import core.IntegerPartition;
 import core.MomentContinuousSplitObj;
 import core.MomentPartitionObj;
 import core.MomentSpecification;
+import examples.linear.ContainerLinear;
+import examples.linear.MomentContinuousSplitObjLinear;
+import examples.linear.MomentPartitionObjLinear;
 
 import java.io.FileReader;
 import java.io.BufferedReader;
@@ -50,10 +53,13 @@ public class CardSpecification implements MomentSpecification {
     Jama.Matrix balancingVector; // is treatment status in the RCT setting
     int numObs;
     int numtrees;
+    double proportionObservationsToEstimateTreeStructure = 0.35;
     int[] variableSearchIndex; // this should be restricted to only Z
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean failedEstimator = false;
+    int[] stratificationIndex = null;   
+    String betaPrefixes = "";
 
     // NEED TO UPDATE
     String[] varNames = {"constant", "ed76", "exp76", "exp762", "black", "reg76r", "smsa76r", "region_1966", "smsa66r", "daded", "momed", "nodaded", "nomomed", "famed", "momdad14", "sinmom14"};
@@ -114,7 +120,7 @@ public class CardSpecification implements MomentSpecification {
          * 15. dummy = 1 if household is a single mother
          *
          */
-        int[] vsi = {1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15};
+        int[] vsi = {1, 2, 4};
         Boolean[] wvd = {true,
             false,
             false,
@@ -201,7 +207,7 @@ public class CardSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerCard l = new ContainerCard(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
+    	ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
         l.computeBetaAndErrors();
         failedEstimator = l.didEstimatorFail();
         return l;
@@ -231,7 +237,11 @@ public class CardSpecification implements MomentSpecification {
     public int numberoftrees() {
         return numtrees;
     }
-
+    
+    public double getProportionObservationsToEstimateTreeStructure() {
+        return this.proportionObservationsToEstimateTreeStructure;
+    }
+    
     @Override
     public Boolean[] getDiscreteVector() {
         return DiscreteVariables;
@@ -362,7 +372,7 @@ public class CardSpecification implements MomentSpecification {
             // NEED TO UPDATE
             X = pmUtility.getColumn(dX, 0); // constant
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // education 
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
+//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // exp^2
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // black
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // south
@@ -377,7 +387,7 @@ public class CardSpecification implements MomentSpecification {
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); // both parents present
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15)); // single mother
             
-            
+            /*
             //One-hot encoding of categorical variables (e.g., region_1966)
             int numValues = 9; // region_1966 takes values 1 to 9
             Jama.Matrix valueDummies = new Jama.Matrix(numObsFile, numValues - 1); 
@@ -407,7 +417,8 @@ public class CardSpecification implements MomentSpecification {
             }
 
             X = pmUtility.concatMatrix(X, experienceInteraction);
-
+			*/
+            
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
              * categorical variables right now since they are stacked and not
@@ -575,11 +586,20 @@ public class CardSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerCard(lens, homogeneityIndex, homogeneousParameterVector, false, this);
+        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false, this);
     }
 
     @Override
     public int getNumParams() {
         return X.getColumnDimension();
+    }
+    
+    public int[] getStratificationIndex() {
+        return this.stratificationIndex;
+    }
+    
+    @Override
+    public String getBetaPrefixes() {
+    	return this.betaPrefixes;
     }
 }

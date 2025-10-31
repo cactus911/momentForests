@@ -25,6 +25,7 @@ package examples.Card;
 
 import Jama.Matrix;
 import core.DataLens;
+import core.HomogeneousParameterSorter;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.MomentSpecification;
@@ -102,7 +103,7 @@ public class CardMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 50;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -124,9 +125,9 @@ public class CardMain {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.1; minImprovement <= 2.0; minImprovement *= 2) {
-                    for (int maxDepth = 7; maxDepth >= 1; maxDepth--) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.1; minImprovement <= 0.2; minImprovement *= 2) {
+                    for (int maxDepth = 7; maxDepth >= 6; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -230,8 +231,8 @@ public class CardMain {
              * Step 2: determine homogeneous parameters post-CV
              */
             double minProportionInEachLeaf = 0.01;
-
-            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, 7);
+            
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
 
             testParameterHomogeneity = true;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
@@ -248,9 +249,9 @@ public class CardMain {
                 loblolly.printTree();
             }
 
-            myForest.testHomogeneity();
+            myForest.testHomogeneity(verbose);
 
-            // loblolly.testHomogeneity();
+            // loblolly.testHomogeneity(verbose);
             // should I implement a voting scheme here across all the trees for discerning homogeneity?
             // idea is to take the majority vote across trees
             // then take the average value from those trees that voted yes
@@ -410,9 +411,9 @@ public class CardMain {
         public void computeOutOfSampleMSE() {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
-            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, 7);
-            //DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
-            DataLens[] split = overallLens.randomlySplitSampleByStrata(0.9, rngBaseSeedMomentForest);
+            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
+            DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
+            //DataLens[] split = overallLens.randomlySplitSampleByStrata(0.9, rngBaseSeedMomentForest);
             DataLens estimatingLens = split[0];
             DataLens oosDataLens = split[1];
 
@@ -466,7 +467,7 @@ public class CardMain {
 
             MSE = outOfSampleFit / testZ.getRowDimension(); // mse
 
-            if (generatePlots) {
+            if (generatePlots && 1 == 2) {
                 JFrame f = new JFrame("Plots");
                 f.setBounds(100, 100, 800, 800);
                 f.getContentPane().setLayout(new BorderLayout());
@@ -549,7 +550,7 @@ public class CardMain {
 
         public void outputInSampleFits() {
             boolean verboseInSample = false;
-            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, 7);
+            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
 
             myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, overallLens, verboseInSample, new TreeOptions());
             TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1

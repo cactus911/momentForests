@@ -1,4 +1,4 @@
-package examples.CardStata;
+package examples.linearStata;
 
 import com.stata.sfi.Data;
 import com.stata.sfi.SFIToolkit;
@@ -13,7 +13,7 @@ import java.util.*;
 */
 
 public class StataInterface {
-	public static int RunCardModel(String[] args) {
+	public static int RunLinearModel(String[] args) {
 		
 		boolean debug = false;
 		
@@ -145,7 +145,7 @@ public class StataInterface {
             }            
             
             // Construct CardSpecification
-            CardSpecification spec = new CardSpecification(X, Y, Z, balance);
+            CardStataSpecification spec = new CardStataSpecification(X, Y, Z, balance);
             spec.setVarNames(varNames);
             spec.setVariableIndicesToSearchOver(variableSearchIndex);
             spec.setDiscreteVariables(zVars, Z, discreteVars, variableSearchIndex);
@@ -288,7 +288,7 @@ public class StataInterface {
             }
 			
             // Run the model
-            CardMain.execute(spec, seed);
+            CardStataMain.execute(spec, seed);
 
         } catch (Exception e) {
             java.io.StringWriter sw = new java.io.StringWriter();
