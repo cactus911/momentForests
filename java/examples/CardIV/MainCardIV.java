@@ -25,16 +25,28 @@ package examples.CardIV;
 
 import Jama.Matrix;
 import core.DataLens;
+import core.HomogeneousParameterSorter;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
+import core.MomentSpecification;
 import core.TreeMoment;
 import core.TreeOptions;
+import java.awt.BorderLayout;
+
 import java.awt.GridLayout;
+import java.io.BufferedWriter;
+import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.ChartPanel;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.axis.NumberAxis;
+import org.jfree.data.xy.XYSeries;
+import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -197,7 +209,7 @@ public class MainCardIV {
                 loblolly.printTree();
             }
             
-            myForest.testHomogeneity();
+            myForest.testHomogeneity(false);
 
             ArrayList<Integer> hpl = new ArrayList<>();
             ArrayList<Double> hplStartingValues = new ArrayList<>();
