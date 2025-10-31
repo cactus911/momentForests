@@ -124,9 +124,9 @@ public class CardMain {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.1; minImprovement <= 2.0; minImprovement *= 2) {
-                    for (int maxDepth = 7; maxDepth >= 1; maxDepth--) {
+            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
+                for (double minImprovement = 0.1; minImprovement <= 0.2; minImprovement *= 2) {
+                    for (int maxDepth = 7; maxDepth >= 6; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -411,8 +411,8 @@ public class CardMain {
             // System.out.println("\nComputing OOS In Parameter Space\n");
             // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
             DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
-            //DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
-            DataLens[] split = overallLens.randomlySplitSampleByStrata(0.9, rngBaseSeedMomentForest);
+            DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
+            //DataLens[] split = overallLens.randomlySplitSampleByStrata(0.9, rngBaseSeedMomentForest);
             DataLens estimatingLens = split[0];
             DataLens oosDataLens = split[1];
 
@@ -466,7 +466,7 @@ public class CardMain {
 
             MSE = outOfSampleFit / testZ.getRowDimension(); // mse
 
-            if (generatePlots) {
+            if (generatePlots && 1 == 2) {
                 JFrame f = new JFrame("Plots");
                 f.setBounds(100, 100, 800, 800);
                 f.getContentPane().setLayout(new BorderLayout());

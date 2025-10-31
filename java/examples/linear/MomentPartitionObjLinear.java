@@ -73,8 +73,8 @@ public class MomentPartitionObjLinear extends MomentPartitionObj {
          * There is a constant, and we measure the coefficient on the W
          * So in this implementation just use the first column to get OLS fits and errors, etc.
          */
-        ContainerLinear leftLinear = new ContainerLinear(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
-        ContainerLinear rightLinear = new ContainerLinear(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
+        ContainerLinear leftLinear = new ContainerLinear(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec); //This object will compute the beta and MSE for the left split
+        ContainerLinear rightLinear = new ContainerLinear(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec);
         
         leftLinear.computeBetaAndErrors();
         rightLinear.computeBetaAndErrors();

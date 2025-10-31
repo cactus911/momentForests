@@ -631,7 +631,7 @@ public class LinearTestMain {
         for (int i = 0; i < fillerIndex.length; i++) {
             fillerIndex[i] = false;
         }
-        ContainerLinear cl = new ContainerLinear(new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null), fillerIndex, null, false);
+        ContainerLinear cl = new ContainerLinear(new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null), fillerIndex, null, false, mySpecification);
         cl.computeBetaAndErrors();
         Jama.Matrix beta = cl.getBeta();
         setParametricParameters(beta);
