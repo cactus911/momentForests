@@ -145,7 +145,7 @@ public class StataInterface {
             }            
             
             // Construct CardSpecification
-            CardStataSpecification spec = new CardStataSpecification(X, Y, Z, balance);
+            LinearStataSpecification spec = new LinearStataSpecification(X, Y, Z, balance);
             spec.setVarNames(varNames);
             spec.setVariableIndicesToSearchOver(variableSearchIndex);
             spec.setDiscreteVariables(zVars, Z, discreteVars, variableSearchIndex);
@@ -288,7 +288,7 @@ public class StataInterface {
             }
 			
             // Run the model
-            CardStataMain.execute(spec, seed);
+            LinearStataMain.execute(spec, seed);
 
         } catch (Exception e) {
             java.io.StringWriter sw = new java.io.StringWriter();

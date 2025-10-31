@@ -42,7 +42,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>, Nathan Jiang <jiang.n@wustl.edu>
  */
-public class CardStataSpecification implements MomentSpecification {
+public class LinearStataSpecification implements MomentSpecification {
 
     Jama.Matrix X;
     Jama.Matrix Y;
@@ -71,7 +71,7 @@ public class CardStataSpecification implements MomentSpecification {
     final private boolean[] homogeneityIndex; // = new boolean[X.getColumnDimension()];
     final private Jama.Matrix homogeneousParameterVector; // = new Jama.Matrix(X.getColumnDimension(), 1); // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
  
-    public CardStataSpecification(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, Jama.Matrix balancingVector) {
+    public LinearStataSpecification(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, Jama.Matrix balancingVector) {
         this.X = X;
         this.Y = Y;
         this.Z = Z;

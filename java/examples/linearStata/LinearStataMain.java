@@ -60,7 +60,7 @@ import com.stata.sfi.Macro;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>, Nathan Jiang <jiang.n@wustl.edu>
  */
-public class CardStataMain {
+public class LinearStataMain {
 
     private ArrayList<Integer> homogeneousParameterList;
     private Jama.Matrix estimatedHomogeneousParameters;
@@ -70,11 +70,11 @@ public class CardStataMain {
      * @param args the command line arguments
      */
     
-    public CardStataMain(JTextArea jt) {
+    public LinearStataMain(JTextArea jt) {
         this.jt = jt;
     }
     
-    public static void execute(CardStataSpecification spec, int seed) {
+    public static void execute(LinearStataSpecification spec, int seed) {
         // Redirect GUI output (JTextArea) to System.out for headless use
         JTextArea dummy = new JTextAreaAutoscroll() {
             @Override
@@ -83,11 +83,11 @@ public class CardStataMain {
             }
         };
 
-        CardStataMain model = new CardStataMain(dummy);
+        LinearStataMain model = new LinearStataMain(dummy);
         model.executeWithSpec(spec, seed);
     }
 
-    public void executeWithSpec(CardStataSpecification spec, int seed) {
+    public void executeWithSpec(LinearStataSpecification spec, int seed) {
     	//Random rng = new Random(777);
         Random rng = new Random(seed);
         MomentSpecification mySpecification = spec;
@@ -165,7 +165,7 @@ public class CardStataMain {
                     	//SFIToolkit.displayln("Parameters before detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));                	
                     	mySpecification.resetHomogeneityIndex();
                         if (detectHomogeneity) {
-                            executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
+                            executeHomogeneousParameterClassificationAndSearch(mySpecification, 1, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
                         }                      
                         //SFIToolkit.displayln("Parameters flags after detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));
                         computeFitStatistics s = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false);
@@ -332,18 +332,26 @@ public class CardStataMain {
                 // all homogenous, don't need to optimize, just set to stump and let it run
             	maxDepth = 0;
             } else {
-                SFIToolkit.displayln("Initializing search container");
+            	if (verboselast) {
+            		SFIToolkit.displayln("Initializing search container");
+            	}
                 HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, minImprovement, minObservationsPerLeaf, maxDepth, getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
-                SFIToolkit.displayln("Calling execute search");
+                if (verboselast) {
+                	SFIToolkit.displayln("Calling execute search");
+                }
                 con.executeSearch();
-                SFIToolkit.displayln("Post search");
-                
+                if (verboselast) {
+                	SFIToolkit.displayln("Post search");
+                }
                 Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
-                SFIToolkit.display("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
-                pmUtility.prettyPrintVector(homogeneousParameters);
-
+                if (verboselast) {
+                	SFIToolkit.display("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
+                	pmUtility.prettyPrintVector(homogeneousParameters);
+                }
                 int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
-                SFIToolkit.displayln("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
+                if (verboselast) {
+                	SFIToolkit.displayln("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
+                }
                 Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
                 int counter = 0;
                 for (int k = 0; k < K; k++) {
@@ -353,8 +361,10 @@ public class CardStataMain {
                         counter++;
                     }
                 }
-                SFIToolkit.displayln("Specification homogeneous parameter vector: ");
-                pmUtility.prettyPrintVector(mySpecification.getHomogeneousParameterVector());
+                if (verboselast) {
+                	SFIToolkit.displayln("Specification homogeneous parameter vector: ");
+                	pmUtility.prettyPrintVector(mySpecification.getHomogeneousParameterVector());
+                }
                 // System.exit(0);
                 setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
             }
