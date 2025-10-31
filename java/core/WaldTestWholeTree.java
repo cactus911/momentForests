@@ -24,7 +24,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
     Jama.Matrix omega; // weighting matrix in GMM
     boolean useCUE = false; // utilize continuously-updated weighting matrix
-    
+
     private final MomentSpecification spec;
     boolean debug = true;
 
@@ -74,6 +74,14 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         for (DataLens h : v) {
             numObs += h.getNumObs();
         }
+
+        Jama.Matrix x1 = v.get(0).getX();
+        pmUtility.prettyPrint(x1);
+        Jama.Matrix x1px1 = (x1.transpose()).times(x1);
+        pmUtility.prettyPrint(x1px1);
+        pmUtility.prettyPrint(x1px1.times(1.0 / numObs));
+        System.out.println("n in that leaf = "+v.get(0).getNumObs());
+        System.out.println(x1.getRowDimension());
 
         if (debug) {
             System.out.print("Constrained Estimates: ");
@@ -527,9 +535,9 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             numObs += lens.getNumObs();
             ContainerMoment c = spec.getContainerMoment(lens);
             Jama.Matrix leafJacobian = c.getJacobianNoDivision(cellBetaList.get(leaf));
-            if(debug) {
+            if (debug) {
                 System.out.print("beta in leaf " + leaf + " ");
-            pmUtility.prettyPrintVector(cellBetaList.get(leaf));
+                pmUtility.prettyPrintVector(cellBetaList.get(leaf));
             }
             for (int i = 0; i < leafJacobian.getRowDimension(); i++) {
                 for (int j = 0; j < leafJacobian.getColumnDimension(); j++) {

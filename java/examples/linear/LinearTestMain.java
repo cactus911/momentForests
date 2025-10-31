@@ -105,7 +105,7 @@ public class LinearTestMain {
         int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 1280000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.println(" numObs = " + numObs);
                 System.out.println("-----------------------");
@@ -448,7 +448,7 @@ public class LinearTestMain {
 
             bestMinObservationsPerLeaf = 100;
             bestMinImprovement = 1.0;
-            bestMaxDepth = 2;
+            bestMaxDepth = 1;
         }
 
         /**

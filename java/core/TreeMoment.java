@@ -850,8 +850,8 @@ public class TreeMoment {
 
             for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
                 try {
-                    DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
-                    // WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
+                    // DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
+                    WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
                     double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
                     testValues[k] = dm2;
                     
