@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.CardStata;
+package examples.linearStata;
 
 import Jama.Matrix;
 import core.DataLens;

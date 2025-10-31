@@ -1,4 +1,4 @@
-package examples.CardStata;
+package examples.linearStata;
 
 import com.stata.sfi.Data;
 import com.stata.sfi.SFIToolkit;
@@ -13,7 +13,7 @@ import java.util.*;
 */
 
 public class StataInterface {
-	public static int RunCardModel(String[] args) {
+	public static int RunLinearModel(String[] args) {
 		
 		boolean debug = false;
 		
