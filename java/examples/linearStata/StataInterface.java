@@ -138,13 +138,13 @@ public class StataInterface {
 	            }
             }
             
-            // Discrete variables
+            // Optional: discrete variables
             String[] discreteVars = new String[0];
             if (opts.containsKey("discretevars")) {
                 discreteVars = opts.get("discretevars").split(" ");
             }            
             
-            // Construct CardSpecification
+            // Construct LinearSpecification
             LinearStataSpecification spec = new LinearStataSpecification(X, Y, Z, balance);
             spec.setVarNames(varNames);
             spec.setVariableIndicesToSearchOver(variableSearchIndex);
@@ -157,7 +157,7 @@ public class StataInterface {
             	}
             }
             
-			// July 15, 2015 attempt to automate value labels for discrete variables
+			// July 15, 2025 attempt to automate value labels for discrete variables
 			/*
 			// Optional: value labels for discrete variables
 			if (opts.containsKey("value_labels")) {
@@ -280,7 +280,7 @@ public class StataInterface {
             }  
             spec.setProportionObservationsToEstimateTreeStructure(propstructure);
             
-			// Optional: random seed
+			// Random seed
 			Random rand = new Random();
 			int seed = rand.nextInt();
             if (opts.containsKey("seed")) {
