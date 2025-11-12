@@ -105,7 +105,7 @@ public class LinearTestMain {
         int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 100000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 400000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.println(" numObs = " + numObs);
                 System.out.println("-----------------------");
@@ -343,7 +343,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 50;
+        int numberTreesInForest = 500;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -356,7 +356,7 @@ public class LinearTestMain {
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
         boolean verbose = false;
         if (numberTreesInForest == 1) {
-            verbose = false;
+            verbose = !false;
         }
 
         long rngBaseSeedMomentForest = rng.nextLong();
@@ -446,9 +446,9 @@ public class LinearTestMain {
                 bestMaxDepth = 6;
             }
 
-            bestMinObservationsPerLeaf = 100;
-            bestMinImprovement = 1.0;
-            bestMaxDepth = 1;
+            bestMinObservationsPerLeaf = 10;
+            bestMinImprovement = 0.1;
+            bestMaxDepth = 2;
         }
 
         /**
@@ -462,9 +462,13 @@ public class LinearTestMain {
         if (detectHomogeneity && bestMaxDepth > 0) {
             executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
         }
-        setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
-                bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
-        System.out.println("Final out-of-sample MSE in Y: " + outOfSampleYMSE);
+
+        boolean goFast = true;
+        if (!goFast) {
+            setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
+                    bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
+            System.out.println("Final out-of-sample MSE in Y: " + outOfSampleYMSE);
+        }
 
         System.out.println("Finished execute.");
 
@@ -757,7 +761,6 @@ public class LinearTestMain {
         // xyc.addSeries(betaEstimateXY);
         // xyc.addSeries(betaEstimateXY5);
         // xyc.addSeries(betaEstimateXY95);
-
         // ChartGenerator.makeXYScatter(xyc, "Fit Beta", "zi", "beta");
         // jt.append("betaMSE: " + (outOfSampleFit / testZ.getRowDimension()) + " \t [" + rngSeed + "]\n");
         outOfSampleYMSE /= testZ.getRowDimension();

@@ -26,7 +26,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
     boolean useCUE = false; // utilize continuously-updated weighting matrix
 
     private final MomentSpecification spec;
-    boolean debug = true;
+    boolean debug = false;
 
     public WaldTestWholeTree(ArrayList<DataLens> v, MomentSpecification spec) {
         this.v = v;
@@ -123,8 +123,9 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 //        System.out.println("Newey-McFadden B:");
 //        pmUtility.prettyPrint(B);
         // wald3 = numObs * (((diffTheta.transpose()).times(acov.inverse())).times(diffTheta)).get(0, 0);
-        wald3 = numObs * (((diffTheta.transpose()).times(B)).times(diffTheta)).get(0, 0); // same thing numerically, but avoids inverting an inverse
-
+        double adjustedNumObs = Math.pow(numObs, 0.9);
+        wald3 = adjustedNumObs * (((diffTheta.transpose()).times(B)).times(diffTheta)).get(0, 0); // same thing numerically, but avoids inverting an inverse
+        
         // let's try the w3 wald test from Newey McFadden here instead (doesn't have the optimal weighting matrix messing things up)
         if (debug) {
             System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " wald3: " + wald3);
@@ -546,7 +547,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             ContainerMoment c = spec.getContainerMoment(lens);
             Jama.Matrix leafJacobian = c.getJacobianNoDivision(cellBetaList.get(leaf));
 //            System.out.println("leaf "+leaf+" Jacobian:");
-            pmUtility.prettyPrint(leafJacobian);
+            // pmUtility.prettyPrint(leafJacobian);
             if (debug) {
                 System.out.print("beta in leaf " + leaf + " ");
                 pmUtility.prettyPrintVector(cellBetaList.get(leaf));
