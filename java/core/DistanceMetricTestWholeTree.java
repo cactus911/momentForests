@@ -18,7 +18,7 @@ import utility.pmUtility;
  */
 public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
-    boolean verbose = true;
+    boolean verbose = false;
 
     ArrayList<DataLens> v;
     int indexConstrainedParameter = -1;
@@ -243,10 +243,9 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             omegaInverse = computeOptimalOmegaInverse(xpls);
             method[1] = 2;
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-
+            System.arraycopy(xpls, 0, guess, 0, guess.length);
             //System.out.println("Finished second stage");
         }
-
         // let's see if DE can do better
         boolean useDE = false;
         if (useDE) {
