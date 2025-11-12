@@ -19,7 +19,6 @@ import utility.pmUtility;
 public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
     ArrayList<DataLens> v;
-    int indexConstrainedParameter = -1;
     private double valueConstrainedParameter;
 
     Jama.Matrix omega; // weighting matrix in GMM
@@ -27,22 +26,39 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
     private final MomentSpecification spec;
     boolean debug = false;
+    int indexConstrainedParameter;
 
     public WaldTestWholeTree(ArrayList<DataLens> v, MomentSpecification spec) {
         this.v = v;
         this.spec = spec;
     }
-
-    public double computeStatistic(int indexConstrainedParameter) {
-
-        if (debug) {
-            System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameter + " ------------------------");
+    
+    public Jama.Matrix computeRestrictedTheta(int indexConstrainedParameterPassed) {
+        // System.out.println("<<<<<<<<<<<<<<<<<< computing restricted k = "+indexConstrainedParameterPassed+" >>>>>>>>>>>>>>>>>>>>>>");
+        indexConstrainedParameter = indexConstrainedParameterPassed;
+        int numParamsEachSplit = spec.getNumParams(); // v.get(0).getX().getColumnDimension();
+        if(spec.getNumParams()!=v.get(0).getX().getColumnDimension()) {
+            System.out.println("Number of parameters mismatch");
+            System.exit(0);
         }
+        double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1);
+        valueConstrainedParameter = constrainedX[1];
+        // double fminConstrained = f_to_minimize(constrainedX);
+
+        Jama.Matrix thetaConstrained = convertToStackedBeta(constrainedX);
+        return thetaConstrained;
+    }
+
+    public double computeStatistic(int indexConstrainedParameterPassed, Jama.Matrix thetaConstrained) {
+        if (debug) {
+            System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameterPassed + " ------------------------");
+        }
+        indexConstrainedParameter = -1;
 
         double wald3 = 0;
 
         // let's test this unconstrained first to make sure that we get the same parameters back
-        int numParamsEachSplit = v.get(0).getX().getColumnDimension();
+        int numParamsEachSplit = spec.getNumParams(); // v.get(0).getX().getColumnDimension();
 
         double[] unconstrainedX = computeParameters(numParamsEachSplit * v.size());
         double fminUnconstrained = f_to_minimize(unconstrainedX);
@@ -64,16 +80,16 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         // then impose constraint on indexParameterConstrain, report twice the difference
-        this.indexConstrainedParameter = indexConstrainedParameter;
-        double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1);
-        double fminConstrained = f_to_minimize(constrainedX);
-
-        Jama.Matrix thetaConstrained = convertToStackedBeta(constrainedX);
+//        double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1, indexConstrainedParameter);
+//        double fminConstrained = f_to_minimize(constrainedX);
+//        Jama.Matrix thetaConstrained = convertToStackedBeta(constrainedX);
 
         int numObs = 0;
         for (DataLens h : v) {
             numObs += h.getNumObs();
         }
+        
+        // System.out.println(numObs);
 
         boolean outputABunchOfTestStuff = false;
         if (outputABunchOfTestStuff) {
@@ -98,14 +114,14 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             pmUtility.prettyPrintVector(thetaConstrained);
         }
 
-        valueConstrainedParameter = constrainedX[1];
-
-        if (debug) {
-            for (Jama.Matrix beta : convertToBetaList(constrainedX)) {
-                pmUtility.prettyPrintVector(beta);
-            }
-            System.out.println("SSE (constrained): " + computeSSE(constrainedX));
-        }
+        
+//
+//        if (debug) {
+//            for (Jama.Matrix beta : convertToBetaList(constrainedX)) {
+//                pmUtility.prettyPrintVector(beta);
+//            }
+//            System.out.println("SSE (constrained): " + computeSSE(constrainedX));
+//        }
 
         Jama.Matrix diffTheta = thetaUnconstrained.minus(thetaConstrained);
 
@@ -123,20 +139,23 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 //        System.out.println("Newey-McFadden B:");
 //        pmUtility.prettyPrint(B);
         // wald3 = numObs * (((diffTheta.transpose()).times(acov.inverse())).times(diffTheta)).get(0, 0);
-        double adjustedNumObs = Math.pow(numObs, 0.9);
+        double adjustedNumObs = numObs; // Math.pow(numObs, 0.9);
         wald3 = adjustedNumObs * (((diffTheta.transpose()).times(B)).times(diffTheta)).get(0, 0); // same thing numerically, but avoids inverting an inverse
         
-        // let's try the w3 wald test from Newey McFadden here instead (doesn't have the optimal weighting matrix messing things up)
-        if (debug) {
-            System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " wald3: " + wald3);
+        if(debug) {
+            System.out.println("Wald3: "+wald3);
         }
+        
+        // let's try the w3 wald test from Newey McFadden here instead (doesn't have the optimal weighting matrix messing things up)
+//        if (debug) {
+//            System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " wald3: " + wald3);
+//        }
 
         // System.exit(0);
         return wald3;
     }
 
     private double[] computeParameters(int numParams) {
-
         if (debug) {
             System.out.println("Number of parameters: " + numParams);
         }
@@ -309,7 +328,11 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
          * out in general when we have broader cases)
          */
         int K = v.get(0).getX().getColumnDimension();
-
+        if(K!=spec.getNumMoments()) {
+            System.out.println("Num moments mismatch");
+            System.exit(0);
+        }
+        
         /**
          * The total size of the stacked moment vector is the dimensionality of
          * moments in each cell times number of cells
@@ -523,6 +546,10 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
     }
 
     public Matrix computeNeweyMcFaddenB(double[] x) {
+        if(debug) {
+            System.out.print("Called Newey-McFadden B with ");
+            pmUtility.prettyPrint(new Jama.Matrix(x,1));
+        }
         ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
 
         /**

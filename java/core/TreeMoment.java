@@ -27,6 +27,7 @@ import JSci.maths.statistics.ChiSqrDistribution;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Random;
 import java.util.TreeSet;
 import optimization.Fmin;
 import utility.pmUtility;
@@ -850,20 +851,79 @@ public class TreeMoment {
 
             for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
                 try {
-                    // DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
-                    WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
-                    double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
-                    testValues[k] = dm2;
-                    
-                    double pval = 1.0 - chi.cumulative(dm2);
-                    if (verbose) {
-                        System.out.println("p-value: " + pval);
-                    }
-                    pList.add(new PValue(k, pval));
-                    constrainedParameterList.add(new PValue(k, big.getValueConstrainedParameter()));
-                    if (dm2 < chi.inverse(0.95)) {
+                    boolean useSubsampling = true;
+                    if (useSubsampling) {
+                        // with subsampling, going to generate distribution of test statistic under null
+                        // ultimately we use all this machinery to produce a p-value and add that to the p-value list
+                        // i'm going to reuse code here but pass the datalens here
+                        // this necessitates some changes to waldtestwholetree.java, but so be it
+                        // makes it better in any case
+                        WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
+                        Jama.Matrix restrictedTheta = big.computeRestrictedTheta(k);
+                        // System.out.print("Restricted theta: ");
+                        // pmUtility.prettyPrintVector(restrictedTheta);
+                        // System.out.println("Computing Tn...");
+                        double Tn = big.computeStatistic(k, restrictedTheta);
+                        // System.out.println("Tn = "+Tn);
+                        
+                        int numSubsamples = 500;
+                        
+                        Jama.Matrix subsampleTb = new Jama.Matrix(numSubsamples,1);
+                        for(int r=0;r<numSubsamples;r++) {
+                            // System.out.println("\nr = "+r+"\n");
+                            // WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.7), momentSpec);
+                            WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.7), momentSpec);
+                            subsampleTb.set(r, 0, bigSubsample.computeStatistic(k, restrictedTheta));
+                            // System.out.println("Tb: "+subsampleTb.get(r,0));
+                        }
+                        // double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
+                        // System.out.println("Bootstrapped critical value: "+criticalValue);
+                        
+                        // p-value is percentage of subsampled test statistics above the value computed on the original data
+                        Jama.Matrix sortedTb = pmUtility.sortMatrixAscending(subsampleTb);
+                        
+                        // System.out.print("Tn: "+Tn+" Subsample test statistic values sorted: ");
+                        // pmUtility.prettyPrintVector(sortedTb);
+                        
+                        boolean foundP = false;
+                        double pvalue = 0;
+                        // int foundIndex = sortedTb.getRowDimension();
+                        for(int i=0;i<sortedTb.getRowDimension();i++) {
+                            if(Tn<sortedTb.get(i,0) && !foundP) {
+                                foundP = true;
+                                pvalue = (0.0 + sortedTb.getRowDimension() - i) / (0.0 + sortedTb.getRowDimension());
+                                // foundIndex= i;
+                            }
+                        }
+                        // System.out.println("found index: "+foundIndex);
+                        // System.out.println("number bootstrapped test statistics above that level: "+(sortedTb.getRowDimension()-foundIndex));
+                        // double above = (sortedTb.getRowDimension()-foundIndex);
+                        // System.out.println("with doubles: "+(above/sortedTb.getRowDimension()));
+                        // System.out.println("Determined p-value is: "+pvalue);
+                        pList.add(new PValue(k, pvalue));
+                        constrainedParameterList.add(new PValue(k, big.getValueConstrainedParameter()));
+                        
+                        
+                        // TODO ************** come back to this ************
+                        // pList.add(new PValue(k, big.getPValue(k)));
+                    } else {
+                        DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
+                        // WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
+                        // Jama.Matrix restrictedTheta = big.computeRestrictedTheta(k);
+
+                        double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
+                        testValues[k] = dm2;
+
+                        double pval = 1.0 - chi.cumulative(dm2);
                         if (verbose) {
-                            System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k + " constrained parameter guess: " + big.getValueConstrainedParameter());
+                            System.out.println("p-value: " + pval);
+                        }
+                        pList.add(new PValue(k, pval));
+                        constrainedParameterList.add(new PValue(k, big.getValueConstrainedParameter()));
+                        if (dm2 < chi.inverse(0.95)) {
+                            if (verbose) {
+                                System.out.println("Absent multiple testing correction, potential parameter homogeneity detected on k = " + k + " constrained parameter guess: " + big.getValueConstrainedParameter());
+                            }
                         }
                     }
                 } catch (IllegalStateException e) {
@@ -1105,5 +1165,41 @@ public class TreeMoment {
      */
     public double[] getTestValues() {
         return testValues;
+    }
+
+    /**
+     * 
+     * @param v ArrayList of terminal datalenses to be subsampled
+     * @param d Proportion of data to use in subsampled replacements
+     * @return 
+     */
+    private ArrayList<DataLens> subsample(ArrayList<DataLens> v, double d) {
+        // the way that I'm going to do this is to subsample each child datalens
+        // not sure that is 100% correct as this is something closer to a stratified subsample, but otherwise we need to redo the whole tree which i don't think is the right way to go about it
+        ArrayList<DataLens> subsampledData = new ArrayList<>(); // this is the new arraylist that we will return
+        
+        Random rng = new Random();
+        for(int i=0;i<v.size();i++) {
+            DataLens di = v.get(i);
+//            System.out.println("lens "+i+" original X:");
+//            pmUtility.prettyPrint(pmUtility.concatMatrix(di.getY(), di.getX()), 10);            
+//            System.out.println("mean x1: "+pmUtility.mean(di.getX(), 1));
+//            Jama.Matrix beta_i = pmUtility.OLS(di.getX(), di.getY(), false);
+//            System.out.println("Estimate of beta in this original leaf:");
+//            pmUtility.prettyPrint(beta_i);
+
+            DataLens diSubsampled = di.getSubsampledDataLens(rng.nextLong(), d);
+            
+            subsampledData.add(diSubsampled);
+//            System.out.println("lens "+i+" resampled X:");
+//            pmUtility.prettyPrint(pmUtility.concatMatrix(diSubsampled.getY(), diSubsampled.getX()), 10);
+//            System.out.println("mean x1: "+pmUtility.mean(diSubsampled.getX(), 1));
+//            Jama.Matrix beta_is = pmUtility.OLS(diSubsampled.getX(), diSubsampled.getY(), false);
+//            System.out.println("Estimate of beta in this resampled leaf:");
+//            pmUtility.prettyPrint(beta_is);
+        }
+        // System.exit(0);
+        
+        return subsampledData;
     }
 }

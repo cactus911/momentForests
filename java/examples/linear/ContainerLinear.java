@@ -73,7 +73,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     public void computeBetaAndErrors() {
     	// System.out.println("In compute beta and errors");
         if (Y.getRowDimension() < Math.max(30, X.getColumnDimension())) {
-            // System.out.println("Too few observations");
+            // System.out.println("Too few observations, dim(Y)  = "+Y.getRowDimension() );
             beta = null;
             goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {

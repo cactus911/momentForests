@@ -18,7 +18,7 @@ import utility.pmUtility;
  */
 public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
-    boolean verbose = false;
+    boolean verbose = true;
 
     ArrayList<DataLens> v;
     int indexConstrainedParameter = -1;

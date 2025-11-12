@@ -105,7 +105,7 @@ public class LinearTestMain {
         int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 400000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 10000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.println(" numObs = " + numObs);
                 System.out.println("-----------------------");
@@ -343,7 +343,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 500;
+        int numberTreesInForest = 40;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -446,8 +446,8 @@ public class LinearTestMain {
                 bestMaxDepth = 6;
             }
 
-            bestMinObservationsPerLeaf = 10;
-            bestMinImprovement = 0.1;
+            bestMinObservationsPerLeaf = 100;
+            bestMinImprovement = 1.0;
             bestMaxDepth = 2;
         }
 

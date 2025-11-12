@@ -181,7 +181,7 @@ public class PerezGonzalezMain {
 
             myForest.setTreeOptions(cvOptions);
             myForest.growForest();
-            myForest.testHomogeneity();
+            myForest.testHomogeneity(false);
             // TreeMoment loblolly = myForest.getTree(0);
             // loblolly.testHomogeneity();
 
