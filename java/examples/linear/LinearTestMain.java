@@ -102,7 +102,7 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 1;
+        int numMonteCarlos = 500;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
             for (int numObs = 1000; numObs <= 10000; numObs *= 2) {
@@ -373,7 +373,7 @@ public class LinearTestMain {
         // partial linear model results from CV:
         // 500: 50, 10, 2
         // 
-        boolean runCV = !true;
+        boolean runCV = true;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -397,7 +397,7 @@ public class LinearTestMain {
                     imposeTruth = 1;
                 }
 
-                for (int minObservationsPerLeaf = 2; minObservationsPerLeaf <= 2; minObservationsPerLeaf *= 2) {
+                for (int minObservationsPerLeaf = 100; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
                     // for (double minImprovement = 0.1; minImprovement <= 10.0; minImprovement *= 10) {
                     double[] improvementLevels = {1}; // ,2,5,10}; // , 10, 20, 50}; // 0.1, 0.5, 1.0}; // {1, 5, 10, 20}; // , 10.0, 20.0};
                     for (double minImprovement : improvementLevels) {
@@ -448,7 +448,7 @@ public class LinearTestMain {
 
             bestMinObservationsPerLeaf = 100;
             bestMinImprovement = 1.0;
-            bestMaxDepth = 2;
+            bestMaxDepth = 3;
         }
 
         /**
@@ -531,7 +531,7 @@ public class LinearTestMain {
         // System.out.println(hpl);
         setHomogeneousParameterList(hpl);
 
-        boolean executeSearch = false;
+        boolean executeSearch = true;
         /**
          * Estimate values of homogeneous parameters
          */
