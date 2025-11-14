@@ -63,7 +63,8 @@ public class TreeMoment {
 
     boolean verbose;
     boolean allParametersHomogeneous;
-
+    
+    Random rng = new Random(777);
     boolean useRandomForest = false;
     boolean debugOptimization = false;
     private double currentNodeObjectiveFunction;
@@ -1180,8 +1181,7 @@ public class TreeMoment {
         // the way that I'm going to do this is to subsample each child datalens
         // not sure that is 100% correct as this is something closer to a stratified subsample, but otherwise we need to redo the whole tree which i don't think is the right way to go about it
         ArrayList<DataLens> subsampledData = new ArrayList<>(); // this is the new arraylist that we will return
-        
-        Random rng = new Random(777);
+             
         for(int i=0;i<v.size();i++) {
             DataLens di = v.get(i);
 //            System.out.println("lens "+i+" original X:");
