@@ -161,11 +161,11 @@ public class LinearStataMain {
                 for (double minImprovement : gridMinImprovement) {
                     for (int maxDepth : gridMaxDepth) {
                     	mySpecification.resetHomogeneityIndex();              	
-                    	SFIToolkit.displayln("Parameters before detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));                	
+                    	//SFIToolkit.displayln("Parameters before detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));                	
                         if (detectHomogeneity) {
-                            executeHomogeneousParameterClassificationAndSearch(mySpecification, 10, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
+                            executeHomogeneousParameterClassificationAndSearch(mySpecification, 1, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
                         }                      
-                        SFIToolkit.displayln("Parameters flags after detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));
+                        //SFIToolkit.displayln("Parameters flags after detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));
                         computeFitStatistics s = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false);
                         s.computeOutOfSampleMSE();
                         cvList.add(s);

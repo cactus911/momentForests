@@ -31,6 +31,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Arrays;
 
 /**
  *
@@ -206,8 +207,16 @@ public class DataLens {
     public DataLens getSubsampledDataLens(long seed, double d) {
         Random rng = new Random(seed);
         int b = (int) Math.round(Math.pow(dataIndex.length, d));
+        int min_obs = 30;
+        int unique_vals = (int) Arrays.stream(dataIndex).distinct().count();
+        b = Math.max(b, min_obs); // ensure minimum number of observations        
+        b = Math.min(b, unique_vals); // prevent infinite loop below
         int[] newIndex = new int[b];
         TreeSet<Integer> drawnTree = new TreeSet<>();
+        
+        // This code is sampling unique values
+        // If there are fewer unique values than b => infinite while loop     
+        //System.out.println("Unique values in dataIndex: " +  Arrays.stream(dataIndex).distinct().count());
         for (int i = 0; i < b; i++) {
             int candidate = dataIndex[rng.nextInt(dataIndex.length)];
             while (drawnTree.contains(candidate)) {
@@ -216,6 +225,18 @@ public class DataLens {
             newIndex[i] = candidate;
             drawnTree.add(candidate);
         }
+
+        /*
+        // Sampling positions instead?
+        for (int i = 0; i < b; i++) {
+        	int pos = rng.nextInt(dataIndex.length);
+        	while (drawnTree.contains(pos)) {
+        	    pos = rng.nextInt(dataIndex.length);
+        	}
+        	newIndex[i] = dataIndex[pos];
+        	drawnTree.add(pos);
+        }
+        */
         return new DataLens(this, newIndex);
     }
 

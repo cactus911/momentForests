@@ -73,7 +73,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
     public void computeBetaAndErrors() {
     	// System.out.println("In compute beta and errors");
         if (Y.getRowDimension() < Math.max(30, X.getColumnDimension())) {
-            // System.out.println("Too few observations, dim(Y)  = "+Y.getRowDimension() );
+            //System.out.println("Too few observations, dim(Y)  = "+Y.getRowDimension() );
             beta = null;
             goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {
@@ -115,9 +115,9 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                 double[] steptl = {0, 1E-8};
 
                 if (numParams == spec.getNumParams()) {
-                    // no homogeneous parameters, just use OLS
+                    //System.out.println("no homogeneous parameters, just use OLS");
                     Jama.Matrix olsBeta = pmUtility.OLSsvd(X, Y, false);
-
+                    
                     // System.out.println("Average of Y is :"+pmUtility.mean(Y, 0));
                     for (int i = 0; i < olsBeta.getRowDimension(); i++) {
                         xpls[i + 1] = olsBeta.get(i, 0);
@@ -150,6 +150,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                             xpls[i + 1] = olsBeta.get(i, 0);
                         }
                     } else {
+                    	//System.out.println("ContainerLinear running optimization");
                         minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
                     }
                 }
@@ -188,7 +189,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                         counter++;
                     }
                 }
-
+                
                 beta = betaUncmin.copy();
                 double sse = 0;
                 Jama.Matrix fit = X.times(beta);
@@ -196,6 +197,9 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
                 }
                 goodnessOfFit = sse;
+                
+                //pmUtility.prettyPrint(beta);
+                //System.out.println(goodnessOfFit);
                 
                 if (failedEstimation) {
                     beta = null;
@@ -259,6 +263,10 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                 if (debugVerbose) {
                     e.printStackTrace();
                     System.out.println("Something went wrong...Matrix not invertible?");
+                    System.out.println("X:");           
+                    pmUtility.prettyPrint(X);
+                    System.out.println("Y:");           
+                    pmUtility.prettyPrint(Y);                                      
                 }
                 
                 beta = null;

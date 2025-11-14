@@ -870,11 +870,11 @@ public class TreeMoment {
                         
                         Jama.Matrix subsampleTb = new Jama.Matrix(numSubsamples,1);
                         for(int r=0;r<numSubsamples;r++) {
-                            // System.out.println("\nr = "+r+"\n");
-                            // WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.7), momentSpec);
+                            //System.out.println("\nr = "+r+"\n");
                             WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.7), momentSpec);
+                            //System.out.println("Computing Tb...");
                             subsampleTb.set(r, 0, bigSubsample.computeStatistic(k, restrictedTheta));
-                            // System.out.println("Tb: "+subsampleTb.get(r,0));
+                            //System.out.println("Tb: "+subsampleTb.get(r,0));
                         }
                         // double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
                         // System.out.println("Bootstrapped critical value: "+criticalValue);
@@ -926,8 +926,10 @@ public class TreeMoment {
                             }
                         }
                     }
-                } catch (IllegalStateException e) {
-                    System.out.println("TreeMoment invalid due to matrix singularity");
+                } catch (Exception e) {
+                	if (verbose) {
+                		System.out.println("TreeMoment invalid, perhaps due to matrix singularity");
+                	}
                     validTree = false;
                     return;
                 }
@@ -996,6 +998,7 @@ public class TreeMoment {
                 }
             }
         }
+      //System.out.println("DEBUG: ending test homogeneity method");
     }
 
     public void clearEstimationData() {
@@ -1178,7 +1181,7 @@ public class TreeMoment {
         // not sure that is 100% correct as this is something closer to a stratified subsample, but otherwise we need to redo the whole tree which i don't think is the right way to go about it
         ArrayList<DataLens> subsampledData = new ArrayList<>(); // this is the new arraylist that we will return
         
-        Random rng = new Random();
+        Random rng = new Random(777);
         for(int i=0;i<v.size();i++) {
             DataLens di = v.get(i);
 //            System.out.println("lens "+i+" original X:");
@@ -1190,6 +1193,9 @@ public class TreeMoment {
 
             DataLens diSubsampled = di.getSubsampledDataLens(rng.nextLong(), d);
             
+//            System.out.println("num obs di: "+di.getNumObs());
+//            System.out.println("num obs diSubsampled: "+diSubsampled.getNumObs());
+            
             subsampledData.add(diSubsampled);
 //            System.out.println("lens "+i+" resampled X:");
 //            pmUtility.prettyPrint(pmUtility.concatMatrix(diSubsampled.getY(), diSubsampled.getX()), 10);
@@ -1199,7 +1205,7 @@ public class TreeMoment {
 //            pmUtility.prettyPrint(beta_is);
         }
         // System.exit(0);
-        
+       
         return subsampledData;
     }
 }
