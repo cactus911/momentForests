@@ -65,6 +65,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
         // okay, from Newey-McFadden we have B = G'Omega^{-1}G, where G is m x k matrix of derivatives and omega is mxm E[gg']
         Jama.Matrix B = computeNeweyMcFaddenB(unconstrainedX);
+        //pmUtility.prettyPrintVector(B);
         Jama.Matrix acov = B.inverse();
 
         Jama.Matrix thetaUnconstrained = convertToStackedBeta(unconstrainedX);
@@ -182,7 +183,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         double[] fscale = {0, 1.0E-15};
-        int[] method = {0, 1};
+        int[] method = {0, 2}; // BFGS
         int[] iexp = {0, 0};
         int[] msg = {0, 1};
         int[] ndigit = {0, 8};
@@ -202,7 +203,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             DataLens lens = v.get(leaf);
             ContainerMoment cm = spec.getContainerMoment(lens);
             cm.computeBetaAndErrors();
-            // pmUtility.prettyPrintVector(cm.getBeta());
+            //pmUtility.prettyPrintVector(cm.getBeta());
             if (indexConstrainedParameter < 0) {
                 // unconstrained case, just put in double[] x in order
                 for (int i = 0; i < cm.getBeta().getRowDimension(); i++) {
@@ -296,7 +297,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
                 System.arraycopy(xpls, 0, guess, 0, guess.length);
             }
         }
-
+        
         boolean useCUEInSecondStep = false;
         if (useCUEInSecondStep || (constrainedEstimation && 1 == 2)) {
             System.out.println("Recomputing with CUE...");
@@ -361,8 +362,15 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         if (useCUE) {
             omega = computeOptimalOmega(x);
         }
-
-        double q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
+        
+        double q = Double.POSITIVE_INFINITY;
+        try {
+        	q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
+        } catch (RuntimeException e) {
+            throw new IllegalStateException(
+                    "Singular matrix encountered in WaldTestWholeTree", e
+            );
+        }
 
 //        if (useCUE) {
 //            System.out.println("-----------");

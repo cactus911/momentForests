@@ -63,7 +63,7 @@ public class TreeMoment {
 
     boolean verbose;
     boolean allParametersHomogeneous;
-
+    
     boolean useRandomForest = false;
     boolean debugOptimization = false;
     private double currentNodeObjectiveFunction;
@@ -883,7 +883,7 @@ public class TreeMoment {
                             // WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.7), momentSpec);
                             WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.9, rng.nextLong()), momentSpec);
                             subsampleTb.set(r, 0, bigSubsample.computeStatistic(k, restrictedTheta));
-                            // System.out.println("Tb: "+subsampleTb.get(r,0));
+                            //System.out.println("Tb: "+subsampleTb.get(r,0));
                         }
 
                         if (verbose) {
@@ -942,8 +942,10 @@ public class TreeMoment {
                             }
                         }
                     }
-                } catch (IllegalStateException e) {
-                    System.out.println("TreeMoment invalid due to matrix singularity");
+                } catch (Exception e) {
+                	if (verbose) {
+                		System.out.println("TreeMoment invalid, perhaps due to matrix singularity");
+                	}
                     validTree = false;
                     return;
                 }
@@ -1012,6 +1014,7 @@ public class TreeMoment {
                 }
             }
         }
+      //System.out.println("DEBUG: ending test homogeneity method");
     }
 
     public void clearEstimationData() {
