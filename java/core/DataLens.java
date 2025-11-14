@@ -209,11 +209,11 @@ public class DataLens {
         int[] newIndex = new int[b];
         TreeSet<Integer> drawnTree = new TreeSet<>();
         for (int i = 0; i < b; i++) {
-            int candidate = dataIndex[rng.nextInt(dataIndex.length)];
+            int candidate = rng.nextInt(dataIndex.length);
             while (drawnTree.contains(candidate)) {
-                candidate = dataIndex[rng.nextInt(dataIndex.length)];
+                candidate = rng.nextInt(dataIndex.length);
             }
-            newIndex[i] = candidate;
+            newIndex[i] = dataIndex[candidate];
             drawnTree.add(candidate);
         }
         return new DataLens(this, newIndex);

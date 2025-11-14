@@ -872,7 +872,7 @@ public class TreeMoment {
                         for(int r=0;r<numSubsamples;r++) {
                             // System.out.println("\nr = "+r+"\n");
                             // WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.7), momentSpec);
-                            WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.7), momentSpec);
+                            WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.9), momentSpec);
                             subsampleTb.set(r, 0, bigSubsample.computeStatistic(k, restrictedTheta));
                             // System.out.println("Tb: "+subsampleTb.get(r,0));
                         }

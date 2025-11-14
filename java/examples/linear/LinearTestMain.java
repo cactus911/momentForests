@@ -102,7 +102,7 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 500;
+        int numMonteCarlos = 5;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
             for (int numObs = 1000; numObs <= 10000; numObs *= 2) {
@@ -373,7 +373,7 @@ public class LinearTestMain {
         // partial linear model results from CV:
         // 500: 50, 10, 2
         // 
-        boolean runCV = true;
+        boolean runCV = false;
         if (runCV) {
             if (verbose) {
                 System.out.println("************************");
@@ -437,10 +437,10 @@ public class LinearTestMain {
                 bestMaxDepth = 2;
             }
             if (numObs == 1000) {
-                bestMaxDepth = 3;
+                bestMaxDepth = 1;
             }
             if (numObs == 2000) {
-                bestMaxDepth = 4;
+                bestMaxDepth = 3;
             }
             if (numObs == 4000) {
                 bestMaxDepth = 6;
@@ -463,7 +463,7 @@ public class LinearTestMain {
             executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
         }
 
-        boolean goFast = true;
+        boolean goFast = false;
         if (!goFast) {
             setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                     bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
