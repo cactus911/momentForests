@@ -122,6 +122,13 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     for (int i = 0; i < olsBeta.getRowDimension(); i++) {
                         xpls[i + 1] = olsBeta.get(i, 0);
                     }
+                    
+                    // System.out.println("Y, X");
+//                    pmUtility.prettyPrint(pmUtility.concatMatrix(Y, X));
+//                    
+//                    pmUtility.prettyPrintVector(olsBeta);
+//                    
+//                    System.exit(0);
                 } else {
                     boolean tryResidualizing = false;
                     if (tryResidualizing) {
