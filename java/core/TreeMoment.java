@@ -25,6 +25,7 @@ package core;
 
 import JSci.maths.statistics.ChiSqrDistribution;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Random;
@@ -867,35 +868,49 @@ public class TreeMoment {
                         Jama.Matrix restrictedTheta = big.computeRestrictedTheta(k);
 
                         if (verbose) {
-                            System.out.print("Restricted theta: ");
-                            pmUtility.prettyPrintVector(restrictedTheta);
+                            //System.out.print("Restricted theta: ");
+                            //pmUtility.prettyPrintVector(restrictedTheta);
                         }
                         // System.out.println("Computing Tn...");
                         double Tn = big.computeStatistic(k, restrictedTheta);
                         // System.out.println("Tn = "+Tn);
 
-                        int numSubsamples = 150;
+                        int numSubsamples = 500;
                         Random rng = new Random(treeSeed);
+                        
+                        List<Double> stats = new ArrayList<>();
+                        for (int r = 0; r < numSubsamples; r++) {             	
+                        	//System.out.println("\nr = "+r+"\n");
+                            try {
+                                WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.9, rng.nextLong()), momentSpec);
+                                double stat = bigSubsample.computeStatistic(k, restrictedTheta);
+                                //System.out.println("Tb: "+ stat);
+                                stats.add(stat);                               
+                            } catch (Exception e) {
+                            	if(verbose) {
+                                    // Skip this subsample if computeStatistic fails
+                                    System.out.println("Subsample " + r + " failed: " + e.getMessage());
+                            	}
 
-                        Jama.Matrix subsampleTb = new Jama.Matrix(numSubsamples, 1);
-                        for (int r = 0; r < numSubsamples; r++) {
-                            // System.out.println("\nr = "+r+"\n");
-                            // WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.7), momentSpec);
-                            WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.9, rng.nextLong()), momentSpec);
-                            subsampleTb.set(r, 0, bigSubsample.computeStatistic(k, restrictedTheta));
-                            //System.out.println("Tb: "+subsampleTb.get(r,0));
+                            }
                         }
-
+                        //System.out.println("Number of successful subsamples: " + stats.size());
+                        
+                        Jama.Matrix subsampleTb = new Jama.Matrix(stats.size(), 1);
+                        for (int i = 0; i < stats.size(); i++) {
+                            subsampleTb.set(i, 0, stats.get(i));
+                        }
                         if (verbose) {
                             double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
                             System.out.println("Subsampled critical value: " + criticalValue);
-                        }
-
+                        }                                           
+ 
                         // p-value is percentage of subsampled test statistics above the value computed on the original data
                         Jama.Matrix sortedTb = pmUtility.sortMatrixAscending(subsampleTb);
                         if (verbose) {
                             System.out.print("Tn: " + Tn + " Subsample test statistic values sorted: ");
                             pmUtility.prettyPrintVector(sortedTb);
+                            System.out.println("Sorted matrix length: " + sortedTb.getRowDimension());
                         }
                         
                         /**
@@ -942,9 +957,9 @@ public class TreeMoment {
                             }
                         }
                     }
-                } catch (Exception e) {
+                } catch (IllegalStateException e) {
                 	if (verbose) {
-                		System.out.println("TreeMoment invalid, perhaps due to matrix singularity");
+                		System.out.println("TreeMoment invalid due to matrix singularity");
                 	}
                     validTree = false;
                     return;
@@ -1209,6 +1224,9 @@ public class TreeMoment {
 
             DataLens diSubsampled = di.getSubsampledDataLens(rng.nextLong(), d);
 
+//            System.out.println("di num obs: " + di.getNumObs());
+//            System.out.println("diSubsampled num obs: " + diSubsampled.getNumObs());
+            
             subsampledData.add(diSubsampled);
 //            System.out.println("lens "+i+" resampled X:");
 //            pmUtility.prettyPrint(pmUtility.concatMatrix(diSubsampled.getY(), diSubsampled.getX()), 10);

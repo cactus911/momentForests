@@ -163,7 +163,7 @@ public class LinearStataMain {
                     	mySpecification.resetHomogeneityIndex();              	
                     	//SFIToolkit.displayln("Parameters before detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));                	
                         if (detectHomogeneity) {
-                            executeHomogeneousParameterClassificationAndSearch(mySpecification, 1, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
+                            executeHomogeneousParameterClassificationAndSearch(mySpecification, 10, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
                         }                      
                         //SFIToolkit.displayln("Parameters flags after detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));
                         computeFitStatistics s = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false);

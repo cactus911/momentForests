@@ -87,7 +87,7 @@ public class CardMain {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecification mySpecification = new CardSpecification("C:/Users/natha/Documents/GitHub/momentForests/java/examples/Card/table2.csv");
+        MomentSpecification mySpecification = new CardSpecification("C:/Users/nathan/Documents/GitHub/momentForests/java/examples/Card/table2.csv");
 
         double bestMinImprovement = 4.0;
         int bestMinObservationsPerLeaf = 25;
@@ -125,7 +125,7 @@ public class CardMain {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 50; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 100; minObservationsPerLeaf <= 400; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 0.1; minImprovement <= 0.2; minImprovement *= 2) {
                     for (int maxDepth = 7; maxDepth >= 6; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
