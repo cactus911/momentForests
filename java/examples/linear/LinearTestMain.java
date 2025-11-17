@@ -100,10 +100,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 500;
+        int numMonteCarlos = 50;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 500; numObs <= 4000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.println(" numObs = " + numObs);
                 System.out.println("-----------------------");
@@ -129,8 +129,8 @@ public class LinearTestMain {
 
                 JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-                // boolean[] d = {true};
-                boolean[] d = {false, true};
+                boolean[] d = {true};
+                // boolean[] d = {false, true};
 
                 for (boolean detectHomogeneity : d) {
                     // boolean detectHomogeneity = !true;
@@ -161,7 +161,7 @@ public class LinearTestMain {
                         LinearTestMain go;
                         if (numMonteCarlos == 1) {
                             // 8621193992485539638L
-                            go = new LinearTestMain(m, 8621193992485539638L, numObs, detectHomogeneity, jam, dimX);
+                            go = new LinearTestMain(m, 5275223538819738276L, numObs, detectHomogeneity, jam, dimX);
                         } else {
                             go = new LinearTestMain(m, rng.nextLong(), numObs, detectHomogeneity, jam, dimX);
                         }
@@ -345,7 +345,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 10;
+        int numberTreesInForest = 50;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -399,12 +399,12 @@ public class LinearTestMain {
                     imposeTruth = 1;
                 }
 
-                for (int minObservationsPerLeaf = 100; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
+                for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 100; minObservationsPerLeaf *= 2) {
                     // for (double minImprovement = 0.1; minImprovement <= 10.0; minImprovement *= 10) {
                     double[] improvementLevels = {1}; // ,2,5,10}; // , 10, 20, 50}; // 0.1, 0.5, 1.0}; // {1, 5, 10, 20}; // , 10.0, 20.0};
                     for (double minImprovement : improvementLevels) {
                         // for (int maxDepth = Math.min(5, numObs / (2 * minObservationsPerLeaf)); maxDepth >= 0; maxDepth--) {
-                        for (int maxDepth = 7; maxDepth >= 0; maxDepth--) {
+                        for (int maxDepth = 2; maxDepth >= 0; maxDepth--) {
                             if (detectHomogeneity && maxDepth > 0 && imposeTruth == 1) {
                                 executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                             }
@@ -433,8 +433,6 @@ public class LinearTestMain {
             }
             // jt.append("Lowest MSE: " + lowestSSE + " at min_N = " + bestMinObservationsPerLeaf + " min_MSE = " + bestMinImprovement + " maxDepth: " + bestMaxDepth+"\n");
         } else {
-            bestMinObservationsPerLeaf = 50;
-            bestMinImprovement = 10;
             if (numObs == 500) {
                 bestMaxDepth = 1;
             }
@@ -448,9 +446,9 @@ public class LinearTestMain {
                 bestMaxDepth = 5;
             }
 
-            bestMinObservationsPerLeaf = 100;
+            bestMinObservationsPerLeaf = 10;
             bestMinImprovement = 1.0;
-            // bestMaxDepth = 1;
+            bestMaxDepth = 1;
         }
 
         /**
@@ -503,7 +501,7 @@ public class LinearTestMain {
         ArrayList<Integer> hpl = new ArrayList<>();
         ArrayList<Double> hplStartingValues = new ArrayList<>();
 
-        boolean verboseVoting = false;
+        boolean verboseVoting = !false;
         boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, verboseVoting);
 
         double[] startingValues = myForest.getHomogeneityStartingValues();

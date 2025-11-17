@@ -198,7 +198,10 @@ public class MomentForest {
         }
         boolean[] votes = new boolean[voteCounts.length];
         for (int i = 0; i < votes.length; i++) {
-            votes[i] = voteCounts[i] > Math.floorDiv(numberTreesInForest, 2);
+            // majority classification rule (greater than 50%)
+            // votes[i] = voteCounts[i] > Math.floorDiv(numberTreesInForest, 2);
+            // greater than 70%
+            votes[i] = voteCounts[i] > Math.floor(0.7 * numberTreesInForest);
         }
         if (verboseVoting) {
             System.out.print("votes: ");
