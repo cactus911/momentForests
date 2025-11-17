@@ -220,7 +220,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         boolean oneDimensionHeterogeneity = true;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
-                beta.set(0, 0, 10.0);
+                beta.set(0, 0, 1.0);
             }
             return beta;
         }

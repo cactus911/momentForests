@@ -103,7 +103,7 @@ public class LinearTestMain {
         int numMonteCarlos = 50;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
+            for (int numObs = 500; numObs <= 500; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.println(" numObs = " + numObs);
                 System.out.println("-----------------------");
@@ -129,8 +129,8 @@ public class LinearTestMain {
 
                 JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-                boolean[] d = {true};
-                // boolean[] d = {false, true};
+                // boolean[] d = {true};
+                boolean[] d = {false, true};
 
                 for (boolean detectHomogeneity : d) {
                     // boolean detectHomogeneity = !true;
