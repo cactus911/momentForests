@@ -164,7 +164,7 @@ public class LogitVSLMain {
              * Have each tree in the forest vote for homogeneity; take majority
              * vote as classification
              */
-            myForest.testHomogeneity();
+            myForest.testHomogeneity(false);
             
             for (int k = 0; k < mySpecification.getNumParams(); k++) {
                 double voteShareHomogeneousParameterK = 0;
