@@ -883,7 +883,8 @@ public class TreeMoment {
                         	//System.out.println("\nr = "+r+"\n");
                             try {
                                 WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.7, rng.nextLong()), momentSpec);
-                                double stat = bigSubsample.computeStatistic(k, restrictedTheta);
+                                Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(k);
+                                double stat = bigSubsample.computeStatistic(k, restrictedTheta_b);
                                 //System.out.println("Tb: "+ stat);
                                 stats.add(stat);                               
                             } catch (Exception e) {

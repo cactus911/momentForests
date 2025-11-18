@@ -25,7 +25,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
     boolean useCUE = false; // utilize continuously-updated weighting matrix
 
     private final MomentSpecification spec;
-    boolean debug = false;
+    boolean debug = !false;
     int indexConstrainedParameter;
 
     public WaldTestWholeTree(ArrayList<DataLens> v, MomentSpecification spec) {
