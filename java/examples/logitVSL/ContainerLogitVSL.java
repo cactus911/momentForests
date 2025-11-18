@@ -21,7 +21,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
  * THE SOFTWARE.
  */
-package examples.logit;
+package examples.logitVSL;
 
 import Jama.Matrix;
 import core.ContainerMoment;
@@ -34,7 +34,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
+public class ContainerLogitVSL extends ContainerMoment implements Uncmin_methods {
 
     double goodnessOfFit = -666; // make sure that we give back a crazy number if it is not called
     Jama.Matrix containerBeta;
@@ -47,7 +47,7 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
     Jama.Matrix homogeneityParameters;
     boolean allParametersHomogeneous;
 
-    public ContainerLogit(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous) {
+    public ContainerLogitVSL(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous) {
         this.lens = lens;
         X = lens.getX();
         Y = lens.getY();
@@ -157,18 +157,21 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
     public Jama.Matrix getGi(Jama.Matrix beta, int i) {
         int numMoments = X.getColumnDimension();
 
-        double utility = 0;
-        for (int k = 0; k < X.getColumnDimension(); k++) {
-            utility += X.get(i, k) * beta.get(k, 0);
+        // try using the derivatives with respect to beta as the moments here (two X's)
+        if (numMoments != 3) {
+            System.out.println("Hardwired moments for three parameters in ContainerLogit.java");
+            System.exit(0);
         }
+
+        double utility = X.get(i, 0) * beta.get(0, 0) + X.get(i, 1) * beta.get(1, 0) + X.get(i, 2) * beta.get(2, 0);
         double shareInside = Math.exp(utility) / (1.0 + Math.exp(utility));
 
         Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
 
         double ei = Y.get(i, 0) - shareInside;
-        for (int m = 0; m < numMoments; m++) {
-            gi.set(m, 0, X.get(i, m) * ei);
-        }
+        gi.set(0, 0, X.get(i, 0) * ei);
+        gi.set(1, 0, X.get(i, 1) * ei);
+        gi.set(2, 0, X.get(i, 2) * ei);
 
         return gi;
     }
@@ -218,20 +221,14 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
     private double computeLLH(Jama.Matrix beta) {
         double llh = 0;
         for (int i = 0; i < X.getRowDimension(); i++) {
-            double u = beta.get(0, 0) * X.get(i, 0) + beta.get(1, 0) * X.get(i, 1);
-            double insideShare = Math.exp(u) / (1.0 + Math.exp(u));
-            if (Y.get(i, 0) == 1) {
-                llh += Math.log(insideShare);
-            } else {
-                llh += Math.log(1.0 - insideShare);
-            }
+            llh += computeLLHi(Y.get(i, 0), X.getMatrix(i, i, 0, 2), beta);
         }
-        return -llh;
+        return llh;
     }
 
     public static double computeLLHi(double y, Jama.Matrix xi, Jama.Matrix beta) {
         double llh = 0;
-        double u = beta.get(0, 0) * xi.get(0, 0) + beta.get(1, 0) * xi.get(0, 1);
+        double u = beta.get(0, 0) * xi.get(0, 0) + beta.get(1, 0) * xi.get(0, 1)+ beta.get(2, 0) * xi.get(0, 2);
         double insideShare = Math.exp(u) / (1.0 + Math.exp(u));
         if (y == 1) {
             llh += Math.log(insideShare);
@@ -276,31 +273,6 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
                 counter++;
             }
         }
-
-        boolean debug = true;
-        if (debug) {
-            boolean imposedHomogeneity = false;
-            for (boolean bp : homogeneityIndex) {
-                if (bp) {
-                    imposedHomogeneity = true;
-                }
-            }
-            if (imposedHomogeneity) {
-                // System.out.println("-----");
-                for (boolean bp : homogeneityIndex) {
-//                     System.out.print(bp + " ");
-                }
-//                 System.out.println("");
-//                 pmUtility.prettyPrintVector(homogeneityParameters);
-//                 pmUtility.prettyPrint(new Jama.Matrix(x, 1));
-                // pmUtility.prettyPrintVector(b);
-                // System.out.println("Computing LLH");
-                // double llh = getMomentObjectiveFunctionValue(b);
-                // System.out.println("Back from that");
-                // System.exit(0);
-            }
-        }
-
         return getMomentObjectiveFunctionValue(b);
     }
 
@@ -331,8 +303,6 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
 
     @Override
     public Matrix getJacobianNoDivision(Matrix beta) {
-        // need to convert this to momets, so then I can make the Jacobian G
-        // Jama.Matrix G = new Jama.Matrix(numMoments, numParams);
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
