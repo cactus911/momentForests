@@ -54,8 +54,6 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
 
     @Override
     public int getEffectiveNumObsLeft() {
-        // in the rct context, care about the minimum of count of 0's and 1's in each partition
-        // here, total N is fine
         return numObsLeft;
     }
 
@@ -70,8 +68,8 @@ public class MomentContinuousSplitObjLinear extends MomentContinuousSplitObj {
         leftMSE = 0;
         rightMSE = 0;
 
-        ContainerLinear leftLinear = new ContainerLinear(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false); //This object will compute the beta and MSE for the left split
-        ContainerLinear rightLinear = new ContainerLinear(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false);
+        ContainerLinear leftLinear = new ContainerLinear(container.getLeft(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec); //This object will compute the beta and MSE for the left split
+        ContainerLinear rightLinear = new ContainerLinear(container.getRight(), spec.getHomogeneousIndex(), spec.getHomogeneousParameterVector(), false, spec);
         leftLinear.computeBetaAndErrors();
         rightLinear.computeBetaAndErrors();
 

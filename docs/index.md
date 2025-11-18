@@ -10,7 +10,7 @@ This website is a work in progress but will be updated regularly.
 
 ### The Paper
 
-The paper can be found here \[[PDF](https://sites.wustl.edu/stephenpryan/files/2016/10/momentTrees.pdf)\].
+The paper can be found here \[[PDF](https://bpb-us-w2.wpmucdn.com/sites.wustl.edu/dist/7/3643/files/2024/04/Semiparametric-Project-Slides-2024-5bfa05ddae06dfd4.pdf)\].
 
 <img src="./examplegraph.PNG" width="500" >
 
@@ -36,18 +36,16 @@ In our theory, we prove several useful theoretical properties of moment forests.
 
 The java source code is contained in two separate folders on the Github repository: [jars and java](https://github.com/cactus911/momentForests) 
 
-Jar files are various helper utilities, and their license information is as follows.
+Jar files are various helper utilities, and their license information is as follows:
 
-Jama-1.0.3.jar is in the public domain and it is from https://math.nist.gov/javanumerics/jama/
-optimization.jar is in the public domain and it is from https://github.com/rwl/optimization and http://www1.fpl.fs.fed.us/optimization.html
-utility.jar is written by us for this project.
+1. [Jama-1.0.3.jar](https://math.nist.gov/javanumerics/jama/) is in the public domain.  
+2. [optimization.jar](https://github.com/rwl/optimization) is in the public domain.
+3. [itext-1.3.jar](https://sourceforge.net/projects/itext/) is in the public domain.  
+4. [jfreechart-1.0.19.jar](https://sourceforge.net/projects/jfreechart/files/1.%20JFreeChart/1.0.19/) is in the public domain.  
+5. [jsci-core.jar](http://jsci.sourceforge.net/) is in the public domain.  
+6. utility.jar and momentforests.jar are written by us for this project.
 
-### Link to STATA
+### Link to STATA and worked example
 
-We have also developed a link between the functionality contained in the Java code and STATA. [STATA interface for RCT](./linktostata.md)
-
-### Worked Examples
-
-A simple "Hello, world" style example is [here](./workedexamples.md).
-
-
+We have also developed a link between the functionality contained in the Java code and STATA. 
+[STATA interface](./linktostata.md)

@@ -7,10 +7,54 @@
     <meta name="viewport" content="width=device-width,maximum-scale=2">
     <link rel="stylesheet" type="text/css" media="screen" href="{{ '/assets/css/style.css?v=' | append: site.github.build_revision | relative_url }}">
 
-    <!-- Mathjax Support -->    
-    <script type="text/javascript" id="MathJax-script" async
-    src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    <style>
+      #main_content_wrap .inner {
+        max-width: 1200px !important;
+        padding: 0 40px !important;
+      }
+
+      code {
+        background-color: transparent !important; /* removes white box */
+        color: #b94a48; /* subtle reddish tint (change if you prefer) */
+        font-weight: 500;
+        font-family: "Fira Code", "Source Code Pro", monospace;
+        padding: 0 2px;
+        border-radius: 2px;
+      }
+
+      pre code {
+        background-color: #f8f9fa !important;
+        display: block;
+        padding: 1em;
+        border-radius: 6px;
+        font-size: 0.95em;
+        line-height: 1.5;
+        color: #333;
+      }
+      
+      pre {
+        overflow-x: auto;
+        margin: 1em 0;
+      }
+    </style>
+ 
+    <!-- MathJax Support -->
+    <script>
+      window.MathJax = {
+        tex: {
+          inlineMath: [['$', '$'], ['\\(', '\\)']],
+          displayMath: [['$$', '$$'], ['\\[', '\\]']],
+          processEscapes: true
+        },
+        options: {
+          skipHtmlTags: ['script', 'noscript', 'style', 'textarea', 'pre', 'code']
+        }
+      };
     </script>
+    <script id="MathJax-script" async
+      src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js">
+    </script>
+
     
 {% seo %}
   </head>

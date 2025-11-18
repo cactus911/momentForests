@@ -52,6 +52,8 @@ public class LinearMomentSpecification implements MomentSpecification {
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean MONTE_CARLO = true;
+    
+    boolean failedEstimatorIndicator = false;
 
     int dimensionX;
 
@@ -159,8 +161,9 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
+        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
         l.computeBetaAndErrors();
+        failedEstimatorIndicator = l.didEstimatorFail();
         return l;
     }
 
@@ -196,6 +199,9 @@ public class LinearMomentSpecification implements MomentSpecification {
         beta.set(0, 0, -1);
         beta.set(1, 0, 1.0);
 
+        // case highlights the complexity of variance-bias tradeoff
+        // classification falls as n increases because depth goes up, critical values get bigger (should I try using bootstrap
+        // here instead of analytical distribution?)
         boolean partiallyLinearModel = true;
         if (partiallyLinearModel) {
             // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
@@ -203,19 +209,23 @@ public class LinearMomentSpecification implements MomentSpecification {
             return beta;
         }
 
+        // case works; bit boring!
+        // but! highlights that CV can pick out homogeneity in these easy cases by itself, we end up with stumps here
         boolean singleBeta = false;
         if (singleBeta) {
             return beta;
         }
 
+        // case works; don't focus as much on SSE(Y) but the MSE of \beta (much better with homogeneity!)
         boolean oneDimensionHeterogeneity = false;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
-                beta.set(1, 0, -1.0);
+                beta.set(0, 0, 1.0);
             }
             return beta;
         }
 
+        // case works
         boolean twoDimensionHeterogeneity = false;
         if (twoDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
@@ -389,7 +399,27 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     @Override
     public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false);
+        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false, this);
+    }
+
+    @Override
+    public double getProportionObservationsToEstimateTreeStructure() {
+        return 0.15;
+    }
+
+    @Override
+    public boolean didEstimatorFail() {
+        return failedEstimatorIndicator;
+    }
+
+    @Override
+    public int[] getStratificationIndex() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+    }
+
+    @Override
+    public String getBetaPrefixes() {
+        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 }

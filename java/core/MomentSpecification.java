@@ -54,6 +54,8 @@ public interface MomentSpecification {
     public Jama.Matrix getBalancingVector();
 
     public int numberoftrees();
+    
+    public double getProportionObservationsToEstimateTreeStructure();
 
     public Boolean[] getDiscreteVector();
 
@@ -158,5 +160,11 @@ public interface MomentSpecification {
     }
 
     public int getNumParams();
+
+    public boolean didEstimatorFail();
+    
+    public int[] getStratificationIndex();
+    
+    public String getBetaPrefixes();
 
 }

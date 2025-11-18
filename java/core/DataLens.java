@@ -27,6 +27,11 @@ import Jama.Matrix;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
+import java.util.Collections;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Arrays;
 
 /**
  *
@@ -38,6 +43,7 @@ public class DataLens {
     final Jama.Matrix originalDataY;
     final Jama.Matrix originalDataZ;
     final Jama.Matrix balancingVector;
+    final int[] strataColumnIndex;
     int[] dataIndex;
 
     //DataLens for original data
@@ -45,7 +51,20 @@ public class DataLens {
         originalDataX = X;
         originalDataY = Y;
         originalDataZ = Z;
+        strataColumnIndex = null;
         balancingVector = balanceVector; // Is the balance vector specific to RCT and natural experiment settings?
+        dataIndex = new int[originalDataX.getRowDimension()];
+        for (int i = 0; i < originalDataX.getRowDimension(); i++) {
+            dataIndex[i] = i;
+        }
+    }
+
+    public DataLens(Jama.Matrix X, Jama.Matrix Y, Jama.Matrix Z, Jama.Matrix balanceVector, int[] strataColIndex) {
+        originalDataX = X;
+        originalDataY = Y;
+        originalDataZ = Z;
+        balancingVector = balanceVector;
+        strataColumnIndex = strataColIndex;
         dataIndex = new int[originalDataX.getRowDimension()];
         for (int i = 0; i < originalDataX.getRowDimension(); i++) {
             dataIndex[i] = i;
@@ -62,7 +81,6 @@ public class DataLens {
 //            dataIndex[i] = i;
 //        }
 //    }
-
     //Datalens for the resampled tree data or for a leaf once split
     //Does each leaf carry around the original data then an index of the observations currently in that leaf?
     public DataLens(DataLens d, int[] resampleIndex) {
@@ -70,6 +88,7 @@ public class DataLens {
         originalDataY = d.getOriginalDataY();
         originalDataZ = d.getOriginalDataZ();
         balancingVector = d.getBalancingVector();
+        strataColumnIndex = d.getStrataColumnIndex();
         dataIndex = new int[resampleIndex.length];
         for (int i = 0; i < resampleIndex.length; i++) {
             dataIndex[i] = resampleIndex[i];
@@ -99,6 +118,10 @@ public class DataLens {
 
     private Matrix getOriginalDataZ() {
         return originalDataZ;
+    }
+
+    public int[] getStrataColumnIndex() {
+        return strataColumnIndex;
     }
 
     //Prints the original data Y X B, where B is the balancing vector
@@ -144,7 +167,8 @@ public class DataLens {
             System.exit(0);
         }
         Random rng = new Random(seed);
-        int[] newIndex = new int[originalDataX.getRowDimension()];
+        // int[] newIndex = new int[originalDataX.getRowDimension()];
+        int[] newIndex = new int[dataIndex.length];
 
         double ratio = getMeanBalancingVector();
         int goalTreatment = (int) Math.round(ratio * dataIndex.length);
@@ -175,7 +199,23 @@ public class DataLens {
         Random rng = new Random(seed);
         int[] newIndex = new int[dataIndex.length];
         for (int i = 0; i < dataIndex.length; i++) {
-            newIndex[i] = rng.nextInt(dataIndex.length);
+            newIndex[i] = dataIndex[rng.nextInt(dataIndex.length)];
+        }
+        return new DataLens(this, newIndex);
+    }
+
+    public DataLens getSubsampledDataLens(long seed, double d) {
+        Random rng = new Random(seed);
+        int b = (int) Math.round(Math.pow(dataIndex.length, d));
+        int[] newIndex = new int[b];
+        TreeSet<Integer> drawnTree = new TreeSet<>();
+        for (int i = 0; i < b; i++) {
+            int candidate = rng.nextInt(dataIndex.length);
+            while (drawnTree.contains(candidate)) {
+                candidate = rng.nextInt(dataIndex.length);
+            }
+            newIndex[i] = dataIndex[candidate];
+            drawnTree.add(candidate);
         }
         return new DataLens(this, newIndex);
     }
@@ -284,6 +324,62 @@ public class DataLens {
     }
 
     /**
+     *
+     * Randomly split the sample into two parts depending on parameters below.
+     * This method performs stratified random sampling based on column indices
+     *
+     * @param proportionFirstSample What proportion of the sample to split into
+     * the first chunk.
+     * @param seed A random number seed.
+     * @return
+     */
+    public DataLens[] randomlySplitSampleByStrata(double proportionFirstSample, long seed) {
+        if (strataColumnIndex == null || strataColumnIndex.length == 0) {
+            throw new IllegalStateException("Strata column indices not set in DataLens.");
+        }
+
+        Random rng = new Random(seed);
+        ArrayList<Integer> indicesFirstList = new ArrayList<>();
+        ArrayList<Integer> indicesSecondList = new ArrayList<>();
+
+        // Group observations by combined strata key
+        Map<String, List<Integer>> strataGroups = new HashMap<>();
+        for (int obsIndex : dataIndex) {
+            String key = buildStrataKey(obsIndex, strataColumnIndex);
+            List<Integer> group = strataGroups.get(key);
+            if (group == null) {
+                group = new ArrayList<>();
+                strataGroups.put(key, group);
+            }
+            group.add(obsIndex);
+        }
+
+        // Split within each group
+        for (List<Integer> group : strataGroups.values()) {
+            Collections.shuffle(group, rng);
+            int cutoff = (int) Math.round(group.size() * proportionFirstSample);
+            indicesFirstList.addAll(group.subList(0, cutoff));
+            indicesSecondList.addAll(group.subList(cutoff, group.size()));
+        }
+
+        int[] indicesFirst = indicesFirstList.stream().mapToInt(Integer::intValue).toArray();
+        int[] indicesSecond = indicesSecondList.stream().mapToInt(Integer::intValue).toArray();
+
+        DataLens[] splitLens = new DataLens[2];
+        splitLens[0] = new DataLens(this, indicesFirst);
+        splitLens[1] = new DataLens(this, indicesSecond);
+        return splitLens;
+    }
+
+    private String buildStrataKey(int obsIndex, int[] strataColumnIndices) {
+        StringBuilder sb = new StringBuilder();
+        for (int col : strataColumnIndices) {
+            sb.append(originalDataZ.get(obsIndex, col)).append("_");
+        }
+        return sb.toString();
+    }
+
+    /**
      * Obtain the number of observations in the DataLens.
      *
      * @return Number of observations.
@@ -313,7 +409,7 @@ public class DataLens {
         }
         return tempZ;
     }
-    
+
     public double getZ(int i, int j) {
         return originalDataZ.get(dataIndex[i], j);
     }
@@ -355,7 +451,6 @@ public class DataLens {
     public double getX(int i, int j) {
         return originalDataX.get(dataIndex[i], j);
     }
-
 
     public Jama.Matrix getRowX(int row) {
         return originalDataX.getMatrix(dataIndex[row], dataIndex[row], 0, originalDataX.getColumnDimension() - 1);

@@ -5,6 +5,7 @@
  */
 package core;
 
+import experimental.DifferentialEvolution;
 import java.util.ArrayList;
 import mcmc.gibbsLTEGeneralized;
 import optimization.Uncmin_f77;
@@ -17,13 +18,16 @@ import utility.pmUtility;
  */
 public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
+    boolean verbose = true;
+
     ArrayList<DataLens> v;
     int indexConstrainedParameter = -1;
     private double valueConstrainedParameter;
 
-    Jama.Matrix omega; // weighting matrix in GMM
-    boolean useCUE = false; // utilize continuously-updated weighting matrix
-    boolean useSumOfSquaredErrors = false; // use SSE to get a starting value for GMM, which can be sensitive in small samples
+    // Jama.Matrix omega; // weighting matrix in GMM
+    Jama.Matrix omegaInverse; // we don't need to recompute omega each time, so why recompute its inverse?
+    boolean useCUE = true; // utilize continuously-updated weighting matrix
+    // boolean useSumOfSquaredErrors = false; // use SSE to get a starting value for GMM, which can be sensitive in small samples
     private final MomentSpecification spec;
 
     public DistanceMetricTestWholeTree(ArrayList<DataLens> v, MomentSpecification spec) {
@@ -32,24 +36,25 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
     }
 
     public double computeStatistic(int indexConstrainedParameter) {
-
-        System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameter + " ------------------------");
-
+        if (verbose) {
+            System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameter + " ------------------------");
+        }
         double dm = 0;
 
         // let's test this unconstrained first to make sure that we get the same parameters back
-        int numParamsEachSplit = v.get(0).getX().getColumnDimension();
+        int numParamsEachSplit = spec.getNumParams();
 
         double[] unconstrainedX = computeParameters(numParamsEachSplit * v.size());
         double fminUnconstrained = f_to_minimize(unconstrainedX);
 
-        System.out.print("Unconstrained Estimates: ");
-        pmUtility.prettyPrint(new Jama.Matrix(unconstrainedX, 1));
-        for (Jama.Matrix beta : convertToBetaList(unconstrainedX)) {
-            pmUtility.prettyPrintVector(beta);
+        if (verbose) {
+            System.out.print("Unconstrained Estimates: ");
+            pmUtility.prettyPrint(new Jama.Matrix(unconstrainedX, 1));
+            for (Jama.Matrix beta : convertToBetaList(unconstrainedX)) {
+                pmUtility.prettyPrintVector(beta);
+            }
+            System.out.println("SSE (unconstrained): " + computeSSE(unconstrainedX));
         }
-        System.out.println("SSE (unconstrained): " + computeSSE(unconstrainedX));
-
         // then impose constraint on indexParameterConstrain, report twice the difference
         this.indexConstrainedParameter = indexConstrainedParameter;
         double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1);
@@ -60,25 +65,31 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             numObs += h.getNumObs();
         }
 
-        System.out.print("Constrained Estimates: ");
-        pmUtility.prettyPrint(new Jama.Matrix(constrainedX, 1));
-
+        if (verbose) {
+            System.out.print("Constrained Estimates: ");
+            pmUtility.prettyPrint(new Jama.Matrix(constrainedX, 1));
+        }
         valueConstrainedParameter = constrainedX[1];
 
-        for (Jama.Matrix beta : convertToBetaList(constrainedX)) {
-            pmUtility.prettyPrintVector(beta);
+        if (verbose) {
+            for (Jama.Matrix beta : convertToBetaList(constrainedX)) {
+                pmUtility.prettyPrintVector(beta);
+            }
+            System.out.println("SSE (constrained): " + computeSSE(constrainedX));
         }
-        System.out.println("SSE (constrained): " + computeSSE(constrainedX));
-
         dm = 2.0 * numObs * (fminConstrained - fminUnconstrained);
 
-        System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " dm: " + dm);
-
+        if (verbose) {
+            System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " dm: " + dm);
+        }
         return dm;
     }
 
     private double[] computeParameters(int numParams) {
-        System.out.println("Number of parameters: " + numParams);
+
+        if (verbose) {
+            System.out.println("Number of parameters: " + numParams);
+        }
 
         Uncmin_f77 minimizer = new Uncmin_f77(false);
 
@@ -95,18 +106,18 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             typsiz[i] = 1.0;
         }
 
-        double[] fscale = {0, 1.0E-8};
-        int[] method = {0, 1};
+        double[] fscale = {0, 1.0}; //was {0, 1.0E-8}
+        int[] method = {0, 2}; //was {0, 1} (Newton), now BFGS
         int[] iexp = {0, 0};
         int[] msg = {0, 1};
         int[] ndigit = {0, 8};
-        int[] itnlim = {0, 150};
+        int[] itnlim = {0, 300};
         int[] iagflg = {0, 0};
         int[] iahflg = {0, 0};
         double[] dlt = {0, 1};
-        double[] gradtl = {0, 1E-8};
-        double[] stepmx = {0, 1.0}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
-        double[] steptl = {0, 1E-8};
+        double[] gradtl = {0, 1E-6}; //was {0, 1.0E-8}
+        double[] stepmx = {0, 1E6}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
+        double[] steptl = {0, 1E-6}; //was {0, 1.0E-8}
 
         int xCounter = 0;
         boolean first = true;
@@ -136,26 +147,29 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
                 }
             }
         }
-        System.out.print("Seeded starting values: ");
-        pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+
+        if (verbose) {
+            System.out.print("Seeded starting values: ");
+            pmUtility.prettyPrint(new Jama.Matrix(guess, 1));
+        }
         for (int i = 0; i < xpls.length; i++) {
             xpls[i] = guess[i];
         }
 
         // with identity weighting matrix (Step 1)
-        int numMoments = v.get(0).getX().getColumnDimension() * v.size();
-        omega = Jama.Matrix.identity(numMoments, numMoments);
+        int numMoments = spec.getNumMoments() * v.size();
+        omegaInverse = Jama.Matrix.identity(numMoments, numMoments);
 
         boolean minimizeSSEFirst = false;
         if (minimizeSSEFirst) {
-            useSumOfSquaredErrors = true;
+            // useSumOfSquaredErrors = true;
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             for (int i = 0; i < guess.length; i++) {
                 guess[i] = xpls[i];
             }
             System.out.print("After using SSE+Uncmin: ");
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
-            useSumOfSquaredErrors = false;
+            // useSumOfSquaredErrors = false;
         }
 
         boolean useUncminFirst = false;
@@ -197,22 +211,51 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         }
 
         boolean useOptimalTwoStepWeightingMatrix = true;
+        /*
         if (useOptimalTwoStepWeightingMatrix) {
             for (int i = 0; i < 2; i++) {
                 // with optimal weighting matrix (Step 2)
-                System.out.print("Computing optimal weighting matrix...");
-                omega = computeOmega(xpls);
-                System.out.println("done.");
+                //System.out.print("Computing inverse optimal weighting matrix...");
+                omegaInverse = computeOptimalOmegaInverse(xpls);
+                //System.out.println("done.");
 
-                System.out.println("Omega:");
-                pmUtility.prettyPrint(omega);
+                //System.out.println("With inverse optimal weighting matrix:");
+                //pmUtility.prettyPrint(omegaInverse);
 
                 minimizer = new Uncmin_f77(false);
                 minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-                System.out.print("after second step with fixed Omega: ");
-                pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+               // System.out.print("after second step with fixed Omega: ");
+                //pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
                 System.arraycopy(xpls, 0, guess, 0, guess.length);
             }
+        }*/
+        if (useOptimalTwoStepWeightingMatrix) {
+            //System.out.println("Starting first stage");
+            omegaInverse = Jama.Matrix.identity(numMoments, numMoments);
+            minimizer = new Uncmin_f77(false);
+            method[1] = 1;
+            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+            System.arraycopy(xpls, 0, guess, 0, guess.length);
+            //System.out.println("Finished first stage");
+
+            //System.out.println("Starting second stage");
+            minimizer = new Uncmin_f77(false);
+            omegaInverse = computeOptimalOmegaInverse(xpls);
+            method[1] = 2;
+            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
+            System.arraycopy(xpls, 0, guess, 0, guess.length);
+            //System.out.println("Finished second stage");
+        }
+        // let's see if DE can do better
+        boolean useDE = false;
+        if (useDE) {
+            System.out.println("Before DM: " + f_to_minimize(xpls));
+            DifferentialEvolution de = new DifferentialEvolution(this, 0);
+            double[] guessDM = de.optimize(xpls, 500, true, true);
+            // guessUnrestrictedDM = de.optimize(new double[better.length], 1500, false, true);
+            System.out.println("After DM: " + f_to_minimize(xpls));
+            System.out.format("DM estimate post DE: ");
+            pmUtility.prettyPrint(new Jama.Matrix(guessDM, 1));
         }
 
         return xpls;
@@ -227,21 +270,13 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
      */
     @Override
     public double f_to_minimize(double[] x) {
-        boolean oracle = false;
-        if (oracle) {
-            if (indexConstrainedParameter == 1) {
-                x[1] = 1.0;
-            }
-        }
 
         ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
 
         /**
-         * This is the number of moments in each cell (this is hardwired right
-         * now for the linear case, need to come back to this and figure this
-         * out in general when we have broader cases)
+         * This is the number of moments in each cell
          */
-        int K = v.get(0).getX().getColumnDimension();
+        int K = spec.getNumMoments();
 
         /**
          * The total size of the stacked moment vector is the dimensionality of
@@ -268,17 +303,29 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         // omega may be messing this up
         // try just using the identity weighting matrix to see if it fixes things up
         // can turn off CUE using the boolean here
-        if (useCUE) {
-            omega = computeOmega(x);
+        if (useCUE || 1 == 1) {
+            // System.out.println("Computing optimal weighting matrix");
+            omegaInverse = computeOptimalOmegaInverse(x);
         }
 
-        double q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
+        double q = Double.POSITIVE_INFINITY;
+        try {
+            // this is the only time that omega is being used
+            // so we could exploit the block diagonal structure of omega to compute an inverse faster and more reliably (?)
+            q = 0.5 * (((g.transpose()).times(omegaInverse)).times(g)).get(0, 0);
 
-        if (useCUE) {
+        } catch (Exception e) {
+            System.out.print("Omega failed to invert: ");
+            pmUtility.prettyPrint(new Jama.Matrix(x, 1));
+            e.printStackTrace();
+            System.exit(0);
+        }
+
+        if (useCUE && 1==2) {
             System.out.println("-----------");
             System.out.print("f: " + q + " ");
             pmUtility.prettyPrint(new Jama.Matrix(x, 1));
-            pmUtility.prettyPrint(omega);
+            pmUtility.prettyPrint(omegaInverse);
         }
 
         return q;
@@ -292,9 +339,9 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
          * now for the linear case, need to come back to this and figure this
          * out in general when we have broader cases)
          */
-        if(v.get(0).getX().getColumnDimension()!=spec.getNumParams()) {
-            System.out.println("DistanceMetricTestWholeTree.java:296 Use of specification getNumParams gives different answer than previous hardwired columnDimension!");
-            System.exit(0);
+        if (v.get(0).getX().getColumnDimension() != spec.getNumParams()) {
+            System.out.println("WARNING! Check your Container that you implemented SSE correctly!\nDistanceMetricTestWholeTree.java:296 Use of specification getNumParams gives different answer than previous hardwired columnDimension!");
+            // System.exit(0);
         }
         int K = spec.getNumParams(); // v.get(0).getX().getColumnDimension();
 
@@ -313,10 +360,13 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             SSE += c.computeMeasureOfFit(cellBetaList.get(leaf));
         }
         g.timesEquals(1.0 / numObs);
-        System.out.println("Moment Vector:");
-        pmUtility.prettyPrint(g);
-        System.out.println("g'g: " + ((g.transpose()).times(g)).get(0, 0));
-
+        if (verbose) {
+            System.out.println("Moment Vector:");
+            pmUtility.prettyPrint(g);
+            System.out.println("g'g: " + ((g.transpose()).times(g)).get(0, 0));
+            System.out.println("Q: " + (0.5 * (((g.transpose()).times(omegaInverse)).times(g)).get(0, 0)));
+            System.out.println("2*Q*n: " + (numObs * 1.0 * (((g.transpose()).times(omegaInverse)).times(g)).get(0, 0)));
+        }
         return SSE;
     }
 
@@ -349,7 +399,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
 
     private ArrayList<Jama.Matrix> convertToBetaList(double[] x) {
         ArrayList<Jama.Matrix> cellBetaList = new ArrayList<>();
-        int numParamsEachLeaf = v.get(0).getX().getColumnDimension();
+        int numParamsEachLeaf = spec.getNumParams();
 
         /**
          * Fill up a list with betas that will match the moments in each cell
@@ -381,7 +431,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
         return cellBetaList;
     }
 
-    private Jama.Matrix computeOmega(double[] x) {
+    private Jama.Matrix computeOptimalOmegaInverse(double[] x) {
         ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
 
         /**
@@ -395,8 +445,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
          * The total size of the stacked moment vector is the dimensionality of
          * moments in each cell times number of cells
          */
-        int numMoments = v.size() * K;
-        Jama.Matrix W = new Jama.Matrix(numMoments, numMoments);
+        Jama.Matrix W = new Jama.Matrix(v.size() * K, v.size() * K);
 
         /**
          * Go leaf by leaf and stack moments
@@ -408,17 +457,30 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             DataLens lens = v.get(leaf);
             numObs += lens.getNumObs();
             ContainerMoment c = spec.getContainerMoment(lens);
+            Jama.Matrix ggprime_lens = new Jama.Matrix(spec.getNumMoments(), spec.getNumMoments());
             for (int i = 0; i < lens.getNumObs(); i++) {
-                Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
+                // Jama.Matrix gi = new Jama.Matrix(numMoments, 1);
                 Jama.Matrix leafGi = c.getGi(cellBetaList.get(leaf), i);
-                for (int j = 0; j < leafGi.getRowDimension(); j++) {
-                    gi.set(leaf * K + j, 0, leafGi.get(j, 0));
+                ggprime_lens.plusEquals(leafGi.times(leafGi.transpose()));
+            }
+
+            Jama.Matrix ggprime_lens_inverse;
+            try {
+                ggprime_lens_inverse = ggprime_lens.inverse();
+            } catch (RuntimeException e) {
+                throw new IllegalStateException(
+                        "Singular matrix encountered in DistanceMetricTestWholeTree.computeOptimalOmegaInverse", e
+                );
+            }
+
+            for (int i = 0; i < spec.getNumMoments(); i++) {
+                for (int j = 0; j < spec.getNumMoments(); j++) {
+                    W.set(spec.getNumMoments() * leaf + i, spec.getNumMoments() * leaf + j, ggprime_lens_inverse.get(i, j));
                 }
-                W.plusEquals(gi.times(gi.transpose()));
             }
 
         }
-        W.timesEquals(1.0 / numObs);
+        W.timesEquals(numObs); // property of matrix inverses
 
         return W;
     }

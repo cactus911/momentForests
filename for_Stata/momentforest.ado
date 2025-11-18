@@ -1,0 +1,174 @@
+/*	
+	Authors: Stephen P. Ryan <stephen.p.ryan@wustl.edu>, Nathan Jiang <jiang.n@wustl.edu>
+*/
+
+program define momentforest
+    version 16.0
+
+	syntax varlist(min=2) ///
+    , Z(varlist) ///
+      NUMTREES(integer) ///  
+	  SEED(integer) ///
+      [	DISCRETEVARS(varlist) ///		
+        STRATA(varlist) ///
+        GEN(string) ///
+		PROPSTRUCTURE(string) ///
+		TESTHOMOGENEITY(string) ///
+		CV(string) ///
+        CVGRIDMINLEAF(string) ///
+        CVGRIDMINIMP(string) ///
+        CVGRIDMAXDEPTH(string) ]
+
+    * Extract y and x
+	local y : word 1 of `varlist'
+	local x ""
+	local i = 2
+	while `i' <= `: word count `varlist'' {
+		local x "`x' `: word `i' of `varlist''"
+		local ++i
+	}
+
+    * Quote all variable lists properly
+    local x_list : subinstr local x " " " ", all
+    local z_list : subinstr local z " " " ", all
+	
+	* Compose args string
+    local args y=`y' x=`x_list' z=`z_list' numtrees=`numtrees' seed=`seed'
+
+	* Optional: discretevars
+	if "`discretevars'" != "" {
+		local discrete_list : subinstr local discretevars " " " ", all
+		local args `args' discretevars=`discrete_list'
+	}
+	
+	* Optional: strata
+	if "`strata'" != "" {
+		local args `args' strata=`strata'
+	}
+	
+	* Optional: gen
+	if "`gen'" != "" {
+		local args `args' gen=`gen'
+	}
+	
+	* Optional: propstructure
+	if ("`propstructure'" != "") {
+		qui capture confirm number `propstructure'
+		if (_rc) {
+			di as err "option propstructure() must be numeric"
+			exit 198
+		}
+
+		if (`propstructure' <= 0 | `propstructure' >= 1) {
+			di as err "option propstructure() must be strictly greater than 0 and less than 1"
+			exit 198
+		}
+
+		local args `args' propstructure=`propstructure'
+	}
+	
+	* Optional: testing for homogeneity
+	* Normalize input
+	local testhomflag = lower("`testhomogeneity'")
+
+	* Default behavior if not specified
+	if "`testhomflag'" == "" {
+		local testhomflag "true"
+	}
+
+	* Validation and argument construction
+	if "`testhomflag'" == "true" {
+		local args `args' testhomogeneity=true
+	}
+	else if "`testhomflag'" == "false" {
+		local args `args' testhomogeneity=false
+	}
+	else {
+		di as error "testhomogeneity() must be either 'true' or 'false'"
+		exit 198
+	}
+	
+	*** Cross-validation
+	* Normalize cv string 
+	local cvflag = lower("`cv'")
+	
+	* Cross-validation consistency checks 
+	if "`cvflag'" == "false" | "`cvflag'" == "" {
+		if "`cvgridminleaf'" != "" | "`cvgridminimp'" != "" | "`cvgridmaxdepth'" != "" {
+			di as error "cvgrid* options are not allowed unless cv(true) is specified"
+			exit 198
+		}
+	}
+	else if "`cvflag'" == "true" {
+		if "`cvgridminleaf'" == "" {
+			di as error "cvgridminleaf() is required when cv(true) is specified"
+			exit 198
+		}
+		if "`cvgridminimp'" == "" {
+			di as error "cvgridminimp() is required when cv(true) is specified"
+			exit 198
+		}
+		if "`cvgridmaxdepth'" == "" {
+			di as error "cvgridmaxdepth() is required when cv(true) is specified"
+			exit 198
+		}
+		local args `args' cv=true
+	}
+	else {
+		di as error "cv() must be either 'true' or 'false'"
+		exit 198
+	}
+	
+    if "`cv'" == "cv" {
+        local args `args' cv=true
+    }
+
+	if "`cvgridminleaf'" != "" {
+		local cvgridminleaf : subinstr local cvgridminleaf " " ", ", all
+		local args `args' cvgrid_minleaf=`cvgridminleaf'
+	}
+	if "`cvgridminimp'" != "" {
+		local cvgridminimp : subinstr local cvgridminimp " " ", ", all
+		local args `args' cvgrid_minimp=`cvgridminimp'
+	}
+	if "`cvgridmaxdepth'" != "" {
+		local cvgridmaxdepth : subinstr local cvgridmaxdepth " " ", ", all
+		local args `args' cvgrid_maxdepth=`cvgridmaxdepth'
+	}
+	
+	* July 15, 2015 attempt to automate value labels for discrete variables
+	/*
+	local value_labels ""
+
+	foreach var of local discrete_list {
+		local lblname : value label `var'
+		if "`lblname'" != "" {
+			qui levelsof `var', local(levels)
+			local mapstr ""
+			local first = 1
+			foreach val of local levels {
+				local lbl : label `lblname' `val'
+				local lbl : subinstr local lbl `"""' `"\\""', all
+				if `first' {
+					local mapstr = "`val'=`lbl'"
+					local first = 0
+				}
+				else {
+					local mapstr = "`mapstr',`val'=`lbl'"
+				}
+			}
+			local value_labels = "`value_labels'`var'=`mapstr';"
+		}
+	}
+
+	local value_labels_clean : subinstr local value_labels `"""' `"\\""' , all
+	local args `args' value_labels=`value_labels_clean'
+	di as txt "value_labels_clean = `value_labels_clean'"
+	*/
+	
+    * Call Java
+	//di as text "args = `args'"
+    javacall examples.CardStata.StataInterface RunCardModel, ///
+        jars(momentforests.jar; sfi-api.jar; jfreechart-1.0.19.jar; utility.jar; itext-1.3.jar; jsci-core.jar; Jama-1.0.3.jar; optimization.jar) ///
+        args("`args'")
+end

@@ -19,37 +19,53 @@ import utility.pmUtility;
 public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
     ArrayList<DataLens> v;
-    int indexConstrainedParameter = -1;
     private double valueConstrainedParameter;
 
     Jama.Matrix omega; // weighting matrix in GMM
     boolean useCUE = false; // utilize continuously-updated weighting matrix
-    boolean useSumOfSquaredErrors = false; // use SSE to get a starting value for GMM, which can be sensitive in small samples
-    private final MomentSpecification spec;
 
+    private final MomentSpecification spec;
     boolean debug = false;
+    int indexConstrainedParameter;
 
     public WaldTestWholeTree(ArrayList<DataLens> v, MomentSpecification spec) {
         this.v = v;
         this.spec = spec;
     }
-
-    public double computeStatistic(int indexConstrainedParameter) {
-
-        if (debug) {
-            System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameter + " ------------------------");
+    
+    public Jama.Matrix computeRestrictedTheta(int indexConstrainedParameterPassed) {
+        // System.out.println("<<<<<<<<<<<<<<<<<< computing restricted k = "+indexConstrainedParameterPassed+" >>>>>>>>>>>>>>>>>>>>>>");
+        indexConstrainedParameter = indexConstrainedParameterPassed;
+        int numParamsEachSplit = spec.getNumParams(); // v.get(0).getX().getColumnDimension();
+        if(spec.getNumParams()!=v.get(0).getX().getColumnDimension()) {
+            System.out.println("Number of parameters mismatch");
+            System.exit(0);
         }
+        double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1);
+        valueConstrainedParameter = constrainedX[1];
+        // double fminConstrained = f_to_minimize(constrainedX);
+
+        Jama.Matrix thetaConstrained = convertToStackedBeta(constrainedX);
+        return thetaConstrained;
+    }
+
+    public double computeStatistic(int indexConstrainedParameterPassed, Jama.Matrix thetaConstrained) {
+        if (debug) {
+            System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameterPassed + " ------------------------");
+        }
+        indexConstrainedParameter = -1;
 
         double wald3 = 0;
 
         // let's test this unconstrained first to make sure that we get the same parameters back
-        int numParamsEachSplit = v.get(0).getX().getColumnDimension();
+        int numParamsEachSplit = spec.getNumParams(); // v.get(0).getX().getColumnDimension();
 
         double[] unconstrainedX = computeParameters(numParamsEachSplit * v.size());
         double fminUnconstrained = f_to_minimize(unconstrainedX);
 
         // okay, from Newey-McFadden we have B = G'Omega^{-1}G, where G is m x k matrix of derivatives and omega is mxm E[gg']
         Jama.Matrix B = computeNeweyMcFaddenB(unconstrainedX);
+        //pmUtility.prettyPrintVector(B);
         Jama.Matrix acov = B.inverse();
 
         Jama.Matrix thetaUnconstrained = convertToStackedBeta(unconstrainedX);
@@ -65,15 +81,33 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         // then impose constraint on indexParameterConstrain, report twice the difference
-        this.indexConstrainedParameter = indexConstrainedParameter;
-        double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1);
-        double fminConstrained = f_to_minimize(constrainedX);
-
-        Jama.Matrix thetaConstrained = convertToStackedBeta(constrainedX);
+//        double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1, indexConstrainedParameter);
+//        double fminConstrained = f_to_minimize(constrainedX);
+//        Jama.Matrix thetaConstrained = convertToStackedBeta(constrainedX);
 
         int numObs = 0;
         for (DataLens h : v) {
             numObs += h.getNumObs();
+        }
+        
+        // System.out.println(numObs);
+
+        boolean outputABunchOfTestStuff = false;
+        if (outputABunchOfTestStuff) {
+            Jama.Matrix x1 = v.get(0).getX();
+            // pmUtility.prettyPrint(x1);
+            Jama.Matrix x1px1 = (x1.transpose()).times(x1);
+            System.out.println("This is X'X:");
+            pmUtility.prettyPrint(x1px1);
+            System.out.println("This is X'X/n:");
+            pmUtility.prettyPrint(x1px1.times(1.0 / numObs));
+            System.out.println("This is X'X/n_leaf:");
+            pmUtility.prettyPrint(x1px1.times(1.0 / v.get(0).getNumObs()));
+            System.out.println("n in that leaf = " + v.get(0).getNumObs());
+            System.out.println(x1.getRowDimension());
+            System.out.println("B:");
+            pmUtility.prettyPrint(B);
+            System.exit(0);
         }
 
         if (debug) {
@@ -81,14 +115,14 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             pmUtility.prettyPrintVector(thetaConstrained);
         }
 
-        valueConstrainedParameter = constrainedX[1];
-
-        if (debug) {
-            for (Jama.Matrix beta : convertToBetaList(constrainedX)) {
-                pmUtility.prettyPrintVector(beta);
-            }
-            System.out.println("SSE (constrained): " + computeSSE(constrainedX));
-        }
+        
+//
+//        if (debug) {
+//            for (Jama.Matrix beta : convertToBetaList(constrainedX)) {
+//                pmUtility.prettyPrintVector(beta);
+//            }
+//            System.out.println("SSE (constrained): " + computeSSE(constrainedX));
+//        }
 
         Jama.Matrix diffTheta = thetaUnconstrained.minus(thetaConstrained);
 
@@ -106,19 +140,23 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 //        System.out.println("Newey-McFadden B:");
 //        pmUtility.prettyPrint(B);
         // wald3 = numObs * (((diffTheta.transpose()).times(acov.inverse())).times(diffTheta)).get(0, 0);
-        wald3 = numObs * (((diffTheta.transpose()).times(B)).times(diffTheta)).get(0, 0); // same thing numerically, but avoids inverting an inverse
-
-        // let's try the w3 wald test from Newey McFadden here instead (doesn't have the optimal weighting matrix messing things up)
-        if (debug) {
-            System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " wald3: " + wald3);
+        double adjustedNumObs = numObs; // Math.pow(numObs, 0.9);
+        wald3 = adjustedNumObs * (((diffTheta.transpose()).times(B)).times(diffTheta)).get(0, 0); // same thing numerically, but avoids inverting an inverse
+        
+        if(debug) {
+            System.out.println("Wald3: "+wald3);
         }
+        
+        // let's try the w3 wald test from Newey McFadden here instead (doesn't have the optimal weighting matrix messing things up)
+//        if (debug) {
+//            System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " wald3: " + wald3);
+//        }
 
         // System.exit(0);
         return wald3;
     }
 
     private double[] computeParameters(int numParams) {
-
         if (debug) {
             System.out.println("Number of parameters: " + numParams);
         }
@@ -145,7 +183,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         double[] fscale = {0, 1.0E-15};
-        int[] method = {0, 1};
+        int[] method = {0, 2}; // BFGS
         int[] iexp = {0, 0};
         int[] msg = {0, 1};
         int[] ndigit = {0, 8};
@@ -165,7 +203,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             DataLens lens = v.get(leaf);
             ContainerMoment cm = spec.getContainerMoment(lens);
             cm.computeBetaAndErrors();
-            // pmUtility.prettyPrintVector(cm.getBeta());
+            //pmUtility.prettyPrintVector(cm.getBeta());
             if (indexConstrainedParameter < 0) {
                 // unconstrained case, just put in double[] x in order
                 for (int i = 0; i < cm.getBeta().getRowDimension(); i++) {
@@ -199,18 +237,6 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         // with identity weighting matrix (Step 1)
         int numMoments = v.get(0).getX().getColumnDimension() * v.size();
         omega = Jama.Matrix.identity(numMoments, numMoments);
-
-        boolean minimizeSSEFirst = false;
-        if (minimizeSSEFirst && !constrainedEstimation) {
-            useSumOfSquaredErrors = true;
-            minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
-            for (int i = 0; i < guess.length; i++) {
-                guess[i] = xpls[i];
-            }
-            System.out.print("After using SSE+Uncmin: ");
-            pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
-            useSumOfSquaredErrors = false;
-        }
 
         boolean useUncminFirst = false;
         if (useUncminFirst && !constrainedEstimation) {
@@ -271,7 +297,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
                 System.arraycopy(xpls, 0, guess, 0, guess.length);
             }
         }
-
+        
         boolean useCUEInSecondStep = false;
         if (useCUEInSecondStep || (constrainedEstimation && 1 == 2)) {
             System.out.println("Recomputing with CUE...");
@@ -280,6 +306,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             System.out.print("after second step with CUE: ");
             pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
+            useCUE = false;
         }
 
         return xpls;
@@ -302,7 +329,11 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
          * out in general when we have broader cases)
          */
         int K = v.get(0).getX().getColumnDimension();
-
+        if(K!=spec.getNumMoments()) {
+            System.out.println("Num moments mismatch");
+            System.exit(0);
+        }
+        
         /**
          * The total size of the stacked moment vector is the dimensionality of
          * moments in each cell times number of cells
@@ -331,8 +362,15 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         if (useCUE) {
             omega = computeOptimalOmega(x);
         }
-
-        double q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
+        
+        double q = Double.POSITIVE_INFINITY;
+        try {
+        	q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
+        } catch (RuntimeException e) {
+            throw new IllegalStateException(
+                    "Singular matrix encountered in WaldTestWholeTree", e
+            );
+        }
 
 //        if (useCUE) {
 //            System.out.println("-----------");
@@ -516,6 +554,10 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
     }
 
     public Matrix computeNeweyMcFaddenB(double[] x) {
+        if(debug) {
+            System.out.print("Called Newey-McFadden B with ");
+            pmUtility.prettyPrint(new Jama.Matrix(x,1));
+        }
         ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
 
         /**
@@ -539,9 +581,11 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             numObs += lens.getNumObs();
             ContainerMoment c = spec.getContainerMoment(lens);
             Jama.Matrix leafJacobian = c.getJacobianNoDivision(cellBetaList.get(leaf));
-            if(debug) {
+//            System.out.println("leaf "+leaf+" Jacobian:");
+            // pmUtility.prettyPrint(leafJacobian);
+            if (debug) {
                 System.out.print("beta in leaf " + leaf + " ");
-            pmUtility.prettyPrintVector(cellBetaList.get(leaf));
+                pmUtility.prettyPrintVector(cellBetaList.get(leaf));
             }
             for (int i = 0; i < leafJacobian.getRowDimension(); i++) {
                 for (int j = 0; j < leafJacobian.getColumnDimension(); j++) {
@@ -551,8 +595,14 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
         G.timesEquals(1.0 / numObs);
 
+//        System.out.println("G after division by overall numObs");
+//        pmUtility.prettyPrint(G);
         omega = computeOptimalOmega(x);
 
+//        System.out.println("omega:");
+//        pmUtility.prettyPrint(omega);
+//        System.out.println("omega inverse:");
+//        pmUtility.prettyPrint(omega.inverse());
         boolean debugHere = false;
         if (debugHere) {
             System.out.println("size of G: " + G.getRowDimension() + " by " + G.getColumnDimension());

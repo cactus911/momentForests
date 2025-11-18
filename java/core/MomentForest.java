@@ -42,6 +42,7 @@ public class MomentForest {
 
     ArrayList<TreeMoment> forest = new ArrayList<>();
     int numberTreesInForest;
+    double proportionObservationsToEstimateTreeStructure;
     TreeOptions treeOptions;
     DataLens forestLens;
     long forestSeed;
@@ -56,6 +57,7 @@ public class MomentForest {
             boolean verbose, TreeOptions options) {
         this.spec = spec;
         this.numberTreesInForest = numberTreesInForest;
+        this.proportionObservationsToEstimateTreeStructure = spec.getProportionObservationsToEstimateTreeStructure();
         this.verbose = verbose;
         numObs = forestLens.getNumObs();
         this.forestLens = forestLens;
@@ -74,7 +76,6 @@ public class MomentForest {
          * forest each time we call growForest!
          */
         forest = new ArrayList<>();
-        double proportionObservationsToEstimateTreeStructure = 0.35;
 
         Random rng = new Random(forestSeed);
 
@@ -82,12 +83,20 @@ public class MomentForest {
             // resample the forestLens, then split it
             DataLens resampled;
             DataLens[] split;
-            if (forestLens.balancingVector == null) {
-                resampled = forestLens.getResampledDataLens(rng.nextLong());
-                split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
-            } else {
+            if (forestLens.balancingVector != null) {
+                //System.out.println("Tree " + i + ": Using balancing vector");
                 resampled = forestLens.getResampledDataLensWithBalance(rng.nextLong());
                 split = resampled.randomlySplitSampleWithBalance(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+
+            } else if (forestLens.strataColumnIndex != null) {
+                //System.out.println("Tree " + i + ": Using strata column " + forestLens.strataColumnIndex);
+                resampled = forestLens.getResampledDataLens(rng.nextLong());
+                split = resampled.randomlySplitSampleByStrata(proportionObservationsToEstimateTreeStructure, rng.nextLong());
+
+            } else {
+                //System.out.println("Tree " + i + ": Using simple random sampling");
+                resampled = forestLens.getResampledDataLens(rng.nextLong());
+                split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
             }
 
             DataLens lensGrow = split[0];
@@ -95,7 +104,7 @@ public class MomentForest {
 
             forest.add(new TreeMoment(null, spec, lensGrow,
                     spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
-                    lensHonest, treeOptions.isTestParameterHomogeneity()));
+                    lensHonest, treeOptions.isTestParameterHomogeneity(), rng.nextLong()));
         }
 
         boolean useParallel = true;
@@ -107,11 +116,25 @@ public class MomentForest {
             }
         } else {
             forest.parallelStream().forEach((tree) -> {
+                // System.out.println("Split");
                 tree.determineSplit();
+                // System.out.println("Honest");
                 tree.estimateHonestTree();
             });
         }
         // System.out.format("Memory usage: %,d bytes %n", (Runtime.getRuntime().totalMemory() - Runtime.getRuntime().freeMemory()));
+
+        // prune out invalid trees? these would be ones where the minimizer failed?
+        ArrayList<TreeMoment> validForest = new ArrayList<>();
+        for (int i = 0; i < numberTreesInForest; i++) {
+            if (forest.get(i).isValidTree()) {
+                validForest.add(forest.get(i));
+            } else {
+                System.out.println("Removing tree " + i + " due to failed estimation.");
+            }
+        }
+        forest = validForest;
+        numberTreesInForest = forest.size();
     }
 
     /**
@@ -127,12 +150,7 @@ public class MomentForest {
             estimatedParameters = estimatedParameters.plus(forest.get(i).getEstimatedBeta(zi));
             // s = s.concat(forest.get(i).getEstimatedBeta(zi).get(0, 0) + " ");
         }
-        // s = s.concat("]");
-        // System.out.println(s);
-//        System.exit(0);
-        if (forest.size() == 1) {
-            System.out.println(zi.get(0, 0) + " " + estimatedParameters.get(0, 0));
-        }
+
         estimatedParameters.timesEquals(1.0 / forest.size());
         return estimatedParameters;
     }
@@ -180,7 +198,10 @@ public class MomentForest {
         }
         boolean[] votes = new boolean[voteCounts.length];
         for (int i = 0; i < votes.length; i++) {
-            votes[i] = voteCounts[i] > Math.floorDiv(numberTreesInForest, 2);
+            // majority classification rule (greater than 50%)
+            // votes[i] = voteCounts[i] > Math.floorDiv(numberTreesInForest, 2);
+            // greater than 80%
+            votes[i] = voteCounts[i] > Math.floor(0.8 * numberTreesInForest);
         }
         if (verboseVoting) {
             System.out.print("votes: ");
@@ -192,7 +213,7 @@ public class MomentForest {
             }
             double pct = 100.0 * voteCounts[i] / numberTreesInForest;
             if (verboseVoting) {
-                jt.append(i + ". votes: " + voteCounts[i] + " out of " + numberTreesInForest + " (" + pct + "): " + votes[i] + "\n");
+                jt.append(i + ". votes: " + voteCounts[i] + " out of " + numberTreesInForest + " (" + pct + "%): " + votes[i] + "\n");
             }
             if (voteCounts[i] < numberTreesInForest) {
                 // System.out.println("Detected variance in voting on parameter "+i+": "+voteCounts[i]);
@@ -251,19 +272,58 @@ public class MomentForest {
         return startingValues;
     }
 
-    public void testHomogeneity() {
-        boolean useParallel = false;
+    public void testHomogeneity(boolean verbose) {
+        boolean useParallel = true;
+
+        double[] averageTestValues = new double[spec.getNumParams()];
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
-                // System.out.println("========== Tree "+i+" ==========");
+                System.out.println("========== Tree " + i + " ==========");
                 forest.get(i).testHomogeneity();
             }
         } else {
             forest.parallelStream().forEach((tree) -> {
                 tree.testHomogeneity();
+                // System.out.println("Finished testing homogeneity in a tree");
             });
         }
-    }
+        // System.out.println("Finished testing homogeneity in all the trees");
 
+        // Prune out invalid 
+        // System.out.println("Prune out invalid trees");
+        ArrayList<TreeMoment> validForest = new ArrayList<>();
+        for (int i = 0; i < forest.size(); i++) {
+            TreeMoment t = forest.get(i);
+            if (t.isValidTree()) {
+                validForest.add(t);
+            } else {
+                System.out.println("Removing tree " + i + " due to failed homogeneity test.");
+            }
+        }
+        forest = validForest;
+        numberTreesInForest = forest.size();
+
+        if (verbose) {
+            System.out.println("Number of valid trees after homogeneity testing: " + numberTreesInForest);
+        }
+
+        // Compute average test values over remaining valid trees
+        for (TreeMoment tree : forest) {
+            double[] testValues_i = tree.getTestValues();
+            for (int k = 0; k < testValues_i.length; k++) {
+                if (!Double.isNaN(testValues_i[k]) && !Double.isInfinite(testValues_i[k])) {
+                    averageTestValues[k] += testValues_i[k];
+                } else {
+                    System.out.println("Skipping invalid test value (NaN or Inf) for parameter " + k);
+                }
+            }
+        }
+        for (int k = 0; k < averageTestValues.length; k++) {
+            averageTestValues[k] = averageTestValues[k] / numberTreesInForest;
+            if (verbose) {
+                System.out.println("parameter " + k + ": average DM test statistic: " + averageTestValues[k]);
+            }
+        }
+    }
 }
