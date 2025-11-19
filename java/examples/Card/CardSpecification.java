@@ -53,7 +53,7 @@ public class CardSpecification implements MomentSpecification {
     Jama.Matrix balancingVector; // is treatment status in the RCT setting
     int numObs;
     int numtrees;
-    double proportionObservationsToEstimateTreeStructure = 0.35;
+    double proportionObservationsToEstimateTreeStructure = 0.15;
     int[] variableSearchIndex; // this should be restricted to only Z
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
@@ -372,7 +372,7 @@ public class CardSpecification implements MomentSpecification {
             // NEED TO UPDATE
             X = pmUtility.getColumn(dX, 0); // constant
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // education 
-//            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
+            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // experience
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // exp^2
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // black
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // south
@@ -387,7 +387,7 @@ public class CardSpecification implements MomentSpecification {
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); // both parents present
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15)); // single mother
             
-            /*
+            
             //One-hot encoding of categorical variables (e.g., region_1966)
             int numValues = 9; // region_1966 takes values 1 to 9
             Jama.Matrix valueDummies = new Jama.Matrix(numObsFile, numValues - 1); 
@@ -401,10 +401,9 @@ public class CardSpecification implements MomentSpecification {
                 } else if (region == 9) {
                     valueDummies.set(obs, 7, 1); 
                 }
-            }
-            
+            }            
             X = pmUtility.concatMatrix(X, valueDummies);
-
+			/*
 			// Interaction terms between experience and region
             Jama.Matrix experienceInteraction = new Jama.Matrix(numObsFile, numValues - 1);
 

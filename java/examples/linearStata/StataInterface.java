@@ -241,6 +241,7 @@ public class StataInterface {
                 cvGridMinLeaf = Arrays.stream(opts.get("cvgrid_minleaf").split(","))
                         .map(String::trim)
                         .map(Integer::parseInt)
+                        .sorted()
                         .collect(Collectors.toList());
             } else {
                 cvGridMinLeaf = Collections.singletonList(25);
@@ -251,6 +252,7 @@ public class StataInterface {
                 cvGridMinImprovement = Arrays.stream(opts.get("cvgrid_minimp").split(","))
                         .map(String::trim)
                         .map(Double::parseDouble)
+                        .sorted()
                         .collect(Collectors.toList());
             } else {
                 cvGridMinImprovement = Collections.singletonList(0.1);
@@ -261,6 +263,7 @@ public class StataInterface {
                 cvGridMaxDepth = Arrays.stream(opts.get("cvgrid_maxdepth").split(","))
                         .map(String::trim)
                         .map(Integer::parseInt)
+                        .sorted(Comparator.reverseOrder())
                         .collect(Collectors.toList());
             } else {
                 cvGridMaxDepth = Collections.singletonList(5);

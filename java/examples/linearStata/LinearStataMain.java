@@ -142,16 +142,6 @@ public class LinearStataMain {
             	SFIToolkit.displayln("Splitting sample using simple random sampling.");
             }
             
-            /*
-            for (int minObservationsPerLeaf = 25; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.1; minImprovement <= 2.0; minImprovement *= 2) {
-                    for (int maxDepth = 7; maxDepth >= 1; maxDepth--) {
-                    	cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
-                    }
-                }
-            }
-            */
-       
             SFIToolkit.displayln("Grid for minLeaf: " + gridMinLeaf.toString());
             SFIToolkit.displayln("Grid for minImprovement: " + gridMinImprovement.toString());
             SFIToolkit.displayln("Grid for maxDepth: " + gridMaxDepth.toString());
@@ -163,12 +153,13 @@ public class LinearStataMain {
                     	mySpecification.resetHomogeneityIndex();              	
                     	//SFIToolkit.displayln("Parameters before detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));                	
                         if (detectHomogeneity) {
-                            executeHomogeneousParameterClassificationAndSearch(mySpecification, 10, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
+                            executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
                         }                      
                         //SFIToolkit.displayln("Parameters flags after detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));
                         computeFitStatistics s = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false);
                         s.computeOutOfSampleMSE();
                         cvList.add(s);
+                        mySpecification.resetHomogeneityIndex(); 
                     }
                 }
             }
@@ -218,6 +209,7 @@ public class LinearStataMain {
         }
                            
         if (detectHomogeneity && bestMaxDepth > 0) {
+        	mySpecification.resetHomogeneityIndex(); 
             executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, true);
         }
         
@@ -260,6 +252,8 @@ public class LinearStataMain {
       
     private void executeHomogeneousParameterClassificationAndSearch(MomentSpecification mySpecification, int numberTreesInForest, double minImprovement, int minObservationsPerLeaf, int maxDepth, long rngBaseSeedMomentForest, long rngBaseSeedOutOfSample, boolean verbose, boolean verboselast) {        	
         
+    	mySpecification.resetHomogeneityIndex(); 
+    	
     	if (verboselast) {
         	SFIToolkit.displayln("***************************");
             SFIToolkit.displayln("* Testing for Homogeneity *");
@@ -330,25 +324,27 @@ public class LinearStataMain {
                 // all homogenous, don't need to optimize, just set to stump and let it run
             	maxDepth = 0;
             } else {
-            	if (verboselast) {
+            	if (verbose) {
             		SFIToolkit.displayln("Initializing search container");
             	}
                 HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, minImprovement, minObservationsPerLeaf, maxDepth, getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
-                if (verboselast) {
+                if (verbose) {
                 	SFIToolkit.displayln("Calling execute search");
                 }
                 con.executeSearch();
-                if (verboselast) {
+                if (verbose) {
                 	SFIToolkit.displayln("Post search");
                 }
                 Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
                 if (verboselast) {
-                	SFIToolkit.display("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
+                	SFIToolkit.displayln("*************************************");
+                    SFIToolkit.displayln("* Estimated homogeneous parameters: *");
+                    SFIToolkit.displayln("*************************************");
                 	pmUtility.prettyPrintVector(homogeneousParameters);
                 }
                 int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
                 if (verboselast) {
-                	SFIToolkit.displayln("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
+                	SFIToolkit.displayln("Length of homogeneous parameter vector: " + K);
                 }
                 Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
                 int counter = 0;
