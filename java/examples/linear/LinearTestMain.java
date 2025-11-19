@@ -100,10 +100,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 5;
+        int numMonteCarlos = 10;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 500; numObs <= 4000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 4000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.println(" numObs = " + numObs);
                 System.out.println("-----------------------");
@@ -129,8 +129,8 @@ public class LinearTestMain {
 
                 JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
 
-                // boolean[] d = {true};
-                boolean[] d = {false, true};
+                boolean[] d = {true};
+                // boolean[] d = {false, true};
 
                 for (boolean detectHomogeneity : d) {
                     // boolean detectHomogeneity = !true;
@@ -345,7 +345,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 20;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -446,9 +446,9 @@ public class LinearTestMain {
                 bestMaxDepth = 5;
             }
 
-            bestMinObservationsPerLeaf = 10;
+            bestMinObservationsPerLeaf = 10; // *(int)Math.round(Math.log(numObs));
             bestMinImprovement = 1.0;
-            // bestMaxDepth = 1;
+            // bestMaxDepth = 10;
         }
 
         /**
@@ -463,7 +463,7 @@ public class LinearTestMain {
             executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
         }
 
-        boolean goFast = false;
+        boolean goFast = !false;
         if (!goFast) {
             setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                     bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
