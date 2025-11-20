@@ -10,8 +10,8 @@ log using "logfile_montecarlo.log", replace
 * scenarios: 1=fully het, 2=one hom, 3=both hom
 *------------------------------*
 
-local totaln = 100
-local nlist 500 1000 2000 4000
+local totaln = 50
+local nlist 1000 2000 4000
 
 forvalues scenario = 1/3 {
 	di as error "====================================="
@@ -20,9 +20,15 @@ forvalues scenario = 1/3 {
 
 	foreach n of local nlist {
 		
-		local n1 = min(`n'/25, 70)
-		local n2 = min(`n'/20, 70)
-		local n3 = min(`n'/10, 70)
+		if `n' == 1000 {
+			local max = 2
+		}
+		if `n' == 2000 {
+			local max = 3
+		}
+		if `n' == 4000 {
+			local max = 4
+		}
 		
 		di as error "===================================="
 		di as error "  Running simulations for n = `n'   "
@@ -39,30 +45,30 @@ forvalues scenario = 1/3 {
 			* Moment forest (unrestricted)
 			qui momentforest y x1 x2, ///
 				z(z1 z2 z3) ///
-				numtrees(50) /// 			
+				numtrees(20) /// 			
 				seed(`iteration') ///
 				discretevars(z3) ///
-				propstructure(0.35) ///
+				propstructure(0.15) ///
 				testhomogeneity(false) ///
 				cv(true) ///
-				cvgridminleaf(`n1' `n2' `n3') ///
-				cvgridminimp(10 20 40) ///
-				cvgridmaxdepth(3 4 5) ///
+				cvgridminleaf(10) ///
+				cvgridminimp(1) ///
+				cvgridmaxdepth(`max') ///
 				gen("beta_mf_unrestricted_")				
 			qui gen mse_y_mf_unrestricted = `r(oosfit)'
 			
 			* Moment forest (restricted)
 			qui momentforest y x1 x2, ///
 				z(z1 z2 z3) ///
-				numtrees(50) /// 				
+				numtrees(20) ///  				
 				seed(`iteration') ///
 				discretevars(z3) ///
-				propstructure(0.35) ///
+				propstructure(0.15) ///
 				testhomogeneity(true) ///
 				cv(true) ///
-				cvgridminleaf(`n1' `n2' `n3') ///
-				cvgridminimp(10 20 40) ///
-				cvgridmaxdepth(3 4 5) ///
+				cvgridminleaf(10) ///
+				cvgridminimp(1) ///
+				cvgridmaxdepth(`max') ///
 				gen("beta_mf_restricted_")				
 			qui gen mse_y_mf_restricted = `r(oosfit)'
 			
@@ -117,6 +123,9 @@ forvalues scenario = 1/3 {
 * Y = 2.5*sin(Z) + 0.25*Z^2 + 1.0*X2 + e
 *---------------------------------------*
 
+local totaln = 50
+local nlist 1000 2000 4000
+
 di as error "==============================================="
 di as error "  Running simulations for partially linear DGP "
 di as error "==============================================="
@@ -128,20 +137,16 @@ foreach n of local nlist {
 	di as error "===================================="
 	
 	if `n' == 500 {
-		local n1 = min(`n'/25, 70)
-		local max = 3
+		local max = 1
 	}
 	if `n' == 1000 {
-		local n1 = min(`n'/25, 70)
-		local max = 4
+		local max = 2
 	}
 	if `n' == 2000 {
-		local n1 = min(`n'/25, 70)
-		local max = 5
+		local max = 3
 	}
 	if `n' == 4000 {
-		local n1 = min(`n'/25, 70)
-		local max = 6
+		local max = 4
 	}
 	
 	* Run moment forests
@@ -157,13 +162,13 @@ foreach n of local nlist {
 		* Moment forest (unrestricted)
 		qui momentforest y x1 x2, ///
 			z(z) ///
-			numtrees(50) /// 
+			numtrees(20) /// 
 			seed(`iteration') ///
 			testhomogeneity(false) ///
-			propstructure(0.35) ///
+			propstructure(0.15) ///
 			cv(true) ///
-			cvgridminleaf(`n1') ///
-			cvgridminimp(10) ///
+			cvgridminleaf(10) ///
+			cvgridminimp(1) ///
 			cvgridmaxdepth(`max') ///
 			gen("beta_mf_unrestricted_")				
 		qui gen mse_y_mf_unrestricted = `r(oosfit)'
@@ -171,13 +176,13 @@ foreach n of local nlist {
 		* Moment forest (restricted)
 		qui momentforest y x1 x2, ///
 			z(z) ///
-			numtrees(50) /// 		
+			numtrees(20) /// 		
 			seed(`iteration') ///
 			testhomogeneity(true) ///
-			propstructure(0.35) ///
+			propstructure(0.15) ///
 			cv(true) ///
-			cvgridminleaf(`n1') ///
-			cvgridminimp(10) ///
+			cvgridminleaf(10) ///
+			cvgridminimp(1) ///
 			cvgridmaxdepth(`max') ///
 			gen("beta_mf_restricted_")				
 		qui gen mse_y_mf_restricted = `r(oosfit)'
@@ -197,7 +202,7 @@ foreach n of local nlist {
 	
 	* Save for n = 4000
 	if `n' == 4000 {
-		keep if `iteration' == 1
+		keep if iteration == 1
 		save "Partial linear model estimates n = 4000.dta", replace
 	}
 	
@@ -235,7 +240,6 @@ foreach n of local nlist {
 log close
 
 *************
-
 use "Partial linear model estimates n = 4000.dta", clear
 twoway ///
     (scatter beta_mf_unrestricted_0 z, ///
@@ -252,6 +256,5 @@ twoway ///
     xtitle("Z") ///
     ytitle("beta")
 
+	
 ** End of file **
-
-
