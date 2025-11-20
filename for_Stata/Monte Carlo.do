@@ -136,9 +136,6 @@ foreach n of local nlist {
 	di as error "  Running simulations for n = `n'   "
 	di as error "===================================="
 	
-	if `n' == 500 {
-		local max = 1
-	}
 	if `n' == 1000 {
 		local max = 2
 	}
