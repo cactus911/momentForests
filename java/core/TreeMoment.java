@@ -826,8 +826,6 @@ public class TreeMoment {
      *
      * Test homogeneity of each parameter one by one.
      *
-     * @return Double array of critical values (to average them and see if that
-     * works to improve power?)
      */
     public void testHomogeneity() {
         // verbose = true;
@@ -877,38 +875,23 @@ public class TreeMoment {
                         // System.out.println("Computing Tn...");
                         double Tn = big.computeStatistic(k, restrictedTheta);
                         // System.out.println("Tn = "+Tn);
+                        // pmUtility.prettyPrintVector(restrictedTheta);
 
-                        int numSubsamples = 250;
+                        int numSubsamples = 150;
                         Random rng = new Random(treeSeed);
 
-//                        List<Double> stats = new ArrayList<>();
-//                        for (int r = 0; r < numSubsamples; r++) {             	
-//                        	//System.out.println("\nr = "+r+"\n");
-//                            try {
-//                                WaldTestWholeTree bigSubsample = new WaldTestWholeTree(subsample(v, 0.7, rng.nextLong()), momentSpec);
-//                                Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(k);
-//                                double stat = bigSubsample.computeStatistic(k, restrictedTheta_b);
-//                                //System.out.println("Tb: "+ stat);
-//                                stats.add(stat);                               
-//                            } catch (Exception e) {
-//                            	if(verbose) {
-//                                    // Skip this subsample if computeStatistic fails
-//                                    System.out.println("Subsample " + r + " failed: " + e.getMessage());
-//                            	}
-//
-//                            }
-//                        }
                         final int paramK = k;
+                        long[] seeds = new Random(rng.nextLong()).longs(numSubsamples).toArray();
                         List<Double> stats = IntStream.range(0, numSubsamples)
                                 .parallel()
                                 .mapToObj(r -> {
                                     try {
                                         WaldTestWholeTree bigSubsample = new WaldTestWholeTree(
-                                                subsample(v, 0.7, rng.nextLong()),
+                                                subsample(v, 0.75, seeds[r]),
                                                 momentSpec
                                         );
-                                        Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(paramK);
-                                        double stat = bigSubsample.computeStatistic(paramK, restrictedTheta_b);
+                                        // Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(paramK);
+                                        double stat = bigSubsample.computeStatistic(paramK, restrictedTheta);
                                         return stat;
                                     } catch (Exception e) {
                                         if (verbose) {
@@ -933,7 +916,7 @@ public class TreeMoment {
                         // p-value is percentage of subsampled test statistics above the value computed on the original data
                         Jama.Matrix sortedTb = pmUtility.sortMatrixAscending(subsampleTb);
                         if (verbose) {
-                            System.out.print("Tn: " + Tn + " Subsample test statistic values sorted: ");
+                            System.out.print("Tn("+k+"): " + Tn + " Subsample test statistic values sorted: ");
                             pmUtility.prettyPrintVector(sortedTb);
                             System.out.println("Sorted matrix length: " + sortedTb.getRowDimension());
                         }
