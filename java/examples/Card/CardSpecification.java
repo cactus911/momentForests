@@ -58,7 +58,7 @@ public class CardSpecification implements MomentSpecification {
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean failedEstimator = false;
-    int[] stratificationIndex = null;   
+    int[] stratificationIndex = {5, 7};   
     String betaPrefixes = "";
 
     // NEED TO UPDATE
@@ -120,7 +120,7 @@ public class CardSpecification implements MomentSpecification {
          * 15. dummy = 1 if household is a single mother
          *
          */
-        int[] vsi = {1, 2, 4};
+        int[] vsi = {1, 2, 4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 15};
         Boolean[] wvd = {true,
             false,
             false,
@@ -386,8 +386,7 @@ public class CardSpecification implements MomentSpecification {
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); // interaction fam edu categorical (which categorical?)
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); // both parents present
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15)); // single mother
-            
-            
+                        
             //One-hot encoding of categorical variables (e.g., region_1966)
             int numValues = 9; // region_1966 takes values 1 to 9
             Jama.Matrix valueDummies = new Jama.Matrix(numObsFile, numValues - 1); 
