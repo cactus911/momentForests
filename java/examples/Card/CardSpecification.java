@@ -386,7 +386,8 @@ public class CardSpecification implements MomentSpecification {
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); // interaction fam edu categorical (which categorical?)
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); // both parents present
 //            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15)); // single mother
-                        
+                   
+            /*
             //One-hot encoding of categorical variables (e.g., region_1966)
             int numValues = 9; // region_1966 takes values 1 to 9
             Jama.Matrix valueDummies = new Jama.Matrix(numObsFile, numValues - 1); 
@@ -402,6 +403,7 @@ public class CardSpecification implements MomentSpecification {
                 }
             }            
             X = pmUtility.concatMatrix(X, valueDummies);
+            */
 			/*
 			// Interaction terms between experience and region
             Jama.Matrix experienceInteraction = new Jama.Matrix(numObsFile, numValues - 1);

@@ -103,7 +103,7 @@ public class CardMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 10;
+        int numberTreesInForest = 40;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -125,9 +125,9 @@ public class CardMain {
 
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
-            for (int minObservationsPerLeaf = 100; minObservationsPerLeaf <= 400; minObservationsPerLeaf *= 2) {
+            for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
                 for (double minImprovement = 0.1; minImprovement <= 10; minImprovement *= 10) {
-                    for (int maxDepth = 7; maxDepth >= 1; maxDepth--) {
+                    for (int maxDepth = 7; maxDepth >= 5; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
                 }
@@ -194,9 +194,9 @@ public class CardMain {
 
             if (verbose) {
                 TreeMoment loblolly = myForest.getTree(0);
-                System.out.println("************************");
-                System.out.println("* Printing first tree  *");
-                System.out.println("************************");
+                System.out.println("***************************************************");
+                System.out.println("* Before homogeneity testing: printing first tree *");
+                System.out.println("***************************************************");
                 loblolly.printTree();
             }
 
@@ -248,7 +248,7 @@ public class CardMain {
                     bestMaxDepth = 0;
                 } else {
                     System.out.println("Initializing search container");
-                    numberTreesInForest = 1; // 10
+                    numberTreesInForest = 40; // 10
                     HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                             getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                     System.out.println("Calling execute search");
@@ -284,7 +284,7 @@ public class CardMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 1; // 50
+        numberTreesInForest = 40; // 50
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
         fitStats.computeOutOfSampleMSE();
@@ -513,6 +513,8 @@ public class CardMain {
             if (verbose) {
                 System.out.println("First tree in forest estimated as:");
                 myForest.getTree(0).printTree();
+                System.out.println("Second tree in forest estimated as:");
+                myForest.getTree(1).printTree();
             }
 
             try {
@@ -521,25 +523,71 @@ public class CardMain {
                 for (int i = 0; i < mySpecification.getZ().getRowDimension(); i++) {
                     Jama.Matrix zi = mySpecification.getZ().getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
                     Jama.Matrix xi = mySpecification.getX().getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
+                    
+                    //System.out.println("zi");
+                    //pmUtility.prettyPrint(zi);
+                                        
                     double yi = mySpecification.getY().get(i, 0);
                     // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                     Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
-
+                    
+                    // Counterfactual: white
+                    Jama.Matrix zi_white = zi.copy();
+                    zi_white.set(0, 4, 0.0);      
+                    Jama.Matrix compositeEstimatedBeta_white = myForest.getEstimatedParameterForest(zi_white);
+                    
+                    // Counterfactual: black
+                    Jama.Matrix zi_black = zi.copy();
+                    zi_black.set(0, 4, 1.0);      
+                    Jama.Matrix compositeEstimatedBeta_black = myForest.getEstimatedParameterForest(zi_black);
+          
+                    // Counterfactual: not South
+                    Jama.Matrix zi_not_south = zi.copy();
+                    zi_not_south.set(0, 5, 0.0);      
+                    Jama.Matrix compositeEstimatedBeta_not_south = myForest.getEstimatedParameterForest(zi_not_south);
+                                        
+                    // Counterfactual: South
+                    Jama.Matrix zi_south = zi.copy();
+                    zi_south.set(0, 5, 1.0);      
+                    Jama.Matrix compositeEstimatedBeta_south = myForest.getEstimatedParameterForest(zi_south);
+                    
+                    // Counterfactual: not SMSA
+                    Jama.Matrix zi_not_smsa = zi.copy();
+                    zi_not_smsa.set(0, 6, 0.0);      
+                    Jama.Matrix compositeEstimatedBeta_not_smsa = myForest.getEstimatedParameterForest(zi_not_smsa);
+                                        
+                    // Counterfactual: SMSA
+                    Jama.Matrix zi_smsa = zi.copy();
+                    zi_smsa.set(0, 6, 1.0);      
+                    Jama.Matrix compositeEstimatedBeta_smsa = myForest.getEstimatedParameterForest(zi_smsa);
+                    
+                    for(int j=0;j<zi.getColumnDimension();j++) {
+                        out.write(zi.get(0,j)+",");
+                    }
                     for(int j=0;j<compositeEstimatedBeta.getRowDimension();j++) {
                         out.write(compositeEstimatedBeta.get(j,0)+",");
                     }
-                    for(int j=0;j<xi.getColumnDimension();j++) {
-                        out.write(xi.get(0,j)+",");
+                    for(int j=0;j<compositeEstimatedBeta_white.getRowDimension();j++) {
+                        out.write(compositeEstimatedBeta_white.get(j,0)+",");
+                    }  
+                    for(int j=0;j<compositeEstimatedBeta_black.getRowDimension();j++) {
+                        out.write(compositeEstimatedBeta_black.get(j,0)+",");
                     }
-                    for(int j=0;j<zi.getColumnDimension();j++) {
-                        out.write(zi.get(0,j)+"");
-                        if(j<zi.getColumnDimension()-1) {
-                            out.write(",");
-                        }
+                    for(int j=0;j<compositeEstimatedBeta_not_south.getRowDimension();j++) {
+                        out.write(compositeEstimatedBeta_not_south.get(j,0)+",");
+                    }  
+                    for(int j=0;j<compositeEstimatedBeta_south.getRowDimension();j++) {
+                        out.write(compositeEstimatedBeta_south.get(j,0)+",");
                     }
+                    for(int j=0;j<compositeEstimatedBeta_not_smsa.getRowDimension();j++) {
+                        out.write(compositeEstimatedBeta_not_smsa.get(j,0)+",");
+                    }  
+                    for(int j=0;j<compositeEstimatedBeta_smsa.getRowDimension();j++) {
+                        out.write(compositeEstimatedBeta_smsa.get(j,0)+",");
+                    }
+ 
                     out.write("\n");
-                    
-                    
+                                  
                     inSampleFit += mySpecification.getGoodnessOfFit(yi, xi, compositeEstimatedBeta);
                 }
                 inSampleFit /= mySpecification.getZ().getRowDimension();
