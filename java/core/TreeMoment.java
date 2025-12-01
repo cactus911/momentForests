@@ -26,7 +26,6 @@ package core;
 import JSci.maths.statistics.ChiSqrDistribution;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.Objects;
 import java.util.Random;
@@ -82,6 +81,7 @@ public class TreeMoment {
     private long treeSeed;
 
     private boolean validTree = true;
+    private double testStatistic;
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
             Boolean[] discreteVector, boolean verbose, double minProportionEachPartition,
@@ -874,15 +874,19 @@ public class TreeMoment {
                         }
                         // System.out.println("Computing Tn...");
                         double Tn = big.computeStatistic(k, restrictedTheta);
-                        // System.out.println("Tn = "+Tn);
+                        if(k==1) {
+                            System.out.println("TreeMoment.java:testHomogeneity(). Tn: "+Tn);
+                            setTestStatistic(Tn);
+                        }
+                        System.out.println("TreeMoment.java: Tn = " + Tn);
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
-                        int numSubsamples = 150;
+                        int numSubsamples = 5000;
                         Random rng = new Random(treeSeed);
 
                         final int paramK = k;
                         long[] seeds = new Random(rng.nextLong()).longs(numSubsamples).toArray();
-                        List<Double> stats = IntStream.range(0, numSubsamples)
+                        List<Double> statsList = IntStream.range(0, numSubsamples)
                                 .parallel()
                                 .mapToObj(r -> {
                                     try {
@@ -902,21 +906,28 @@ public class TreeMoment {
                                 })
                                 .filter(Objects::nonNull)
                                 .collect(Collectors.toList());
+                        ArrayList<Double> stats = new ArrayList<>(statsList);
 
                         //System.out.println("Number of successful subsamples: " + stats.size());
                         Jama.Matrix subsampleTb = new Jama.Matrix(stats.size(), 1);
                         for (int i = 0; i < stats.size(); i++) {
                             subsampleTb.set(i, 0, stats.get(i));
                         }
-                        if (verbose) {
+                        if (verbose || 1==1 && numSubsamples>1) {
                             double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
                             System.out.println("Subsampled critical value: " + criticalValue);
+                        }
+                        
+                        boolean plotSubsamples = !false;
+                        if(k==1 && plotSubsamples && numSubsamples>1) {
+                            // PlotPDF.plotDistributionUnrestrictedTestStatistics(stats.stream().mapToDouble(Double::doubleValue).toArray());
+                            PDFPlotter.plotHistogramWithKDE(stats, "Subsampled Tn");
                         }
 
                         // p-value is percentage of subsampled test statistics above the value computed on the original data
                         Jama.Matrix sortedTb = pmUtility.sortMatrixAscending(subsampleTb);
                         if (verbose) {
-                            System.out.print("Tn("+k+"): " + Tn + " Subsample test statistic values sorted: ");
+                            System.out.print("Tn(" + k + "): " + Tn + " Subsample test statistic values sorted: ");
                             pmUtility.prettyPrintVector(sortedTb);
                             System.out.println("Sorted matrix length: " + sortedTb.getRowDimension());
                         }
@@ -1245,5 +1256,13 @@ public class TreeMoment {
         // System.exit(0);
 
         return subsampledData;
+    }
+
+    private void setTestStatistic(double Tn) {
+        testStatistic = Tn;
+    }
+
+    public double getTestStatistic() {
+        return testStatistic;
     }
 }

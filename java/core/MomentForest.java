@@ -26,6 +26,7 @@ package core;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import javax.swing.JTextArea;
 
 /**
@@ -271,15 +272,22 @@ public class MomentForest {
         }
         return startingValues;
     }
+    
+    public ArrayList<Double> getTestStatistics() {
+        return forest.parallelStream()
+            .map(e -> e.getTestStatistic())
+            .collect(Collectors.toCollection(ArrayList::new));
+    }
 
     public void testHomogeneity(boolean verbose) {
-        boolean useParallel = true;
+        boolean useParallel = !true;
 
         double[] averageTestValues = new double[spec.getNumParams()];
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
                 System.out.println("========== Tree " + i + " ==========");
+                System.out.println("Testing homogeneity");
                 forest.get(i).testHomogeneity();
             }
         } else {
