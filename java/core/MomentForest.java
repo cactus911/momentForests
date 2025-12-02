@@ -278,16 +278,22 @@ public class MomentForest {
             .map(e -> e.getTestStatistic())
             .collect(Collectors.toCollection(ArrayList::new));
     }
+    
+    public ArrayList<Double> getRestrictedThetas() {
+        return forest.parallelStream()
+            .map(e -> e.getRestrictedTheta())
+            .collect(Collectors.toCollection(ArrayList::new));
+    }
 
     public void testHomogeneity(boolean verbose) {
-        boolean useParallel = !true;
+        boolean useParallel = true;
 
         double[] averageTestValues = new double[spec.getNumParams()];
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
-                System.out.println("========== Tree " + i + " ==========");
-                System.out.println("Testing homogeneity");
+                // System.out.println("========== Tree " + i + " ==========");
+                // System.out.println("Testing homogeneity");
                 forest.get(i).testHomogeneity();
             }
         } else {

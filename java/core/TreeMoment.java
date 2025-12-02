@@ -24,6 +24,7 @@
 package core;
 
 import JSci.maths.statistics.ChiSqrDistribution;
+import Jama.Matrix;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Collections;
@@ -82,6 +83,7 @@ public class TreeMoment {
 
     private boolean validTree = true;
     private double testStatistic;
+    private Matrix restrictedTheta;
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
             Boolean[] discreteVector, boolean verbose, double minProportionEachPartition,
@@ -856,7 +858,8 @@ public class TreeMoment {
             ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
             ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
 
-            for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+            System.out.println("Need to switch this back to k=0 when you are done testing!");
+            for (int k = 1; k < getNodeEstimatedBeta().getRowDimension(); k++) {
                 try {
                     boolean useSubsampling = true;
                     if (useSubsampling) {
@@ -866,22 +869,24 @@ public class TreeMoment {
                         // this necessitates some changes to waldtestwholetree.java, but so be it
                         // makes it better in any case
                         WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
-                        Jama.Matrix restrictedTheta = big.computeRestrictedTheta(k);
+                        Jama.Matrix restrictedTheta_k = big.computeRestrictedTheta(k);
 
                         if (verbose) {
                             //System.out.print("Restricted theta: ");
                             //pmUtility.prettyPrintVector(restrictedTheta);
                         }
                         // System.out.println("Computing Tn...");
-                        double Tn = big.computeStatistic(k, restrictedTheta);
-                        if(k==1) {
-                            System.out.println("TreeMoment.java:testHomogeneity(). Tn: "+Tn);
+                        double Tn = big.computeStatistic(k, restrictedTheta_k);
+                        if (k == 1) {
+                            // System.out.println("TreeMoment.java:testHomogeneity(). Tn: "+Tn);
                             setTestStatistic(Tn);
+                            setRestrictedTheta(restrictedTheta_k.minus(big.getThetaUnconstrained()));
                         }
                         System.out.println("TreeMoment.java: Tn = " + Tn);
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
-                        int numSubsamples = 5000;
+                        int numSubsamples = 1;
+                        final double subsampleExponent = 0.9;
                         Random rng = new Random(treeSeed);
 
                         final int paramK = k;
@@ -891,14 +896,15 @@ public class TreeMoment {
                                 .mapToObj(r -> {
                                     try {
                                         WaldTestWholeTree bigSubsample = new WaldTestWholeTree(
-                                                subsample(v, 0.75, seeds[r]),
+                                                subsample(v, subsampleExponent, seeds[r]),
                                                 momentSpec
                                         );
-                                        // Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(paramK);
-                                        double stat = bigSubsample.computeStatistic(paramK, restrictedTheta);
+                                        Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(paramK);
+                                        bigSubsample.computeStatistic(paramK, restrictedTheta_b);
+                                        double stat = bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // bigSubsample.computeStatistic(paramK, restrictedTheta_b);
                                         return stat;
                                     } catch (Exception e) {
-                                        if (verbose) {
+                                        if (verbose || 1 == 1) {
                                             System.out.println("Subsample " + r + " failed: " + e.getMessage());
                                         }
                                         return null;
@@ -908,20 +914,30 @@ public class TreeMoment {
                                 .collect(Collectors.toList());
                         ArrayList<Double> stats = new ArrayList<>(statsList);
 
-                        //System.out.println("Number of successful subsamples: " + stats.size());
+                        // System.out.println("Number of successful subsamples: " + stats.size());
                         Jama.Matrix subsampleTb = new Jama.Matrix(stats.size(), 1);
                         for (int i = 0; i < stats.size(); i++) {
                             subsampleTb.set(i, 0, stats.get(i));
                         }
-                        if (verbose || 1==1 && numSubsamples>1) {
+                        if (verbose || 1 == 1 && numSubsamples > 1) {
+                            int numObs = 0;
+                            for (DataLens dl : v) {
+                                numObs += dl.getNumObs();
+                            }
+
                             double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
-                            System.out.println("Subsampled critical value: " + criticalValue);
-                        }
-                        
-                        boolean plotSubsamples = !false;
-                        if(k==1 && plotSubsamples && numSubsamples>1) {
-                            // PlotPDF.plotDistributionUnrestrictedTestStatistics(stats.stream().mapToDouble(Double::doubleValue).toArray());
-                            PDFPlotter.plotHistogramWithKDE(stats, "Subsampled Tn");
+                            System.out.println("Subsampled 95th percentile (critical value): " + criticalValue);
+                            System.out.println("Subsampled mean: " + pmUtility.mean(subsampleTb, 0));
+                            System.out.println("Subsampled SD: " + pmUtility.standardDeviation(subsampleTb));
+                            System.out.println("Calculated numObs: " + numObs);
+                            System.out.println("Subsample size: " + Math.pow(numObs + 0.0, subsampleExponent));
+
+                            boolean plotSubsamples = !false;
+                            if (k == 1 && plotSubsamples && numSubsamples > 1) {
+                                // PlotPDF.plotDistributionUnrestrictedTestStatistics(stats.stream().mapToDouble(Double::doubleValue).toArray());
+                                // PDFPlotter.plotHistogramWithKDE(stats, "Subsampled Tn");
+                                PDFPlotter.plotKernelDensity(stats, "Subsampled Tn, n = " + numObs);
+                            }
                         }
 
                         // p-value is percentage of subsampled test statistics above the value computed on the original data
@@ -963,6 +979,11 @@ public class TreeMoment {
 
                         double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
                         testValues[k] = dm2;
+
+                        if (k == 1) {
+                            System.out.println("Tn: " + dm2);
+                            setTestStatistic(dm2);
+                        }
 
                         double pval = 1.0 - chi.cumulative(dm2);
                         if (verbose) {
@@ -1264,5 +1285,16 @@ public class TreeMoment {
 
     public double getTestStatistic() {
         return testStatistic;
+    }
+
+    private void setRestrictedTheta(Matrix restrictedThetaP) {
+        restrictedTheta = restrictedThetaP.copy();
+    }
+
+    /**
+     * @return the restrictedTheta
+     */
+    public Double getRestrictedTheta() {
+        return restrictedTheta.get(0, 0);
     }
 }
