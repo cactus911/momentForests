@@ -129,15 +129,15 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
         Jama.Matrix diffTheta = getThetaUnconstrained().minus(thetaConstrained);
 
-        if (debug) {
+        if (debug || 1==1) {
             System.out.print("difference in theta: ");
             pmUtility.prettyPrintVector(diffTheta);
 
-            System.out.println("Acov:");
-            pmUtility.prettyPrint(acov);
-
-            System.out.println("Acov inverse:");
-            pmUtility.prettyPrint(acov.inverse());
+//            System.out.println("Acov:");
+//            pmUtility.prettyPrint(acov);
+//
+//            System.out.println("Acov inverse:");
+//            pmUtility.prettyPrint(acov.inverse());
         }
 
 //        System.out.println("Newey-McFadden B:");

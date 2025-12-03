@@ -876,6 +876,18 @@ public class TreeMoment {
                             //pmUtility.prettyPrintVector(restrictedTheta);
                         }
                         // System.out.println("Computing Tn...");
+
+                        Jama.Matrix truth = new Jama.Matrix(4, 1);
+                        truth.set(0, 0, -1);
+                        truth.set(1, 0, 1);
+                        truth.set(2, 0, 1);
+                        truth.set(3, 0, 1);
+                        boolean testAgainstTruth = true;
+                        if (testAgainstTruth) {
+                            System.out.println("Testing against truth ** do not use for production **");
+                            restrictedTheta_k = truth.copy();
+                        }
+
                         double Tn = big.computeStatistic(k, restrictedTheta_k);
                         if (k == 1) {
                             // System.out.println("TreeMoment.java:testHomogeneity(). Tn: "+Tn);
@@ -899,9 +911,13 @@ public class TreeMoment {
                                                 subsample(v, subsampleExponent, seeds[r]),
                                                 momentSpec
                                         );
-                                        Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(paramK);
-                                        bigSubsample.computeStatistic(paramK, restrictedTheta_b);
-                                        double stat = bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // bigSubsample.computeStatistic(paramK, restrictedTheta_b);
+                                        // Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(paramK);
+                                        // bigSubsample.computeStatistic(paramK, restrictedTheta_b);
+                                        // double stat = bigSubsample.computeStatistic(paramK, restrictedTheta_b); // bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // 
+
+//                                        pmUtility.prettyPrint(restrictedTheta_k);
+//                                        System.exit(0);
+                                        double stat = bigSubsample.computeStatistic(paramK, truth); // bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // 
                                         return stat;
                                     } catch (Exception e) {
                                         if (verbose || 1 == 1) {

@@ -101,10 +101,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 10;
+        int numMonteCarlos = 50;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 10000; numObs <= 10000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 100000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
@@ -172,8 +172,8 @@ public class LinearTestMain {
 
                     AtomicInteger bomb = new AtomicInteger();
 
-                    // parallelLTM.parallelStream().forEach(e -> {
-                    parallelLTM.stream().forEach(e -> {
+                    parallelLTM.parallelStream().forEach(e -> {
+                    // parallelLTM.stream().forEach(e -> {
                         e.execute();
                         bomb.incrementAndGet();
                         System.out.println("Finished " + bomb.get() + " iterations.");
@@ -182,7 +182,7 @@ public class LinearTestMain {
                     ArrayList<Double> mcFirstTreeTestStatistics = new ArrayList<>();
                     parallelLTM.stream().forEach(e -> mcFirstTreeTestStatistics.add(e.getFirstTreeTestStatistic()));
                     if (numMonteCarlos > 1) {
-                        PDFPlotter.plotHistogramWithKDE(mcFirstTreeTestStatistics, "Monte Carlo Tn");
+                        PDFPlotter.plotKernelDensity(mcFirstTreeTestStatistics, "Monte Carlo Tn");
                         System.out.println("95th percentile of first tree test statistics: " + Quantiles.percentiles().index(95).compute(mcFirstTreeTestStatistics));
                     }
 
@@ -470,7 +470,7 @@ public class LinearTestMain {
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) { // && bestMaxDepth > 0) {
-            int numTestingTrees = 100;
+            int numTestingTrees = 1;
             executeHomogeneousParameterClassificationAndSearch(mySpecification, numTestingTrees, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
         }
 
