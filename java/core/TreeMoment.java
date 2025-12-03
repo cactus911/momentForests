@@ -869,7 +869,8 @@ public class TreeMoment {
                         // this necessitates some changes to waldtestwholetree.java, but so be it
                         // makes it better in any case
                         WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
-                        Jama.Matrix restrictedTheta_k = big.computeRestrictedTheta(k);
+                        Jama.Matrix thetaUnconstrained = big.computeThetaUnconstrained();
+                        final Jama.Matrix thetaConstrained_k = big.computeThetaConstrained(k);
 
                         if (verbose) {
                             //System.out.print("Restricted theta: ");
@@ -877,22 +878,18 @@ public class TreeMoment {
                         }
                         // System.out.println("Computing Tn...");
 
-                        Jama.Matrix truth = new Jama.Matrix(4, 1);
-                        truth.set(0, 0, -1);
-                        truth.set(1, 0, 1);
-                        truth.set(2, 0, 1);
-                        truth.set(3, 0, 1);
                         boolean testAgainstTruth = true;
                         if (testAgainstTruth) {
                             System.out.println("Testing against truth ** do not use for production **");
-                            restrictedTheta_k = truth.copy();
+                            thetaConstrained_k.set(0, 0, -1);
+                            thetaConstrained_k.set(1, 0, 1);
                         }
 
-                        double Tn = big.computeStatistic(k, restrictedTheta_k);
+                        double Tn = big.computeStatistic(thetaUnconstrained, thetaConstrained_k);
                         if (k == 1) {
                             // System.out.println("TreeMoment.java:testHomogeneity(). Tn: "+Tn);
                             setTestStatistic(Tn);
-                            setRestrictedTheta(restrictedTheta_k.minus(big.getThetaUnconstrained()));
+                            setRestrictedTheta(thetaConstrained_k); // .minus(big.getThetaUnconstrained()));
                         }
                         System.out.println("TreeMoment.java: Tn = " + Tn);
                         // pmUtility.prettyPrintVector(restrictedTheta);
@@ -911,13 +908,15 @@ public class TreeMoment {
                                                 subsample(v, subsampleExponent, seeds[r]),
                                                 momentSpec
                                         );
-                                        // Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(paramK);
+                                        // Jama.Matrix restrictedTheta_b = bigSubsample.computeThetaConstrained(paramK);
                                         // bigSubsample.computeStatistic(paramK, restrictedTheta_b);
                                         // double stat = bigSubsample.computeStatistic(paramK, restrictedTheta_b); // bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // 
 
-//                                        pmUtility.prettyPrint(restrictedTheta_k);
+//                                        pmUtility.prettyPrint(thetaConstrained_k);
 //                                        System.exit(0);
-                                        double stat = bigSubsample.computeStatistic(paramK, truth); // bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // 
+                                        Jama.Matrix thetaUnconstrained_b = bigSubsample.computeThetaUnconstrained();
+                                        pmUtility.prettyPrint(thetaUnconstrained_b);
+                                        double stat = bigSubsample.computeStatistic(thetaUnconstrained_b, thetaConstrained_k); // bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // 
                                         return stat;
                                     } catch (Exception e) {
                                         if (verbose || 1 == 1) {
@@ -991,7 +990,7 @@ public class TreeMoment {
                     } else {
                         DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
                         // WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
-                        // Jama.Matrix restrictedTheta = big.computeRestrictedTheta(k);
+                        // Jama.Matrix restrictedTheta = big.computeThetaConstrained(k);
 
                         double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
                         testValues[k] = dm2;
