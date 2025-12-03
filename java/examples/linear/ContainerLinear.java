@@ -358,6 +358,8 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         Jama.Matrix fittedY = X.times(beta);
         Jama.Matrix e = fittedY.minus(Y);
 
+        // pmUtility.prettyPrint(pmUtility.concatMatrix(Y, pmUtility.concatMatrix(X, e)), 20);
+        
         // turns out using gi method here is crazy slow!
         // because i was recalculating vectors for individual observations each time; totally unnecessary
         for (int i = 0; i < X.getRowDimension(); i++) {

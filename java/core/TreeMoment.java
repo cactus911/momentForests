@@ -869,23 +869,23 @@ public class TreeMoment {
                         // this necessitates some changes to waldtestwholetree.java, but so be it
                         // makes it better in any case
                         WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
+                        System.out.println("Sounds");
                         Jama.Matrix thetaUnconstrained = big.computeThetaUnconstrained();
-                        final Jama.Matrix thetaConstrained_k = big.computeThetaConstrained(k);
-
-                        if (verbose) {
-                            //System.out.print("Restricted theta: ");
-                            //pmUtility.prettyPrintVector(restrictedTheta);
-                        }
-                        // System.out.println("Computing Tn...");
+                        System.out.println("Good");
+                        final Jama.Matrix thetaConstrained_k = new Jama.Matrix(2,1);
 
                         boolean testAgainstTruth = true;
                         if (testAgainstTruth) {
                             System.out.println("Testing against truth ** do not use for production **");
                             thetaConstrained_k.set(0, 0, -1);
                             thetaConstrained_k.set(1, 0, 1);
+                        } else {
+                            Jama.Matrix thetaC = big.computeThetaConstrained(k);
+                            thetaConstrained_k.set(0,0,thetaC.get(0,0));
+                            thetaConstrained_k.set(1,0,thetaC.get(1,0));
                         }
 
-                        double Tn = big.computeStatistic(thetaUnconstrained, thetaConstrained_k);
+                        double Tn = big.computeStatistic(thetaUnconstrained, thetaConstrained_k, true);
                         if (k == 1) {
                             // System.out.println("TreeMoment.java:testHomogeneity(). Tn: "+Tn);
                             setTestStatistic(Tn);
@@ -916,7 +916,7 @@ public class TreeMoment {
 //                                        System.exit(0);
                                         Jama.Matrix thetaUnconstrained_b = bigSubsample.computeThetaUnconstrained();
                                         pmUtility.prettyPrint(thetaUnconstrained_b);
-                                        double stat = bigSubsample.computeStatistic(thetaUnconstrained_b, thetaConstrained_k); // bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // 
+                                        double stat = bigSubsample.computeStatistic(thetaUnconstrained_b, thetaConstrained_k, false); // bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // 
                                         return stat;
                                     } catch (Exception e) {
                                         if (verbose || 1 == 1) {

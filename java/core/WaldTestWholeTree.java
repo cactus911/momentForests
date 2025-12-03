@@ -62,7 +62,8 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         return thetaUnconstrained;
     }
     
-    public double computeStatistic(Jama.Matrix thetaUnconstrained, Jama.Matrix thetaConstrained) {
+    public double computeStatistic(Jama.Matrix thetaUnconstrained, Jama.Matrix thetaConstrained, boolean outputIntermediates) {
+        indexConstrainedParameter = -1;
 //        if (debug) {
 //            System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameterPassed + " ------------------------");
 //        }
@@ -74,20 +75,28 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         double wald3 = 0;
 
         // okay, from Newey-McFadden we have B = G'Omega^{-1}G, where G is m x k matrix of derivatives and omega is mxm E[gg']
+        if(outputIntermediates) {
+            System.out.print("Computing B...");
+        }
         Jama.Matrix B = computeNeweyMcFaddenB(unconstrainedX);
+        if(outputIntermediates) {
+            System.out.println("done.");
+        }
         //pmUtility.prettyPrintVector(B);
         // Jama.Matrix acov = B.inverse();
 
-//        if (debug) {
-//            System.out.print("Unconstrained Estimates: ");
-//            pmUtility.prettyPrintVector(getThetaUnconstrained());
-//
-//            pmUtility.prettyPrint(new Jama.Matrix(unconstrainedX, 1));
-//            for (Jama.Matrix beta : convertToBetaList(unconstrainedX)) {
-//                pmUtility.prettyPrintVector(beta);
-//            }
-//            System.out.println("SSE (unconstrained): " + computeSSE(unconstrainedX));
-//        }
+        if (outputIntermediates) {
+            System.out.print("Unconstrained Estimates: ");
+            pmUtility.prettyPrintVector(thetaUnconstrained);
+
+            System.out.print("Constrained Estimates: ");
+            pmUtility.prettyPrintVector(thetaConstrained);
+            
+            for (Jama.Matrix beta : convertToBetaList(unconstrainedX)) {
+                pmUtility.prettyPrintVector(beta);
+            }
+            System.out.println("SSE (unconstrained): " + computeSSE(unconstrainedX));
+        }
 
         // then impose constraint on indexParameterConstrain, report twice the difference
 //        double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1, indexConstrainedParameter);
@@ -135,15 +144,29 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
         Jama.Matrix diffTheta = thetaUnconstrained.minus(thetaConstrained);
 
-        if (debug || 1==1) {
+        if (outputIntermediates || 1==2) {
+            Jama.Matrix Btruth = new Jama.Matrix(2,2);
+            Btruth.set(0,0,1.0);
+            Btruth.set(1,1,1.0);
+            
             System.out.print("difference in theta: ");
             pmUtility.prettyPrintVector(diffTheta);
 
-//            System.out.println("Acov:");
-//            pmUtility.prettyPrint(acov);
-//
-//            System.out.println("Acov inverse:");
-//            pmUtility.prettyPrint(acov.inverse());
+            System.out.println("Btruth:");
+            pmUtility.prettyPrint(Btruth);
+            
+            System.out.println("Compared to estimated B:");
+            pmUtility.prettyPrint(B);
+            
+            System.out.println("diff' * B:");
+            pmUtility.prettyPrint(diffTheta.transpose().times(Btruth));
+            
+            System.out.println("diff' * B * diff:");
+            pmUtility.prettyPrint((diffTheta.transpose().times(Btruth)).times(diffTheta));
+            
+            System.out.println("n = "+numObs);
+            
+            System.out.println("diff' * B * diff * n: "+numObs * (((diffTheta.transpose()).times(Btruth)).times(diffTheta)).get(0, 0));
         }
 
 //        System.out.println("Newey-McFadden B:");
@@ -199,9 +222,9 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         int[] iagflg = {0, 0};
         int[] iahflg = {0, 0};
         double[] dlt = {0, 1};
-        double[] gradtl = {0, 1E-15};
+        double[] gradtl = {0, 1E-8};
         double[] stepmx = {0, 300.0}; // default is 1E8 (!!!), declining this to help ensure it doesn't shoot off into outer space
-        double[] steptl = {0, 1E-15};
+        double[] steptl = {0, 1E-8};
 
         // why not seed this with starting values coming from the unrelated regressions?
         // System.out.println(indexConstrainedParameter);
@@ -390,15 +413,10 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
     }
 
     public double computeSSE(double[] x) {
+        // System.out.print("WaldTestWholeTree.java:computeSSE: passed X: ");
+        // pmUtility.prettyPrint(new Jama.Matrix(x,1));
+        
         ArrayList<Jama.Matrix> cellBetaList = convertToBetaList(x);
-
-        /**
-         * This is the number of moments in each cell (this is hardwired right
-         * now for the linear case, need to come back to this and figure this
-         * out in general when we have broader cases)
-         */
-        int K = v.get(0).getX().getColumnDimension();
-
         double SSE = 0;
 
         /**
@@ -410,14 +428,19 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             DataLens lens = v.get(leaf);
             numObs += lens.getNumObs();
             ContainerMoment c = spec.getContainerMoment(lens);
-            g = pmUtility.stackMatrix(g, c.getMomentGWithoutDivision(cellBetaList.get(leaf)));
+            
+            if(leaf==0) {
+                g = c.getMomentGWithoutDivision(cellBetaList.get(leaf)).copy();
+            } else {
+                g = pmUtility.stackMatrix(g, c.getMomentGWithoutDivision(cellBetaList.get(leaf)));
+            }
             SSE += c.computeMeasureOfFit(cellBetaList.get(leaf));
         }
         g.timesEquals(1.0 / numObs);
         System.out.println("Moment Vector:");
         pmUtility.prettyPrint(g);
         System.out.println("g'g: " + ((g.transpose()).times(g)).get(0, 0));
-
+        
         return SSE;
     }
 

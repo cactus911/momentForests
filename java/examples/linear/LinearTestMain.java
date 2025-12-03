@@ -26,11 +26,13 @@ package examples.linear;
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import com.google.common.math.Quantiles;
+import com.google.common.math.Stats;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.MomentSpecification;
 import core.PDFPlotter;
+import core.TreeMoment;
 import core.TreeOptions;
 import examples.PartialLinearGasDemand.HomogeneousParameterSorter;
 import java.awt.GridLayout;
@@ -65,6 +67,9 @@ public class LinearTestMain {
     private JTextArea jt;
     private final int dimX;
     private final int monteCarloIndex;
+
+    private Double firstTreeTestStatistic;
+    private Matrix firstTreeTheta;
 
     /**
      * @param args the command line arguments
@@ -101,10 +106,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 1;
+        int numMonteCarlos = 500;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
+            for (int numObs = 2000; numObs <= 2000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
@@ -173,17 +178,30 @@ public class LinearTestMain {
                     AtomicInteger bomb = new AtomicInteger();
 
                     parallelLTM.parallelStream().forEach(e -> {
-                    // parallelLTM.stream().forEach(e -> {
+                        // parallelLTM.stream().forEach(e -> {
                         e.execute();
                         bomb.incrementAndGet();
                         System.out.println("Finished " + bomb.get() + " iterations.");
                     });
+
+                    ArrayList<Double> mcFirstTreeParameter0 = new ArrayList<>();
+                    ArrayList<Double> mcFirstTreeParameter1 = new ArrayList<>();
+                    parallelLTM.stream().forEach(e -> mcFirstTreeParameter0.add(e.getFirstTreeTheta().get(0, 0)));
+                    parallelLTM.stream().forEach(e -> mcFirstTreeParameter1.add(e.getFirstTreeTheta().get(1, 0)));
 
                     ArrayList<Double> mcFirstTreeTestStatistics = new ArrayList<>();
                     parallelLTM.stream().forEach(e -> mcFirstTreeTestStatistics.add(e.getFirstTreeTestStatistic()));
                     if (numMonteCarlos > 1) {
                         PDFPlotter.plotKernelDensity(mcFirstTreeTestStatistics, "Monte Carlo Tn");
                         System.out.println("95th percentile of first tree test statistics: " + Quantiles.percentiles().index(95).compute(mcFirstTreeTestStatistics));
+                        PDFPlotter.plotKernelDensity(mcFirstTreeParameter0, "Monte Carlo Distribution of Estimated Theta_0");
+                        PDFPlotter.plotKernelDensity(mcFirstTreeParameter1, "Monte Carlo Distribution of Estimated Theta_1");
+                        System.out.println("Mean Theta_0: " + Stats.of(mcFirstTreeParameter0).mean());
+                        double v0 = Stats.of(mcFirstTreeParameter0).sampleVariance();
+                        System.out.println("Variance Theta_0: " + v0+" implied n = "+(1.0/v0));
+                        System.out.println("Mean Theta_1: " + Stats.of(mcFirstTreeParameter1).mean());
+                        double v1 = Stats.of(mcFirstTreeParameter0).sampleVariance();
+                        System.out.println("Variance Theta_0: " + v1+" implied n = "+(1.0/v1));
                     }
 
                     // for (int m = 0; m < numMonteCarlos; m++) {
@@ -311,7 +329,6 @@ public class LinearTestMain {
         }
         System.out.println("Execution finished.");
     }
-    private Double firstTreeTestStatistic;
 
     public LinearTestMain(int monteCarloIndex, long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt, int dimX) {
         this.rngSeed = rngSeed;
@@ -467,7 +484,31 @@ public class LinearTestMain {
         System.out.println("Computing final trees...");
         // numberTreesInForest = 10; // using larger numbers here really improves fit!
         // verbose = false;
+        numberTreesInForest = 1;
+        MomentForest myForest = growForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf, 0, bestMaxDepth);
+        TreeMoment firstTree = myForest.getTree(0);
+        Jama.Matrix z0 = mySpecification.getZ().getMatrix(0, 0, 0, 2);
+        setFirstTreeTheta(firstTree.getEstimatedBeta(z0));
+        pmUtility.prettyPrintVector(myForest.getEstimatedParameterForest(z0));
+        
+        // try just forcing this with OLS on the original data?
+        // this works as it should (correct implied N)
+        DataLens originalLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
+        DataLens resampledLens = originalLens.getResampledDataLens(888);
+        Jama.Matrix betaOLS = pmUtility.OLS(resampledLens.getX(), resampledLens.getY(), false);
+        // Jama.Matrix betaOLS = pmUtility.OLS(originalLens.getX(), originalLens.getY(), false);
+        setFirstTreeTheta(betaOLS);
 
+        if (numberTreesInForest > 1) {
+            ArrayList<Jama.Matrix> estimates = myForest.getAllEstimatedParametersFromForest(z0);
+
+            double variance0 = estimates.stream().mapToDouble(m -> m.get(0, 0)).map(v -> v - estimates.stream().mapToDouble(m -> m.get(0, 0)).average().orElse(0.0)).map(d -> d * d).average().orElse(0.0);
+            System.out.println("var0: " + variance0 + " implied n = " + (1.0 / variance0));
+
+            double variance1 = estimates.stream().mapToDouble(m -> m.get(1, 0)).map(v -> v - estimates.stream().mapToDouble(m -> m.get(1, 0)).average().orElse(0.0)).map(d -> d * d).average().orElse(0.0);
+            System.out.println("var1: " + variance1 + " implied n = " + (1.0 / variance1));
+        }
+        
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) { // && bestMaxDepth > 0) {
             int numTestingTrees = 1;
@@ -510,11 +551,11 @@ public class LinearTestMain {
         myForest.testHomogeneity(false);
 
         boolean plotTestStatisticsInForest = true;
-        if (plotTestStatisticsInForest && numberTreesInForest>1) {
+        if (plotTestStatisticsInForest && numberTreesInForest > 1) {
             PDFPlotter.plotKernelDensity(myForest.getTestStatistics(), "Forest Test Statistics");
             Jama.Matrix dc = new Jama.Matrix(myForest.getTestStatistics().stream().map(d -> new double[]{d}).toArray(double[][]::new));
-            System.out.println("95th percentile: "+pmUtility.percentile(dc, 0, 0.95));
-            PDFPlotter.plotKernelDensity(myForest.getRestrictedThetas(), "Forest Restricted Parameter Estimates, n = "+numObs);
+            System.out.println("95th percentile: " + pmUtility.percentile(dc, 0, 0.95));
+            PDFPlotter.plotKernelDensity(myForest.getRestrictedThetas(), "Forest Restricted Parameter Estimates, n = " + numObs);
         }
 
         setFirstTreeTestStatistic(myForest.getTestStatistics().get(0));
@@ -917,6 +958,17 @@ public class LinearTestMain {
      */
     public Double getFirstTreeTestStatistic() {
         return firstTreeTestStatistic;
+    }
+
+    private void setFirstTreeTheta(Matrix estimatedBeta) {
+        firstTreeTheta = estimatedBeta.copy();
+    }
+
+    /**
+     * @return the firstTreeTheta
+     */
+    public Matrix getFirstTreeTheta() {
+        return firstTreeTheta;
     }
 
 }

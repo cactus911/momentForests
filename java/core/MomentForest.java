@@ -28,6 +28,7 @@ import java.util.Random;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 import javax.swing.JTextArea;
+import utility.pmUtility;
 
 /**
  * Class containing a collection of trees and utility classes for interacting
@@ -97,12 +98,15 @@ public class MomentForest {
             } else {
                 //System.out.println("Tree " + i + ": Using simple random sampling");
                 resampled = forestLens.getResampledDataLens(rng.nextLong());
+                if(numberTreesInForest==1) {
+                    resampled = forestLens;
+                }
                 split = resampled.randomlySplitSample(proportionObservationsToEstimateTreeStructure, rng.nextLong());
             }
 
             DataLens lensGrow = split[0];
             DataLens lensHonest = split[1];
-
+            
             forest.add(new TreeMoment(null, spec, lensGrow,
                     spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
                     lensHonest, treeOptions.isTestParameterHomogeneity(), rng.nextLong()));

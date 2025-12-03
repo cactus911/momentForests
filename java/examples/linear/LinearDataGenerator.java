@@ -28,10 +28,10 @@ public class LinearDataGenerator {
         Random rng = new Random(randSeed);
         NormalDistribution normal = new NormalDistribution();
         for (int i = 0; i < numObs; i++) {
-            // X.set(i, 0, normal.inverse(rng.nextDouble()));
-            X.set(i, 0, 1.0);
+            X.set(i, 0, normal.inverse(rng.nextDouble()));
+            // X.set(i, 0, 1.0);
             for(int k=1;k<dimensionX;k++) {
-                X.set(i, k, Math.pow(normal.inverse(rng.nextDouble()), 2));
+                X.set(i, k, Math.pow(normal.inverse(rng.nextDouble()), 1));
             }
 
             // Z.set(i, 0, normal.inverse(rng.nextDouble()));
@@ -50,7 +50,7 @@ public class LinearDataGenerator {
 //                pmUtility.prettyPrintVector(beta);
             Jama.Matrix subX = X.getMatrix(i, i, 0, dimensionX-1);
             // pmUtility.prettyPrint(subX);
-            Y.set(i, 0, (subX.times(beta)).get(0, 0) + 1.0*normal.inverse(rng.nextDouble()));
+            Y.set(i, 0, (subX.times(beta)).get(0, 0) + normal.inverse(rng.nextDouble()));
         }
         
 //        pmUtility.prettyPrintVector(pmUtility.OLS(X,Y,false));
