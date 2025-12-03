@@ -37,6 +37,8 @@ import core.TreeOptions;
 import examples.PartialLinearGasDemand.HomogeneousParameterSorter;
 import java.awt.GridLayout;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
@@ -106,7 +108,7 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 500;
+        int numMonteCarlos = 1000;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
             for (int numObs = 2000; numObs <= 2000; numObs *= 2) {
@@ -198,10 +200,10 @@ public class LinearTestMain {
                         PDFPlotter.plotKernelDensity(mcFirstTreeParameter1, "Monte Carlo Distribution of Estimated Theta_1");
                         System.out.println("Mean Theta_0: " + Stats.of(mcFirstTreeParameter0).mean());
                         double v0 = Stats.of(mcFirstTreeParameter0).sampleVariance();
-                        System.out.println("Variance Theta_0: " + v0+" implied n = "+(1.0/v0));
+                        System.out.println("Variance Theta_0: " + v0 + " implied n = " + (1.0 / v0));
                         System.out.println("Mean Theta_1: " + Stats.of(mcFirstTreeParameter1).mean());
                         double v1 = Stats.of(mcFirstTreeParameter0).sampleVariance();
-                        System.out.println("Variance Theta_0: " + v1+" implied n = "+(1.0/v1));
+                        System.out.println("Variance Theta_0: " + v1 + " implied n = " + (1.0 / v1));
                     }
 
                     // for (int m = 0; m < numMonteCarlos; m++) {
@@ -490,14 +492,79 @@ public class LinearTestMain {
         Jama.Matrix z0 = mySpecification.getZ().getMatrix(0, 0, 0, 2);
         setFirstTreeTheta(firstTree.getEstimatedBeta(z0));
         pmUtility.prettyPrintVector(myForest.getEstimatedParameterForest(z0));
-        
+
         // try just forcing this with OLS on the original data?
         // this works as it should (correct implied N)
         DataLens originalLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
-        DataLens resampledLens = originalLens.getResampledDataLens(888);
-        Jama.Matrix betaOLS = pmUtility.OLS(resampledLens.getX(), resampledLens.getY(), false);
-        // Jama.Matrix betaOLS = pmUtility.OLS(originalLens.getX(), originalLens.getY(), false);
+        DataLens resampledLens = originalLens.getResampledDataLens(888); // ok this is giving me the 50% effective sample thing, which it should not (I think)
+
+        // let's try doing the resampling with replacement using Claude's suggested method
+        Jama.Matrix aiX = bootstrapFast(originalLens.getX(), new Random(888));
+        Jama.Matrix aiY = bootstrapFast(originalLens.getY(), new Random(888));
+
+        Jama.Matrix xpx = (aiX.transpose()).times(aiX);
+//        pmUtility.prettyPrint(xpx);
+//        pmUtility.prettyPrint(xpx.times(1.0 / numObs)); // variance of X matrix; verified this is right; not that it enters into the discussion here directly
+//        System.exit(0);
+
+        // Jama.Matrix betaOLS = pmUtility.OLS(aiX, aiY, false);
+        // Jama.Matrix betaOLS = pmUtility.OLS(resampledLens.getX(), resampledLens.getY(), false);
+        Jama.Matrix betaOLS = pmUtility.OLS(originalLens.getX(), originalLens.getY(), false);
         setFirstTreeTheta(betaOLS);
+        
+
+        boolean calculateStatisticalResamplingProperties = false;
+        if (calculateStatisticalResamplingProperties) {
+
+            Jama.Matrix error = aiY.minus(aiX.times(betaOLS));
+            double sigma2 = 0;
+            for (int i = 0; i < error.getRowDimension(); i++) {
+                sigma2 += error.get(i, 0) * error.get(i, 0);
+            }
+            sigma2 /= (error.getRowDimension() - 2);
+            System.out.println("sigma2: " + sigma2); // very, very close to 1.0 (effectively 1.0, this works)
+
+            // bootstrap the OLS estimate to get variance, compare against theory?
+            int numResamples = 500;
+            Jama.Matrix bsOLS = new Jama.Matrix(numResamples, 2);
+            Jama.Matrix W3 = new Jama.Matrix(numResamples, 1);
+            Jama.Matrix betaTruth = new Jama.Matrix(2, 1);
+            betaTruth.set(0, 0, -1);
+            betaTruth.set(1, 0, 1);
+            for (int r = 0; r < numResamples; r++) {
+                Jama.Matrix aiX_r = bootstrapFast(originalLens.getX(), new Random(r));
+                Jama.Matrix aiY_r = bootstrapFast(originalLens.getY(), new Random(r));
+                Jama.Matrix beta_r = pmUtility.OLS(aiX_r, aiY_r, false);
+                bsOLS.set(r, 0, beta_r.get(0, 0));
+                bsOLS.set(r, 1, beta_r.get(1, 0));
+                // may as well throw in a wald test here
+                Jama.Matrix variance = xpx.times(sigma2 / numObs); // this should converge to the identity matrix                    
+                Jama.Matrix diffTheta = beta_r.minus(betaTruth);
+                double wald3 = numObs * (((diffTheta.transpose()).times(variance)).times(diffTheta)).get(0, 0);
+                W3.set(r, 0, wald3);
+            }
+            for (int j = 0; j < 2; j++) {
+                System.out.println("Bootstrapped Estimates --> Mean: " + pmUtility.mean(bsOLS, j) + " Variance: " + pmUtility.variance(bsOLS, j) + " implied n: " + (1.0 / pmUtility.variance(bsOLS, j)));
+
+                NormalDistribution normal = new NormalDistribution(pmUtility.mean(bsOLS, j), pmUtility.variance(bsOLS, j));
+
+//            for(int i=0;i<bsOLS.getRowDimension();i++) {
+//                bsOLS.set(i, j, (bsOLS.get(i,j) - betaTruth.get(j,0)) / pmUtility.standardDeviation(bsOLS, j));
+//            }
+                int[] percentiles = {1, 5, 10, 15, 30, 50, 70, 85, 90, 95, 99};
+                final int colIndex = j;
+                List<Double> col = Arrays.stream(bsOLS.getArray())
+                        .map(row -> row[colIndex])
+                        .toList();
+
+                for (int p : percentiles) {
+                    double empiricalPct = Quantiles.percentiles().index(p).compute(col);
+                    System.out.println("p" + p + ": normal: " + normal.inverse(p / 100.0) + " theta" + j + ": " + empiricalPct);
+                }
+                PDFPlotter.plotKernelDensity(bsOLS, "Parameter " + j, j);
+            }
+            System.out.println("Bootstrapped Wald Test --> Mean: " + pmUtility.mean(W3, 0) + " Variance: " + pmUtility.variance(W3, 0) + " 95th percentile: " + pmUtility.percentile(W3, 0, 0.95));
+        }
 
         if (numberTreesInForest > 1) {
             ArrayList<Jama.Matrix> estimates = myForest.getAllEstimatedParametersFromForest(z0);
@@ -508,7 +575,7 @@ public class LinearTestMain {
             double variance1 = estimates.stream().mapToDouble(m -> m.get(1, 0)).map(v -> v - estimates.stream().mapToDouble(m -> m.get(1, 0)).average().orElse(0.0)).map(d -> d * d).average().orElse(0.0);
             System.out.println("var1: " + variance1 + " implied n = " + (1.0 / variance1));
         }
-        
+
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) { // && bestMaxDepth > 0) {
             int numTestingTrees = 1;
@@ -524,6 +591,21 @@ public class LinearTestMain {
 
         System.out.println("Finished execute.");
 
+    }
+
+    /**
+     * More efficient version using getArray()
+     */
+    public static Jama.Matrix bootstrapFast(Jama.Matrix data, Random rand) {
+        double[][] original = data.getArray();
+        int n = original.length;
+        double[][] bootstrapped = new double[n][];
+
+        for (int i = 0; i < n; i++) {
+            bootstrapped[i] = original[rand.nextInt(n)].clone();
+        }
+
+        return new Jama.Matrix(bootstrapped);
     }
 
     private void executeHomogeneousParameterClassificationAndSearch(MomentSpecification mySpecification, int numberTreesInForest, boolean verbose,
