@@ -843,7 +843,7 @@ public class TreeMoment {
 
         // how to handle case with only a stump?
         // all parameters are classified as homogeneous
-        if (v.size() == 1) {
+        if (v.size() == 1 && 1==2) {
             for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
                 indexHomogeneousParameters.add(k);
                 valueHomogeneousParameters.add(getNodeEstimatedBeta().get(k, 0));
@@ -853,7 +853,7 @@ public class TreeMoment {
             if (verbose) {
                 System.out.println("Degrees of freedom in chi-squared test: " + degreesFreedom);
             }
-            ChiSqrDistribution chi = new ChiSqrDistribution(degreesFreedom);
+            ChiSqrDistribution chi = new ChiSqrDistribution(Math.max(1, degreesFreedom));
 
             ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
             ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
