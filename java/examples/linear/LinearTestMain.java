@@ -108,10 +108,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 1000;
+        int numMonteCarlos = 100;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 2000; numObs <= 2000; numObs *= 2) {
+            for (int numObs = 20000; numObs <= 20000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
@@ -509,7 +509,16 @@ public class LinearTestMain {
 
         // Jama.Matrix betaOLS = pmUtility.OLS(aiX, aiY, false);
         // Jama.Matrix betaOLS = pmUtility.OLS(resampledLens.getX(), resampledLens.getY(), false);
-        Jama.Matrix betaOLS = pmUtility.OLS(originalLens.getX(), originalLens.getY(), false);
+        // Jama.Matrix betaOLS = pmUtility.OLS(originalLens.getX(), originalLens.getY(), false);
+        
+        // may be that using subsampling will actually work here when bootstrapping does not
+        // reason: you are sampling without replacement, keeps X matrix more "fixed"
+        // bootstrap introduces more variation in the X that is not accounted for in theory
+        // verifying this "works" means using the subsample size, not the original; so yes, it works, but it gives something up (in one run, anyways) because it is shrinking the estimation sample
+        // this also works exactly. KEY POINT; using bootstrap introduces extra variance into the X matrix, which changes the distribution of the estimator
+        
+        Jama.Matrix betaOLS = pmUtility.OLS(subsample(originalLens.getX(), new Random(991)), subsample(originalLens.getY(), new Random(991)), false);
+        
         setFirstTreeTheta(betaOLS);
         
 
@@ -593,6 +602,22 @@ public class LinearTestMain {
 
     }
 
+    public static Matrix subsample(Matrix original, Random random) {
+        int n = original.getRowDimension(), p = original.getColumnDimension();
+        int b = (int) Math.floor(Math.pow(n, 0.7));        
+        int[] indices = new int[n];
+        for (int i = 0; i < n; i++) indices[i] = i;
+        for (int i = 0; i < b; i++) {
+            int j = i + random.nextInt(n - i);
+            int temp = indices[i]; indices[i] = indices[j]; indices[j] = temp;
+        }
+        Matrix subsample = new Matrix(b, p);
+        for (int i = 0; i < b; i++)
+            for (int j = 0; j < p; j++)
+                subsample.set(i, j, original.get(indices[i], j));
+        return subsample;
+    }
+    
     /**
      * More efficient version using getArray()
      */
