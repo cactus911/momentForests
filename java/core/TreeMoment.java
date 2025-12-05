@@ -859,8 +859,7 @@ public class TreeMoment {
             ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
             ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
 
-            System.out.println("Need to switch this back to k=0 when you are done testing!");
-            for (int k = 1; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+            for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
                 try {
                     boolean useSubsampling = true;
                     if (useSubsampling) {
@@ -883,11 +882,11 @@ public class TreeMoment {
                             setTestStatistic(Tn);
                             setRestrictedTheta(restrictedTheta_k.minus(big.getThetaUnconstrained()));
                         }
-                        System.out.println("TreeMoment.java: Tn = " + Tn);
+                        // System.out.println("TreeMoment.java: Tn = " + Tn);
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
-                        int numSubsamples = 5000;
-                        final double subsampleExponent = 0.9;
+                        int numSubsamples = 500;
+                        final double subsampleExponent = 0.7;
                         Random rng = new Random(treeSeed);
 
                         final int paramK = k;
@@ -915,33 +914,37 @@ public class TreeMoment {
                                 .collect(Collectors.toList());
                         ArrayList<Double> stats = new ArrayList<>(statsList);
 
-                        // System.out.println("Number of successful subsamples: " + stats.size());
+                        System.out.println("Number of successful subsamples: " + stats.size());
+                        
                         Jama.Matrix subsampleTb = new Jama.Matrix(stats.size(), 1);
                         for (int i = 0; i < stats.size(); i++) {
                             subsampleTb.set(i, 0, stats.get(i));
                         }
-                        if (1== 1 && numSubsamples > 1) {
+                        double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
+                        System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue);
+                        
+                        if (1 == 2 && numSubsamples > 1) {
                             int numObs = 0;
                             for (DataLens dl : v) {
                                 numObs += dl.getNumObs();
                             }
 
-                            double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
+                            
                             System.out.println("Subsampled 95th percentile (critical value): " + criticalValue);
                             System.out.println("Subsampled mean: " + pmUtility.mean(subsampleTb, 0));
-                            System.out.println("Subsampled median: "+pmUtility.median(subsampleTb, 0));
+                            System.out.println("Subsampled median: " + pmUtility.median(subsampleTb, 0));
                             System.out.println("Subsampled SD: " + pmUtility.standardDeviation(subsampleTb));
                             System.out.println("Calculated numObs: " + numObs);
                             System.out.println("Subsample size: " + Math.pow(numObs + 0.0, subsampleExponent));
 
                             setTestStatistic(criticalValue);
-                            
+
                             boolean plotSubsamples = !false;
                             if (plotSubsamples) {
                                 // PlotPDF.plotDistributionUnrestrictedTestStatistics(stats.stream().mapToDouble(Double::doubleValue).toArray());
                                 // PDFPlotter.plotHistogramWithKDE(stats, "Subsampled Tn");
                                 // PDFPlotter.plotKernelDensity(stats, "Subsampled Tn, n = " + numObs+", ["+criticalValue+"]");
-                                PDFPlotter.plotKDEWithChiSquared(stats, "Subsampled Tb vs Chi Squared, n = "+numObs+" ["+criticalValue+"]", 4);
+                                PDFPlotter.plotKDEWithChiSquared(stats, "Subsampled Tb vs Chi Squared, n = " + numObs + " [" + criticalValue + "]", 4);
                             }
                         }
 
