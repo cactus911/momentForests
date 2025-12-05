@@ -103,10 +103,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 10;
+        int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 16000; numObs <= 2000000; numObs *= 2) {
+            for (int numObs = 2000; numObs <= 1600000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
@@ -463,9 +463,9 @@ public class LinearTestMain {
                 bestMaxDepth = 5;
             }
 
-            bestMinObservationsPerLeaf = 10; // *(int)Math.round(Math.log(numObs));
+            bestMinObservationsPerLeaf = 100; // *(int)Math.round(Math.log(numObs));
             bestMinImprovement = 1.0;
-            bestMaxDepth = 2;
+            bestMaxDepth = 1;
         }
 
         /**
@@ -477,7 +477,7 @@ public class LinearTestMain {
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) { // && bestMaxDepth > 0) {
-            int numTestingTrees = 1;
+            int numTestingTrees = 50;
             executeHomogeneousParameterClassificationAndSearch(mySpecification, numTestingTrees, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
         }
 
@@ -530,7 +530,7 @@ public class LinearTestMain {
         ArrayList<Integer> hpl = new ArrayList<>();
         ArrayList<Double> hplStartingValues = new ArrayList<>();
 
-        boolean verboseVoting = false;
+        boolean verboseVoting = true;
         boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, verboseVoting);
 
         double[] startingValues = myForest.getHomogeneityStartingValues();
