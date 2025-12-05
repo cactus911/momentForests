@@ -849,6 +849,7 @@ public class TreeMoment {
                 valueHomogeneousParameters.add(getNodeEstimatedBeta().get(k, 0));
             }
         } else {
+            // verbose = true;
             double degreesFreedom = v.size() - 1; // basically saying that if we have 2 leaves, we have one restriction (param_k0 = param_k1)
             if (verbose) {
                 System.out.println("Degrees of freedom in chi-squared test: " + degreesFreedom);
@@ -885,7 +886,7 @@ public class TreeMoment {
                         System.out.println("TreeMoment.java: Tn = " + Tn);
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
-                        int numSubsamples = 1;
+                        int numSubsamples = 5000;
                         final double subsampleExponent = 0.9;
                         Random rng = new Random(treeSeed);
 
@@ -899,9 +900,9 @@ public class TreeMoment {
                                                 subsample(v, subsampleExponent, seeds[r]),
                                                 momentSpec
                                         );
-                                        Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(paramK);
-                                        bigSubsample.computeStatistic(paramK, restrictedTheta_b);
-                                        double stat = bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // bigSubsample.computeStatistic(paramK, restrictedTheta_b);
+                                        // Jama.Matrix restrictedTheta_bk = bigSubsample.computeRestrictedTheta(paramK);
+                                        // bigSubsample.computeStatistic(paramK, restrictedTheta_b);
+                                        double stat = bigSubsample.computeStatistic(paramK, restrictedTheta_k); // bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // bigSubsample.computeStatistic(paramK, restrictedTheta_b);
                                         return stat;
                                     } catch (Exception e) {
                                         if (verbose || 1 == 1) {
@@ -919,7 +920,7 @@ public class TreeMoment {
                         for (int i = 0; i < stats.size(); i++) {
                             subsampleTb.set(i, 0, stats.get(i));
                         }
-                        if (verbose || 1 == 1 && numSubsamples > 1) {
+                        if (1== 1 && numSubsamples > 1) {
                             int numObs = 0;
                             for (DataLens dl : v) {
                                 numObs += dl.getNumObs();
@@ -928,15 +929,19 @@ public class TreeMoment {
                             double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
                             System.out.println("Subsampled 95th percentile (critical value): " + criticalValue);
                             System.out.println("Subsampled mean: " + pmUtility.mean(subsampleTb, 0));
+                            System.out.println("Subsampled median: "+pmUtility.median(subsampleTb, 0));
                             System.out.println("Subsampled SD: " + pmUtility.standardDeviation(subsampleTb));
                             System.out.println("Calculated numObs: " + numObs);
                             System.out.println("Subsample size: " + Math.pow(numObs + 0.0, subsampleExponent));
 
+                            setTestStatistic(criticalValue);
+                            
                             boolean plotSubsamples = !false;
-                            if (k == 1 && plotSubsamples && numSubsamples > 1) {
+                            if (plotSubsamples) {
                                 // PlotPDF.plotDistributionUnrestrictedTestStatistics(stats.stream().mapToDouble(Double::doubleValue).toArray());
                                 // PDFPlotter.plotHistogramWithKDE(stats, "Subsampled Tn");
-                                PDFPlotter.plotKernelDensity(stats, "Subsampled Tn, n = " + numObs);
+                                // PDFPlotter.plotKernelDensity(stats, "Subsampled Tn, n = " + numObs+", ["+criticalValue+"]");
+                                PDFPlotter.plotKDEWithChiSquared(stats, "Subsampled Tb vs Chi Squared, n = "+numObs+" ["+criticalValue+"]", 4);
                             }
                         }
 

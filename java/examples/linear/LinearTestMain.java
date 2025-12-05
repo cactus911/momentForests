@@ -23,9 +23,11 @@
  */
 package examples.linear;
 
+import JSci.maths.statistics.ChiSqrDistribution;
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import com.google.common.math.Quantiles;
+import com.google.common.math.Stats;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
@@ -101,10 +103,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 10;
+        int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 10000; numObs <= 10000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 2000000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
@@ -172,8 +174,8 @@ public class LinearTestMain {
 
                     AtomicInteger bomb = new AtomicInteger();
 
-                    // parallelLTM.parallelStream().forEach(e -> {
-                    parallelLTM.stream().forEach(e -> {
+                    parallelLTM.parallelStream().forEach(e -> {
+                        // parallelLTM.stream().forEach(e -> {
                         e.execute();
                         bomb.incrementAndGet();
                         System.out.println("Finished " + bomb.get() + " iterations.");
@@ -183,7 +185,12 @@ public class LinearTestMain {
                     parallelLTM.stream().forEach(e -> mcFirstTreeTestStatistics.add(e.getFirstTreeTestStatistic()));
                     if (numMonteCarlos > 1) {
                         PDFPlotter.plotHistogramWithKDE(mcFirstTreeTestStatistics, "Monte Carlo Tn");
-                        System.out.println("95th percentile of first tree test statistics: " + Quantiles.percentiles().index(95).compute(mcFirstTreeTestStatistics));
+                        int[] pctList = {10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99};
+                        ChiSqrDistribution chi = new ChiSqrDistribution(1);
+                        System.out.println("Avg: " + Stats.of(mcFirstTreeTestStatistics).mean());
+                        for (int pct : pctList) {
+                            System.out.println("p" + pct + ": chi: " + chi.inverse(pct / 100.0) + " first tree test statistics: " + Quantiles.percentiles().index(pct).compute(mcFirstTreeTestStatistics));
+                        }
                     }
 
                     // for (int m = 0; m < numMonteCarlos; m++) {
@@ -470,7 +477,7 @@ public class LinearTestMain {
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) { // && bestMaxDepth > 0) {
-            int numTestingTrees = 100;
+            int numTestingTrees = 1;
             executeHomogeneousParameterClassificationAndSearch(mySpecification, numTestingTrees, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
         }
 
@@ -509,15 +516,16 @@ public class LinearTestMain {
         // System.out.println("----- Call to testHomogeneity -----");
         myForest.testHomogeneity(false);
 
-        boolean plotTestStatisticsInForest = true;
-        if (plotTestStatisticsInForest && numberTreesInForest>1) {
-            PDFPlotter.plotKernelDensity(myForest.getTestStatistics(), "Forest Test Statistics");
-            Jama.Matrix dc = new Jama.Matrix(myForest.getTestStatistics().stream().map(d -> new double[]{d}).toArray(double[][]::new));
-            System.out.println("95th percentile: "+pmUtility.percentile(dc, 0, 0.95));
-            PDFPlotter.plotKernelDensity(myForest.getRestrictedThetas(), "Forest Restricted Parameter Estimates, n = "+numObs);
+        Jama.Matrix dc = new Jama.Matrix(myForest.getTestStatistics().stream().map(d -> new double[]{d}).toArray(double[][]::new));
+        boolean plotTestStatisticsInForest = !false;
+        if (plotTestStatisticsInForest && numberTreesInForest > 1) {
+            PDFPlotter.plotKernelDensity(myForest.getTestStatistics(), "Forest Test Statistics: " + pmUtility.mean(dc, 0));
+            // PDFPlotter.plotKernelDensity(myForest.getRestrictedThetas(), "Forest Restricted Parameter Estimates, n = " + numObs);
         }
 
-        setFirstTreeTestStatistic(myForest.getTestStatistics().get(0));
+        // setFirstTreeTestStatistic(myForest.getTestStatistics().get(0));
+        System.out.println("95th percentile: " + pmUtility.percentile(dc, 0, 0.95));
+        setFirstTreeTestStatistic(pmUtility.percentile(dc, 0, 0.95));
 
         ArrayList<Integer> hpl = new ArrayList<>();
         ArrayList<Double> hplStartingValues = new ArrayList<>();
