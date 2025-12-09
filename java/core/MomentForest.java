@@ -336,7 +336,7 @@ public class MomentForest {
         for (int k = 0; k < averageTestValues.length; k++) {
             averageTestValues[k] = averageTestValues[k] / numberTreesInForest;
             if (verbose) {
-                System.out.println("parameter " + k + ": average DM test statistic: " + averageTestValues[k]);
+                //System.out.println("parameter " + k + ": average DM test statistic: " + averageTestValues[k]);
             }
         }
     }

@@ -900,12 +900,12 @@ public class TreeMoment {
                                                 subsample(v, subsampleExponent, seeds[r]),
                                                 momentSpec
                                         );
-                                        // Jama.Matrix restrictedTheta_bk = bigSubsample.computeRestrictedTheta(paramK);
+                                        Jama.Matrix restrictedTheta_bk = bigSubsample.computeRestrictedTheta(paramK);
                                         // bigSubsample.computeStatistic(paramK, restrictedTheta_b);
-                                        double stat = bigSubsample.computeStatistic(paramK, restrictedTheta_k); // bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // bigSubsample.computeStatistic(paramK, restrictedTheta_b);
+                                        double stat = bigSubsample.computeStatistic(paramK, restrictedTheta_bk); // bigSubsample.getThetaUnconstrained().get(0, 0) - restrictedTheta_b.get(0, 0); // bigSubsample.computeStatistic(paramK, restrictedTheta_b);
                                         return stat;
                                     } catch (Exception e) {
-                                        if (verbose || 1 == 1) {
+                                        if (verbose || 1 == 2) {
                                             System.out.println("Subsample " + r + " failed: " + e.getMessage());
                                         }
                                         return null;
@@ -914,15 +914,32 @@ public class TreeMoment {
                                 .filter(Objects::nonNull)
                                 .collect(Collectors.toList());
                         ArrayList<Double> stats = new ArrayList<>(statsList);
-
-                        System.out.println("Number of successful subsamples: " + stats.size());
                         
+                        //System.out.println("Number of successful subsamples: " + stats.size());
+                        
+                        int numSuccess = stats.size();
+                        int numFail = numSubsamples - numSuccess;
+
+                        // Require at least 50% success
+                        double failRate = (numFail + 0.0) / numSubsamples;
+                        double maxFailRate = 0.50;
+
+                        if (failRate > maxFailRate) {
+                            if (verbose) {
+                                System.out.println("Too many subsamples failed: " + numFail + " out of " + numSubsamples);
+                                System.out.println("Fail rate " + failRate + " exceeds threshold " + maxFailRate);
+                                System.out.println("Marking tree as invalid.");
+                            }
+                            validTree = false;
+                            return;
+                        }
+                     
                         Jama.Matrix subsampleTb = new Jama.Matrix(stats.size(), 1);
                         for (int i = 0; i < stats.size(); i++) {
                             subsampleTb.set(i, 0, stats.get(i));
                         }
                         double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
-                        System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue);
+                        //System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue);
                         
                         if (1 == 2 && numSubsamples > 1) {
                             int numObs = 0;

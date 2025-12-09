@@ -103,7 +103,7 @@ public class CardMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 40;
+        int numberTreesInForest = 50;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /*
@@ -248,7 +248,7 @@ public class CardMain {
                     bestMaxDepth = 0;
                 } else {
                     System.out.println("Initializing search container");
-                    numberTreesInForest = 40; // 10
+                    numberTreesInForest = 50; // 10
                     HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, bestMinImprovement, bestMinObservationsPerLeaf, bestMaxDepth,
                             getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
                     System.out.println("Calling execute search");
@@ -284,7 +284,7 @@ public class CardMain {
          * Compute out-of-sample measures of fit (against Y, and true beta)
          */
         verbose = true;
-        numberTreesInForest = 40; // 50
+        numberTreesInForest = 50; // 50
         computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
         fitStats.computeOutOfSampleMSE();
