@@ -103,7 +103,7 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 1;
+        int numMonteCarlos = 100;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
             for (int numObs = 2000; numObs <= 1600000; numObs *= 2) {

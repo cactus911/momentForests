@@ -859,8 +859,8 @@ public class TreeMoment {
             ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
             ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
 
-            System.out.println("K restricted to 1 only, fix for production!!!");
-            for (int k = 1; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+            // System.out.println("K restricted to 1 only, fix for production!!!");
+            for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
                 try {
                     boolean useSubsampling = true;
                     if (useSubsampling) {
@@ -886,7 +886,7 @@ public class TreeMoment {
                         // System.out.println("TreeMoment.java: Tn = " + Tn);
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
-                        int numSubsamples = 50;
+                        int numSubsamples = 500;
                         final double subsampleExponent = 0.7;
                         Random rng = new Random(treeSeed);
 
