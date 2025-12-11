@@ -103,7 +103,7 @@ public class LinearTestMain {
         int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 2000; numObs <= 400000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 100000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.println(" numObs = " + numObs);
                 System.out.println("-----------------------");
@@ -172,9 +172,11 @@ public class LinearTestMain {
 
                     // parallelLTM.parallelStream().forEach(e -> {
                     parallelLTM.stream().forEach(e -> {
+                        long t1 = System.currentTimeMillis();
                         e.execute();
                         bomb.incrementAndGet();
-                        System.out.println("Finished " + bomb.get() + " iterations.");
+                        long t2 = System.currentTimeMillis();
+                        System.out.println("Finished " + bomb.get() + " iterations. ("+(t2-t1)+" ms.)");
                     });
 
                     // for (int m = 0; m < numMonteCarlos; m++) {
@@ -345,7 +347,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 50;
+        int numberTreesInForest = 30;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -358,7 +360,7 @@ public class LinearTestMain {
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
         boolean verbose = false;
         if (numberTreesInForest == 1) {
-            verbose = !false;
+            verbose = false;
         }
 
         long rngBaseSeedMomentForest = rng.nextLong();
@@ -448,7 +450,7 @@ public class LinearTestMain {
 
             bestMinObservationsPerLeaf = 10; // *(int)Math.round(Math.log(numObs));
             bestMinImprovement = 1.0;
-            // bestMaxDepth = 1;
+            bestMaxDepth = 1;
         }
 
         /**
@@ -465,6 +467,10 @@ public class LinearTestMain {
 
         boolean goFast = !false;
         if (!goFast) {
+            numberTreesInForest = 100;
+            if(numberTreesInForest>1) {
+                verbose = false;
+            }
             setEstimatedBetaVersusTruthMSE(computeOutOfSampleMSEInParameterSpace(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
                     bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample));
             System.out.println("Final out-of-sample MSE in Y: " + outOfSampleYMSE);

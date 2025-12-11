@@ -865,33 +865,45 @@ public class TreeMoment {
                         // i'm going to reuse code here but pass the datalens here
                         // this necessitates some changes to waldtestwholetree.java, but so be it
                         // makes it better in any case
-                        WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
-                        Jama.Matrix restrictedTheta = big.computeRestrictedTheta(k);
+                        WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec, false);
+                        Jama.Matrix restrictedTheta_n = big.computeRestrictedTheta(k);
 
                         if (verbose) {
                             //System.out.print("Restricted theta: ");
                             //pmUtility.prettyPrintVector(restrictedTheta);
                         }
                         // System.out.println("Computing Tn...");
-                        double Tn = big.computeStatistic(k, restrictedTheta);
+                        double Tn = big.computeStatistic(k, restrictedTheta_n);
                         // System.out.println("Tn = "+Tn);
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
-                        int numSubsamples = 150;
+                        int numSubsamples = 100;
                         Random rng = new Random(treeSeed);
 
                         final int paramK = k;
                         long[] seeds = new Random(rng.nextLong()).longs(numSubsamples).toArray();
                         List<Double> stats = IntStream.range(0, numSubsamples)
-                                .parallel()
+                                // .parallel()
                                 .mapToObj(r -> {
                                     try {
                                         WaldTestWholeTree bigSubsample = new WaldTestWholeTree(
-                                                subsample(v, 0.75, seeds[r]),
-                                                momentSpec
+                                                subsample(v, 0.6, seeds[r]),
+                                                momentSpec,
+                                                false
                                         );
-                                        // Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(paramK);
-                                        double stat = bigSubsample.computeStatistic(paramK, restrictedTheta);
+                                        
+                                        /**
+                                         * This flag imposes the restriction in each subsample. If this is false,
+                                         * we use the overall restricted theta_n as the hypothesis test.
+                                         */
+                                        boolean useTheta_b = false;
+                                        double stat;
+                                        if(useTheta_b) {
+                                            Jama.Matrix restrictedTheta_b = bigSubsample.computeRestrictedTheta(paramK);
+                                            stat = bigSubsample.computeStatistic(paramK, restrictedTheta_b);
+                                        } else {
+                                            stat = bigSubsample.computeStatistic(paramK, restrictedTheta_n);
+                                        }
                                         return stat;
                                     } catch (Exception e) {
                                         if (verbose) {
