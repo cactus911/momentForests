@@ -830,7 +830,7 @@ public class TreeMoment {
      *
      */
     public void testHomogeneity() {
-        // verbose = true;
+        verbose = true;
         //System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);
@@ -869,7 +869,7 @@ public class TreeMoment {
                         // i'm going to reuse code here but pass the datalens here
                         // this necessitates some changes to waldtestwholetree.java, but so be it
                         // makes it better in any case
-                        WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec, false);
+                        WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec, verbose);
                         Jama.Matrix restrictedTheta_nk = big.computeRestrictedTheta(k);
 
                         if (verbose) {
