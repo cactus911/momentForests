@@ -105,18 +105,19 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                 int[] method = {0, 1};
                 int[] iexp = {0, 0};
                 int[] msg = {0, 1};
-                int[] ndigit = {0, 8};
-                int[] itnlim = {0, 150};
+                int[] ndigit = {0, 12};
+                int[] itnlim = {0, 1500};
                 int[] iagflg = {0, 0};
                 int[] iahflg = {0, 0};
                 double[] dlt = {0, 1};
-                double[] gradtl = {0, 1E-8};
+                double[] gradtl = {0, 1E-15};
                 double[] stepmx = {0, 1E8};
-                double[] steptl = {0, 1E-8};
+                double[] steptl = {0, 1E-15};
 
-                if (numParams == spec.getNumParams()) {
-                    //System.out.println("no homogeneous parameters, just use OLS");
-                    Jama.Matrix olsBeta = pmUtility.OLSsvd(X, Y, false);
+                if (numParams == spec.getNumParams() && 1==1) {
+                    // System.out.println("no homogeneous parameters, just use OLS");
+                    // Jama.Matrix olsBeta = pmUtility.OLSsvd(X, Y, false);
+                    Jama.Matrix olsBeta = pmUtility.OLS(X, Y, false);
                     
                     // System.out.println("Average of Y is :"+pmUtility.mean(Y, 0));
                     for (int i = 0; i < olsBeta.getRowDimension(); i++) {
@@ -403,7 +404,7 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
         // double q = (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0); // this is the continuous updating estimator (CUE)
         // that appears to sometimes generate perverse decreases in fit when splitting (probably due to some numerical instability in inversion, and the confounding of fits versus variance)
         double q = ((g.transpose()).times(g)).get(0, 0); // this is gmm with identity weighting matrix
-
+        
         if (debugMoment) {
             System.out.println("beta:");
             pmUtility.prettyPrint(beta);

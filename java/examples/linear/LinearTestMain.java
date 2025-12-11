@@ -23,13 +23,16 @@
  */
 package examples.linear;
 
+import JSci.maths.statistics.ChiSqrDistribution;
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import com.google.common.math.Quantiles;
+import com.google.common.math.Stats;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.MomentSpecification;
+import core.PDFPlotter;
 import core.TreeOptions;
 import examples.PartialLinearGasDemand.HomogeneousParameterSorter;
 import java.awt.GridLayout;
@@ -100,12 +103,12 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 1;
+        int numMonteCarlos = 3;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
             for (int numObs = 1000; numObs <= 100000; numObs *= 2) {
                 System.out.println("-----------------------");
-                System.out.println(" numObs = " + numObs);
+                System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
 
                 double YMSE_unrestricted = 0;
@@ -161,7 +164,8 @@ public class LinearTestMain {
                         LinearTestMain go;
                         if (numMonteCarlos == 1) {
                             // 8621193992485539638L
-                            go = new LinearTestMain(m, 5275223538819738276L, numObs, detectHomogeneity, jam, dimX);
+                            // go = new LinearTestMain(m, 5275223538819738276L, numObs, detectHomogeneity, jam, dimX);
+                            go = new LinearTestMain(m, -7406063799885833966L, numObs, detectHomogeneity, jam, dimX);
                         } else {
                             go = new LinearTestMain(m, rng.nextLong(), numObs, detectHomogeneity, jam, dimX);
                         }
@@ -178,6 +182,18 @@ public class LinearTestMain {
                         long t2 = System.currentTimeMillis();
                         System.out.println("Finished " + bomb.get() + " iterations. ("+(t2-t1)+" ms.)");
                     });
+
+                    ArrayList<Double> mcFirstTreeTestStatistics = new ArrayList<>();
+                    parallelLTM.stream().forEach(e -> mcFirstTreeTestStatistics.add(e.getFirstTreeTestStatistic()));
+                    if (numMonteCarlos > 1 && 1==2) {
+                        PDFPlotter.plotHistogramWithKDE(mcFirstTreeTestStatistics, "Monte Carlo Tn");
+                        int[] pctList = {10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99};
+                        ChiSqrDistribution chi = new ChiSqrDistribution(1);
+                        System.out.println("Avg: " + Stats.of(mcFirstTreeTestStatistics).mean());
+                        for (int pct : pctList) {
+                            System.out.println("p" + pct + ": chi: " + chi.inverse(pct / 100.0) + " first tree test statistics: " + Quantiles.percentiles().index(pct).compute(mcFirstTreeTestStatistics));
+                        }
+                    }
 
                     // for (int m = 0; m < numMonteCarlos; m++) {
                     int[] counts = new int[dimX];
@@ -304,6 +320,7 @@ public class LinearTestMain {
         }
         System.out.println("Execution finished.");
     }
+    private Double firstTreeTestStatistic;
 
     public LinearTestMain(int monteCarloIndex, long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt, int dimX) {
         this.rngSeed = rngSeed;
@@ -366,7 +383,7 @@ public class LinearTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean computeAlternatives = true;
+        boolean computeAlternatives = !true;
         if (computeAlternatives && !detectHomogeneity) {
             System.out.println("Computing nonparametric fits...");
             computeOutOfSampleNonparametricFits(mySpecification, rngBaseSeedOutOfSample);
@@ -448,7 +465,7 @@ public class LinearTestMain {
                 bestMaxDepth = 5;
             }
 
-            bestMinObservationsPerLeaf = 10; // *(int)Math.round(Math.log(numObs));
+            bestMinObservationsPerLeaf = 100; // *(int)Math.round(Math.log(numObs));
             bestMinImprovement = 1.0;
             bestMaxDepth = 1;
         }
@@ -462,7 +479,8 @@ public class LinearTestMain {
 
         mySpecification.resetHomogeneityIndex();
         if (detectHomogeneity) { // && bestMaxDepth > 0) {
-            executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
+            int numTestingTrees = 50;
+            executeHomogeneousParameterClassificationAndSearch(mySpecification, numTestingTrees, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
         }
 
         boolean goFast = !false;
@@ -504,10 +522,21 @@ public class LinearTestMain {
         // System.out.println("----- Call to testHomogeneity -----");
         myForest.testHomogeneity(false);
 
+//        Jama.Matrix dc = new Jama.Matrix(myForest.getTestStatistics().stream().map(d -> new double[]{d}).toArray(double[][]::new));
+//        boolean plotTestStatisticsInForest = false;
+//        if (plotTestStatisticsInForest && numberTreesInForest > 1) {
+//            PDFPlotter.plotKernelDensity(myForest.getTestStatistics(), "Forest Test Statistics: " + pmUtility.mean(dc, 0));
+//            // PDFPlotter.plotKernelDensity(myForest.getRestrictedThetas(), "Forest Restricted Parameter Estimates, n = " + numObs);
+//        }
+//
+//        // setFirstTreeTestStatistic(myForest.getTestStatistics().get(0));
+//        System.out.println("95th percentile: " + pmUtility.percentile(dc, 0, 0.95));
+//        setFirstTreeTestStatistic(pmUtility.percentile(dc, 0, 0.95));
+
         ArrayList<Integer> hpl = new ArrayList<>();
         ArrayList<Double> hplStartingValues = new ArrayList<>();
 
-        boolean verboseVoting = !false;
+        boolean verboseVoting = true;
         boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, verboseVoting);
 
         double[] startingValues = myForest.getHomogeneityStartingValues();
@@ -670,11 +699,8 @@ public class LinearTestMain {
         return outOfSampleFitParametricEstimator;
     }
 
-    private double computeOutOfSampleMSEInParameterSpace(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
-            int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample) {
-        // System.out.println("\nComputing OOS In Parameter Space\n");
-        // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
-
+    private MomentForest growForest(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
+            int minObservationsPerLeaf, double minImprovement, int maxTreeDepth) {
         MomentForest myForest;
 
         double minProportionPerLeaf = 0.01;
@@ -694,6 +720,16 @@ public class LinearTestMain {
          * Grow the moment forest
          */
         myForest.growForest();
+        return myForest;
+    }
+
+    private double computeOutOfSampleMSEInParameterSpace(MomentSpecification mySpecification, int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
+            int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample) {
+        // System.out.println("\nComputing OOS In Parameter Space\n");
+        // System.out.println("Homogeneous parameter length in spec: "+mySpecification.getHomogeneousIndex().length);
+
+        MomentForest myForest = growForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose,
+                minObservationsPerLeaf, minImprovement, maxTreeDepth);
 
 //        System.out.println("First tree:");
 //        myForest.getTree(0).printTree();
@@ -884,6 +920,17 @@ public class LinearTestMain {
      */
     public int getMonteCarloIndex() {
         return monteCarloIndex;
+    }
+
+    private void setFirstTreeTestStatistic(Double testStatistic) {
+        firstTreeTestStatistic = testStatistic;
+    }
+
+    /**
+     * @return the firstTreeTestStatistic
+     */
+    public Double getFirstTreeTestStatistic() {
+        return firstTreeTestStatistic;
     }
 
 }

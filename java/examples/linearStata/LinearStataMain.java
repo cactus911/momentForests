@@ -156,7 +156,7 @@ public class LinearStataMain {
                             executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, minImprovement, minObservationsPerLeaf, maxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample, false, false);
                         }                      
                         //SFIToolkit.displayln("Parameters flags after detection (minLeaf=" + minObservationsPerLeaf + ", minImprovement=" + minImprovement + ", maxDepth=" + maxDepth + "): " + java.util.Arrays.toString(mySpecification.getHomogeneousIndex()));
-                        computeFitStatistics s = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false);
+                        computeFitStatistics s = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, false, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false);
                         s.computeOutOfSampleMSE();
                         cvList.add(s);
                         mySpecification.resetHomogeneityIndex(); 
@@ -220,7 +220,7 @@ public class LinearStataMain {
         SFIToolkit.displayln("* Computing out-of-sample measures of fit *");
         SFIToolkit.displayln("*******************************************");
         
-        computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, bestMinObservationsPerLeaf,
+        computeFitStatistics fitStats = new computeFitStatistics(mySpecification, numberTreesInForest, proportionObservationsToEstimateTreeStructure, rngBaseSeedMomentForest, verbose, true, bestMinObservationsPerLeaf,
                 bestMinImprovement, bestMaxDepth, rngBaseSeedOutOfSample, true);
         fitStats.computeOutOfSampleMSE();
         double outOfSampleFit = fitStats.getMSE();
@@ -254,12 +254,6 @@ public class LinearStataMain {
         
     	mySpecification.resetHomogeneityIndex(); 
     	
-    	if (verboselast) {
-        	SFIToolkit.displayln("***************************");
-            SFIToolkit.displayln("* Testing for Homogeneity *");
-            SFIToolkit.displayln("***************************");
-        }
-
         double minProportionInEachLeaf = 0.01;
 
         // Create forest over current specification
@@ -270,14 +264,20 @@ public class LinearStataMain {
         myForest.setTreeOptions(cvOptions);
         myForest.growForest();
             
-        if (verbose) {
+        if (verbose || verboselast ) {
             TreeMoment loblolly = myForest.getTree(0);
-            SFIToolkit.displayln("************************");
-            SFIToolkit.displayln("* Printing first tree  *");
-            SFIToolkit.displayln("************************");
+            SFIToolkit.displayln("***************************************************");
+            SFIToolkit.displayln("* Before homogeneity testing: printing first tree *");
+            SFIToolkit.displayln("***************************************************");
             loblolly.printTree();
         }
-           
+        
+    	if (verboselast) {
+        	SFIToolkit.displayln("***************************");
+            SFIToolkit.displayln("* Testing for Homogeneity *");
+            SFIToolkit.displayln("***************************");
+        }
+        
         myForest.testHomogeneity(verboselast);
         
         // Collect homogeneity votes and starting values
@@ -372,6 +372,7 @@ public class LinearStataMain {
         double proportionObservationsToEstimateTreeStructure;
         long rngBaseSeedMomentForest;
         boolean verbose;
+        boolean verboselast;
         int minObservationsPerLeaf;
         double minImprovement;
         int maxTreeDepth;
@@ -383,12 +384,13 @@ public class LinearStataMain {
 
         MomentForest myForest;
 
-        public computeFitStatistics(MomentSpecification mySpecification, int numberTreesInForest, double proportionObservationsToEstimateTreeStructure, long rngBaseSeedMomentForest, boolean verbose, int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
+        public computeFitStatistics(MomentSpecification mySpecification, int numberTreesInForest, double proportionObservationsToEstimateTreeStructure, long rngBaseSeedMomentForest, boolean verbose, boolean verboselast, int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample, boolean generatePlots) {
             this.mySpecification = mySpecification;
             this.numberTreesInForest = numberTreesInForest;
             this.proportionObservationsToEstimateTreeStructure = proportionObservationsToEstimateTreeStructure;
             this.rngBaseSeedMomentForest = rngBaseSeedMomentForest;
             this.verbose = verbose;
+            this.verboselast = verboselast;
             this.minObservationsPerLeaf = minObservationsPerLeaf;
             this.minImprovement = minImprovement;
             this.maxTreeDepth = maxTreeDepth;
@@ -440,8 +442,8 @@ public class LinearStataMain {
              * Grow the moment forest
              */
             myForest.growForest();
-            if (verbose) {
-                SFIToolkit.displayln("First tree in forest estimated as:");
+            if (verboselast) {
+                SFIToolkit.displayln("First out-of-sample fit tree in forest estimated as:");
                 myForest.getTree(0).printTree();
             }
             /**
@@ -490,7 +492,7 @@ public class LinearStataMain {
              * Grow the moment forest
              */
             myForest.growForest();
-            SFIToolkit.displayln("First tree in forest estimated as:");
+            SFIToolkit.displayln("First in-sample fit tree in forest estimated as:");
             myForest.getTree(0).printTree();
             
             try {

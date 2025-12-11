@@ -26,6 +26,7 @@ package core;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
 import javax.swing.JTextArea;
 
 /**
@@ -271,6 +272,18 @@ public class MomentForest {
         }
         return startingValues;
     }
+    
+    public ArrayList<Double> getTestStatistics() {
+        return forest.parallelStream()
+            .map(e -> e.getTestStatistic())
+            .collect(Collectors.toCollection(ArrayList::new));
+    }
+    
+    public ArrayList<Double> getRestrictedThetas() {
+        return forest.parallelStream()
+            .map(e -> e.getRestrictedTheta())
+            .collect(Collectors.toCollection(ArrayList::new));
+    }
 
     public void testHomogeneity(boolean verbose) {
         boolean useParallel = true;
@@ -279,7 +292,8 @@ public class MomentForest {
 
         if (!useParallel) {
             for (int i = 0; i < numberTreesInForest; i++) {
-                System.out.println("========== Tree " + i + " ==========");
+                // System.out.println("========== Tree " + i + " ==========");
+                // System.out.println("Testing homogeneity");
                 forest.get(i).testHomogeneity();
             }
         } else {
@@ -322,7 +336,7 @@ public class MomentForest {
         for (int k = 0; k < averageTestValues.length; k++) {
             averageTestValues[k] = averageTestValues[k] / numberTreesInForest;
             if (verbose) {
-                System.out.println("parameter " + k + ": average DM test statistic: " + averageTestValues[k]);
+                //System.out.println("parameter " + k + ": average DM test statistic: " + averageTestValues[k]);
             }
         }
     }
