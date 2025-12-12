@@ -859,8 +859,8 @@ public class TreeMoment {
             ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
             ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
 
-            // System.out.println("K restricted to 1 only, fix for production!!!");
-            for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+            System.out.println("K restricted to 1 only, fix for production!!!");
+            for (int k = 1; k < getNodeEstimatedBeta().getRowDimension(); k++) {
                 try {
                     boolean useSubsampling = true;
                     if (useSubsampling) {
@@ -881,14 +881,14 @@ public class TreeMoment {
                         // System.out.println("Tn = "+Tn);
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
-                        final double subsampleExponent = 0.7;
-                        int numSubsamples = 100;
+                        final double subsampleExponent = 0.6;
+                        int numSubsamples = 500;
                         Random rng = new Random(treeSeed);
 
                         final int paramK = k;
                         long[] seeds = new Random(rng.nextLong()).longs(numSubsamples).toArray();
                         List<Double> statsList = IntStream.range(0, numSubsamples)
-                                // .parallel()
+                                .parallel()
                                 .mapToObj(r -> {
                                     try {
                                         WaldTestWholeTree bigSubsample = new WaldTestWholeTree(
@@ -900,8 +900,13 @@ public class TreeMoment {
                                         /**
                                          * This flag imposes the restriction in each subsample. If this is false,
                                          * we use the overall restricted theta_n as the hypothesis test.
+                                         * 
+                                         * Apparently, although both parameter vectors converge to the same thing,
+                                         * we are supposed to use the subsampling restriction. The idea is that we impose
+                                         * everything within the subsample, which then mimics the population appropriately.
+                                         * Mixing theta_nk and theta_b leads to two different rates due to sample sizes.
                                          */
-                                        boolean useTheta_b = false;
+                                        boolean useTheta_b = true;
                                         double stat;
                                         if(useTheta_b) {
                                             Jama.Matrix restrictedTheta_bk = bigSubsample.computeRestrictedTheta(paramK);
@@ -947,7 +952,7 @@ public class TreeMoment {
                         double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
                         //System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue);
                         
-                        if (1 == 2 && numSubsamples > 1) {
+                        if (1 == 1 && numSubsamples > 1) {
                             int numObs = 0;
                             for (DataLens dl : v) {
                                 numObs += dl.getNumObs();
@@ -967,8 +972,8 @@ public class TreeMoment {
                             if (plotSubsamples) {
                                 // PlotPDF.plotDistributionUnrestrictedTestStatistics(stats.stream().mapToDouble(Double::doubleValue).toArray());
                                 // PDFPlotter.plotHistogramWithKDE(stats, "Subsampled Tn");
-                                // PDFPlotter.plotKernelDensity(stats, "Subsampled Tn, n = " + numObs+", ["+criticalValue+"]");
-                                PDFPlotter.plotKDEWithChiSquared(stats, "Subsampled Tb vs Chi Squared, n = " + numObs + " [" + criticalValue + "]", 4);
+                                PDFPlotter.plotKernelDensity(stats, "Subsampled Tn, n = " + numObs+", ["+criticalValue+"]");
+                                // PDFPlotter.plotKDEWithChiSquared(stats, "Subsampled Tb vs Chi Squared, n = " + numObs + " [" + criticalValue + "]", 4);
                             }
                         }
 

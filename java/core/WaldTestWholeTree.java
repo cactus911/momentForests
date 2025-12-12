@@ -278,8 +278,11 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         /**
          * Two-step GMM for unconstrained optimization
          * Actually why not just use CUE all the time in general?
+         * 
+         * Because it is stupidly unstable...
          */
-        if (!constrainedEstimation && 1==2) {
+        boolean forceTwoStep = true;
+        if ((!constrainedEstimation && 1==2) || forceTwoStep) {
             for (int i = 0; i < 2; i++) {
                 if (debug) {
                     System.out.println("************* STEP " + (i + 1) + " of 2 *************");
