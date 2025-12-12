@@ -46,7 +46,7 @@ import utility.pmUtility;
 public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
     double goodnessOfFit = -666; // make sure that we give back a crazy number if it is not called
-    Jama.Matrix beta;
+    private Jama.Matrix beta;
     Jama.Matrix variance;
     boolean debugVerbose = false;
     DataLens lens;
@@ -127,7 +127,8 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     // System.out.println("Y, X");
 //                    pmUtility.prettyPrint(pmUtility.concatMatrix(Y, X));
 //                    
-//                    pmUtility.prettyPrintVector(olsBeta);
+                    // pmUtility.prettyPrintVector(olsBeta);
+                    setBeta(olsBeta);
 //                    
 //                    System.exit(0);
                 } else {
@@ -528,6 +529,13 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
 
     public boolean didEstimatorFail() {
         return failedEstimation;
+    }
+
+    /**
+     * @param beta the beta to set
+     */
+    public void setBeta(Jama.Matrix beta) {
+        this.beta = beta;
     }
 
 }

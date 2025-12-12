@@ -170,6 +170,7 @@ public class TreeMoment {
     //This method builds the tree
     public void determineSplit() {
         if (verbose) {
+            System.out.println("treeSeed: "+treeSeed);
             echoLn("----------- computing optimal split --------------");
             echoLn(depth + " " + getParentRuleDescriptive(null));
         }
@@ -190,6 +191,7 @@ public class TreeMoment {
          * a dumb way of doing it, but I'm not sure what else I could do easily
          * to get around this issue.
          */
+        
         if (verbose) {
             System.out.println("Computing baseline SSE");
         }
@@ -199,8 +201,10 @@ public class TreeMoment {
             validTree = false;
         }
         if (verbose) {
-            System.out.println("Setting beta");
+            System.out.print("Setting beta to ");
+            pmUtility.prettyPrintVector(currentNodeMoment.getBeta());
         }
+        
         setNodeEstimatedBeta(currentNodeMoment.getBeta());
         if (verbose) {
             System.out.println("Current node objective function value is " + currentNodeMoment.getGoodnessOfFit());
@@ -830,7 +834,7 @@ public class TreeMoment {
      *
      */
     public void testHomogeneity() {
-        verbose = true;
+        verbose = false;
         //System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);
@@ -859,8 +863,8 @@ public class TreeMoment {
             ArrayList<PValue> pList = new ArrayList<>(); // this is the list of p-values and associated parameter indices
             ArrayList<PValue> constrainedParameterList = new ArrayList<>(); // i am going to use this same data structure to store the estimated constrained parameter to hot-start the outer loop
 
-            System.out.println("K restricted to 1 only, fix for production!!!");
-            for (int k = 1; k < getNodeEstimatedBeta().getRowDimension(); k++) {
+            // System.out.println("K restricted to 1 only, fix for production!!!");
+            for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
                 try {
                     boolean useSubsampling = true;
                     if (useSubsampling) {
@@ -882,7 +886,7 @@ public class TreeMoment {
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
                         final double subsampleExponent = 0.6;
-                        int numSubsamples = 500;
+                        int numSubsamples = 100;
                         Random rng = new Random(treeSeed);
 
                         final int paramK = k;
@@ -952,7 +956,7 @@ public class TreeMoment {
                         double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
                         //System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue);
                         
-                        if (1 == 1 && numSubsamples > 1) {
+                        if (1 == 2 && numSubsamples > 1) {
                             int numObs = 0;
                             for (DataLens dl : v) {
                                 numObs += dl.getNumObs();

@@ -35,6 +35,7 @@ import core.MomentSpecification;
 import core.PDFPlotter;
 import core.TreeOptions;
 import examples.PartialLinearGasDemand.HomogeneousParameterSorter;
+import experimental.SmartScrollTextArea;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.Random;
@@ -44,7 +45,6 @@ import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
 import org.jfree.data.xy.XYSeries;
-import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
 /**
@@ -75,10 +75,15 @@ public class LinearTestMain {
         JFrame f = new JFrame("Monte Carlo");
         f.setBounds(100, 100, 1100, 500);
         f.getContentPane().setLayout(new GridLayout(1, 2));
-        JTextAreaAutoscroll jt1 = new JTextAreaAutoscroll();
-        f.getContentPane().add(new JScrollPane(jt1));
-        JTextAreaAutoscroll jt2 = new JTextAreaAutoscroll();
-        f.getContentPane().add(new JScrollPane(jt2));
+        
+        SmartScrollTextArea jt1 = new SmartScrollTextArea(); // JTextAreaAutoscroll();
+        JScrollPane sp1 = new JScrollPane(jt1);
+        f.getContentPane().add(sp1);
+        jt1.enableSmartScroll(sp1);
+        
+        SmartScrollTextArea jt2 = new SmartScrollTextArea(); // JTextAreaAutoscroll();
+        JScrollPane sp2 = new JScrollPane(jt2);
+        f.getContentPane().add(sp2);
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setVisible(true);
 
@@ -103,7 +108,7 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 1;
+        int numMonteCarlos = 100;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
             for (int numObs = 1000; numObs <= 4000; numObs *= 2) {
@@ -130,10 +135,10 @@ public class LinearTestMain {
                 double[] beta_SD = new double[dimX];
                 double[] classificationRate = new double[dimX];
 
-                JTextAreaAutoscroll jam = new JTextAreaAutoscroll();
+                JTextArea jam = jt1; // new JTextAreaAutoscroll();
 
-                boolean[] d = {true};
-                // boolean[] d = {false, true};
+                // boolean[] d = {true};
+                boolean[] d = {false, true};
 
                 for (boolean detectHomogeneity : d) {
                     // boolean detectHomogeneity = !true;
@@ -364,7 +369,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 50;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -383,7 +388,7 @@ public class LinearTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean computeAlternatives = !true;
+        boolean computeAlternatives = false;
         if (computeAlternatives && !detectHomogeneity) {
             System.out.println("Computing nonparametric fits...");
             computeOutOfSampleNonparametricFits(mySpecification, rngBaseSeedOutOfSample);
@@ -467,7 +472,7 @@ public class LinearTestMain {
 
             bestMinObservationsPerLeaf = 10; // *(int)Math.round(Math.log(numObs));
             bestMinImprovement = 1.0;
-            bestMaxDepth = 1;
+            bestMaxDepth = 0;
         }
 
         /**
@@ -483,9 +488,10 @@ public class LinearTestMain {
             executeHomogeneousParameterClassificationAndSearch(mySpecification, numTestingTrees, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
         }
 
-        boolean goFast = true;
+        boolean goFast = false;
         if (!goFast) {
-            numberTreesInForest = 100;
+            numberTreesInForest = 50;
+            verbose = true;
             if(numberTreesInForest>1) {
                 verbose = false;
             }
@@ -536,7 +542,7 @@ public class LinearTestMain {
         ArrayList<Integer> hpl = new ArrayList<>();
         ArrayList<Double> hplStartingValues = new ArrayList<>();
 
-        boolean verboseVoting = true;
+        boolean verboseVoting = false;
         boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, verboseVoting);
 
         double[] startingValues = myForest.getHomogeneityStartingValues();
@@ -566,7 +572,7 @@ public class LinearTestMain {
         // System.out.println(hpl);
         setHomogeneousParameterList(hpl);
 
-        boolean executeSearch = false;
+        boolean executeSearch = true;
         /**
          * Estimate values of homogeneous parameters
          */

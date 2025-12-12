@@ -395,7 +395,17 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
         double q = Double.POSITIVE_INFINITY;
         try {
-            q = 0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0);
+            // q = (0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0));
+            
+            Jama.Matrix omegaInvG = omega.solve(g);
+            q = 0.5 * (g.transpose().times(omegaInvG)).get(0,0);
+            
+            boolean compareAgainstOldCode = false; // it works, somewhat faster in simple cases, should be much more numerically stable
+            if(compareAgainstOldCode) {
+                System.out.println("new q: "+q+" old q: "+(0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0)));
+            }
+            
+            
         } catch (RuntimeException e) {
             throw new IllegalStateException(
                     "Singular matrix encountered in WaldTestWholeTree", e

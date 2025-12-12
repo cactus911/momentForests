@@ -196,8 +196,8 @@ public class LinearMomentSpecification implements MomentSpecification {
     @Override
     public Matrix getBetaTruth(Matrix zi, Random rng) {
         Jama.Matrix beta = new Jama.Matrix(dimensionX, 1, 1); // Beta is a scalar
-        beta.set(0, 0, -2.0);
-        beta.set(1, 0, -1.0);
+        beta.set(0, 0, -1.0);
+        beta.set(1, 0, 1.0);
 
         // case highlights the complexity of variance-bias tradeoff
         // classification falls as n increases because depth goes up, critical values get bigger (should I try using bootstrap
@@ -211,13 +211,13 @@ public class LinearMomentSpecification implements MomentSpecification {
 
         // case works; bit boring!
         // but! highlights that CV can pick out homogeneity in these easy cases by itself, we end up with stumps here
-        boolean singleBeta = false;
+        boolean singleBeta = true;
         if (singleBeta) {
             return beta;
         }
 
         // case works; don't focus as much on SSE(Y) but the MSE of \beta (much better with homogeneity!)
-        boolean oneDimensionHeterogeneity = true;
+        boolean oneDimensionHeterogeneity = false;
         if (oneDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
                 beta.set(0, 0, 1.0);
@@ -230,7 +230,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         if (twoDimensionHeterogeneity) {
             if (zi.get(0, 0) > 0) {
                 beta.set(0, 0, 1.0);
-                beta.set(1, 0, 2.0);
+                beta.set(1, 0, -1.0);
             }
             return beta;
         }
