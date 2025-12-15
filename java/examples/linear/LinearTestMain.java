@@ -108,7 +108,7 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 1;
+        int numMonteCarlos = 100;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
             for (int numObs = 1000; numObs <= 4000; numObs *= 2) {
@@ -369,7 +369,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 10;
+        int numberTreesInForest = 50;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
