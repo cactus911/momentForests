@@ -111,7 +111,7 @@ public class LinearTestMain {
         int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 400000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 4000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
@@ -369,7 +369,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 1;
+        int numberTreesInForest = 10;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -388,7 +388,7 @@ public class LinearTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean computeAlternatives = !true;
+        boolean computeAlternatives = true;
         if (computeAlternatives && !detectHomogeneity) {
             System.out.println("Computing nonparametric fits...");
             computeOutOfSampleNonparametricFits(mySpecification, rngBaseSeedOutOfSample);
@@ -488,7 +488,7 @@ public class LinearTestMain {
             executeHomogeneousParameterClassificationAndSearch(mySpecification, numTestingTrees, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
         }
 
-        boolean goFast = !false;
+        boolean goFast = false;
         if (!goFast) {
             numberTreesInForest = 250;
             verbose = true;
@@ -572,7 +572,7 @@ public class LinearTestMain {
         // System.out.println(hpl);
         setHomogeneousParameterList(hpl);
 
-        boolean executeSearch = !true;
+        boolean executeSearch = true;
         /**
          * Estimate values of homogeneous parameters
          */
