@@ -834,7 +834,7 @@ public class TreeMoment {
      *
      */
     public void testHomogeneity() {
-        verbose = false;
+        // verbose = true;
         //System.out.println("***** Calling testHomogeneity in TreeMoment.java *****");
         ArrayList<DataLens> v = new ArrayList<>();
         collectAllTerminalDataLens(v);
@@ -885,7 +885,7 @@ public class TreeMoment {
                         // System.out.println("Tn = "+Tn);
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
-                        final double subsampleExponent = 0.6;
+                        final double subsampleExponent = 0.7;
                         int numSubsamples = 100;
                         Random rng = new Random(treeSeed);
 
@@ -954,7 +954,10 @@ public class TreeMoment {
                             subsampleTb.set(i, 0, stats.get(i));
                         }
                         double criticalValue = pmUtility.percentile(subsampleTb, 0, 0.95);
-                        //System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue);
+                        
+                        if(verbose) {
+                            System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue);
+                        }
                         
                         if (1 == 2 && numSubsamples > 1) {
                             int numObs = 0;

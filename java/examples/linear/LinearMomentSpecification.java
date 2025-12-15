@@ -202,7 +202,7 @@ public class LinearMomentSpecification implements MomentSpecification {
         // case highlights the complexity of variance-bias tradeoff
         // classification falls as n increases because depth goes up, critical values get bigger (should I try using bootstrap
         // here instead of analytical distribution?)
-        boolean partiallyLinearModel = false;
+        boolean partiallyLinearModel = true;
         if (partiallyLinearModel) {
             // want to get the model y = x\beta + g(z), or x\beta+1*\beta(Z) where the second function is complex (like a cosine function?)
             beta.set(0, 0, 2.5 * Math.sin(zi.get(0, 0)) + 0.25 * Math.pow(zi.get(0, 0), 2));
@@ -211,7 +211,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
         // case works; bit boring!
         // but! highlights that CV can pick out homogeneity in these easy cases by itself, we end up with stumps here
-        boolean singleBeta = true;
+        boolean singleBeta = false;
         if (singleBeta) {
             return beta;
         }

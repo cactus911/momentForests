@@ -108,10 +108,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 100;
+        int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 4000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 400000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
@@ -369,7 +369,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 50;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -388,7 +388,7 @@ public class LinearTestMain {
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
 
-        boolean computeAlternatives = false;
+        boolean computeAlternatives = !true;
         if (computeAlternatives && !detectHomogeneity) {
             System.out.println("Computing nonparametric fits...");
             computeOutOfSampleNonparametricFits(mySpecification, rngBaseSeedOutOfSample);
@@ -470,9 +470,9 @@ public class LinearTestMain {
                 bestMaxDepth = 5;
             }
 
-            bestMinObservationsPerLeaf = 10; // *(int)Math.round(Math.log(numObs));
+            bestMinObservationsPerLeaf = 50; // *(int)Math.round(Math.log(numObs));
             bestMinImprovement = 1.0;
-            bestMaxDepth = 0;
+            // bestMaxDepth = 1;
         }
 
         /**
@@ -488,9 +488,9 @@ public class LinearTestMain {
             executeHomogeneousParameterClassificationAndSearch(mySpecification, numTestingTrees, verbose, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
         }
 
-        boolean goFast = false;
+        boolean goFast = !false;
         if (!goFast) {
-            numberTreesInForest = 50;
+            numberTreesInForest = 250;
             verbose = true;
             if(numberTreesInForest>1) {
                 verbose = false;
@@ -542,7 +542,7 @@ public class LinearTestMain {
         ArrayList<Integer> hpl = new ArrayList<>();
         ArrayList<Double> hplStartingValues = new ArrayList<>();
 
-        boolean verboseVoting = false;
+        boolean verboseVoting = true;
         boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, verboseVoting);
 
         double[] startingValues = myForest.getHomogeneityStartingValues();
@@ -572,7 +572,7 @@ public class LinearTestMain {
         // System.out.println(hpl);
         setHomogeneousParameterList(hpl);
 
-        boolean executeSearch = true;
+        boolean executeSearch = !true;
         /**
          * Estimate values of homogeneous parameters
          */
