@@ -887,7 +887,7 @@ public class TreeMoment {
 
                         final double subsampleExponent = 0.7;
                         int numSubsamples = 500;
-                        Random rng = new Random(treeSeed);
+                        Random rng = new Random(treeSeed); 
 
                         final int paramK = k;
                         long[] seeds = new Random(rng.nextLong()).longs(numSubsamples).toArray();
@@ -979,7 +979,7 @@ public class TreeMoment {
                             if (plotSubsamples) {
                                 // PlotPDF.plotDistributionUnrestrictedTestStatistics(stats.stream().mapToDouble(Double::doubleValue).toArray());
                                 // PDFPlotter.plotHistogramWithKDE(stats, "Subsampled Tn");
-                                PDFPlotter.plotKernelDensity(stats, "Subsampled Tn, n = " + numObs+", ["+criticalValue+"]"); 
+                                PDFPlotter.plotKernelDensity(stats, "Subsampled Tn, n = " + numObs+", ["+criticalValue+"]");
                                 // PDFPlotter.plotKDEWithChiSquared(stats, "Subsampled Tb vs Chi Squared, n = " + numObs + " [" + criticalValue + "]", 4);
                             }
                         }

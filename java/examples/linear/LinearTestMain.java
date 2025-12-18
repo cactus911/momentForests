@@ -32,7 +32,6 @@ import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.MomentSpecification;
-import core.PDFPlotter;
 import core.TreeOptions;
 import examples.PartialLinearGasDemand.HomogeneousParameterSorter;
 import experimental.SmartScrollTextArea;
@@ -190,15 +189,15 @@ public class LinearTestMain {
 
                     ArrayList<Double> mcFirstTreeTestStatistics = new ArrayList<>();
                     parallelLTM.stream().forEach(e -> mcFirstTreeTestStatistics.add(e.getFirstTreeTestStatistic()));
-                    if (numMonteCarlos > 1 && 1==2) {
-                        PDFPlotter.plotHistogramWithKDE(mcFirstTreeTestStatistics, "Monte Carlo Tn");
-                        int[] pctList = {10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99};
-                        ChiSqrDistribution chi = new ChiSqrDistribution(1);
-                        System.out.println("Avg: " + Stats.of(mcFirstTreeTestStatistics).mean());
-                        for (int pct : pctList) {
-                            System.out.println("p" + pct + ": chi: " + chi.inverse(pct / 100.0) + " first tree test statistics: " + Quantiles.percentiles().index(pct).compute(mcFirstTreeTestStatistics));
-                        }
-                    }
+//                    if (numMonteCarlos > 1 && 1==2) {
+//                        PDFPlotter.plotHistogramWithKDE(mcFirstTreeTestStatistics, "Monte Carlo Tn");
+//                        int[] pctList = {10, 20, 30, 40, 50, 60, 70, 80, 90, 95, 99};
+//                        ChiSqrDistribution chi = new ChiSqrDistribution(1);
+//                        System.out.println("Avg: " + Stats.of(mcFirstTreeTestStatistics).mean());
+//                        for (int pct : pctList) {
+//                            System.out.println("p" + pct + ": chi: " + chi.inverse(pct / 100.0) + " first tree test statistics: " + Quantiles.percentiles().index(pct).compute(mcFirstTreeTestStatistics));
+//                        }
+//                    }
 
                     // for (int m = 0; m < numMonteCarlos; m++) {
                     int[] counts = new int[dimX];
