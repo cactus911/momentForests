@@ -80,10 +80,6 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
         // okay, from Newey-McFadden we have B = G'Omega^{-1}G, where G is m x k matrix of derivatives and omega is mxm E[gg']
         Jama.Matrix B = computeNeweyMcFaddenB(unconstrainedX);
-        SwingUtilities.invokeLater(() -> {
-            System.out.println("B_subsample:");
-            pmUtility.prettyPrint(B);
-        });        
         // Jama.Matrix acov = B.inverse();
 
         setThetaUnconstrained(convertToStackedBeta(unconstrainedX));
@@ -166,6 +162,18 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 //            System.out.println("k = " + indexConstrainedParameter + " unconstrained: " + fminUnconstrained + " constrained: " + fminConstrained + " wald3: " + wald3);
 //        }
         // System.exit(0);
+        boolean diagnostic = false;
+        if (diagnostic) {
+            final double w3 = wald3;
+            SwingUtilities.invokeLater(() -> {
+                System.out.println("B_subsample:");
+                pmUtility.prettyPrint(B);
+                System.out.println("Diff theta:");
+                pmUtility.prettyPrintVector(diffTheta);
+                System.out.println("W3_subsample: " + w3);
+            });
+        }
+
         return wald3;
     }
 
