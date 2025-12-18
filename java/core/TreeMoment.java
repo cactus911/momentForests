@@ -886,7 +886,7 @@ public class TreeMoment {
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
                         final double subsampleExponent = 0.7;
-                        int numSubsamples = 500;
+                        int numSubsamples = 5000;
                         Random rng = new Random(treeSeed); 
 
                         final int paramK = k;
@@ -959,14 +959,18 @@ public class TreeMoment {
                             System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue);
                         }
                         
-                        if (1 == 2 && numSubsamples > 1) {
+                        if (1 == 1 && numSubsamples > 1) {
                             int numObs = 0;
                             for (DataLens dl : v) {
                                 numObs += dl.getNumObs();
                             }
 
+                            String aboveCriticalValueString = "";
+                            if(Tn>criticalValue) {
+                                aboveCriticalValueString = "*";
+                            }
                             
-                            System.out.println("Subsampled 95th percentile (critical value): " + criticalValue);
+                            System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue+" "+aboveCriticalValueString);
                             System.out.println("Subsampled mean: " + pmUtility.mean(subsampleTb, 0));
                             System.out.println("Subsampled median: " + pmUtility.median(subsampleTb, 0));
                             System.out.println("Subsampled SD: " + pmUtility.standardDeviation(subsampleTb));

@@ -35,7 +35,7 @@ public class LinearDataGenerator {
             }
 
             // Z.set(i, 0, normal.inverse(rng.nextDouble()));
-            Z.set(i, 0, -3.0 + 6.0 * rng.nextDouble()); // uniform [-6,4]
+            Z.set(i, 0, -3.0 + 6.0 * rng.nextDouble()); // uniform [-3,3]
             Z.set(i, 1, rng.nextDouble());
 
             double draw = rng.nextDouble();

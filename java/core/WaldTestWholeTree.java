@@ -7,6 +7,7 @@ package core;
 
 import Jama.Matrix;
 import java.util.ArrayList;
+import javax.swing.SwingUtilities;
 import mcmc.gibbsLTEGeneralized;
 import optimization.Uncmin_f77;
 import optimization.Uncmin_methods;
@@ -27,7 +28,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
     private final MomentSpecification spec;
     boolean debug = false;
     int indexConstrainedParameter;
-    
+
     private double fminUnconstrained;
     private Jama.Matrix thetaUnconstrained;
 
@@ -38,7 +39,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
     }
 
     public Jama.Matrix computeRestrictedTheta(int indexConstrainedParameterPassed) {
-        if(debug) {
+        if (debug) {
             System.out.println("Computing constrained theta");
         }
         // System.out.println("<<<<<<<<<<<<<<<<<< computing restricted k = "+indexConstrainedParameterPassed+" >>>>>>>>>>>>>>>>>>>>>>");
@@ -48,7 +49,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             System.out.println("Number of parameters mismatch");
             System.exit(0);
         }
-        if(debug) {
+        if (debug) {
             System.out.println("Calling computeParameters");
         }
         double[] constrainedX = computeParameters((numParamsEachSplit - 1) * v.size() + 1);
@@ -56,13 +57,13 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         // double fminConstrained = f_to_minimize(constrainedX);
 
         Jama.Matrix thetaConstrained = convertToStackedBeta(constrainedX);
-        if(debug) {
+        if (debug) {
             System.out.println("Passing these parameters back as the constrained estimates found using CUE-GMM:");
             pmUtility.prettyPrintVector(thetaConstrained);
         }
         return thetaConstrained;
     }
-    
+
     public double computeStatistic(int indexConstrainedParameterPassed, Jama.Matrix thetaConstrained) {
         if (debug) {
             System.out.println("------------------------ Testing parameter k = " + indexConstrainedParameterPassed + " ------------------------");
@@ -79,8 +80,11 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 
         // okay, from Newey-McFadden we have B = G'Omega^{-1}G, where G is m x k matrix of derivatives and omega is mxm E[gg']
         Jama.Matrix B = computeNeweyMcFaddenB(unconstrainedX);
-        //pmUtility.prettyPrintVector(B);
-        Jama.Matrix acov = B.inverse();
+        SwingUtilities.invokeLater(() -> {
+            System.out.println("B_subsample:");
+            pmUtility.prettyPrint(B);
+        });        
+        // Jama.Matrix acov = B.inverse();
 
         setThetaUnconstrained(convertToStackedBeta(unconstrainedX));
         if (debug) {
@@ -140,11 +144,11 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             System.out.print("difference in theta: ");
             pmUtility.prettyPrintVector(diffTheta);
 
-            System.out.println("Acov:");
-            pmUtility.prettyPrint(acov);
-
-            System.out.println("Acov inverse:");
-            pmUtility.prettyPrint(acov.inverse());
+//            System.out.println("Acov:");
+//            pmUtility.prettyPrint(acov);
+//
+//            System.out.println("Acov inverse:");
+//            pmUtility.prettyPrint(acov.inverse());
         }
 
 //        System.out.println("Newey-McFadden B:");
@@ -241,6 +245,12 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         for (int i = 0; i < xpls.length; i++) {
             xpls[i] = guess[i];
         }
+        if (constrainedEstimation) {
+            for (int i = 0; i < xpls.length; i++) {
+                xpls[i] = 0;
+                guess[i] = 0;
+            }
+        }
         // System.exit(0);
 
         // with identity weighting matrix (Step 1)
@@ -276,13 +286,13 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         }
 
         /**
-         * Two-step GMM for unconstrained optimization
-         * Actually why not just use CUE all the time in general?
-         * 
+         * Two-step GMM for unconstrained optimization Actually why not just use
+         * CUE all the time in general?
+         *
          * Because it is stupidly unstable...
          */
         boolean forceTwoStep = true;
-        if ((!constrainedEstimation && 1==2) || forceTwoStep) {
+        if ((!constrainedEstimation && 1 == 2) || forceTwoStep) {
             for (int i = 0; i < 2; i++) {
                 if (debug) {
                     System.out.println("************* STEP " + (i + 1) + " of 2 *************");
@@ -313,20 +323,20 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             }
         } else {
             String s = "unconstrained";
-            if(constrainedEstimation) {
+            if (constrainedEstimation) {
                 s = "constrained";
             }
             if (debug) {
-                System.out.println("Estimating "+s+" parameters with CUE...");
+                System.out.println("Estimating " + s + " parameters with CUE...");
             }
             useCUE = true;
-            
-            guess= new double[guess.length];
-            
+
+            guess = new double[guess.length];
+
             minimizer = new Uncmin_f77(debug);
             minimizer.optif9_f77(numParams, guess, this, typsiz, fscale, method, iexp, msg, ndigit, itnlim, iagflg, iahflg, dlt, gradtl, stepmx, steptl, xpls, fpls, gpls, itrmcd, a, udiag);
             if (debug) {
-                if(constrainedEstimation) {
+                if (constrainedEstimation) {
                     System.out.print("Constrained ");
                 } else {
                     System.out.print("Unconstrained ");
@@ -396,16 +406,15 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         double q = Double.POSITIVE_INFINITY;
         try {
             // q = (0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0));
-            
+
             Jama.Matrix omegaInvG = omega.solve(g);
-            q = 0.5 * (g.transpose().times(omegaInvG)).get(0,0);
-            
+            q = 0.5 * (g.transpose().times(omegaInvG)).get(0, 0);
+
             boolean compareAgainstOldCode = false; // it works, somewhat faster in simple cases, should be much more numerically stable
-            if(compareAgainstOldCode) {
-                System.out.println("new q: "+q+" old q: "+(0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0)));
+            if (compareAgainstOldCode) {
+                System.out.println("new q: " + q + " old q: " + (0.5 * (((g.transpose()).times(omega.inverse())).times(g)).get(0, 0)));
             }
-            
-            
+
         } catch (RuntimeException e) {
             throw new IllegalStateException(
                     "Singular matrix encountered in WaldTestWholeTree", e

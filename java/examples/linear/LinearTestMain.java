@@ -107,10 +107,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 100;
+        int numMonteCarlos = 1;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 4000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 1000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
@@ -168,8 +168,8 @@ public class LinearTestMain {
                         LinearTestMain go;
                         if (numMonteCarlos == 1) {
                             // 8621193992485539638L
-                            // go = new LinearTestMain(m, 5275223538819738276L, numObs, detectHomogeneity, jam, dimX);
-                            go = new LinearTestMain(m, -7406063799885833966L, numObs, detectHomogeneity, jam, dimX);
+                            go = new LinearTestMain(m, 5275223538819738276L, numObs, detectHomogeneity, jam, dimX);
+                            // go = new LinearTestMain(m, -7406063799885833966L, numObs, detectHomogeneity, jam, dimX);
                         } else {
                             go = new LinearTestMain(m, rng.nextLong(), numObs, detectHomogeneity, jam, dimX);
                         }
@@ -368,7 +368,7 @@ public class LinearTestMain {
          */
         mySpecification.resetHomogeneityIndex();
 
-        int numberTreesInForest = 50;
+        int numberTreesInForest = 1;
         // System.out.println("numTrees: " + numberTreesInForest);
 
         /**
@@ -471,7 +471,7 @@ public class LinearTestMain {
 
             bestMinObservationsPerLeaf = 50; // *(int)Math.round(Math.log(numObs));
             bestMinImprovement = 1.0;
-            // bestMaxDepth = 1;
+            bestMaxDepth = 1;
         }
 
         /**
