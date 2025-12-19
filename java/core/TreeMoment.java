@@ -1021,15 +1021,25 @@ public class TreeMoment {
                         // TODO ************** come back to this ************
                         // pList.add(new PValue(k, big.getPValue(k)));
                     } else {
-                        DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
+                        // DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
                         // WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
                         // Jama.Matrix restrictedTheta = big.computeRestrictedTheta(k);
+                        
+                        WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec, verbose);
+                        Jama.Matrix restrictedTheta_nk = big.computeRestrictedTheta(k);
 
-                        double dm2 = Math.max(0, big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
+                        if (verbose) {
+                            //System.out.print("Restricted theta: ");
+                            //pmUtility.prettyPrintVector(restrictedTheta);
+                        }
+                        // System.out.println("Computing Tn...");
+                        double Tn = big.computeStatistic(k, restrictedTheta_nk);
+
+                        double dm2 = Math.max(0, Tn); // big.computeStatistic(k)); // sometimes get some weird numerical instability issues with the omega inversion that gives a better fit with constraints
                         testValues[k] = dm2;
 
                         if (k == 1) {
-                            System.out.println("Tn: " + dm2);
+                            // System.out.println("Tn: " + dm2);
                             setTestStatistic(dm2);
                         }
 
