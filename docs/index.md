@@ -10,7 +10,7 @@ This website is a work in progress but will be updated regularly.
 
 ### The Paper
 
-The paper can be found at https://sites.wustl.edu/stephenryan/items/never-running-two-million-regressions-again-adaptive-semiparametric-models/.
+The paper can be found [here](https://sites.wustl.edu/stephenryan/items/never-running-two-million-regressions-again-adaptive-semiparametric-models/).
 
 <img src="./examplegraph.PNG" width="500" >
 
