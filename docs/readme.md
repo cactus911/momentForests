@@ -1,5 +1,5 @@
 # momentForests
-Java source code implementing moment forests from Nekipelov, Novosad, and Ryan (2018).
+Java source code implementing moment forests from Nekipelov, Ryan, and Jiang (2015).
 
 GitHub webpage for Moment Forests: https://cactus911.github.io/momentForests/
 
