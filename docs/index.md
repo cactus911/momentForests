@@ -10,7 +10,7 @@ This website is a work in progress but will be updated regularly.
 
 ### The Paper
 
-The paper can be found here \[[PDF](https://bpb-us-w2.wpmucdn.com/sites.wustl.edu/dist/7/3643/files/2024/04/Semiparametric-Project-Slides-2024-5bfa05ddae06dfd4.pdf)\].
+The paper can be found at https://sites.wustl.edu/stephenryan/items/never-running-two-million-regressions-again-adaptive-semiparametric-models/.
 
 <img src="./examplegraph.PNG" width="500" >
 
