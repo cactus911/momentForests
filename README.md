@@ -1,5 +1,5 @@
 # momentForests
-Java source code implementing moment forests from Nekipelov, Ryan, and Jiang (2025). See https://sites.wustl.edu/stephenryan/items/never-running-two-million-regressions-again-adaptive-semiparametric-models.
+Java source code implementing moment forests from Nekipelov, Novosad, and Ryan (2018). See https://sites.wustl.edu/stephenryan/items/never-running-two-million-regressions-again-adaptive-semiparametric-models.
 
 GitHub webpage for Moment Forests: https://cactus911.github.io/momentForests/
 
