@@ -23,15 +23,12 @@
  */
 package examples.linearStata;
 
-// import JSci.maths.statistics.NormalDistribution;
-import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
 import core.MomentSpecification;
 import examples.linear.ContainerLinear;
 import java.util.*;
-import utility.pmUtility;
 
 /**
  *

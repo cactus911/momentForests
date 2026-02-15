@@ -23,7 +23,6 @@
  */
 package examples.linear;
 
-// import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
@@ -277,6 +276,8 @@ public class LinearMomentSpecification extends MomentSpecification {
                 }
                 X = dX;
                 Y = dY;
+                dimensionX = X.getColumnDimension();
+                initializeHomogeneity(dimensionX);
 
                 in.close();
             } catch (Exception e) {
