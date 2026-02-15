@@ -170,6 +170,26 @@ public class DataLens {
         double ratio = getMeanBalancingVector();
         int goalTreatment = (int) Math.round(ratio * dataIndex.length);
 
+        // Check that the data contains both treated and untreated observations
+        boolean hasTreated = false;
+        boolean hasUntreated = false;
+        for (int idx : dataIndex) {
+            if (balancingVector.get(idx, 0) == 1) {
+                hasTreated = true;
+            } else {
+                hasUntreated = true;
+            }
+            if (hasTreated && hasUntreated) {
+                break;
+            }
+        }
+        if (goalTreatment > 0 && !hasTreated) {
+            throw new IllegalStateException("Cannot resample with balance: no treated observations in data but goalTreatment = " + goalTreatment);
+        }
+        if (goalTreatment < dataIndex.length && !hasUntreated) {
+            throw new IllegalStateException("Cannot resample with balance: no untreated observations in data but need " + (dataIndex.length - goalTreatment) + " untreated");
+        }
+
         int countTreatment = 0;
         for (int i = 0; i < dataIndex.length; i++) {
             int index = rng.nextInt(dataIndex.length);
@@ -204,6 +224,7 @@ public class DataLens {
     public DataLens getSubsampledDataLens(long seed, double d) {
         Random rng = new Random(seed);
         int b = (int) Math.round(Math.pow(dataIndex.length, d));
+        b = Math.min(b, dataIndex.length);
         int[] newIndex = new int[b];
         TreeSet<Integer> drawnTree = new TreeSet<>();
         for (int i = 0; i < b; i++) {
@@ -233,6 +254,25 @@ public class DataLens {
         TreeSet<Integer> treeFirst = new TreeSet<>(); //Why do we use this TreeSet?
 
         int desiredNumTreatmentObsInFirstPart = (int) Math.round(getMeanBalancingVector() * sizeFirst);
+
+        // Check that the data contains enough treated and untreated observations
+        int totalTreated = 0;
+        int totalUntreated = 0;
+        for (int idx : dataIndex) {
+            if (balancingVector.get(idx, 0) == 1) {
+                totalTreated++;
+            } else {
+                totalUntreated++;
+            }
+        }
+        if (desiredNumTreatmentObsInFirstPart > 0 && totalTreated == 0) {
+            throw new IllegalStateException("Cannot split sample with balance: no treated observations in data but need " + desiredNumTreatmentObsInFirstPart + " treated in first sample");
+        }
+        int desiredUntreatedFirst = sizeFirst - desiredNumTreatmentObsInFirstPart;
+        if (desiredUntreatedFirst > 0 && totalUntreated == 0) {
+            throw new IllegalStateException("Cannot split sample with balance: no untreated observations in data but need " + desiredUntreatedFirst + " untreated in first sample");
+        }
+
         // System.out.println("Aiming for " + desiredNumTreatmentObsInFirstPart + " treatments in first sample.");
         for (int i = 0; i < sizeFirst; i++) {
             int guess = rng.nextInt(getNumObs());

@@ -105,21 +105,6 @@ public abstract class MomentPartitionObj {
         DataLens left = lens.getDataLensSubset(observationIndicesLeftSplit);
         DataLens right = lens.getDataLensSubset(observationIndicesRightSplit);
 
-        String leftVars = "";
-        for (int i : partition.getLeft()) {
-            leftVars = leftVars + i + " ";
-        }
-        String rightVars = "";
-        for (int i : partition.getRight()) {
-            rightVars = rightVars + i + " ";
-        }
-
-//        System.out.println("Left " + leftVars);
-//        System.out.println(left);
-//        System.out.println("Right " + rightVars);
-//        System.out.println(right);
-//        System.exit(0);
-
         return new SplitContainer(left, right);
     }
 

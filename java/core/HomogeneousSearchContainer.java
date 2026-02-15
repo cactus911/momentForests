@@ -169,32 +169,7 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             }
             return avgGMMObjectiveFunctionValue;
         } else {
-            System.out.println("Deprecated and marked for deletion Oct 22 2024");
-            System.exit(0);
-            // System.out.println("Computing out of sample fits");
-            // Random rng = new Random(888);
-            double outOfSampleFit = 0;
-            for (int i = 0; i < mySpecification.getZ().getRowDimension(); i++) {
-                Jama.Matrix fullXi = mySpecification.getX().getMatrix(i, i, 0, mySpecification.getX().getColumnDimension() - 1);
-                Jama.Matrix zi = mySpecification.getZ().getMatrix(i, i, 0, mySpecification.getZ().getColumnDimension() - 1);
-
-                // old code from the linear case (doesn't work in general)
-//            double fitY = mySpecification.getPredictedY(fullXi, myForest.getEstimatedParameterForest(zi), rng);
-//            boolean outputFits = false;
-//            if (outputFits) {
-//                System.out.print("z: " + pmUtility.stringPrettyPrint(zi) + " beta: " + pmUtility.stringPrettyPrintVector(myForest.getEstimatedParameterForest(zi)));
-//                System.out.print(" x: " + pmUtility.stringPrettyPrint(fullXi));
-//                double error = fitY - (testY.get(i, 0));
-//                System.out.println(" fitY: " + fitY + " Y: " + testY.get(i, 0) + " sqErr: " + error * error);
-//            }
-//            double error = fitY - (testY.get(i, 0));
-//
-//            outOfSampleFit += error * error;
-                // in principle, we could actually use something like GMM in here
-                // we are going to!
-                outOfSampleFit += mySpecification.getGoodnessOfFit(mySpecification.getY().get(i, 0), fullXi, myForest.getEstimatedParameterForest(zi));
-            }
-            return outOfSampleFit / mySpecification.getZ().getRowDimension();
+            throw new IllegalStateException("Deprecated code path marked for deletion Oct 22 2024 in HomogeneousSearchContainer");
         }
     }
 

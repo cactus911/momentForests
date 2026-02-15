@@ -23,11 +23,9 @@
  */
 package examples.linear;
 
-import JSci.maths.statistics.ChiSqrDistribution;
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import com.google.common.math.Quantiles;
-import com.google.common.math.Stats;
 import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;

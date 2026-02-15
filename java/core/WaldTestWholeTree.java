@@ -46,8 +46,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
         indexConstrainedParameter = indexConstrainedParameterPassed;
         int numParamsEachSplit = spec.getNumParams(); // v.get(0).getX().getColumnDimension();
         if (spec.getNumParams() != v.get(0).getX().getColumnDimension()) {
-            System.out.println("Number of parameters mismatch");
-            System.exit(0);
+            throw new IllegalStateException("Number of parameters mismatch: spec.getNumParams()=" + spec.getNumParams() + " vs X columns=" + v.get(0).getX().getColumnDimension());
         }
         if (debug) {
             System.out.println("Calling computeParameters");
@@ -119,7 +118,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             System.out.println(x1.getRowDimension());
             System.out.println("B:");
             pmUtility.prettyPrint(B);
-            System.exit(0);
+            throw new IllegalStateException("Diagnostic halt in WaldTestWholeTree.computeStatistic (outputABunchOfTestStuff block)");
         }
 
         if (debug) {
@@ -378,8 +377,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
          */
         int K = v.get(0).getX().getColumnDimension();
         if (K != spec.getNumMoments()) {
-            System.out.println("Num moments mismatch");
-            System.exit(0);
+            throw new IllegalStateException("Num moments mismatch: K=" + K + " vs spec.getNumMoments()=" + spec.getNumMoments());
         }
 
         /**
@@ -688,7 +686,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
             pmUtility.prettyPrint(c.getVariance(cellBetaList.get(0)));
             System.out.println("B inverse scaled properly: ");
             pmUtility.prettyPrint(B.inverse().times(1.0 / v.get(0).getNumObs()));
-            System.exit(0);
+            throw new IllegalStateException("Diagnostic halt in WaldTestWholeTree.computeNeweyMcFaddenB (debugHere block)");
         }
 
         boolean showGandOmegaConverging = false; // these do indeed converge to fixed things
@@ -704,7 +702,7 @@ public class WaldTestWholeTree implements Uncmin_methods, mcmc.mcmcFunction {
 //            System.out.println("B inverse: ");
 //            pmUtility.prettyPrint(B.inverse());
 
-            System.exit(0);
+            throw new IllegalStateException("Diagnostic halt in WaldTestWholeTree.computeNeweyMcFaddenB (showGandOmegaConverging block)");
         }
 
         return (G.transpose()).times(omega.inverse()).times(G); // this is B

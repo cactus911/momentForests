@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.Random;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
-import javax.swing.JTextArea;
 
 /**
  * Class containing a collection of trees and utility classes for interacting
@@ -186,7 +185,7 @@ public class MomentForest {
         return countEachVariableSplit;
     }
 
-    public boolean[] getHomogeneityVotes(JTextArea jt, boolean verboseVoting) {
+    public boolean[] getHomogeneityVotes(boolean verboseVoting) {
 
         int[] voteCounts = new int[spec.getHomogeneousIndex().length];
         for (int i = 0; i < numberTreesInForest; i++) {
@@ -213,7 +212,7 @@ public class MomentForest {
             }
             double pct = 100.0 * voteCounts[i] / numberTreesInForest;
             if (verboseVoting) {
-                jt.append(i + ". votes: " + voteCounts[i] + " out of " + numberTreesInForest + " (" + pct + "%): " + votes[i] + "\n");
+                System.out.println(i + ". votes: " + voteCounts[i] + " out of " + numberTreesInForest + " (" + pct + "%): " + votes[i]);
             }
             if (voteCounts[i] < numberTreesInForest) {
                 // System.out.println("Detected variance in voting on parameter "+i+": "+voteCounts[i]);
@@ -270,17 +269,11 @@ public class MomentForest {
     }
     
     public ArrayList<Double> getTestStatistics() {
-        return forest.parallelStream()
+        return forest.stream()
             .map(e -> e.getTestStatistic())
             .collect(Collectors.toCollection(ArrayList::new));
     }
     
-    public ArrayList<Double> getRestrictedThetas() {
-        return forest.parallelStream()
-            .map(e -> e.getRestrictedTheta())
-            .collect(Collectors.toCollection(ArrayList::new));
-    }
-
     /**
      * Perform homogeneity testing, voting, and parameter estimation in one call.
      * This replaces the boilerplate that was previously copy-pasted in every Main class:
@@ -294,7 +287,7 @@ public class MomentForest {
     public ArrayList<Integer> applyHomogeneityVotes(boolean verbose) {
         testHomogeneity(verbose);
 
-        boolean[] voteIndexHomogeneity = getHomogeneityVotes(null, verbose);
+        boolean[] voteIndexHomogeneity = getHomogeneityVotes(verbose);
         double[] startingValues = getHomogeneityStartingValues();
 
         ArrayList<Integer> homogeneousParameterList = new ArrayList<>();

@@ -34,12 +34,14 @@ public class GenericPartitionObj extends MomentPartitionObj {
 
     private final SplitContainer container;
     private final MomentSpecification spec;
+    private final int minCount;
 
-    public GenericPartitionObj(IntegerPartition partition, int indexSplitVariable, DataLens lens, MomentSpecification spec) {
+    public GenericPartitionObj(IntegerPartition partition, int indexSplitVariable, DataLens lens, MomentSpecification spec, int minCount) {
         this.partition = partition;
         this.indexSplitVariable = indexSplitVariable;
         this.lens = lens;
         this.spec = spec;
+        this.minCount = minCount;
 
         container = getDataSplit();
         numObsLeft = container.getLeft().getNumObs();
@@ -66,6 +68,13 @@ public class GenericPartitionObj extends MomentPartitionObj {
 
         leftMSE = leftContainer.getGoodnessOfFit();
         rightMSE = rightContainer.getGoodnessOfFit();
+
+        if (getEffectiveNumObsLeft() < minCount) {
+            leftMSE = Double.POSITIVE_INFINITY;
+        }
+        if (getEffectiveNumObsRight() < minCount) {
+            rightMSE = Double.POSITIVE_INFINITY;
+        }
 
         return (leftMSE + rightMSE);
     }

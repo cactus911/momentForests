@@ -140,7 +140,7 @@ public class ContainerLogit extends ContainerMoment implements Uncmin_methods {
                 if (debugVerbose) {
                     System.out.format("ContainerLogit.computeBetaAndErrors SSE: %g ", +goodnessOfFit);
                     pmUtility.prettyPrintVector(containerBeta);
-                    System.exit(0);
+                    throw new IllegalStateException("Diagnostic halt in ContainerLogit.computeBetaAndErrors (debugVerbose block)");
                 }
             } catch (Exception e) {
                 e.printStackTrace();

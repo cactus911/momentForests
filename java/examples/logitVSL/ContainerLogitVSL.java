@@ -140,7 +140,7 @@ public class ContainerLogitVSL extends ContainerMoment implements Uncmin_methods
                 if (debugVerbose) {
                     System.out.format("ContainerLogit.computeBetaAndErrors SSE: %g ", +goodnessOfFit);
                     pmUtility.prettyPrintVector(containerBeta);
-                    System.exit(0);
+                    throw new IllegalStateException("Diagnostic halt in ContainerLogitVSL.computeBetaAndErrors (debugVerbose block)");
                 }
             } catch (Exception e) {
                 e.printStackTrace();
@@ -159,8 +159,7 @@ public class ContainerLogitVSL extends ContainerMoment implements Uncmin_methods
 
         // try using the derivatives with respect to beta as the moments here (two X's)
         if (numMoments != 3) {
-            System.out.println("Hardwired moments for three parameters in ContainerLogit.java");
-            System.exit(0);
+            throw new IllegalStateException("Hardwired moments for three parameters in ContainerLogitVSL.java, but numMoments=" + numMoments);
         }
 
         double utility = X.get(i, 0) * beta.get(0, 0) + X.get(i, 1) * beta.get(1, 0) + X.get(i, 2) * beta.get(2, 0);

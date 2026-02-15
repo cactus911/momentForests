@@ -30,24 +30,11 @@ import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeMoment;
 import core.TreeOptions;
-import java.awt.BorderLayout;
-
-import java.awt.GridLayout;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.StringJoiner;
-import javax.swing.JFrame;
-import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.NumberAxis;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -494,8 +481,7 @@ public class LinearStataMain {
             	}
             	
             } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(0);
+                throw new IllegalStateException("Error storing beta values into Stata", e);
             }
 
         }

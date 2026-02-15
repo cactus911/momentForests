@@ -136,8 +136,8 @@ public abstract class MomentSpecification {
      * Create the objective function for discrete variable partitioning.
      * Default uses GenericPartitionObj which calls computeOptimalBeta().
      */
-    public MomentPartitionObj getMomentPartitionObj(DataLens lens, int k, IntegerPartition partition) {
-        return new GenericPartitionObj(partition, k, lens, this);
+    public MomentPartitionObj getMomentPartitionObj(DataLens lens, int k, IntegerPartition partition, int minCount) {
+        return new GenericPartitionObj(partition, k, lens, this, minCount);
     }
 
     // ==================== Container Creation ====================
@@ -305,6 +305,9 @@ public abstract class MomentSpecification {
 
             outOfSampleResultsY += getGoodnessOfFit(testY.get(i, 0), xi, compositeEstimatedBeta);
 
+            Jama.Matrix bTruth = getBetaTruth(zi, rng);
+            outOfSampleResultsBeta += pmUtility.sumSquaredElements(compositeEstimatedBeta.minus(bTruth));
+
             if (i < 10) {
                 String hString = "[ ";
                 for (int k = 0; k < getNumParams(); k++) {
@@ -320,6 +323,7 @@ public abstract class MomentSpecification {
         }
 
         outOfSampleResultsY /= testZ.getRowDimension();
+        outOfSampleResultsBeta /= testZ.getRowDimension();
 
         return new OutOfSampleStatisticsContainer(outOfSampleResultsBeta, outOfSampleResultsY);
     }

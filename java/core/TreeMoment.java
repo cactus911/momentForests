@@ -82,10 +82,11 @@ public class TreeMoment {
     private double[] testValues;
 
     private long treeSeed;
+    private Random rng;
 
     private boolean validTree = true;
     private double testStatistic;
-    private Matrix restrictedTheta;
+
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
             Boolean[] discreteVector, boolean verbose, TreeOptions treeOptions, boolean isLeft,
@@ -93,6 +94,7 @@ public class TreeMoment {
         this.momentSpec = spec;
         this.parent = parent;
         this.treeSeed = treeSeed;
+        this.rng = new Random(treeSeed);
         this.lensHonest = lensHonest;
         this.lensGrowingTree = lensGrowingTree;
         this.discreteVector = discreteVector;
@@ -199,7 +201,7 @@ public class TreeMoment {
             System.out.println("Computing baseline SSE");
         }
         currentNodeMoment = momentSpec.computeOptimalBeta(lensGrowingTree, allParametersHomogeneous);
-        if (momentSpec.didEstimatorFail()) {
+        if (currentNodeMoment.getBeta() == null) {
             System.out.println("Node optimal beta computation failed; TreeMoment setting itself to invalid");
             validTree = false;
         }
@@ -282,9 +284,9 @@ public class TreeMoment {
                 int[] varSearchIndex = momentSpec.getVariableIndicesToSearchOver();
                 int P = Math.min(treeOptions.getRandomForestMaxVariables(), varSearchIndex.length);
                 for (int i = 0; i < P; i++) {
-                    int draw = (int) Math.floor(Math.random() * momentSpec.getVariableIndicesToSearchOver().length);
+                    int draw = (int) Math.floor(rng.nextDouble() * momentSpec.getVariableIndicesToSearchOver().length);
                     while (randomForestIndex.contains(varSearchIndex[draw])) {
-                        draw = (int) Math.floor(Math.random() * momentSpec.getVariableIndicesToSearchOver().length);
+                        draw = (int) Math.floor(rng.nextDouble() * momentSpec.getVariableIndicesToSearchOver().length);
                     }
                     randomForestIndex.add(varSearchIndex[draw]);
                 }
@@ -425,7 +427,7 @@ public class TreeMoment {
                             // alternatively, for ordered discrete bins (like income in the gasoline case) we could classify that as a continuous variable; especially
                             // if the endpoints are classified as something else (like missing data or whatever)
                             for (int i = 0; i < partitions.size(); i++) {
-                                MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, indexSplitVariable, partitions.get(i));
+                                MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, indexSplitVariable, partitions.get(i), minCountEachPartition);
 
                                 double partitionSSE = 0;
                                 if (obj.getEffectiveNumObsLeft() < minCountEachPartition || obj.getEffectiveNumObsRight() < minCountEachPartition) {
@@ -503,7 +505,7 @@ public class TreeMoment {
                     ArrayList<Integer> discreteList = discreteCollection.get(optimalDiscreteCollectionIndex);
                     ArrayList<IntegerPartition> partitions = DisjointSet.computeAllDisjointSets(discreteList); //Recompute all the disjoint sets of the optimal splitting variable, which is discrete
 
-                    MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, optimalSplitVariableIndex, partitions.get((int) optimalZ)); //This is where we use optimalX
+                    MomentPartitionObj obj = momentSpec.getMomentPartitionObj(lensGrowingTree, optimalSplitVariableIndex, partitions.get((int) optimalZ), minCountEachPartition); //This is where we use optimalX
                     if (verbose) {
                         echoLn(depth + ". Calculated optimal split along discrete variable, partitioning " + momentSpec.getVariableName(optimalSplitVariableIndex) + " -> " + partitions.get((int) optimalZ) + ", generating SSE of " + obj.getSSE());
                     }
@@ -710,7 +712,7 @@ public class TreeMoment {
                 }
             } else {
                 ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest, allParametersHomogeneous);
-                if (momentSpec.didEstimatorFail()) {
+                if (c.getBeta() == null) {
                     // System.out.println("TreeMoment setting itself to invalid in honest tree");
                     validTree = false;
                 }
@@ -770,7 +772,7 @@ public class TreeMoment {
                         echoLn("null pruned");
                     } else {
                         ContainerMoment c = momentSpec.computeOptimalBeta(lensHonest, allParametersHomogeneous);
-                        if (momentSpec.didEstimatorFail()) {
+                        if (c.getBeta() == null) {
                             // System.out.println("TreeMoment setting itself to invalid in honest tree pruning");
                             validTree = false;
                         }
@@ -799,7 +801,7 @@ public class TreeMoment {
             DataLens leafLens = v.get(leafLensList);
             totalObs += leafLens.getNumObs();
             ContainerMoment cm = momentSpec.computeOptimalBeta(leafLens, allParametersHomogeneous);
-            if (momentSpec.didEstimatorFail()) {
+            if (cm.getBeta() == null) {
                 System.out.println("TreeMoment getTreeMomentObjectiveFunctionAtComputedParameters setting itself to invalid; should NEVER see this");
                 validTree = false;
             }
@@ -923,7 +925,7 @@ public class TreeMoment {
                                         }
                                         return stat;
                                     } catch (Exception e) {
-                                        if (verbose || 1 == 2) {
+                                        if (verbose) {
                                             System.out.println("Subsample " + r + " failed: " + e.getMessage());
                                         }
                                         return null;
@@ -962,7 +964,7 @@ public class TreeMoment {
                             System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue);
                         }
                         
-                        if (1 == 1 && numSubsamples > 1) {
+                        if (numSubsamples > 1) {
                             int numObs = 0;
                             for (DataLens dl : v) {
                                 numObs += dl.getNumObs();
@@ -982,7 +984,7 @@ public class TreeMoment {
 
                             setTestStatistic(criticalValue);
 
-                            boolean plotSubsamples = !false;
+                            boolean plotSubsamples = false;
                             if (plotSubsamples) {
                                 // PlotPDF.plotDistributionUnrestrictedTestStatistics(stats.stream().mapToDouble(Double::doubleValue).toArray());
                                 // PDFPlotter.plotHistogramWithKDE(stats, "Subsampled Tn");
@@ -1318,14 +1320,4 @@ public class TreeMoment {
         return testStatistic;
     }
 
-    private void setRestrictedTheta(Matrix restrictedThetaP) {
-        restrictedTheta = restrictedThetaP.copy();
-    }
-
-    /**
-     * @return the restrictedTheta
-     */
-    public Double getRestrictedTheta() {
-        return restrictedTheta.get(0, 0);
-    }
 }

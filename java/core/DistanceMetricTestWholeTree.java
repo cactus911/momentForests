@@ -318,7 +318,7 @@ public class DistanceMetricTestWholeTree implements Uncmin_methods, mcmc.mcmcFun
             System.out.print("Omega failed to invert: ");
             pmUtility.prettyPrint(new Jama.Matrix(x, 1));
             e.printStackTrace();
-            System.exit(0);
+            throw new IllegalStateException("Omega failed to invert in DistanceMetricTestWholeTree");
         }
 
         if (useCUE && 1==2) {

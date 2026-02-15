@@ -29,7 +29,6 @@ import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.MomentSpecification;
-import core.TreeMoment;
 import core.TreeOptions;
 import java.awt.GridLayout;
 import java.util.ArrayList;
@@ -381,53 +380,14 @@ public class LogitTestMain {
 
             DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
 
-            testParameterHomogeneity = false;
+            testParameterHomogeneity = true;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
             MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
 
             myForest.setTreeOptions(cvOptions);
             myForest.growForest();
 
-            ArrayList<Integer> hpl = new ArrayList<>();
-
-            /**
-             * Have each tree in the forest vote for homogeneity; take majority vote as classification
-             */
-            for (int k = 0; k < mySpecification.getNumParams(); k++) {
-                double voteShareHomogeneousParameterK = 0;
-                for (int jelly = 0; jelly < myForest.getForestSize(); jelly++) {
-                    myForest.getTree(jelly).testHomogeneity();
-                    ArrayList<Integer> hpl_jelly = myForest.getTree(jelly).getIndexHomogeneousParameters();
-                    if (hpl_jelly.contains(k)) {
-                        voteShareHomogeneousParameterK++;
-                    }
-                }
-                voteShareHomogeneousParameterK /= myForest.getForestSize();
-                System.out.println("Proportion of trees that voted for parameter "+k+" as homogeneous: " + voteShareHomogeneousParameterK);
-                if (voteShareHomogeneousParameterK >= 0.5) {
-                    hpl.add(k);
-                }
-            }
-
-            /**
-             * For each tree that voted for homogeneity, average homogeneous parameter values
-             */
-            // ArrayList<Double> hplStartingValues = new ArrayList<>();
-            for(Integer k : hpl) {
-                double counter = 0;
-                double avgValueParameterK = 0;
-                for(int m=0;m<myForest.getForestSize();m++) {
-                    TreeMoment mt = myForest.getTree(m);
-                    if(mt.getIndexHomogeneousParameters().contains(k)) {
-                        counter++;
-                        avgValueParameterK += mt.getValueHomogeneousParameters().get(mt.getIndexHomogeneousParameters().indexOf(k));
-                    }
-                }
-                avgValueParameterK /= counter;
-                mySpecification.setHomogeneousIndex(k);
-                mySpecification.setHomogeneousParameter(k, avgValueParameterK);
-                System.out.println("Setting parameter "+k+" to homogeneous with value of "+avgValueParameterK);
-            }
+            ArrayList<Integer> hpl = myForest.applyHomogeneityVotes(verbose);
             
 
 //            for (int i = 0; i < hpl.size(); i++) {

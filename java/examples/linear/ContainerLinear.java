@@ -263,8 +263,8 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                     System.out.println("Divided by n:");
                     pmUtility.prettyPrint(B.inverse().times(1.0 / Y.getRowDimension()));
 
-                    System.exit(0);
-                } 
+                    throw new IllegalStateException("Diagnostic halt in ContainerLinear.computeBetaAndErrors (debugVerbose block)");
+                }
             } catch (Exception e) {
                 if (allParametersHomogeneous) {
                     e.printStackTrace();
@@ -272,10 +272,10 @@ public class ContainerLinear extends ContainerMoment implements Uncmin_methods {
                 if (debugVerbose) {
                     e.printStackTrace();
                     System.out.println("Something went wrong...Matrix not invertible?");
-                    System.out.println("X:");           
+                    System.out.println("X:");
                     pmUtility.prettyPrint(X);
-                    System.out.println("Y:");           
-                    pmUtility.prettyPrint(Y);                                      
+                    System.out.println("Y:");
+                    pmUtility.prettyPrint(Y);
                 }
                 
                 beta = null;
