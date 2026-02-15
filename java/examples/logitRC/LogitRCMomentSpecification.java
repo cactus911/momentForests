@@ -23,16 +23,12 @@
  */
 package examples.logitRC;
 
-// import JSci.maths.statistics.NormalDistribution;
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ChartGenerator;
 import core.ContainerMoment;
 import core.DataLens;
-import core.IntegerPartition;
-import core.MomentContinuousSplitObj;
 import core.MomentForest;
-import core.MomentPartitionObj;
 import core.MomentSpecification;
 import core.OutOfSampleStatisticsContainer;
 import core.TreeOptions;
@@ -48,7 +44,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class LogitRCMomentSpecification implements MomentSpecification {
+public class LogitRCMomentSpecification extends MomentSpecification {
 
     Jama.Matrix X;
     Jama.Matrix Y;
@@ -62,18 +58,9 @@ public class LogitRCMomentSpecification implements MomentSpecification {
     boolean MONTE_CARLO = true;
     NormalDistribution normal = new NormalDistribution();
 
-    /**
-     * We are going to control homogeneous parameters through these variables
-     */
-    private boolean[] homogeneityIndex; // = new boolean[X.getColumnDimension()];
-    private Jama.Matrix homogeneousParameterVector; // how to keep everything straight--easier way is to just to make it the size of the parameter vector and go from there (and never read elements that aren't labeled as homogeneous)
-
     public LogitRCMomentSpecification(int numObs) {
         this.numObs = numObs;
-        // all these indices are hard-coded; want to change that down the road!
-        homogeneityIndex = new boolean[2];
-        homogeneousParameterVector = new Jama.Matrix(2, 1);
-        resetHomogeneityIndex();
+        initializeHomogeneity(2);
 
         /**
          * Here we are going to search over X (I think this works like this!)
@@ -88,21 +75,8 @@ public class LogitRCMomentSpecification implements MomentSpecification {
 
     public LogitRCMomentSpecification(String filename) {
         this.filename = filename;
-    }
-
-    @Override
-    public boolean[] getHomogeneousIndex() {
-        return homogeneityIndex;
-    }
-
-    @Override
-    public double getHomogeneousParameter(int parameterIndex) {
-        return homogeneousParameterVector.get(parameterIndex, 0);
-    }
-
-    @Override
-    public void setHomogeneousParameter(int parameterIndex, double value) {
-        homogeneousParameterVector.set(parameterIndex, 0, value);
+        this.MONTE_CARLO = false;
+        initializeHomogeneity(2);
     }
 
     @Override
@@ -118,6 +92,7 @@ public class LogitRCMomentSpecification implements MomentSpecification {
         this.variableSearchIndex = variableSearchIndex;
         this.DiscreteVariables = DiscreteVariables;
         balancingVector = pmUtility.getColumn(X, 0); // treatment status is the first column of X
+        initializeHomogeneity(2);
     }
 
     @Override
@@ -131,18 +106,8 @@ public class LogitRCMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-        return new MomentContinuousSplitObjLogitRC(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition, this);
-    }
-
-    @Override
-    public MomentPartitionObj getMomentPartitionObj(DataLens lens, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjLogitRC(partition, indexSplitVariable, lens, this);
-    }
-
-    @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerLogitRC l = new ContainerLogitRC(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
+        ContainerLogitRC l = new ContainerLogitRC(lens, getHomogeneousIndex(), getHomogeneousParameterVector(), allParametersHomogeneous);
         l.computeBetaAndErrors();
         return l;
     }
@@ -464,73 +429,6 @@ public class LogitRCMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-        return "Group " + fixedEffectIndex;
-    }
-
-    @Override
-    public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
-        if (beta == null) {
-            return "null (shouldn't be here!)";
-        }
-        // double b = beta.get(0, 0);
-//        double se = Math.sqrt(variance.get(0, 0));
-//        String stars = "";
-//        NormalDistribution normal = new NormalDistribution(0, 1);
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.90))) {
-//            stars = "*";
-//        }
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.95))) {
-//            stars = "**";
-//        }
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.99))) {
-//            stars = "***";
-//        }
-//        return String.format("%.2f (%.2f) %s", b, se, stars);
-        return pmUtility.stringPrettyPrintVector(beta);
-    }
-
-    /**
-     * @return the homogeneityIndex
-     */
-    public boolean[] getHomogeneityIndex() {
-        return homogeneityIndex;
-    }
-
-    @Override
-    public void resetHomogeneityIndex() {
-        for (int i = 0; i < homogeneityIndex.length; i++) {
-            homogeneityIndex[i] = false;
-        }
-    }
-
-    @Override
-    public void setHomogeneousIndex(Integer i) {
-        homogeneityIndex[i] = true;
-    }
-
-    /**
-     * @return the homogeneousParameterVector
-     */
-    @Override
-    public Jama.Matrix getHomogeneousParameterVector() {
-        return homogeneousParameterVector;
-    }
-
-    @Override
-    public ContainerMoment getContainerMoment(DataLens lens) {
-        /**
-         * Should this boolean ever be true???
-         *
-         * I think the answer is no since the only place that calls this is in
-         * HomogeneousSearchContainer, and the reason that I added the boolean
-         * (allParametersHomogeneous) is to estimate the stump parameters when
-         * the parameter are already determined to be all homogeneous
-         */
-        return new ContainerLogitRC(lens, homogeneityIndex, homogeneousParameterVector, false);
-    }
-
-    @Override
     public int getNumMoments() {
         return 2;
     }
@@ -538,26 +436,6 @@ public class LogitRCMomentSpecification implements MomentSpecification {
     @Override
     public int getNumParams() {
         return 2;
-    }
-
-    @Override
-    public double getProportionObservationsToEstimateTreeStructure() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public boolean didEstimatorFail() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public int[] getStratificationIndex() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public String getBetaPrefixes() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 }

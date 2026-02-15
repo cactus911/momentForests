@@ -185,61 +185,8 @@ public class GasolineDemandMain {
 
             myForest.setTreeOptions(cvOptions);
             myForest.growForest();
-            myForest.testHomogeneity(false);
-            // TreeMoment loblolly = myForest.getTree(0);
-            // loblolly.testHomogeneity();
-
-            // should I implement a voting scheme here across all the trees for discerning homogeneity?
-            // idea is to take the majority vote across trees
-            // then take the average value from those trees that voted yes
-            // let's try it and see what happens to classification rates
-            ArrayList<Integer> hpl = new ArrayList<>();
-            ArrayList<Double> hplStartingValues = new ArrayList<>();
-            boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, false);
-            double[] startingValues = myForest.getHomogeneityStartingValues();
-            for (int i = 0; i < voteIndexHomogeneity.length; i++) {
-                if (voteIndexHomogeneity[i]) {
-                    System.out.println("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i]);
-                    hpl.add(i);
-                    hplStartingValues.add(startingValues[i]);
-                }
-//                if(i==0 && !voteIndexHomogeneity[i]) {
-//                    jt.append("BAD SEED: "+rngSeed+"\n");
-//                }
-            }
-
-//            TreeMoment loblolly = myForest.getTree(0);
-//            loblolly.testHomogeneity();
-//
-//            // System.out.println("Done with growforest");
-//            ArrayList<Integer> hpl = myForest.getTree(0).getIndexHomogeneousParameters(); // this is only using the first tree, is that the right way of thinking about this?
-//            ArrayList<Double> hplStartingValues = myForest.getTree(0).getValueHomogeneousParameters();
-//            // System.out.println("Post get homogeneous parameters");
-
-            // need to sort together
-            HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
-            sorter.sort(hpl, hplStartingValues);
-
-            // Collections.sort(hpl); // ensure that indices are ascending (this can cause some weird problems elsewhere due to my bad coding skills if not)
-            // Collections.sort(hplStartingValues);
-            mySpecification.resetHomogeneityIndex();
-            for (int i = 0; i < hpl.size(); i++) {
-                mySpecification.setHomogeneousIndex(hpl.get(i));
-                mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
-                // System.out.println(i);
-            }
+            ArrayList<Integer> hpl = myForest.applyHomogeneityVotes(false);
             setHomogeneousParameterList(hpl);
-            // System.out.println("After setting hp list");
-
-            // this seems to be working
-            boolean testPostClassificationConvergence = false;
-            if (testPostClassificationConvergence) {
-                hpl.clear();
-                hpl.add(0);
-                mySpecification.resetHomogeneityIndex();
-                mySpecification.setHomogeneousIndex(0);
-                mySpecification.setHomogeneousParameter(0, -1.0);
-            }
 
             /**
              * Estimate values of those homogeneous parameters

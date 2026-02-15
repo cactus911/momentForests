@@ -52,8 +52,7 @@ public class MomentForest {
     int numObs;
     MomentSpecification spec;
 
-    // TreeMoment momentTree = new TreeMoment(null, spec, treeX, treeY, spec.getDiscreteVector(), verbose,
-    // minProportionEachPartition, minCountEachPartition, improvementThreshold, true, maxDepth, null, null);
+    // TreeMoment momentTree = new TreeMoment(null, spec, treeX, spec.getDiscreteVector(), verbose, treeOptions, true, null, seed);
     public MomentForest(MomentSpecification spec, int numberTreesInForest, long forestSeed, DataLens forestLens,
             boolean verbose, TreeOptions options) {
         this.spec = spec;
@@ -104,8 +103,8 @@ public class MomentForest {
             DataLens lensHonest = split[1];
 
             forest.add(new TreeMoment(null, spec, lensGrow,
-                    spec.getDiscreteVector(), verbose, treeOptions.getMinProportion(), treeOptions.getMinCount(), treeOptions.getMinMSEImprovement(), true, treeOptions.getMaxDepth(),
-                    lensHonest, treeOptions.isTestParameterHomogeneity(), rng.nextLong()));
+                    spec.getDiscreteVector(), verbose, treeOptions, true,
+                    lensHonest, rng.nextLong()));
         }
 
         boolean useParallel = true;
@@ -249,25 +248,22 @@ public class MomentForest {
                 startingValues[i] = startingValues[i] / voteCounts[i];
             }
             if (Double.isNaN(startingValues[i])) {
-                System.out.println("Detected starting value of NaN:");
-                System.out.println("voteCounts: " + voteCounts[i]);
-
+                StringBuilder msg = new StringBuilder("Detected starting value of NaN for parameter " + i + ":\n");
+                msg.append("voteCounts: ").append(voteCounts[i]).append("\n");
                 for (int t = 0; t < numberTreesInForest; t++) {
-                    System.out.println("Tree " + t + ": ");
                     ArrayList<Integer> hpl = getTree(t).getIndexHomogeneousParameters();
                     ArrayList<Double> hplStartingValues = getTree(t).getValueHomogeneousParameters();
+                    msg.append("Tree ").append(t).append(": values=");
                     for (Double d : hplStartingValues) {
-                        System.out.print(d + " ");
+                        msg.append(d).append(" ");
                     }
-                    System.out.println("");
-                    System.out.print("Index homogeneous parameters: ");
+                    msg.append(" indices=");
                     for (Integer h : hpl) {
-                        System.out.print(h + " ");
+                        msg.append(h).append(" ");
                     }
-
-                    System.out.println("");
+                    msg.append("\n");
                 }
-                System.exit(0);
+                throw new IllegalStateException(msg.toString());
             }
         }
         return startingValues;
@@ -283,6 +279,49 @@ public class MomentForest {
         return forest.parallelStream()
             .map(e -> e.getRestrictedTheta())
             .collect(Collectors.toCollection(ArrayList::new));
+    }
+
+    /**
+     * Perform homogeneity testing, voting, and parameter estimation in one call.
+     * This replaces the boilerplate that was previously copy-pasted in every Main class:
+     *   1. Test homogeneity in each tree
+     *   2. Vote across trees to classify parameters
+     *   3. Set homogeneous parameters on the specification
+     *
+     * @param verbose Print diagnostic information
+     * @return List of parameter indices classified as homogeneous
+     */
+    public ArrayList<Integer> applyHomogeneityVotes(boolean verbose) {
+        testHomogeneity(verbose);
+
+        boolean[] voteIndexHomogeneity = getHomogeneityVotes(null, verbose);
+        double[] startingValues = getHomogeneityStartingValues();
+
+        ArrayList<Integer> homogeneousParameterList = new ArrayList<>();
+        ArrayList<Double> homogeneousStartingValues = new ArrayList<>();
+
+        for (int i = 0; i < voteIndexHomogeneity.length; i++) {
+            if (voteIndexHomogeneity[i]) {
+                if (verbose) {
+                    System.out.println("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i]);
+                }
+                homogeneousParameterList.add(i);
+                homogeneousStartingValues.add(startingValues[i]);
+            }
+        }
+
+        // Sort by parameter index for consistency
+        HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
+        sorter.sort(homogeneousParameterList, homogeneousStartingValues);
+
+        // Apply to specification
+        spec.resetHomogeneityIndex();
+        for (int i = 0; i < homogeneousParameterList.size(); i++) {
+            spec.setHomogeneousIndex(homogeneousParameterList.get(i));
+            spec.setHomogeneousParameter(homogeneousParameterList.get(i), homogeneousStartingValues.get(i));
+        }
+
+        return homogeneousParameterList;
     }
 
     public void testHomogeneity(boolean verbose) {

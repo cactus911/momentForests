@@ -28,9 +28,6 @@ import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
-import core.IntegerPartition;
-import core.MomentContinuousSplitObj;
-import core.MomentPartitionObj;
 import core.MomentSpecification;
 import java.io.FileReader;
 import java.io.BufferedReader;
@@ -41,7 +38,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class GasolineSpecification implements MomentSpecification {
+public class GasolineSpecification extends MomentSpecification {
 
     Jama.Matrix X;
     Jama.Matrix Y;
@@ -57,12 +54,6 @@ public class GasolineSpecification implements MomentSpecification {
     DataLens outSampleLens;
 
     String[] varNames = {"constant", "logHHSize", "logNumDrivers", "logAge", "urban", "hhfaminc", "census_d", "lif_cyc", "logCost"};
-
-    /**
-     * We are going to control homogeneous parameters through these variables
-     */
-    final private boolean[] homogeneityIndex; // = new boolean[X.getColumnDimension()];
-    final private Jama.Matrix homogeneousParameterVector; // = new Jama.Matrix(X.getColumnDimension(), 1); // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
 
     public GasolineSpecification(String filename) {
         this.filename = filename;
@@ -81,9 +72,7 @@ public class GasolineSpecification implements MomentSpecification {
         // we can build the fixed effects within the estimator
         loadData(787);
 
-        homogeneityIndex = new boolean[X.getColumnDimension()];
-        homogeneousParameterVector = new Jama.Matrix(X.getColumnDimension(), 1);
-        resetHomogeneityIndex();
+        initializeHomogeneity(X.getColumnDimension());
 
         /**
          * These all refer to Z (not X)!!!
@@ -129,23 +118,8 @@ public class GasolineSpecification implements MomentSpecification {
     }
 
     @Override
-    public boolean[] getHomogeneousIndex() {
-        return homogeneityIndex;
-    }
-
-    @Override
-    public double getHomogeneousParameter(int parameterIndex) {
-        return homogeneousParameterVector.get(parameterIndex, 0);
-    }
-
-    @Override
     public int getNumMoments() {
         return X.getColumnDimension();
-    }
-
-    @Override
-    public void setHomogeneousParameter(int parameterIndex, double value) {
-        homogeneousParameterVector.set(parameterIndex, 0, value);
     }
 
     @Override
@@ -181,18 +155,8 @@ public class GasolineSpecification implements MomentSpecification {
     }
 
     @Override
-    public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-        return new MomentContinuousSplitObjLinear(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition, this);
-    }
-
-    @Override
-    public MomentPartitionObj getMomentPartitionObj(DataLens lens, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjLinear(partition, indexSplitVariable, lens, this);
-    }
-
-    @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
+        ContainerLinear l = new ContainerLinear(lens, getHomogeneousIndex(), getHomogeneousParameterVector(), allParametersHomogeneous);
         l.computeBetaAndErrors();
         return l;
     }
@@ -220,12 +184,6 @@ public class GasolineSpecification implements MomentSpecification {
     @Override
     public Boolean[] getDiscreteVector() {
         return DiscreteVariables;
-    }
-
-    @Override
-    public Matrix getBetaTruth(Matrix zi, Random rng) {
-        // we don't know, this shouldn't be called in a real application
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
     @Override
@@ -323,17 +281,17 @@ public class GasolineSpecification implements MomentSpecification {
 
             // when this is just a constant, we have the standard regression tree
             // the S&S specification has all of these variables in it
-            
+
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 1)); // log household size
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2)); // log number drivers
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); // log age
-            
+
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); // catogorical: urban (1 in urban, 2 in urban cluster, 3 surrounded by urban, 4 not in urban)
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); // categorical: family income (-9 not answered, -8 dunno, -7 don't want to report, 1-11 less 10k, 15k, 25k, 35k, 50k, 75k, 100k, 125k, 150k, 200k+
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 6)); // categorical: census district 1-9: NE, Mid Atl, EN central, WN central, S atl, ES central, WS central, mountain, pacific
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 7)); // categorical: life cycle
             // X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 8)); // log cost per gallon
-            
+
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
              * categorical variables right now since they are stacked and not
@@ -373,7 +331,7 @@ public class GasolineSpecification implements MomentSpecification {
                         double districtFE = 0;
                         double lifeCycleFE = 0.15 * dX.get(w, 5);
                         double ageEffect = -0.5 * dX.get(w, 3);
-//                        
+//
                         if (dX.get(w, 4) < 4) {
                             urbanFE = -0.172;
                         } else {
@@ -469,81 +427,8 @@ public class GasolineSpecification implements MomentSpecification {
     }
 
     @Override
-    public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
-        if (beta == null) {
-            return "null (shouldn't be here!)";
-        }
-        // double b = beta.get(0, 0);
-//        double se = Math.sqrt(variance.get(0, 0));
-//        String stars = "";
-//        NormalDistribution normal = new NormalDistribution(0, 1);
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.90))) {
-//            stars = "*";
-//        }
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.95))) {
-//            stars = "**";
-//        }
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.99))) {
-//            stars = "***";
-//        }
-//        return String.format("%.2f (%.2f) %s", b, se, stars);
-        return pmUtility.stringPrettyPrintVector(beta);
-    }
-
-    /**
-     * @return the homogeneityIndex
-     */
-    public boolean[] getHomogeneityIndex() {
-        return homogeneityIndex;
-    }
-
-    @Override
-    public void resetHomogeneityIndex() {
-        for (int i = 0; i < homogeneityIndex.length; i++) {
-            homogeneityIndex[i] = false;
-        }
-    }
-
-    @Override
-    public void setHomogeneousIndex(Integer i) {
-        homogeneityIndex[i] = true;
-    }
-
-    /**
-     * @return the homogeneousParameterVector
-     */
-    public Jama.Matrix getHomogeneousParameterVector() {
-        return homogeneousParameterVector;
-    }
-
-    @Override
-    public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false);
-    }
-
-    @Override
     public int getNumParams() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public double getProportionObservationsToEstimateTreeStructure() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public boolean didEstimatorFail() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public int[] getStratificationIndex() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public String getBetaPrefixes() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return X.getColumnDimension();
     }
 
 }

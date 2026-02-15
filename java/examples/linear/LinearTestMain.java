@@ -33,7 +33,6 @@ import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.MomentSpecification;
 import core.TreeOptions;
-import examples.PartialLinearGasDemand.HomogeneousParameterSorter;
 import experimental.SmartScrollTextArea;
 import java.awt.GridLayout;
 import java.util.ArrayList;
@@ -524,51 +523,8 @@ public class LinearTestMain {
         myForest.setTreeOptions(cvOptions);
         // System.out.println("Growing forest for homogeneity testing...");
         myForest.growForest();
-        // System.out.println("----- Call to testHomogeneity -----");
-        myForest.testHomogeneity(false);
 
-//        Jama.Matrix dc = new Jama.Matrix(myForest.getTestStatistics().stream().map(d -> new double[]{d}).toArray(double[][]::new));
-//        boolean plotTestStatisticsInForest = false;
-//        if (plotTestStatisticsInForest && numberTreesInForest > 1) {
-//            PDFPlotter.plotKernelDensity(myForest.getTestStatistics(), "Forest Test Statistics: " + pmUtility.mean(dc, 0));
-//            // PDFPlotter.plotKernelDensity(myForest.getRestrictedThetas(), "Forest Restricted Parameter Estimates, n = " + numObs);
-//        }
-//
-//        // setFirstTreeTestStatistic(myForest.getTestStatistics().get(0));
-//        System.out.println("95th percentile: " + pmUtility.percentile(dc, 0, 0.95));
-//        setFirstTreeTestStatistic(pmUtility.percentile(dc, 0, 0.95));
-
-        ArrayList<Integer> hpl = new ArrayList<>();
-        ArrayList<Double> hplStartingValues = new ArrayList<>();
-
-        boolean verboseVoting = false;
-        boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, verboseVoting);
-
-        double[] startingValues = myForest.getHomogeneityStartingValues();
-        for (int i = 0; i < voteIndexHomogeneity.length; i++) {
-            if (voteIndexHomogeneity[i]) {
-                if (verbose) {
-                    System.out.println("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i]);
-                    jt.append("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i] + "\n");
-                }
-                hpl.add(i);
-                hplStartingValues.add(startingValues[i]);
-            }
-//                if(i==0 && !voteIndexHomogeneity[i]) {
-//                    jt.append("BAD SEED: "+rngSeed+"\n");
-//                }
-        }
-
-        HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
-        sorter.sort(hpl, hplStartingValues);
-
-        mySpecification.resetHomogeneityIndex();
-        for (int i = 0; i < hpl.size(); i++) {
-            mySpecification.setHomogeneousIndex(hpl.get(i));
-            mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
-            // System.out.println(i);
-        }
-        // System.out.println(hpl);
+        ArrayList<Integer> hpl = myForest.applyHomogeneityVotes(verbose);
         setHomogeneousParameterList(hpl);
 
         boolean executeSearch = true;

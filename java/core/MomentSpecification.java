@@ -28,103 +28,269 @@ import java.util.Random;
 import utility.pmUtility;
 
 /**
+ * Abstract base class for moment specifications. Subclasses must provide:
+ * - Model definition (computeOptimalBeta, getNumParams, getNumMoments)
+ * - Data access (getX, getY, getZ)
+ * - Variable configuration (getDiscreteVector, getVariableIndicesToSearchOver)
+ *
+ * Homogeneity management, split objective creation, and display formatting
+ * are handled by default implementations that can be overridden if needed.
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public interface MomentSpecification {
+public abstract class MomentSpecification {
 
-    public Double getPredictedY(Jama.Matrix xi, Jama.Matrix beta, Random rng);
+    // ==================== Homogeneity Management ====================
+    // Previously copy-pasted across every implementation; now managed here.
 
-    public int[] getVariableIndicesToSearchOver();
-
-    public MomentContinuousSplitObj getFminObjective(DataLens lens, int k, double minProportionEachPartition, int minCountEachPartition);
-
-    public MomentPartitionObj getMomentPartitionObj(DataLens lens, int k, IntegerPartition get);
-
-    public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous);
-
-    //  public void generateData(int numObs, Random rng, boolean addNoise);
-    // public Jama.Matrix getY(boolean residualizeY);
-    public Jama.Matrix getY();
-
-    public Jama.Matrix getX();
-
-    public Jama.Matrix getZ();
-
-    public Jama.Matrix getBalancingVector();
-
-    public int numberoftrees();
-    
-    public double getProportionObservationsToEstimateTreeStructure();
-
-    public Boolean[] getDiscreteVector();
+    private boolean[] homogeneityIndex;
+    private Jama.Matrix homogeneousParameterVector;
 
     /**
-     * Return the true \beta at a given vector z_i
-     * 
-     * @param zi Observable vector that determines the parameters.
-     * @param rng Random number generator for drawing random coefficients
-     * @return 
+     * Initialize homogeneity tracking arrays. Must be called by subclass
+     * constructors after the number of parameters is known.
      */
-    public Matrix getBetaTruth(Matrix zi, Random rng);
+    protected void initializeHomogeneity(int numParams) {
+        homogeneityIndex = new boolean[numParams];
+        homogeneousParameterVector = new Jama.Matrix(numParams, 1);
+        resetHomogeneityIndex();
+    }
 
-    public DataLens getOutOfSampleXYZ(int numObsOutOfSample, long rngSeed);
+    public void resetHomogeneityIndex() {
+        if (homogeneityIndex != null) {
+            for (int i = 0; i < homogeneityIndex.length; i++) {
+                homogeneityIndex[i] = false;
+            }
+        }
+    }
 
-    public void loadData(long rngSeed);
-    
-    public String getVariableName(int variableIndex);
+    public void setHomogeneousIndex(Integer i) {
+        homogeneityIndex[i] = true;
+    }
 
-    public String getFixedEffectName(int variableIndex, int fixedEffectIndex);
+    public boolean[] getHomogeneousIndex() {
+        return homogeneityIndex;
+    }
 
-    public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance);
-    
-    public void setHomogeneousParameter(int parameterIndex, double value);
-    public double getHomogeneousParameter(int parameterIndex);
+    public Jama.Matrix getHomogeneousParameterVector() {
+        return homogeneousParameterVector;
+    }
 
-    // public double getHomogeneousComponent(Jama.Matrix xi); // this doesn't make sense in general
+    public void setHomogeneousParameter(int parameterIndex, double value) {
+        homogeneousParameterVector.set(parameterIndex, 0, value);
+    }
 
-    public void resetHomogeneityIndex();
+    public double getHomogeneousParameter(int parameterIndex) {
+        return homogeneousParameterVector.get(parameterIndex, 0);
+    }
 
-    public void setHomogeneousIndex(Integer i);
-    public boolean[] getHomogeneousIndex();
-    public Jama.Matrix getHomogeneousParameterVector();
-    
-    // public Jama.Matrix residualizeX(Jama.Matrix Xp);
+    // ==================== Model Definition (MUST override) ====================
 
-    public ContainerMoment getContainerMoment(DataLens lens);
+    /**
+     * Create a ContainerMoment for the given data, estimate parameters.
+     * This is the primary factory method that the framework uses.
+     */
+    public abstract ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous);
+
+    /**
+     * Number of parameters in the model.
+     */
+    public abstract int getNumParams();
+
+    /**
+     * Number of moment conditions.
+     */
     public abstract int getNumMoments();
-    
-    public double getGoodnessOfFit(double yi, Jama.Matrix xi, Jama.Matrix beta);
-    
-    default OutOfSampleStatisticsContainer computeOutOfSampleStatistics(int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
+
+    // ==================== Data Access (MUST override) ====================
+
+    public abstract Jama.Matrix getY();
+    public abstract Jama.Matrix getX();
+    public abstract Jama.Matrix getZ();
+
+    // ==================== Variable Configuration (MUST override) ====================
+
+    /**
+     * Which Z variables are discrete (true) vs continuous (false).
+     */
+    public abstract Boolean[] getDiscreteVector();
+
+    /**
+     * Indices of Z variables to consider for splitting.
+     */
+    public abstract int[] getVariableIndicesToSearchOver();
+
+    // ==================== Split Objectives (default: generic) ====================
+    // These use the generic implementations. Override only if your model
+    // needs custom split logic (e.g., custom effective observation counts).
+
+    /**
+     * Create the objective function for continuous variable splitting.
+     * Default uses GenericContinuousSplitObj which calls computeOptimalBeta().
+     */
+    public MomentContinuousSplitObj getFminObjective(DataLens lens, int k, double minProportionEachPartition, int minCountEachPartition) {
+        return new GenericContinuousSplitObj(k, lens, minProportionEachPartition, minCountEachPartition, this);
+    }
+
+    /**
+     * Create the objective function for discrete variable partitioning.
+     * Default uses GenericPartitionObj which calls computeOptimalBeta().
+     */
+    public MomentPartitionObj getMomentPartitionObj(DataLens lens, int k, IntegerPartition partition) {
+        return new GenericPartitionObj(partition, k, lens, this);
+    }
+
+    // ==================== Container Creation ====================
+    // getContainerMoment is used in WaldTestWholeTree and HomogeneousSearchContainer.
+    // Default delegates to computeOptimalBeta(lens, false).
+
+    /**
+     * Create a ContainerMoment for inference (Wald tests, etc.).
+     * Default delegates to computeOptimalBeta with allParametersHomogeneous=false.
+     * Override if you need different behavior for inference vs tree-building.
+     */
+    public ContainerMoment getContainerMoment(DataLens lens) {
+        return computeOptimalBeta(lens, false);
+    }
+
+    // ==================== Display/Formatting (sensible defaults) ====================
+
+    /**
+     * Name of the Z variable at the given index. Override for descriptive names.
+     */
+    public String getVariableName(int variableIndex) {
+        return "Z" + (variableIndex + 1);
+    }
+
+    /**
+     * Name of a fixed effect level. Override for descriptive names.
+     */
+    public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
+        return "Group " + fixedEffectIndex;
+    }
+
+    /**
+     * Format leaf output for tree printing. Override for model-specific formatting.
+     */
+    public String formatTreeLeafOutput(Jama.Matrix beta, Jama.Matrix variance) {
+        if (beta == null) {
+            return "null";
+        }
+        return pmUtility.stringPrettyPrintVector(beta);
+    }
+
+    /**
+     * Prefix labels for beta parameters. Override for model-specific labels.
+     */
+    public String getBetaPrefixes() {
+        return "";
+    }
+
+    // ==================== Goodness of Fit ====================
+
+    /**
+     * Compute goodness-of-fit for a single observation.
+     * Used in out-of-sample evaluation.
+     */
+    public abstract double getGoodnessOfFit(double yi, Jama.Matrix xi, Jama.Matrix beta);
+
+    /**
+     * Predicted Y for a single observation.
+     */
+    public abstract Double getPredictedY(Jama.Matrix xi, Jama.Matrix beta, Random rng);
+
+    // ==================== Estimation Failure ====================
+
+    /**
+     * Whether the last call to computeOptimalBeta failed.
+     * Default returns false; override if your Container can fail.
+     */
+    public boolean didEstimatorFail() {
+        return false;
+    }
+
+    // ==================== Data Loading / Simulation (optional) ====================
+    // These have do-nothing defaults. Override for Monte Carlo simulations.
+
+    /**
+     * Load or generate data. Override in your specification.
+     */
+    public void loadData(long rngSeed) {
+        // Default: no-op. Override to load from file or generate Monte Carlo data.
+    }
+
+    /**
+     * Return the true beta for Monte Carlo evaluation.
+     * Only needed for simulation studies.
+     */
+    public Matrix getBetaTruth(Matrix zi, Random rng) {
+        throw new UnsupportedOperationException("getBetaTruth is only available in Monte Carlo specifications");
+    }
+
+    /**
+     * Generate out-of-sample test data.
+     * Only needed for simulation studies.
+     */
+    public DataLens getOutOfSampleXYZ(int numObsOutOfSample, long rngSeed) {
+        throw new UnsupportedOperationException("getOutOfSampleXYZ is only available in Monte Carlo specifications");
+    }
+
+    // ==================== Configuration (sensible defaults) ====================
+
+    /**
+     * Number of trees in the forest. Default 100.
+     * Now a convenience method; prefer setting this on MomentForest directly.
+     */
+    public int numberoftrees() {
+        return 100;
+    }
+
+    /**
+     * Proportion of observations used for tree structure (vs honest estimation).
+     * Default 0.5 for a balanced split.
+     */
+    public double getProportionObservationsToEstimateTreeStructure() {
+        return 0.5;
+    }
+
+    /**
+     * Balancing vector for treatment-control balance in resampling.
+     * Default null (no balancing).
+     */
+    public Jama.Matrix getBalancingVector() {
+        return null;
+    }
+
+    /**
+     * Column indices for stratified sampling.
+     * Default null (no stratification).
+     */
+    public int[] getStratificationIndex() {
+        return null;
+    }
+
+    // ==================== Out-of-Sample Evaluation ====================
+
+    /**
+     * Compute out-of-sample statistics by growing a forest and evaluating it.
+     */
+    public OutOfSampleStatisticsContainer computeOutOfSampleStatistics(int numberTreesInForest, long rngBaseSeedMomentForest, boolean verbose,
             int minObservationsPerLeaf, double minImprovement, int maxTreeDepth, long rngBaseSeedOutOfSample) {
 
         double outOfSampleResultsY = 0;
         double outOfSampleResultsBeta = 0;
 
-        MomentForest myForest;
-
-               
         DataLens originalDataLens = new DataLens(getX(), getY(), getZ(), null);
         DataLens[] twoLenses = originalDataLens.randomlySplitSample(0.8, rngBaseSeedOutOfSample);
-        
+
         DataLens homogenizedForestLens = twoLenses[0];
 
-        myForest = new MomentForest(this, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
-        TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false); // k = 1
+        MomentForest myForest = new MomentForest(this, numberTreesInForest, rngBaseSeedMomentForest, homogenizedForestLens, verbose, new TreeOptions());
+        TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, false);
         myForest.setTreeOptions(cvOptions);
-        /**
-         * Grow the moment forest
-         */
         myForest.growForest();
 
-        // myForest.getTree(0).printTree();
-        // debugOutputArea.append(myForest.getTree(0).toString());
-        /**
-         * Test vectors for assessment
-         */
-        
-        DataLens oosDataLens = twoLenses[1]; // getOutOfSampleXYZ(2000, rngBaseSeedOutOfSample); // this should eventually be modified to come out of the data itself (or generalized in some way)
+        DataLens oosDataLens = twoLenses[1];
         Jama.Matrix testZ = oosDataLens.getZ();
         Jama.Matrix testX = oosDataLens.getX();
         Jama.Matrix testY = oosDataLens.getY();
@@ -149,22 +315,12 @@ public interface MomentSpecification {
                     }
                 }
                 hString = hString + "]";
-                System.out.print("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + " "+testY.get(i,0)+" "+getPredictedY(xi, compositeEstimatedBeta, rng)+ "\n");
+                System.out.print("Composite estimated beta: " + pmUtility.stringPrettyPrintVector(compositeEstimatedBeta) + " " + hString + " " + testY.get(i, 0) + " " + getPredictedY(xi, compositeEstimatedBeta, rng) + "\n");
             }
-            //pmUtility.prettyPrintVector(compositeEstimatedBeta);    
         }
 
         outOfSampleResultsY /= testZ.getRowDimension();
 
         return new OutOfSampleStatisticsContainer(outOfSampleResultsBeta, outOfSampleResultsY);
     }
-
-    public int getNumParams();
-
-    public boolean didEstimatorFail();
-    
-    public int[] getStratificationIndex();
-    
-    public String getBetaPrefixes();
-
 }

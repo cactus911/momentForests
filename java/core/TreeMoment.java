@@ -34,6 +34,7 @@ import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import optimization.Fmin;
+import utility.PDFPlotter;
 import utility.pmUtility;
 
 /**
@@ -69,6 +70,7 @@ public class TreeMoment {
     boolean allParametersHomogeneous;
 
     boolean useRandomForest = false;
+    private TreeOptions treeOptions;
     boolean debugOptimization = false;
     private double currentNodeObjectiveFunction;
     private ContainerMoment currentNodeMoment;
@@ -86,9 +88,8 @@ public class TreeMoment {
     private Matrix restrictedTheta;
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
-            Boolean[] discreteVector, boolean verbose, double minProportionEachPartition,
-            int minCountEachPartition, double improvementThreshold, boolean isLeft, int maxDepth,
-            DataLens lensHonest, boolean testParameterHomogeneity, long treeSeed) {
+            Boolean[] discreteVector, boolean verbose, TreeOptions treeOptions, boolean isLeft,
+            DataLens lensHonest, long treeSeed) {
         this.momentSpec = spec;
         this.parent = parent;
         this.treeSeed = treeSeed;
@@ -96,12 +97,14 @@ public class TreeMoment {
         this.lensGrowingTree = lensGrowingTree;
         this.discreteVector = discreteVector;
         this.verbose = verbose;
-        this.minProportionEachPartition = minProportionEachPartition;
-        this.minCountEachPartition = minCountEachPartition;
-        this.improvementThreshold = improvementThreshold;
+        this.treeOptions = treeOptions;
+        this.minProportionEachPartition = treeOptions.getMinProportion();
+        this.minCountEachPartition = treeOptions.getMinCount();
+        this.improvementThreshold = treeOptions.getMinMSEImprovement();
         this.isLeftNode = isLeft;
-        this.maxDepth = maxDepth;
-        this.testParameterHomogeneity = testParameterHomogeneity;
+        this.maxDepth = treeOptions.getMaxDepth();
+        this.testParameterHomogeneity = treeOptions.isTestParameterHomogeneity();
+        this.useRandomForest = treeOptions.isUseRandomForest();
 
         if (parent == null) {
             depth = 0;
@@ -275,9 +278,9 @@ public class TreeMoment {
              */
             TreeSet<Integer> randomForestIndex = new TreeSet<>();
 
-            if (useRandomForest) { // Randomly choosing a subset of variables to search over with a max of 5 variables to search over
+            if (useRandomForest) { // Randomly choosing a subset of variables to search over
                 int[] varSearchIndex = momentSpec.getVariableIndicesToSearchOver();
-                int P = Math.min(5, varSearchIndex.length);
+                int P = Math.min(treeOptions.getRandomForestMaxVariables(), varSearchIndex.length);
                 for (int i = 0; i < P; i++) {
                     int draw = (int) Math.floor(Math.random() * momentSpec.getVariableIndicesToSearchOver().length);
                     while (randomForestIndex.contains(varSearchIndex[draw])) {
@@ -329,12 +332,12 @@ public class TreeMoment {
                             }
 
                             boolean testGridSearch = true;
-                            double h = 1E-30;
+                            double h = treeOptions.getGridSearchEpsilon();
                             if (testGridSearch) {
                                 double leftZ = minZ;
                                 double rightZ = maxZ;
 
-                                double increment = h + (rightZ - leftZ) / 100.0;
+                                double increment = h + (rightZ - leftZ) / treeOptions.getGridSearchSteps();
 
                                 if (debugOptimization) {
                                     echoLn("\tGrid Search " + momentSpec.getVariableName(indexSplitVariable) + " from " + leftZ + " to " + rightZ);
@@ -363,7 +366,7 @@ public class TreeMoment {
                                  */
                                 leftZ = optimalZ_k - increment;
                                 rightZ = optimalZ_k + increment;
-                                increment = h + (rightZ - leftZ) / 100.0;
+                                increment = h + (rightZ - leftZ) / treeOptions.getGridSearchSteps();
 
                                 if (debugOptimization) {
                                     echoLn("\tSecond Finer Grid Search " + momentSpec.getVariableName(indexSplitVariable) + " from " + leftZ + " to " + rightZ);
@@ -506,10 +509,10 @@ public class TreeMoment {
                     }
                     setRule(new SplitRule(true, optimalSplitVariableIndex, optimalZ, partitions.get((int) optimalZ), momentSpec));
                     Random rng = new Random(treeSeed);
-                    childLeft = new TreeMoment(this, momentSpec, obj.getDataSplit().getLeft(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            true, maxDepth, null, testParameterHomogeneity, rng.nextLong());
-                    childRight = new TreeMoment(this, momentSpec, obj.getDataSplit().getRight(), discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            false, maxDepth, null, testParameterHomogeneity, rng.nextLong());
+                    childLeft = new TreeMoment(this, momentSpec, obj.getDataSplit().getLeft(), discreteVector, verbose, treeOptions,
+                            true, null, rng.nextLong());
+                    childRight = new TreeMoment(this, momentSpec, obj.getDataSplit().getRight(), discreteVector, verbose, treeOptions,
+                            false, null, rng.nextLong());
                 } else {
                     MomentContinuousSplitObj obj = momentSpec.getFminObjective(lensGrowingTree, optimalSplitVariableIndex, minProportionEachPartition, minCountEachPartition);
                     if (verbose) {
@@ -522,10 +525,10 @@ public class TreeMoment {
                     // System.out.println("Max left: "+pmUtility.max(childLeftX, 1));
                     // System.out.println("Min right: "+pmUtility.min(childRightX, 1));
                     Random rng = new Random(treeSeed);
-                    childLeft = new TreeMoment(this, momentSpec, left, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            true, maxDepth, null, testParameterHomogeneity, rng.nextLong());
-                    childRight = new TreeMoment(this, momentSpec, right, discreteVector, verbose, minProportionEachPartition, minCountEachPartition, improvementThreshold,
-                            false, maxDepth, null, testParameterHomogeneity, rng.nextLong());
+                    childLeft = new TreeMoment(this, momentSpec, left, discreteVector, verbose, treeOptions,
+                            true, null, rng.nextLong());
+                    childRight = new TreeMoment(this, momentSpec, right, discreteVector, verbose, treeOptions,
+                            false, null, rng.nextLong());
                 }
                 childLeft.determineSplit(); //Prioritizes splits to the left
                 childRight.determineSplit(); //Once we find a terminal node, split to the right
@@ -885,8 +888,8 @@ public class TreeMoment {
                         // System.out.println("Tn = "+Tn);
                         // pmUtility.prettyPrintVector(restrictedTheta);
 
-                        final double subsampleExponent = 0.7;
-                        int numSubsamples = 5000;
+                        final double subsampleExponent = treeOptions.getSubsamplingExponent();
+                        int numSubsamples = treeOptions.getNumSubsamples();
                         Random rng = new Random(treeSeed); 
 
                         final int paramK = k;
@@ -1106,25 +1109,7 @@ public class TreeMoment {
                 }
                 //System.out.println("DEBUG: ending Holm Bonferroni method");
             } else {
-                // easier bonferroni procedure (for checking what's going on here)
-                System.out.println("*** Did not implement homogeneous parameter storage, do not use as-is ***");
-                System.exit(0);
-                for (int k = 0; k < pList.size(); k++) {
-                    PValue d = pList.get(k);
-                    System.out.println(d);
-                    double criticalValue = 0.05 / (0.0 + pList.size());
-                    System.out.println("p: " + d.getP() + " adjusted critical value: " + criticalValue);
-                    if (d.getP() > criticalValue) {
-                        if (verbose) {
-                            System.out.println("Straight Bonferroni -> Failing to reject null; adding parameter index " + d.getK() + " to homogeneity list.");
-                        }
-                        indexHomogeneousParameters.add(d.getK());
-                    } else {
-                        if (verbose) {
-                            System.out.println("Straight Bonferroni -> Rejecting null; retaining parameter index " + d.getK() + " in moment forest.");
-                        }
-                    }
-                }
+                throw new UnsupportedOperationException("Bonferroni without Holm correction is not implemented for homogeneous parameter storage");
             }
         }
         //System.out.println("DEBUG: ending test homogeneity method");
@@ -1181,19 +1166,7 @@ public class TreeMoment {
     }
 
     public Jama.Matrix getVarianceMatrix(Jama.Matrix zi) {
-        System.out.println("getVarianceMatrix deprecated");
-        System.exit(0);
-        if (terminal) {
-            // return the treatment effect for this x_i, not the predicted y_i
-            return varianceMatrix;
-        } else // use rule to figure out whether to return left or right node's value
-        // this will keep going down the rabbit hole until it returns a terminal node's value
-        // kind of cool how this works!
-        if (getRule().isLeft(zi)) {
-            return childLeft.getVarianceMatrix(zi);
-        } else {
-            return childRight.getVarianceMatrix(zi);
-        }
+        throw new UnsupportedOperationException("getVarianceMatrix is deprecated");
     }
 
     static private void echoLn(String s) {

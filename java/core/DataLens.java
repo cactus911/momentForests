@@ -148,8 +148,7 @@ public class DataLens {
     //Returns the fraction of treated obs
     private double getMeanBalancingVector() {
         if (balancingVector == null) {
-            System.out.println("Querying model for average balancing vector when it is null.");
-            System.exit(0);
+            throw new IllegalStateException("Querying model for average balancing vector when it is null.");
         }
         double ratio = 0;
         for (int i : dataIndex) {
@@ -162,9 +161,7 @@ public class DataLens {
     //Performs the resampling for tree data, keeping the proportion of treated and untreated obs the same as in original data and returns the resulting datalense
     public DataLens getResampledDataLensWithBalance(long seed) {
         if (balancingVector == null) {
-            System.out.println("Trying to resample with average balancing vector when it is null.");
-            new Exception().printStackTrace();
-            System.exit(0);
+            throw new IllegalStateException("Trying to resample with average balancing vector when it is null.");
         }
         Random rng = new Random(seed);
         // int[] newIndex = new int[originalDataX.getRowDimension()];
@@ -255,7 +252,7 @@ public class DataLens {
                 treeFirst.add(guess);
             }
         }
-        ArrayList<Integer> firstList = new ArrayList(treeFirst);
+        ArrayList<Integer> firstList = new ArrayList<>(treeFirst);
         // System.out.println(firstList.size() + " out of desired " + sizeFirst);
         for (int i = 0; i < sizeFirst; i++) {
             indicesFirst[i] = dataIndex[firstList.get(i)];
@@ -303,7 +300,7 @@ public class DataLens {
             }
             treeFirst.add(guess);
         }
-        ArrayList<Integer> firstList = new ArrayList(treeFirst);
+        ArrayList<Integer> firstList = new ArrayList<>(treeFirst);
         // System.out.println(firstList.size() + " out of desired " + sizeFirst);
         for (int i = 0; i < sizeFirst; i++) {
             indicesFirst[i] = dataIndex[firstList.get(i)];

@@ -23,25 +23,20 @@
  */
 package examples.logitVSL;
 
-// import JSci.maths.statistics.NormalDistribution;
 import JSci.maths.statistics.NormalDistribution;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
-import core.IntegerPartition;
-import core.MomentContinuousSplitObj;
-import core.MomentPartitionObj;
 import core.MomentSpecification;
 import java.io.FileReader;
 import java.io.BufferedReader;
 import java.util.Random;
-import utility.pmUtility;
 
 /**
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class LogitVSLMomentSpecification implements MomentSpecification {
+public class LogitVSLMomentSpecification extends MomentSpecification {
 
     Jama.Matrix X;
     Jama.Matrix Y;
@@ -57,44 +52,16 @@ public class LogitVSLMomentSpecification implements MomentSpecification {
 
     String[] varName = {"dep_prob", "afqsc", "entryyr", "term", "mos", "female", "race", "entryage", "edu", "state", "urate"};
 
-    /**
-     * We are going to control homogeneous parameters through these variables
-     */
-    private boolean[] homogeneityIndex; // = new boolean[X.getColumnDimension()];
-    private Jama.Matrix homogeneousParameterVector; // how to keep everything straight--easier way is to just to make it the size of the parameter vector and go from there (and never read elements that aren't labeled as homogeneous)
-
     public LogitVSLMomentSpecification(String filename) {
         this.filename = filename;
 
-        homogeneityIndex = new boolean[3];
-        homogeneousParameterVector = new Jama.Matrix(3, 1);
-        resetHomogeneityIndex();
+        initializeHomogeneity(3);
 
-        int[] vsi = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}; //Search over z1, z2, z3 
+        int[] vsi = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10}; //Search over z1, z2, z3
         // Boolean[] wvd = {false, false, false, true, true, true, true, true, true, true, true}; // z1, z2 continuous, z3 discrete
         Boolean[] wvd = {false, false, false, false, false, true, true, false, false, false, false}; // z1, z2 continuous, z3 discrete
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
-    }
-
-    @Override
-    public boolean[] getHomogeneousIndex() {
-        return homogeneityIndex;
-    }
-
-    @Override
-    public double getHomogeneousParameter(int parameterIndex) {
-        return homogeneousParameterVector.get(parameterIndex, 0);
-    }
-
-    @Override
-    public void setHomogeneousParameter(int parameterIndex, double value) {
-        homogeneousParameterVector.set(parameterIndex, 0, value);
-    }
-
-    @Override
-    public Matrix getBalancingVector() {
-        return null;
     }
 
     @Override
@@ -108,18 +75,8 @@ public class LogitVSLMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-        return new MomentContinuousSplitObjLogitVSL(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition, this);
-    }
-
-    @Override
-    public MomentPartitionObj getMomentPartitionObj(DataLens lens, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjLogitVSL(partition, indexSplitVariable, lens, this);
-    }
-
-    @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerLogitVSL l = new ContainerLogitVSL(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous);
+        ContainerLogitVSL l = new ContainerLogitVSL(lens, getHomogeneousIndex(), getHomogeneousParameterVector(), allParametersHomogeneous);
         l.computeBetaAndErrors();
         return l;
     }
@@ -160,17 +117,9 @@ public class LogitVSLMomentSpecification implements MomentSpecification {
         return 3;
     }
 
-    //Return the true parameter vector for a given observation
     @Override
-    public Matrix getBetaTruth(Matrix zi, Random rng) {
-        return null;
-    }
-
-    @Override
-    public DataLens getOutOfSampleXYZ(int numObsOOS, long rngSeed) {
-        System.out.println("Don't call outofsamplexyz");
-        System.exit(0);
-        return null;
+    public int getNumMoments() {
+        return 3;
     }
 
     @Override
@@ -303,7 +252,7 @@ public class LogitVSLMomentSpecification implements MomentSpecification {
                     alpha = 0.5;
                     // betaHazard = -2.0;
                 }
-                
+
                 double utility = alpha + betaBonus * X.get(i, 1) + betaHazard * X.get(i, 2) + error;
                 if (utility > error0) {
                     Y.set(i, 0, 1.0);
@@ -318,98 +267,6 @@ public class LogitVSLMomentSpecification implements MomentSpecification {
     @Override
     public String getVariableName(int variableIndex) {
         return varName[variableIndex];
-    }
-
-    @Override
-    public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-        return "Group " + fixedEffectIndex;
-    }
-
-    @Override
-    public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
-        if (beta == null) {
-            return "null (shouldn't be here!)";
-        }
-        // double b = beta.get(0, 0);
-//        double se = Math.sqrt(variance.get(0, 0));
-//        String stars = "";
-//        NormalDistribution normal = new NormalDistribution(0, 1);
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.90))) {
-//            stars = "*";
-//        }
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.95))) {
-//            stars = "**";
-//        }
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.99))) {
-//            stars = "***";
-//        }
-//        return String.format("%.2f (%.2f) %s", b, se, stars);
-        return pmUtility.stringPrettyPrintVector(beta);
-    }
-
-    /**
-     * @return the homogeneityIndex
-     */
-    public boolean[] getHomogeneityIndex() {
-        return homogeneityIndex;
-    }
-
-    @Override
-    public void resetHomogeneityIndex() {
-        for (int i = 0; i < homogeneityIndex.length; i++) {
-            homogeneityIndex[i] = false;
-        }
-    }
-
-    @Override
-    public void setHomogeneousIndex(Integer i) {
-        homogeneityIndex[i] = true;
-    }
-
-    /**
-     * @return the homogeneousParameterVector
-     */
-    @Override
-    public Jama.Matrix getHomogeneousParameterVector() {
-        return homogeneousParameterVector;
-    }
-
-    @Override
-    public ContainerMoment getContainerMoment(DataLens lens) {
-        /**
-         * Should this boolean ever be true???
-         *
-         * I think the answer is no since the only place that calls this is in
-         * HomogeneousSearchContainer, and the reason that I added the boolean
-         * (allParametersHomogeneous) is to estimate the stump parameters when
-         * the parameter are already determined to be all homogeneous
-         */
-        return new ContainerLogitVSL(lens, homogeneityIndex, homogeneousParameterVector, false);
-    }
-
-    @Override
-    public int getNumMoments() {
-        return 3;
-    }
-
-    @Override
-    public double getProportionObservationsToEstimateTreeStructure() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public boolean didEstimatorFail() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public int[] getStratificationIndex() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public String getBetaPrefixes() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 }

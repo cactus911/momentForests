@@ -25,7 +25,6 @@ package examples.linearStata;
 
 import Jama.Matrix;
 import core.DataLens;
-import core.HomogeneousParameterSorter;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.MomentSpecification;
@@ -278,33 +277,7 @@ public class LinearStataMain {
             SFIToolkit.displayln("***************************");
         }
         
-        myForest.testHomogeneity(verboselast);
-        
-        // Collect homogeneity votes and starting values
-        ArrayList<Integer> hpl = new ArrayList<>();
-        ArrayList<Double> hplStartingValues = new ArrayList<>();
-        boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, verboselast);
-        
-        double[] startingValues = myForest.getHomogeneityStartingValues();
-        for (int i = 0; i < voteIndexHomogeneity.length; i++) {
-            if (voteIndexHomogeneity[i]) {
-            	if (verboselast) {
-            		SFIToolkit.displayln("Adding index " + i + " to homogeneous list with starting value: " + startingValues[i]);
-            	}
-                hpl.add(i);
-                hplStartingValues.add(startingValues[i]);
-            }
-        }
-
-        // Sort and set indices
-        HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
-        sorter.sort(hpl, hplStartingValues);
-        
-        mySpecification.resetHomogeneityIndex();
-        for (int i = 0; i < hpl.size(); i++) {
-            mySpecification.setHomogeneousIndex(hpl.get(i));
-            mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
-        }
+        ArrayList<Integer> hpl = myForest.applyHomogeneityVotes(verboselast);
         setHomogeneousParameterList(hpl);
         boolean testPostClassificationConvergence = !true;
         if (testPostClassificationConvergence) {

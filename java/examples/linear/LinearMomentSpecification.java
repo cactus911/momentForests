@@ -27,9 +27,6 @@ package examples.linear;
 import Jama.Matrix;
 import core.ContainerMoment;
 import core.DataLens;
-import core.IntegerPartition;
-import core.MomentContinuousSplitObj;
-import core.MomentPartitionObj;
 import core.MomentSpecification;
 import java.io.FileReader;
 import java.io.BufferedReader;
@@ -40,7 +37,7 @@ import utility.pmUtility;
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
-public class LinearMomentSpecification implements MomentSpecification {
+public class LinearMomentSpecification extends MomentSpecification {
 
     Jama.Matrix X;
     Jama.Matrix Y;
@@ -52,27 +49,17 @@ public class LinearMomentSpecification implements MomentSpecification {
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean MONTE_CARLO = true;
-    
+
     boolean failedEstimatorIndicator = false;
 
     int dimensionX;
-
-    /**
-     * We are going to control homogeneous parameters through these variables
-     */
-    private boolean[] homogeneityIndex; // = new boolean[X.getColumnDimension()];
-    private Jama.Matrix homogeneousParameterVector; // = new Jama.Matrix(X.getColumnDimension(), 1); // this is a compact vector (only consists of the parameters we are imposing for homogeneity)
-    // i'm going to change that, since that sounds like a recipe for disaster as the set of parameters that gets the homogeneous label shifts around
-    // how to keep everything straight--easier way is to just to make it the size of the parameter vector and go from there (and never read elements that aren't labeled as homogeneous)
 
     public LinearMomentSpecification(int numObs, int dimX) {
         this.numObs = numObs;
         this.dimensionX = dimX;
         // all these indices are hard-coded; want to change that down the road!
-        homogeneityIndex = new boolean[dimensionX];
-        homogeneousParameterVector = new Jama.Matrix(dimensionX, 1);
-        resetHomogeneityIndex(); 
-        int[] vsi = {0, 1, 2}; //Search over z1, z2, z3 
+        initializeHomogeneity(dimensionX);
+        int[] vsi = {0, 1, 2}; //Search over z1, z2, z3
         Boolean[] wvd = {false, false, true}; // z1, z2 continuous, z3 discrete
         variableSearchIndex = vsi;
         DiscreteVariables = wvd;
@@ -80,11 +67,7 @@ public class LinearMomentSpecification implements MomentSpecification {
 
     public LinearMomentSpecification(String filename) {
         this.filename = filename;
-    }
-
-    @Override
-    public boolean[] getHomogeneousIndex() {
-        return homogeneityIndex;
+        this.MONTE_CARLO = false;
     }
 
     @Override
@@ -93,18 +76,8 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public double getHomogeneousParameter(int parameterIndex) {
-        return homogeneousParameterVector.get(parameterIndex, 0);
-    }
-
-    @Override
     public int getNumMoments() {
         return X.getColumnDimension();
-    }
-
-    @Override
-    public void setHomogeneousParameter(int parameterIndex, double value) {
-        homogeneousParameterVector.set(parameterIndex, 0, value);
     }
 
     @Override
@@ -116,10 +89,12 @@ public class LinearMomentSpecification implements MomentSpecification {
         this.X = X;
         this.Y = Y;
         this.Z = Z;
+        this.dimensionX = X.getColumnDimension();
         this.numtrees = numtrees;
         this.variableSearchIndex = variableSearchIndex;
         this.DiscreteVariables = DiscreteVariables;
         balancingVector = pmUtility.getColumn(X, 0); // treatment status is the first column of X
+        initializeHomogeneity(dimensionX);
     }
 
     @Override
@@ -150,18 +125,8 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public MomentContinuousSplitObj getFminObjective(DataLens lens, int indexSplitVariable, double minProportionEachPartition, int minCountEachPartition) {
-        return new MomentContinuousSplitObjLinear(indexSplitVariable, lens, minProportionEachPartition, minCountEachPartition, this);
-    }
-
-    @Override
-    public MomentPartitionObj getMomentPartitionObj(DataLens lens, int indexSplitVariable, IntegerPartition partition) {
-        return new MomentPartitionObjLinear(partition, indexSplitVariable, lens, this);
-    }
-
-    @Override
     public ContainerMoment computeOptimalBeta(DataLens lens, boolean allParametersHomogeneous) {
-        ContainerLinear l = new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, allParametersHomogeneous, this);
+        ContainerLinear l = new ContainerLinear(lens, getHomogeneousIndex(), getHomogeneousParameterVector(), allParametersHomogeneous, this);
         l.computeBetaAndErrors();
         failedEstimatorIndicator = l.didEstimatorFail();
         return l;
@@ -344,65 +309,6 @@ public class LinearMomentSpecification implements MomentSpecification {
     }
 
     @Override
-    public String getFixedEffectName(int variableIndex, int fixedEffectIndex) {
-        return "Group " + fixedEffectIndex;
-    }
-
-    @Override
-    public String formatTreeLeafOutput(Matrix beta, Matrix variance) {
-        if (beta == null) {
-            return "null (shouldn't be here!)";
-        }
-        // double b = beta.get(0, 0);
-//        double se = Math.sqrt(variance.get(0, 0));
-//        String stars = "";
-//        NormalDistribution normal = new NormalDistribution(0, 1);
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.90))) {
-//            stars = "*";
-//        }
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.95))) {
-//            stars = "**";
-//        }
-//        if (Math.abs(b / se) > Math.abs(normal.inverse(0.99))) {
-//            stars = "***";
-//        }
-//        return String.format("%.2f (%.2f) %s", b, se, stars);
-        return pmUtility.stringPrettyPrintVector(beta);
-    }
-
-    /**
-     * @return the homogeneityIndex
-     */
-    public boolean[] getHomogeneityIndex() {
-        return homogeneityIndex;
-    }
-
-    @Override
-    public void resetHomogeneityIndex() {
-        for (int i = 0; i < homogeneityIndex.length; i++) {
-            homogeneityIndex[i] = false;
-        }
-    }
-
-    @Override
-    public void setHomogeneousIndex(Integer i) {
-        homogeneityIndex[i] = true;
-    }
-
-    /**
-     * @return the homogeneousParameterVector
-     */
-    @Override
-    public Jama.Matrix getHomogeneousParameterVector() {
-        return homogeneousParameterVector;
-    }
-
-    @Override
-    public ContainerMoment getContainerMoment(DataLens lens) {
-        return new ContainerLinear(lens, homogeneityIndex, homogeneousParameterVector, false, this);
-    }
-
-    @Override
     public double getProportionObservationsToEstimateTreeStructure() {
         return 0.15;
     }
@@ -410,16 +316,6 @@ public class LinearMomentSpecification implements MomentSpecification {
     @Override
     public boolean didEstimatorFail() {
         return failedEstimatorIndicator;
-    }
-
-    @Override
-    public int[] getStratificationIndex() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public String getBetaPrefixes() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
 }

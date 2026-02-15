@@ -24,16 +24,27 @@
 package core;
 
 /**
+ * Configuration options for tree and forest construction.
+ * Centralizes previously hard-coded constants from TreeMoment.
  *
  * @author Stephen P. Ryan <stephen.p.ryan@wustl.edu>
  */
 public class TreeOptions {
 
+    // Existing options
     private double minProportion = 0.001;
     private int minCount = 5;
     private double minMSEImprovement = 0.01;
     private int maxDepth = 100;
     private boolean testParameterHomogeneity = false;
+
+    // Previously hard-coded in TreeMoment (Issue 8)
+    private int randomForestMaxVariables = 5;
+    private int gridSearchSteps = 100;
+    private double gridSearchEpsilon = 1E-30;
+    private double subsamplingExponent = 0.7;
+    private int numSubsamples = 5000;
+    private boolean useRandomForest = false;
 
     public TreeOptions() {
     }
@@ -52,63 +63,85 @@ public class TreeOptions {
 
     public boolean isTestParameterHomogeneity() {
         return testParameterHomogeneity;
-    }    
-    
+    }
 
-    /**
-     * @return the minProportion
-     */
     public double getMinProportion() {
         return minProportion;
     }
 
-    /**
-     * @param minProportion the minProportion to set
-     */
     public void setMinProportion(double minProportion) {
         this.minProportion = minProportion;
     }
 
-    /**
-     * @return the minCount
-     */
     public int getMinCount() {
         return minCount;
     }
 
-    /**
-     * @param minCount the minCount to set
-     */
     public void setMinCount(int minCount) {
         this.minCount = minCount;
     }
 
-    /**
-     * @return the minMSEImprovement
-     */
     public double getMinMSEImprovement() {
         return minMSEImprovement;
     }
 
-    /**
-     * @param minMSEImprovement the minMSEImprovement to set
-     */
     public void setMinMSEImprovement(double minMSEImprovement) {
         this.minMSEImprovement = minMSEImprovement;
     }
 
-    /**
-     * @return the maxDepth
-     */
     public int getMaxDepth() {
         return maxDepth;
     }
 
-    /**
-     * @param maxDepth the maxDepth to set
-     */
     public void setMaxDepth(int maxDepth) {
         this.maxDepth = maxDepth;
     }
 
+    public int getRandomForestMaxVariables() {
+        return randomForestMaxVariables;
+    }
+
+    public void setRandomForestMaxVariables(int randomForestMaxVariables) {
+        this.randomForestMaxVariables = randomForestMaxVariables;
+    }
+
+    public int getGridSearchSteps() {
+        return gridSearchSteps;
+    }
+
+    public void setGridSearchSteps(int gridSearchSteps) {
+        this.gridSearchSteps = gridSearchSteps;
+    }
+
+    public double getGridSearchEpsilon() {
+        return gridSearchEpsilon;
+    }
+
+    public void setGridSearchEpsilon(double gridSearchEpsilon) {
+        this.gridSearchEpsilon = gridSearchEpsilon;
+    }
+
+    public double getSubsamplingExponent() {
+        return subsamplingExponent;
+    }
+
+    public void setSubsamplingExponent(double subsamplingExponent) {
+        this.subsamplingExponent = subsamplingExponent;
+    }
+
+    public int getNumSubsamples() {
+        return numSubsamples;
+    }
+
+    public void setNumSubsamples(int numSubsamples) {
+        this.numSubsamples = numSubsamples;
+    }
+
+    public boolean isUseRandomForest() {
+        return useRandomForest;
+    }
+
+    public void setUseRandomForest(boolean useRandomForest) {
+        this.useRandomForest = useRandomForest;
+    }
 }
