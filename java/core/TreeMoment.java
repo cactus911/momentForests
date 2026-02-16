@@ -936,8 +936,10 @@ public class TreeMoment {
                         int progressInterval = Math.max(10, numSubsamples / 20); // update ~20 times
                         int adaptiveCheckInterval = Math.max(25, minRequired / 10); // check ~10 times per B_min block
                         boolean stoppedEarly = false;
+                        int totalAttempted = 0;
                         ArrayList<Double> stats = new ArrayList<>();
                         for (int r = 0; r < numSubsamples; r++) {
+                            totalAttempted++;
                             try {
                                 WaldTestWholeTree bigSubsample = new WaldTestWholeTree(
                                         subsample(v, subsampleExponent, seeds[r]),
@@ -1003,17 +1005,17 @@ public class TreeMoment {
                         }
                         
                         //System.out.println("Number of successful subsamples: " + stats.size());
-                        
-                        int numSuccess = stats.size();
-                        int numFail = numSubsamples - numSuccess;
 
-                        // Require at least 50% success
-                        double failRate = (numFail + 0.0) / numSubsamples;
+                        int numSuccess = stats.size();
+                        int numFail = totalAttempted - numSuccess;
+
+                        // Require at least 50% success among attempted subsamples
+                        double failRate = (totalAttempted > 0) ? (numFail + 0.0) / totalAttempted : 0;
                         double maxFailRate = 0.50;
 
                         if (failRate > maxFailRate) {
                             if (verbose) {
-                                System.out.println("Too many subsamples failed: " + numFail + " out of " + numSubsamples);
+                                System.out.println("Too many subsamples failed: " + numFail + " out of " + totalAttempted);
                                 System.out.println("Fail rate " + failRate + " exceeds threshold " + maxFailRate);
                                 System.out.println("Marking tree as invalid.");
                             }

@@ -110,7 +110,7 @@ public class LinearTestMain {
         int numMonteCarlos = 10;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 500; numObs <= 4000; numObs *= 2) {
+            for (int numObs = 1000; numObs <= 4000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
