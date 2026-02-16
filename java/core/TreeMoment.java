@@ -912,14 +912,18 @@ public class TreeMoment {
                          * When adaptive subsampling is enabled, we draw at least B_min
                          * subsamples, then periodically check whether the decision
                          * (reject / fail to reject at alpha = 0.05) is stable. The
-                         * stopping rule is: |p_hat - alpha| > c * se(p_hat), where
-                         * se(p_hat) = sqrt(p_hat * (1 - p_hat) / B). The constant c
-                         * (default 3.0) ensures ~99.7% confidence in the decision
-                         * before stopping early. numSubsamples acts as B_max.
+                         * stopping rule uses asymmetric multipliers:
+                         *   rejection side:     (alpha - p_hat) > c_reject * se
+                         *   non-rejection side:  (p_hat - alpha) > c_nonreject * se
+                         * where se = sqrt(p_hat * (1 - p_hat) / B). The non-rejection
+                         * multiplier is higher (default 5.0 vs 3.0) to avoid
+                         * prematurely concluding homogeneity. numSubsamples acts
+                         * as B_max.
                          */
                         boolean adaptive = treeOptions.isUseAdaptiveSubsampling();
                         int minRequired = treeOptions.getMinSubsamples();
                         double stopMultiplier = treeOptions.getAdaptiveStoppingMultiplier();
+                        double nonRejectionMultiplier = treeOptions.getAdaptiveNonRejectionMultiplier();
                         double alpha = 0.05;
 
                         // Pre-generate seeds up to B_max
@@ -986,13 +990,18 @@ public class TreeMoment {
                                 double pHat = (countAbove + 0.0) / stats.size();
                                 double se = Math.sqrt(pHat * (1.0 - pHat) / stats.size());
 
-                                if (Math.abs(pHat - alpha) > stopMultiplier * se) {
+                                // Asymmetric stopping: use higher multiplier for non-rejection
+                                // to avoid prematurely concluding homogeneity
+                                double effectiveMultiplier = (pHat < alpha) ? stopMultiplier : nonRejectionMultiplier;
+                                if (Math.abs(pHat - alpha) > effectiveMultiplier * se) {
                                     if (verbose) {
-                                        System.out.println("Adaptive stop at B=" + stats.size()
+                                        String side = (pHat < alpha) ? "reject" : "non-reject";
+                                        System.out.println("Adaptive stop (" + side + ") at B=" + stats.size()
                                                 + ": p_hat=" + String.format("%.4f", pHat)
                                                 + ", se=" + String.format("%.4f", se)
                                                 + ", |p_hat-alpha|=" + String.format("%.4f", Math.abs(pHat - alpha))
-                                                + " > " + String.format("%.4f", stopMultiplier * se));
+                                                + " > " + String.format("%.4f", effectiveMultiplier * se)
+                                                + " (c=" + String.format("%.1f", effectiveMultiplier) + ")");
                                     }
                                     stoppedEarly = true;
                                     // Fire one last progress update at the stopping point

@@ -67,15 +67,25 @@ public class TreeOptions {
      *   Davidson, R. and MacKinnon, J.G. (2000). "Bootstrap Tests: How Many
      *     Bootstraps?" Econometric Reviews, 19(1), 55-68.
      *
-     * The stopping rule is: stop when |p_hat - alpha| > c * se(p_hat), where
-     * se(p_hat) = sqrt(p_hat * (1 - p_hat) / B) and c is the confidence
-     * multiplier (default 3.0, giving ~99.7% confidence in the decision).
+     * The stopping rule uses asymmetric multipliers to reflect the different
+     * costs of false rejection vs. false non-rejection:
+     *
+     *   If p_hat < alpha: stop when (alpha - p_hat) > c_reject * se(p_hat)
+     *   If p_hat > alpha: stop when (p_hat - alpha) > c_nonreject * se(p_hat)
+     *
+     * where se(p_hat) = sqrt(p_hat * (1 - p_hat) / B). The rejection-side
+     * multiplier c_reject (default 3.0) gives ~99.7% confidence. The
+     * non-rejection-side multiplier c_nonreject (default 5.0) is higher
+     * because falsely concluding homogeneity (missing real heterogeneity)
+     * is a substantive error, while falsely rejecting homogeneity is only
+     * an efficiency cost.
      *
      * numSubsamples serves as B_max (the ceiling). minSubsamples is B_min.
      */
     private boolean useAdaptiveSubsampling = false;
     private int minSubsamples = 500;
     private double adaptiveStoppingMultiplier = 3.0;
+    private double adaptiveNonRejectionMultiplier = 5.0;
 
     public TreeOptions() {
     }
@@ -214,5 +224,13 @@ public class TreeOptions {
 
     public void setAdaptiveStoppingMultiplier(double adaptiveStoppingMultiplier) {
         this.adaptiveStoppingMultiplier = adaptiveStoppingMultiplier;
+    }
+
+    public double getAdaptiveNonRejectionMultiplier() {
+        return adaptiveNonRejectionMultiplier;
+    }
+
+    public void setAdaptiveNonRejectionMultiplier(double adaptiveNonRejectionMultiplier) {
+        this.adaptiveNonRejectionMultiplier = adaptiveNonRejectionMultiplier;
     }
 }
