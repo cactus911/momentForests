@@ -33,11 +33,15 @@ import core.MomentSpecification;
 import core.SubsampleVisualizationPanel;
 import core.TreeOptions;
 import experimental.SmartScrollTextArea;
+import java.awt.BorderLayout;
 import java.awt.GridLayout;
 import java.util.ArrayList;
 import java.util.Random;
 import java.util.concurrent.atomic.AtomicInteger;
 import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.SwingUtilities;
@@ -72,42 +76,47 @@ public class LinearTestMain {
      */
     public static void main(String[] args) {
         JFrame f = new JFrame("Monte Carlo");
-        f.setBounds(100, 100, 1400, 600);
-        f.getContentPane().setLayout(new GridLayout(1, 2));
+        f.setBounds(100, 100, 1400, 650);
+        f.getContentPane().setLayout(new BorderLayout());
+
+        JPanel mainPanel = new JPanel(new GridLayout(1, 2));
 
         SmartScrollTextArea jt1 = new SmartScrollTextArea(); // JTextAreaAutoscroll();
         JScrollPane sp1 = new JScrollPane(jt1);
-        f.getContentPane().add(sp1);
+        mainPanel.add(sp1);
         jt1.enableSmartScroll(sp1);
 
         SubsampleVisualizationPanel vizPanel = new SubsampleVisualizationPanel();
-        f.getContentPane().add(vizPanel);
+        mainPanel.add(vizPanel);
         JTextArea jt2 = vizPanel.getLogArea();
+
+        f.getContentPane().add(mainPanel, BorderLayout.CENTER);
+
+        // Overall progress bar
+        JPanel progressPanel = new JPanel(new BorderLayout(8, 0));
+        progressPanel.setBorder(javax.swing.BorderFactory.createEmptyBorder(4, 8, 4, 8));
+        JProgressBar progressBar = new JProgressBar(0, 100);
+        progressBar.setStringPainted(true);
+        JLabel progressLabel = new JLabel("Initializing...");
+        progressPanel.add(progressLabel, BorderLayout.WEST);
+        progressPanel.add(progressBar, BorderLayout.CENTER);
+        f.getContentPane().add(progressPanel, BorderLayout.SOUTH);
+
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setVisible(true);
 
         /**
-         * It appears that we get classification basically correct What do we
-         * want to put into the Monte Carlo?
-         *
-         * Different levels of observations (n) With and without parameter
-         * homogeneity testing Show how often we get it right with it on MSE in
-         * out-of-sample prediction across two methods The parameter value when
-         * it is homogeneous?
-         *
-         * Should have some focus on parameter values, since the MSE converges
-         * to idiosyncratic levels (Which is cool but not what we are directly
-         * interested in)
-         *
-         * How to implement that? We know the truth here, so query the
-         * specification for its guess of the parameter vector for a bunch of
-         * X,Z combinations, run Frobenius norm on that? Done that, seems to be
-         * working really nicely.
-         */
-        /**
          * Number of Monte Carlos to run
          */
         int numMonteCarlos = 10;
+
+        // Count total iterations for progress tracking
+        int totalIterations = 0;
+        for (int n = 1000; n <= 4000; n *= 2) {
+            totalIterations += numMonteCarlos; // one detectHomogeneity pass per sample size
+        }
+        AtomicInteger globalProgress = new AtomicInteger(0);
+        final int totalIter = totalIterations;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
             for (int numObs = 1000; numObs <= 4000; numObs *= 2) {
@@ -177,14 +186,23 @@ public class LinearTestMain {
                     }
 
                     AtomicInteger bomb = new AtomicInteger();
+                    final int currentNumObs = numObs;
 
                     // parallelLTM.parallelStream().forEach(e -> {
                     parallelLTM.stream().forEach(e -> {
                         long t1 = System.currentTimeMillis();
                         e.execute();
-                        bomb.incrementAndGet();
+                        int done = bomb.incrementAndGet();
+                        int gp = globalProgress.incrementAndGet();
                         long t2 = System.currentTimeMillis();
-                        System.out.println("Finished " + bomb.get() + " iterations. ("+(t2-t1)+" ms.)");
+                        System.out.println("Finished " + done + " iterations. ("+(t2-t1)+" ms.)");
+                        final int pct = (int) Math.round(100.0 * gp / totalIter);
+                        SwingUtilities.invokeLater(() -> {
+                            progressBar.setValue(pct);
+                            progressBar.setString(pct + "%");
+                            progressLabel.setText("n=" + currentNumObs + "  MC " + done + "/" + numMonteCarlos
+                                + "  (overall " + gp + "/" + totalIter + ")");
+                        });
                     });
 
                     ArrayList<Double> mcFirstTreeTestStatistics = new ArrayList<>();

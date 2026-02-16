@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git fetch:*)",
+      "Bash(git checkout:*)",
+      "Bash(grep:*)",
+      "Bash(javac:*)",
+      "Bash(git commit:*)",
+      "Bash(git status:*)",
+      "Bash(EDITOR=\"sed -i ''s/^pick /reword /''\" GIT_SEQUENCE_EDITOR=\"sed -i ''s/^pick /reword /''\" git rebase -i 449e8a7~1)",
+      "Bash(GIT_SEQUENCE_EDITOR=\"sed -i ''s/^pick /edit /''\" git rebase -i HEAD~3)",
+      "Bash(git rebase:*)",
+      "Bash(xargs -I {} bash -c 'echo \"\"=== {} ===\"\" && head -30 \"\"{}\"\"')",
+      "Bash(jar -tf:*)",
+      "Bash(xargs:*)",
+      "Bash(java:*)",
+      "Bash(ls:*)",
+      "Bash(wc -l:*)",
+      "Bash(find:*)",
+      "Bash(git add:*)"
+    ]
+  }
+}
