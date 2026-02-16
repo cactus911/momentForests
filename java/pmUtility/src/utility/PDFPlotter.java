@@ -23,14 +23,18 @@
  */
 package utility;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
 import java.util.ArrayList;
 import java.util.Collections;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartFrame;
+import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.plot.ValueMarker;
 import org.jfree.chart.plot.XYPlot;
+import org.jfree.chart.renderer.xy.XYAreaRenderer;
 import org.jfree.chart.renderer.xy.XYLineAndShapeRenderer;
 import org.jfree.data.statistics.HistogramDataset;
 import org.jfree.data.xy.XYSeries;
@@ -127,6 +131,92 @@ public class PDFPlotter {
         ChartFrame frame = new ChartFrame(title, chart);
         frame.pack();
         frame.setVisible(true);
+    }
+
+    /**
+     * Create a ChartPanel showing the KDE of subsampled test statistics,
+     * a vertical line for the observed Tn, and a red-shaded 5% rejection region.
+     *
+     * @param stats subsampled test statistics
+     * @param Tn the observed test statistic
+     * @param criticalValue the 95th percentile critical value
+     * @param title chart title
+     * @return a ChartPanel that can be embedded in a GUI
+     */
+    public static ChartPanel createSubsampleDistributionPanel(ArrayList<Double> stats, double Tn, double criticalValue, String title) {
+        XYSeriesCollection dataset = new XYSeriesCollection();
+
+        // Compute KDE
+        XYSeries kdeSeries = computeKDE(stats, "Subsample Distribution");
+        dataset.addSeries(kdeSeries);
+
+        // Compute the rejection region (area above critical value)
+        XYSeries rejectionSeries = new XYSeries("5% Rejection Region");
+        int n = stats.size();
+        double mean = stats.stream().mapToDouble(Double::doubleValue).average().orElse(0);
+        double variance = stats.stream().mapToDouble(d -> (d - mean) * (d - mean)).sum() / (n - 1);
+        double sd = Math.sqrt(variance);
+        double bandwidth = 1.06 * sd * Math.pow(n, -0.2);
+        if (bandwidth <= 0) bandwidth = 1.0;
+
+        double minVal = Collections.min(stats) - 3 * bandwidth;
+        double maxVal = Collections.max(stats) + 3 * bandwidth;
+        int numPoints = 200;
+
+        for (int i = 0; i <= numPoints; i++) {
+            double x = minVal + (maxVal - minVal) * i / numPoints;
+            if (x >= criticalValue) {
+                double density = 0;
+                for (double d : stats) {
+                    density += gaussianKernel((x - d) / bandwidth);
+                }
+                density /= (n * bandwidth);
+                rejectionSeries.add(x, density);
+            }
+        }
+        dataset.addSeries(rejectionSeries);
+
+        JFreeChart chart = ChartFactory.createXYLineChart(title, "Test Statistic", "Density",
+                dataset, PlotOrientation.VERTICAL, true, true, false);
+
+        XYPlot plot = chart.getXYPlot();
+
+        // KDE line in blue
+        XYLineAndShapeRenderer lineRenderer = new XYLineAndShapeRenderer(true, false);
+        lineRenderer.setSeriesPaint(0, Color.BLUE);
+        lineRenderer.setSeriesStroke(0, new BasicStroke(2.0f));
+        plot.setRenderer(0, lineRenderer);
+
+        // Red filled area for rejection region
+        XYAreaRenderer areaRenderer = new XYAreaRenderer();
+        areaRenderer.setSeriesPaint(0, new Color(255, 0, 0, 100));
+        plot.setDataset(1, new XYSeriesCollection(rejectionSeries));
+        plot.setRenderer(1, areaRenderer);
+
+        // Remove rejection region from the main renderer (index 1 in dataset 0)
+        lineRenderer.setSeriesVisible(1, false);
+
+        // Vertical line for observed Tn
+        ValueMarker tnMarker = new ValueMarker(Tn);
+        tnMarker.setPaint(Color.BLACK);
+        tnMarker.setStroke(new BasicStroke(2.0f, BasicStroke.CAP_BUTT, BasicStroke.JOIN_MITER, 10.0f, new float[]{10.0f}, 0.0f));
+        tnMarker.setLabel("Tn = " + String.format("%.1f", Tn));
+        plot.addDomainMarker(tnMarker);
+
+        // Vertical line for critical value
+        ValueMarker cvMarker = new ValueMarker(criticalValue);
+        cvMarker.setPaint(Color.RED);
+        cvMarker.setStroke(new BasicStroke(1.5f));
+        cvMarker.setLabel("CV (95%) = " + String.format("%.1f", criticalValue));
+        plot.addDomainMarker(cvMarker);
+
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setDomainGridlinePaint(Color.LIGHT_GRAY);
+        plot.setRangeGridlinePaint(Color.LIGHT_GRAY);
+
+        ChartPanel panel = new ChartPanel(chart);
+        panel.setPreferredSize(new java.awt.Dimension(500, 300));
+        return panel;
     }
 
     /**

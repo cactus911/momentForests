@@ -101,9 +101,11 @@ public class MomentForest {
             DataLens lensGrow = split[0];
             DataLens lensHonest = split[1];
 
-            forest.add(new TreeMoment(null, spec, lensGrow,
+            TreeMoment tree = new TreeMoment(null, spec, lensGrow,
                     spec.getDiscreteVector(), verbose, treeOptions, true,
-                    lensHonest, rng.nextLong()));
+                    lensHonest, rng.nextLong());
+            tree.setTreeIndex(i);
+            forest.add(tree);
         }
 
         boolean useParallel = true;

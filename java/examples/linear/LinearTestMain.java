@@ -30,6 +30,7 @@ import core.DataLens;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
 import core.MomentSpecification;
+import core.SubsampleVisualizationPanel;
 import core.TreeOptions;
 import experimental.SmartScrollTextArea;
 import java.awt.GridLayout;
@@ -61,6 +62,8 @@ public class LinearTestMain {
     private Jama.Matrix parametricParameters;
     private final boolean detectHomogeneity;
     private JTextArea jt;
+    private JTextArea diagnosticJt;
+    private SubsampleVisualizationPanel vizPanel;
     private final int dimX;
     private final int monteCarloIndex;
 
@@ -69,17 +72,17 @@ public class LinearTestMain {
      */
     public static void main(String[] args) {
         JFrame f = new JFrame("Monte Carlo");
-        f.setBounds(100, 100, 1100, 500);
+        f.setBounds(100, 100, 1400, 600);
         f.getContentPane().setLayout(new GridLayout(1, 2));
-        
+
         SmartScrollTextArea jt1 = new SmartScrollTextArea(); // JTextAreaAutoscroll();
         JScrollPane sp1 = new JScrollPane(jt1);
         f.getContentPane().add(sp1);
         jt1.enableSmartScroll(sp1);
-        
-        SmartScrollTextArea jt2 = new SmartScrollTextArea(); // JTextAreaAutoscroll();
-        JScrollPane sp2 = new JScrollPane(jt2);
-        f.getContentPane().add(sp2);
+
+        SubsampleVisualizationPanel vizPanel = new SubsampleVisualizationPanel();
+        f.getContentPane().add(vizPanel);
+        JTextArea jt2 = vizPanel.getLogArea();
         f.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         f.setVisible(true);
 
@@ -104,10 +107,10 @@ public class LinearTestMain {
         /**
          * Number of Monte Carlos to run
          */
-        int numMonteCarlos = 30;
+        int numMonteCarlos = 10;
 
         for (int dimX = 2; dimX <= 2; dimX++) {
-            for (int numObs = 1000; numObs <= 4000; numObs *= 2) {
+            for (int numObs = 500; numObs <= 4000; numObs *= 2) {
                 System.out.println("-----------------------");
                 System.out.format(" numObs = %,d %n", numObs);
                 System.out.println("-----------------------");
@@ -165,10 +168,10 @@ public class LinearTestMain {
                         LinearTestMain go;
                         if (numMonteCarlos == 1) {
                             // 8621193992485539638L
-                            go = new LinearTestMain(m, 5275223538819738276L, numObs, detectHomogeneity, jam, dimX);
-                            // go = new LinearTestMain(m, -7406063799885833966L, numObs, detectHomogeneity, jam, dimX);
+                            go = new LinearTestMain(m, 5275223538819738276L, numObs, detectHomogeneity, jam, dimX, vizPanel);
+                            // go = new LinearTestMain(m, -7406063799885833966L, numObs, detectHomogeneity, jam, dimX, vizPanel);
                         } else {
-                            go = new LinearTestMain(m, rng.nextLong(), numObs, detectHomogeneity, jam, dimX);
+                            go = new LinearTestMain(m, rng.nextLong(), numObs, detectHomogeneity, jam, dimX, vizPanel);
                         }
                         parallelLTM.add(go);
                     }
@@ -317,16 +320,20 @@ public class LinearTestMain {
                         betaMSE_unrestricted, betaMSE_restricted, betaMSE_SD_unrestricted, betaMSE_SD_restricted, beta_mean, beta_SD, classificationRate, Y_nonparametric_MSE, Y_parametric_MSE,
                         beta_mean_parametric, betaMSE_parametric);
                 jam.append(tf.toString());
+                System.out.println(tf.toString());
             }
         }
         System.out.println("Execution finished.");
+        System.exit(0);
     }
     private Double firstTreeTestStatistic;
 
-    public LinearTestMain(int monteCarloIndex, long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt, int dimX) {
+    public LinearTestMain(int monteCarloIndex, long rngSeed, int numObs, boolean detectHomogeneity, JTextArea jt, int dimX, SubsampleVisualizationPanel vizPanel) {
         this.rngSeed = rngSeed;
         this.monteCarloIndex = monteCarloIndex;
         this.jt = jt;
+        this.diagnosticJt = vizPanel.getLogArea();
+        this.vizPanel = vizPanel;
         this.numObs = numObs;
         this.detectHomogeneity = detectHomogeneity;
         this.dimX = dimX;
@@ -341,6 +348,8 @@ public class LinearTestMain {
 
     private void execute() {
         System.out.println("**************** rngSeed = " + rngSeed + " ****************");
+        vizPanel.setMonteCarloIndex(monteCarloIndex);
+        publish("MC #" + monteCarloIndex + " (n=" + numObs + ") starting...\n", diagnosticJt);
         Random rng = new Random(rngSeed);
 
         // MomentSpecification mySpecification = new LinearMomentSpecification("data/airline_subset.csv");
@@ -377,9 +386,6 @@ public class LinearTestMain {
          */
         /* Contains X data, Y data, balancing vector (treatment indicators), and data index (just an array numbered 0 - numObs) */
         boolean verbose = false;
-        if (numberTreesInForest == 1) {
-            verbose = true;
-        }
 
         long rngBaseSeedMomentForest = rng.nextLong();
         long rngBaseSeedOutOfSample = rng.nextLong();
@@ -460,10 +466,10 @@ public class LinearTestMain {
                 bestMaxDepth = 1;
             }
             if (numObs == 2000) {
-                bestMaxDepth = 3;
+                bestMaxDepth = 1;
             }
             if (numObs == 4000) {
-                bestMaxDepth = 5;
+                bestMaxDepth = 1;
             }
 
             bestMinObservationsPerLeaf = 50; // *(int)Math.round(Math.log(numObs));
@@ -517,12 +523,22 @@ public class LinearTestMain {
 
         boolean testParameterHomogeneity = false;
         TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, minObservationsPerLeaf, minImprovement, maxDepth, testParameterHomogeneity); // k = 1
+        cvOptions.setUseSubsampling(true);
+        cvOptions.setNumSubsamples(5000);
+        cvOptions.setUseAdaptiveSubsampling(true);
+        cvOptions.setMinSubsamples(500);
+        cvOptions.setAdaptiveStoppingMultiplier(3.0);
+        cvOptions.setSubsampleListener(vizPanel);
         MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
         myForest.setTreeOptions(cvOptions);
-        // System.out.println("Growing forest for homogeneity testing...");
+        publish("  MC #" + monteCarloIndex + ": Growing " + numberTreesInForest + " trees (maxDepth=" + maxDepth + ")...\n", diagnosticJt);
+        long tGrow = System.currentTimeMillis();
         myForest.growForest();
+        publish("  MC #" + monteCarloIndex + ": Forest grown in " + (System.currentTimeMillis() - tGrow) + " ms. Running homogeneity test...\n", diagnosticJt);
 
+        long tVote = System.currentTimeMillis();
         ArrayList<Integer> hpl = myForest.applyHomogeneityVotes(verbose);
+        publish("  MC #" + monteCarloIndex + ": Homogeneity votes in " + (System.currentTimeMillis() - tVote) + " ms. Homogeneous params: " + hpl + "\n", diagnosticJt);
         setHomogeneousParameterList(hpl);
 
         boolean executeSearch = true;
@@ -538,10 +554,12 @@ public class LinearTestMain {
                 // System.out.println("Calling execute search");
 
                 // this runs the search and then sets the parameter values inside the specification
+                long tSearch = System.currentTimeMillis();
                 con.executeSearch();
+                publish("  MC #" + monteCarloIndex + ": Parameter search done in " + (System.currentTimeMillis() - tSearch) + " ms.\n", diagnosticJt);
 
-                // System.out.println("Post search");
                 Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
+                publish("  MC #" + monteCarloIndex + ": Estimated homogeneous params: " + pmUtility.stringPrettyPrintVector(homogeneousParameters) + "\n", diagnosticJt);
                 if (verbose || 1 == 1 && 1 == 2) {
                     System.out.print("Post-HomogeneousSearchContainer Estimated homogeneous parameters: ");
                     jt.append("Post search: " + pmUtility.stringPrettyPrintVector(homogeneousParameters) + "\n");

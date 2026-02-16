@@ -137,40 +137,24 @@ public class HomogeneousSearchContainer implements Uncmin_methods, mcmc.mcmcFunc
             mySpecification.setHomogeneousParameter(homogeneousParameterList.get(i), x[i + 1]);
         }
 
+        if (allParametersHomogeneous) {
+            // No tree needed — just evaluate the moment objective at the root
+            ContainerMoment root = mySpecification.computeOptimalBeta(homogenizedForestLens, true);
+            return root.getGoodnessOfFit();
+        }
+
         boolean testParameterHomogeneity = false;
-        // System.out.println("Initializing forest");
         MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngSeedBaseMomentForest, homogenizedForestLens, verbose, new TreeOptions());
         TreeOptions cvOptions = new TreeOptions(0.01, minObservationsPerLeaf, minImprovement, maxTreeDepth, testParameterHomogeneity); // k = 1
-        // System.out.println("Setting options");
         myForest.setTreeOptions(cvOptions);
-        /**
-         * Grow the moment forest
-         */
-        // System.out.println("Growing forest");
         myForest.growForest();
 
-        /**
-         * Use the moment functions stacked across all trees for the objective
-         * function here This is generalizable and leverages the moments
-         * (necessary in cases outside of OLS)
-         */
-        boolean useMoments = true;
-        if (useMoments) {
-            // average across all the trees
-
-            // we grew a tree under the parameter restriction, should be able to find the sum of (unaveraged??? unweighted?) GMM functions across leaves
-            double avgGMMObjectiveFunctionValue = 0;
-            for (TreeMoment tree : myForest.forest) {
-                avgGMMObjectiveFunctionValue += tree.getTreeMomentObjectiveFunctionAtComputedParameters(verbose);
-            }
-            avgGMMObjectiveFunctionValue /= myForest.getForestSize();
-            if (verbose) {
-
-            }
-            return avgGMMObjectiveFunctionValue;
-        } else {
-            throw new IllegalStateException("Deprecated code path marked for deletion Oct 22 2024 in HomogeneousSearchContainer");
+        double avgGMMObjectiveFunctionValue = 0;
+        for (TreeMoment tree : myForest.forest) {
+            avgGMMObjectiveFunctionValue += tree.getTreeMomentObjectiveFunctionAtComputedParameters(verbose);
         }
+        avgGMMObjectiveFunctionValue /= myForest.getForestSize();
+        return avgGMMObjectiveFunctionValue;
     }
 
     @Override

@@ -45,6 +45,37 @@ public class TreeOptions {
     private double subsamplingExponent = 0.7;
     private int numSubsamples = 5000;
     private boolean useRandomForest = false;
+    private boolean useSubsampling = true;
+    private SubsampleListener subsampleListener = null;
+
+    /**
+     * Adaptive subsampling configuration.
+     *
+     * When enabled, the number of subsample draws adapts based on how decisive
+     * the test outcome is. Drawing stops early when the Monte Carlo standard
+     * error of the estimated p-value is small relative to the distance from
+     * the significance level (alpha = 0.05), following:
+     *
+     *   Andrews, D.W.K. and Buchinsky, M. (2000). "A Three-Step Method Using
+     *     Inequality and Equality Constraints for Minimum Number of Bootstrap
+     *     Replications." Econometrica, 68(6), 1557-1574.
+     *
+     *   Andrews, D.W.K. and Buchinsky, M. (2001). "Evaluation of a Three-Step
+     *     Method for Choosing the Number of Bootstrap Repetitions." Journal of
+     *     Econometrics, 103, 345-386.
+     *
+     *   Davidson, R. and MacKinnon, J.G. (2000). "Bootstrap Tests: How Many
+     *     Bootstraps?" Econometric Reviews, 19(1), 55-68.
+     *
+     * The stopping rule is: stop when |p_hat - alpha| > c * se(p_hat), where
+     * se(p_hat) = sqrt(p_hat * (1 - p_hat) / B) and c is the confidence
+     * multiplier (default 3.0, giving ~99.7% confidence in the decision).
+     *
+     * numSubsamples serves as B_max (the ceiling). minSubsamples is B_min.
+     */
+    private boolean useAdaptiveSubsampling = false;
+    private int minSubsamples = 500;
+    private double adaptiveStoppingMultiplier = 3.0;
 
     public TreeOptions() {
     }
@@ -143,5 +174,45 @@ public class TreeOptions {
 
     public void setUseRandomForest(boolean useRandomForest) {
         this.useRandomForest = useRandomForest;
+    }
+
+    public boolean isUseSubsampling() {
+        return useSubsampling;
+    }
+
+    public void setUseSubsampling(boolean useSubsampling) {
+        this.useSubsampling = useSubsampling;
+    }
+
+    public SubsampleListener getSubsampleListener() {
+        return subsampleListener;
+    }
+
+    public void setSubsampleListener(SubsampleListener subsampleListener) {
+        this.subsampleListener = subsampleListener;
+    }
+
+    public boolean isUseAdaptiveSubsampling() {
+        return useAdaptiveSubsampling;
+    }
+
+    public void setUseAdaptiveSubsampling(boolean useAdaptiveSubsampling) {
+        this.useAdaptiveSubsampling = useAdaptiveSubsampling;
+    }
+
+    public int getMinSubsamples() {
+        return minSubsamples;
+    }
+
+    public void setMinSubsamples(int minSubsamples) {
+        this.minSubsamples = minSubsamples;
+    }
+
+    public double getAdaptiveStoppingMultiplier() {
+        return adaptiveStoppingMultiplier;
+    }
+
+    public void setAdaptiveStoppingMultiplier(double adaptiveStoppingMultiplier) {
+        this.adaptiveStoppingMultiplier = adaptiveStoppingMultiplier;
     }
 }

@@ -31,8 +31,6 @@ import java.util.Collections;
 import java.util.Objects;
 import java.util.Random;
 import java.util.TreeSet;
-import java.util.stream.Collectors;
-import java.util.stream.IntStream;
 import optimization.Fmin;
 import utility.PDFPlotter;
 import utility.pmUtility;
@@ -86,6 +84,7 @@ public class TreeMoment {
 
     private boolean validTree = true;
     private double testStatistic;
+    private int treeIndex = -1;
 
 
     public TreeMoment(TreeMoment parent, MomentSpecification spec, DataLens lensGrowingTree,
@@ -871,7 +870,7 @@ public class TreeMoment {
             // System.out.println("K restricted to 1 only, fix for production!!!");
             for (int k = 0; k < getNodeEstimatedBeta().getRowDimension(); k++) {
                 try {
-                    boolean useSubsampling = true;
+                    boolean useSubsampling = treeOptions.isUseSubsampling();
                     if (useSubsampling) {
                         // with subsampling, going to generate distribution of test statistic under null
                         // ultimately we use all this machinery to produce a p-value and add that to the p-value list
@@ -892,48 +891,116 @@ public class TreeMoment {
 
                         final double subsampleExponent = treeOptions.getSubsamplingExponent();
                         int numSubsamples = treeOptions.getNumSubsamples();
-                        Random rng = new Random(treeSeed); 
+                        Random rng = new Random(treeSeed);
 
                         final int paramK = k;
+
+                        /**
+                         * Adaptive subsampling following:
+                         *
+                         *   Andrews, D.W.K. and Buchinsky, M. (2000). "A Three-Step Method
+                         *     Using Inequality and Equality Constraints for Minimum Number
+                         *     of Bootstrap Replications." Econometrica, 68(6), 1557-1574.
+                         *
+                         *   Andrews, D.W.K. and Buchinsky, M. (2001). "Evaluation of a
+                         *     Three-Step Method for Choosing the Number of Bootstrap
+                         *     Repetitions." Journal of Econometrics, 103, 345-386.
+                         *
+                         *   Davidson, R. and MacKinnon, J.G. (2000). "Bootstrap Tests:
+                         *     How Many Bootstraps?" Econometric Reviews, 19(1), 55-68.
+                         *
+                         * When adaptive subsampling is enabled, we draw at least B_min
+                         * subsamples, then periodically check whether the decision
+                         * (reject / fail to reject at alpha = 0.05) is stable. The
+                         * stopping rule is: |p_hat - alpha| > c * se(p_hat), where
+                         * se(p_hat) = sqrt(p_hat * (1 - p_hat) / B). The constant c
+                         * (default 3.0) ensures ~99.7% confidence in the decision
+                         * before stopping early. numSubsamples acts as B_max.
+                         */
+                        boolean adaptive = treeOptions.isUseAdaptiveSubsampling();
+                        int minRequired = treeOptions.getMinSubsamples();
+                        double stopMultiplier = treeOptions.getAdaptiveStoppingMultiplier();
+                        double alpha = 0.05;
+
+                        // Pre-generate seeds up to B_max
                         long[] seeds = new Random(rng.nextLong()).longs(numSubsamples).toArray();
-                        List<Double> statsList = IntStream.range(0, numSubsamples)
-                                // .parallel()
-                                .mapToObj(r -> {
-                                    try {
-                                        WaldTestWholeTree bigSubsample = new WaldTestWholeTree(
-                                                subsample(v, subsampleExponent, seeds[r]),
-                                                momentSpec,
-                                                false
-                                        );
-                                        
-                                        /**
-                                         * This flag imposes the restriction in each subsample. If this is false,
-                                         * we use the overall restricted theta_n as the hypothesis test.
-                                         * 
-                                         * Apparently, although both parameter vectors converge to the same thing,
-                                         * we are supposed to use the subsampling restriction. The idea is that we impose
-                                         * everything within the subsample, which then mimics the population appropriately.
-                                         * Mixing theta_nk and theta_b leads to two different rates due to sample sizes.
-                                         */
-                                        boolean useTheta_b = true;
-                                        double stat;
-                                        if(useTheta_b) {
-                                            Jama.Matrix restrictedTheta_bk = bigSubsample.computeRestrictedTheta(paramK);
-                                            stat = bigSubsample.computeStatistic(paramK, restrictedTheta_bk);
-                                        } else {
-                                            stat = bigSubsample.computeStatistic(paramK, restrictedTheta_nk);
-                                        }
-                                        return stat;
-                                    } catch (Exception e) {
-                                        if (verbose) {
-                                            System.out.println("Subsample " + r + " failed: " + e.getMessage());
-                                        }
-                                        return null;
+
+                        // Notify listener that subsampling is starting
+                        SubsampleListener listener = treeOptions.getSubsampleListener();
+                        Object token = null;
+                        if (listener != null) {
+                            token = listener.onSubsampleStart(treeIndex, paramK, Tn, numSubsamples);
+                        }
+
+                        // Explicit loop for real-time progress updates
+                        int progressInterval = Math.max(10, numSubsamples / 20); // update ~20 times
+                        int adaptiveCheckInterval = Math.max(25, minRequired / 10); // check ~10 times per B_min block
+                        boolean stoppedEarly = false;
+                        ArrayList<Double> stats = new ArrayList<>();
+                        for (int r = 0; r < numSubsamples; r++) {
+                            try {
+                                WaldTestWholeTree bigSubsample = new WaldTestWholeTree(
+                                        subsample(v, subsampleExponent, seeds[r]),
+                                        momentSpec,
+                                        false
+                                );
+
+                                /**
+                                 * This flag imposes the restriction in each subsample. If this is false,
+                                 * we use the overall restricted theta_n as the hypothesis test.
+                                 *
+                                 * Apparently, although both parameter vectors converge to the same thing,
+                                 * we are supposed to use the subsampling restriction. The idea is that we impose
+                                 * everything within the subsample, which then mimics the population appropriately.
+                                 * Mixing theta_nk and theta_b leads to two different rates due to sample sizes.
+                                 */
+                                boolean useTheta_b = true;
+                                double stat;
+                                if (useTheta_b) {
+                                    Jama.Matrix restrictedTheta_bk = bigSubsample.computeRestrictedTheta(paramK);
+                                    stat = bigSubsample.computeStatistic(paramK, restrictedTheta_bk);
+                                } else {
+                                    stat = bigSubsample.computeStatistic(paramK, restrictedTheta_nk);
+                                }
+                                stats.add(stat);
+                            } catch (Exception e) {
+                                if (verbose) {
+                                    System.out.println("Subsample " + r + " failed: " + e.getMessage());
+                                }
+                            }
+
+                            // Fire progress update periodically
+                            if (listener != null && token != null && (r + 1) % progressInterval == 0) {
+                                listener.onSubsampleProgress(token, stats, r + 1);
+                            }
+
+                            // Adaptive stopping check (Andrews & Buchinsky, 2000)
+                            if (adaptive && stats.size() >= minRequired && (r + 1) % adaptiveCheckInterval == 0) {
+                                // Compute running p-value: fraction of subsampled stats >= Tn
+                                int countAbove = 0;
+                                for (double s : stats) {
+                                    if (s >= Tn) countAbove++;
+                                }
+                                double pHat = (countAbove + 0.0) / stats.size();
+                                double se = Math.sqrt(pHat * (1.0 - pHat) / stats.size());
+
+                                if (Math.abs(pHat - alpha) > stopMultiplier * se) {
+                                    if (verbose) {
+                                        System.out.println("Adaptive stop at B=" + stats.size()
+                                                + ": p_hat=" + String.format("%.4f", pHat)
+                                                + ", se=" + String.format("%.4f", se)
+                                                + ", |p_hat-alpha|=" + String.format("%.4f", Math.abs(pHat - alpha))
+                                                + " > " + String.format("%.4f", stopMultiplier * se));
                                     }
-                                })
-                                .filter(Objects::nonNull)
-                                .collect(Collectors.toList());
-                        ArrayList<Double> stats = new ArrayList<>(statsList);
+                                    stoppedEarly = true;
+                                    // Fire one last progress update at the stopping point
+                                    if (listener != null && token != null) {
+                                        listener.onSubsampleProgress(token, stats, r + 1);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
                         
                         //System.out.println("Number of successful subsamples: " + stats.size());
                         
@@ -964,7 +1031,7 @@ public class TreeMoment {
                             System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue);
                         }
                         
-                        if (numSubsamples > 1) {
+                        if (stats.size() > 1) {
                             int numObs = 0;
                             for (DataLens dl : v) {
                                 numObs += dl.getNumObs();
@@ -974,8 +1041,11 @@ public class TreeMoment {
                             if(Tn>criticalValue) {
                                 aboveCriticalValueString = "*";
                             }
-                            
-                            System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue+" "+aboveCriticalValueString);
+
+                            String adaptiveLabel = stoppedEarly
+                                    ? " (adaptive: stopped at B=" + stats.size() + "/" + numSubsamples + ")"
+                                    : " (B=" + stats.size() + ")";
+                            System.out.println("k = "+k+": Tn: "+Tn+" Subsampled 95th percentile (critical value): " + criticalValue+" "+aboveCriticalValueString + adaptiveLabel);
                             System.out.println("Subsampled mean: " + pmUtility.mean(subsampleTb, 0));
                             System.out.println("Subsampled median: " + pmUtility.median(subsampleTb, 0));
                             System.out.println("Subsampled SD: " + pmUtility.standardDeviation(subsampleTb));
@@ -1023,8 +1093,11 @@ public class TreeMoment {
                         pList.add(new PValue(k, pvalue));
                         constrainedParameterList.add(new PValue(k, big.getValueConstrainedParameter()));
 
-                        // TODO ************** come back to this ************
-                        // pList.add(new PValue(k, big.getPValue(k)));
+                        // Fire listener with final results
+                        if (listener != null && token != null) {
+                            listener.onSubsampleComplete(token, stats, Tn, criticalValue, pvalue);
+                        }
+
                     } else {
                         // DistanceMetricTestWholeTree big = new DistanceMetricTestWholeTree(v, momentSpec);
                         // WaldTestWholeTree big = new WaldTestWholeTree(v, momentSpec);
@@ -1318,6 +1391,14 @@ public class TreeMoment {
 
     public double getTestStatistic() {
         return testStatistic;
+    }
+
+    public void setTreeIndex(int treeIndex) {
+        this.treeIndex = treeIndex;
+    }
+
+    public int getTreeIndex() {
+        return treeIndex;
     }
 
 }
