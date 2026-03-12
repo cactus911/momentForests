@@ -45,17 +45,18 @@ import utility.pmUtility;
 public class MomentSpecificationCardIV implements MomentSpecification {
 
     Jama.Matrix X;
+    Jama.Matrix instrument; // instrument column (near4), stored separately so DataLens X has same column count as getNumParams()
     Jama.Matrix Y;
     Jama.Matrix Z;
     Jama.Matrix balancingVector; // is treatment status in the RCT setting
     int numObs;
     int numtrees;
-    double proportionObservationsToEstimateTreeStructure = 0.35;
+    double proportionObservationsToEstimateTreeStructure = 0.15;
     int[] variableSearchIndex; // this should be restricted to only Z
     Boolean[] DiscreteVariables; // also this should be restricted to only Z
     String filename;
     boolean failedEstimator = false;
-    int[] stratificationIndex = null;   
+    int[] stratificationIndex = {5, 7};
     String betaPrefixes = "";
 
     DataLens outSampleLens;
@@ -152,7 +153,11 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     @Override
     public int getNumMoments() {
-        return X.getColumnDimension() - 1; // one endo X (first column), one instrument (last column of "X")
+        return X.getColumnDimension(); // instrument is now stored separately; moments = constant + instrument = X.cols
+    }
+
+    public Jama.Matrix getInstrument() {
+        return instrument;
     }
 
     @Override
@@ -167,7 +172,10 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     @Override
     public double getGoodnessOfFit(double yi, Matrix xi, Matrix beta) {
-        double error = yi - ((xi.getMatrix(0, 0, 0, xi.getColumnDimension() - 2)).times(beta)).get(0, 0);
+        if (beta == null) {
+            return Double.POSITIVE_INFINITY;
+        }
+        double error = yi - ((xi.getMatrix(0, 0, 0, xi.getColumnDimension() - 1)).times(beta)).get(0, 0);
         return error * error;
     }
 
@@ -179,7 +187,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
          */
         // pmUtility.prettyPrint(xi);
         if (beta != null) {
-            double yhat = ((xi.getMatrix(0, 0, 0, xi.getColumnDimension() - 2)).times(beta)).get(0, 0);
+            double yhat = ((xi.getMatrix(0, 0, 0, xi.getColumnDimension() - 1)).times(beta)).get(0, 0);
             return yhat;
         }
         return null;
@@ -376,7 +384,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
              */
             X = pmUtility.getColumn(dX, 1); // the endogenous variable
             X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 0));
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2));
+            //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 2));
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 3)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 4)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 5)); 
@@ -390,7 +398,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 13)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 14)); 
             //X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 15));
-            X = pmUtility.concatMatrix(X, pmUtility.getColumn(dX, 16));  	// the instrument
+            instrument = pmUtility.getColumn(dX, 16);  	// the instrument (near4), stored separately so DataLens X matches getNumParams()
 
             /**
              * MAJOR POINT: ContainerLinear has no idea how to deal with
@@ -431,6 +439,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 13));
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 14));
             Z = pmUtility.concatMatrix(Z, pmUtility.getColumn(dX, 15));
+            Z = pmUtility.concatMatrix(Z, instrument); // near4 appended as last Z column so ContainerCardIV can retrieve it via lens.getZ()
 
             boolean FAKE_DATA = false;
             if (FAKE_DATA) {
@@ -438,9 +447,9 @@ public class MomentSpecificationCardIV implements MomentSpecification {
                 NormalDistribution normal = new NormalDistribution();
                 for (i = 0; i < numObs; i++) {
                     // generate X that is correlated with Z
-                    X.set(i, 3, 3 * rng.nextDouble()); // this is now the instrument
+                    instrument.set(i, 0, 3 * rng.nextDouble()); // instrument (near4)
                     double error = normal.inverse(rng.nextDouble());
-                    X.set(i, 0, X.get(i, 3) + 0.3 * error); // this is the endogenous variable
+                    X.set(i, 0, instrument.get(i, 0) + 0.3 * error); // endogenous variable correlated with instrument
 
                     // generate Y with correlation between one X and the error
                     double beta1 = -5.0;
@@ -458,12 +467,12 @@ public class MomentSpecificationCardIV implements MomentSpecification {
                             beta2 = 2.0;
                         }
                     }
-                    Y.set(i, 0, X.get(i, 0) * 1 + X.get(i, 1) * beta1 + X.get(i, 2) * beta2 + error);
+                    Y.set(i, 0, X.get(i, 0) * 1 + X.get(i, 1) * beta1 + instrument.get(i, 0) * beta2 + error);
                 }
             }
             System.out.println("Mean of Y: " + pmUtility.mean(Y, 0));
             System.out.print("OLS: ");
-            pmUtility.prettyPrintVector(pmUtility.OLS(X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 2), Y, false));
+            pmUtility.prettyPrintVector(pmUtility.OLS(X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 1), Y, false));
 
             in.close();
         } catch (Exception e) {
@@ -549,7 +558,7 @@ public class MomentSpecificationCardIV implements MomentSpecification {
 
     @Override
     public int getNumParams() {
-        return X.getColumnDimension() - 1;
+        return X.getColumnDimension(); // instrument is now stored separately; params = endo + constant = X.cols
     }
     
     public int[] getStratificationIndex() {

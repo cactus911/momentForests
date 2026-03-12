@@ -28,25 +28,15 @@ import core.DataLens;
 import core.HomogeneousParameterSorter;
 import core.HomogeneousSearchContainer;
 import core.MomentForest;
-import core.MomentSpecification;
 import core.TreeMoment;
 import core.TreeOptions;
-import java.awt.BorderLayout;
 
 import java.awt.GridLayout;
-import java.io.BufferedWriter;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Random;
 import javax.swing.JFrame;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
-import org.jfree.chart.ChartFactory;
-import org.jfree.chart.ChartPanel;
-import org.jfree.chart.JFreeChart;
-import org.jfree.chart.axis.NumberAxis;
-import org.jfree.data.xy.XYSeries;
-import org.jfree.data.xy.XYSeriesCollection;
 import utility.JTextAreaAutoscroll;
 import utility.pmUtility;
 
@@ -87,7 +77,7 @@ public class MainCardIV {
 
     private void execute() {
         Random rng = new Random(777);
-        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("C:/Users/natha/Documents/GitHub/momentForests/java/examples/CardIV/table3.csv");
+        MomentSpecificationCardIV mySpecification = new MomentSpecificationCardIV("C:/Users/nathan/Documents/GitHub/momentForests/java/examples/CardIV/table3.csv");
    
         
         double bestMinImprovement = 4.0;
@@ -127,7 +117,7 @@ public class MainCardIV {
             // NEED TO UPDATE
             ArrayList<computeFitStatistics> cvList = new ArrayList<>();
             for (int minObservationsPerLeaf = 50; minObservationsPerLeaf <= 200; minObservationsPerLeaf *= 2) {
-                for (double minImprovement = 0.4; minImprovement <= 3.2; minImprovement *= 2) {
+                for (double minImprovement = 0.1; minImprovement <= 10; minImprovement *= 10) {
                     for (int maxDepth = 5; maxDepth >= 1; maxDepth--) {
                         cvList.add(new computeFitStatistics(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, verbose, minObservationsPerLeaf, minImprovement, maxDepth, rngBaseSeedOutOfSample, false));
                     }
@@ -192,7 +182,7 @@ public class MainCardIV {
              * Step 2: determine homogeneous parameters post-CV
              */
             double minProportionInEachLeaf = 0.01;
-            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
+            DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
 
             testParameterHomogeneity = true;
             TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, bestMinObservationsPerLeaf, bestMinImprovement, bestMaxDepth, testParameterHomogeneity); // k = 1
@@ -265,15 +255,18 @@ public class MainCardIV {
 	                pmUtility.prettyPrintVector(homogeneousParameters); // this is a compact vector of parameters
 	
 	                int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
-	                System.out.print("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
+	                System.out.println("Post-HomogeneousSearchContainer Length of homogeneous parameter vector: " + K);
 	                Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
 	                int counter = 0;
 	                for (int k = 0; k < K; k++) {
 	                    if (mySpecification.getHomogeneousIndex()[k]) {
 	                        expandedHomogeneousParameterVector.set(k, 0, homogeneousParameters.get(counter, 0));
+	                        mySpecification.setHomogeneousParameter(k, homogeneousParameters.get(counter, 0));
 	                        counter++;
 	                    }
 	                }
+	                System.out.println("Specification homogeneous parameter vector: ");
+	                pmUtility.prettyPrintVector(mySpecification.getHomogeneousParameterVector());
 	                setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
                 }
             }
@@ -363,9 +356,13 @@ public class MainCardIV {
 
             // i can add k-fold validation here
             // TODO: in the future try this out
-            
-            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null);
-            DataLens[] split = overallLens.randomlySplitSample(0.9, 383);
+
+            if (detectHomogeneity && maxTreeDepth > 0) {
+                executeHomogeneousParameterClassificationAndSearch(mySpecification, numberTreesInForest, verbose, minObservationsPerLeaf, minImprovement, maxTreeDepth, rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
+            }
+
+            DataLens overallLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
+            DataLens[] split = overallLens.randomlySplitSampleByStrata(0.9, rngBaseSeedMomentForest);
             DataLens estimatingLens = split[0];
             DataLens oosDataLens = split[1];
             
@@ -412,10 +409,13 @@ public class MainCardIV {
             // System.out.println(mySpecification.getNumMoments());
 
             // System.out.println("Starting in-sample Z");
-            for (int i = 0; i < estimatingLens.getZ().getRowDimension(); i++) {
-                Jama.Matrix zi = estimatingLens.getZ().getMatrix(i, i, 0, estimatingLens.getZ().getColumnDimension() - 1);
-                Jama.Matrix xi = estimatingLens.getX().getMatrix(i, i, 0, estimatingLens.getX().getColumnDimension() - 1);
-                double yi = estimatingLens.getY().get(i, 0);
+            Jama.Matrix inSampleZ = estimatingLens.getZ();
+            Jama.Matrix inSampleX = estimatingLens.getX();
+            Jama.Matrix inSampleY = estimatingLens.getY();
+            for (int i = 0; i < inSampleZ.getRowDimension(); i++) {
+                Jama.Matrix zi = inSampleZ.getMatrix(i, i, 0, inSampleZ.getColumnDimension() - 1);
+                Jama.Matrix xi = inSampleX.getMatrix(i, i, 0, inSampleX.getColumnDimension() - 1);
+                double yi = inSampleY.get(i, 0);
                 // have to reconstruct a composite beta from homogeneous and heterogeneous parameters
                 Jama.Matrix compositeEstimatedBeta = myForest.getEstimatedParameterForest(zi);
                 
@@ -438,6 +438,60 @@ public class MainCardIV {
 
         private double getInSampleFit() {
             return inSampleFit;
+        }
+    }
+
+    private void executeHomogeneousParameterClassificationAndSearch(MomentSpecificationCardIV mySpecification, int numberTreesInForest, boolean verbose,
+            int minObservationsPerLeaf, double minImprovement, int maxDepth, long rngBaseSeedMomentForest, long rngBaseSeedOutOfSample) {
+        mySpecification.resetHomogeneityIndex();
+
+        double minProportionInEachLeaf = 0.01;
+        DataLens forestLens = new DataLens(mySpecification.getX(), mySpecification.getY(), mySpecification.getZ(), null, mySpecification.getStratificationIndex());
+
+        boolean testParameterHomogeneity = false;
+        TreeOptions cvOptions = new TreeOptions(minProportionInEachLeaf, minObservationsPerLeaf, minImprovement, maxDepth, testParameterHomogeneity);
+        MomentForest myForest = new MomentForest(mySpecification, numberTreesInForest, rngBaseSeedMomentForest, forestLens, verbose, new TreeOptions());
+        myForest.setTreeOptions(cvOptions);
+        myForest.growForest();
+        myForest.testHomogeneity(false);
+
+        ArrayList<Integer> hpl = new ArrayList<>();
+        ArrayList<Double> hplStartingValues = new ArrayList<>();
+        boolean[] voteIndexHomogeneity = myForest.getHomogeneityVotes(jt, false);
+        double[] startingValues = myForest.getHomogeneityStartingValues();
+        for (int i = 0; i < voteIndexHomogeneity.length; i++) {
+            if (voteIndexHomogeneity[i]) {
+                hpl.add(i);
+                hplStartingValues.add(startingValues[i]);
+            }
+        }
+
+        HomogeneousParameterSorter sorter = new HomogeneousParameterSorter();
+        sorter.sort(hpl, hplStartingValues);
+        mySpecification.resetHomogeneityIndex();
+        for (int i = 0; i < hpl.size(); i++) {
+            mySpecification.setHomogeneousIndex(hpl.get(i));
+            mySpecification.setHomogeneousParameter(hpl.get(i), hplStartingValues.get(i));
+        }
+        setHomogeneousParameterList(hpl);
+
+        if (!hpl.isEmpty()) {
+            HomogeneousSearchContainer con = new HomogeneousSearchContainer(mySpecification, numberTreesInForest, verbose, minImprovement, minObservationsPerLeaf, maxDepth,
+                    getHomogeneousParameterList(), rngBaseSeedMomentForest, rngBaseSeedOutOfSample);
+            con.executeSearch();
+            Jama.Matrix homogeneousParameters = con.getEstimatedHomogeneousParameters();
+
+            int K = mySpecification.getHomogeneousParameterVector().getRowDimension();
+            Jama.Matrix expandedHomogeneousParameterVector = new Jama.Matrix(K, 1);
+            int counter = 0;
+            for (int k = 0; k < K; k++) {
+                if (mySpecification.getHomogeneousIndex()[k]) {
+                    expandedHomogeneousParameterVector.set(k, 0, homogeneousParameters.get(counter, 0));
+                    mySpecification.setHomogeneousParameter(k, homogeneousParameters.get(counter, 0));
+                    counter++;
+                }
+            }
+            setEstimatedHomogeneousParameters(expandedHomogeneousParameterVector);
         }
     }
 

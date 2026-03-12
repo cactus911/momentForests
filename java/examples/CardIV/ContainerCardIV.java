@@ -49,9 +49,14 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
     boolean allParametersHomogeneous;
     MomentSpecificationCardIV spec;
 
+    Jama.Matrix instrumentColumn; // instrument (near4), extracted from last column of Z in the lens
+
     public ContainerCardIV(DataLens lens, boolean[] homogeneityIndex, Jama.Matrix homogeneityParameters, boolean allParametersHomogeneous, MomentSpecificationCardIV spec) {
         Y = lens.getY();
         X = lens.getX();
+        // Instrument is appended as the last column of Z so it flows through DataLens correctly
+        Jama.Matrix Z = lens.getZ();
+        instrumentColumn = Z.getMatrix(0, Z.getRowDimension() - 1, Z.getColumnDimension() - 1, Z.getColumnDimension() - 1);
 
         this.spec = spec;
         this.homogeneityIndex = homogeneityIndex;
@@ -66,7 +71,8 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
         if (Y.getRowDimension() < 30) {
             // System.out.println("Too few observations");
 
-            beta = null;
+            beta = new Jama.Matrix(spec.getNumParams(), 1); // zero vector; never null so WaldTestWholeTree.computeParameters() doesn't NPE
+            failedEstimation = true;
             goodnessOfFit = Double.POSITIVE_INFINITY;
         } else {
             // System.out.println("Minimizer");
@@ -78,6 +84,24 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
                             numParamsToOptimize = numParamsToOptimize - 1; // homogeneous parameter imposed externally
                         }
                     }
+                }
+
+                // Guard: if all parameters are declared homogeneous, numParamsToOptimize == 0.
+                // Calling Uncmin with n=0 triggers System.exit(0) at Uncmin_f77 line 3441.
+                // In this case just compose beta entirely from the homogeneous parameters.
+                if (numParamsToOptimize <= 0) {
+                    Jama.Matrix betaAllHomogeneous = new Jama.Matrix(spec.getNumParams(), 1);
+                    for (int i = 0; i < spec.getNumParams(); i++) {
+                        betaAllHomogeneous.set(i, 0, homogeneityParameters.get(i, 0));
+                    }
+                    beta = betaAllHomogeneous;
+                    Jama.Matrix fit = X.times(beta);
+                    double sse = 0;
+                    for (int i = 0; i < Y.getRowDimension(); i++) {
+                        sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
+                    }
+                    goodnessOfFit = sse;
+                    return;
                 }
 
                 Uncmin_f77 minimizer = new Uncmin_f77(false);
@@ -114,9 +138,9 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
                     failedEstimation = true;
                 }
 
-                // check that optimizer didn't shoot off into extremes
+                // check that optimizer didn't shoot off into extremes or produce NaN
                 for (int i = 0; i < xpls.length; i++) {
-                    if (xpls[i] < -10 || xpls[i] > 10) {
+                    if (Double.isNaN(xpls[i]) || Double.isInfinite(xpls[i]) || xpls[i] < -10 || xpls[i] > 10) {
                         failedEstimation = true;
                     }
                 }
@@ -144,7 +168,7 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
                 // System.out.print("Composite beta inside ContainerCardIV: ");
                 // pmUtility.prettyPrintVector(beta);
                 // System.out.println(X.getRowDimension()+" "+X.getColumnDimension());
-                Jama.Matrix fit = (X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 2)).times(beta);
+                Jama.Matrix fit = (X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 1)).times(beta);
                 for (int i = 0; i < Y.getRowDimension(); i++) {
                     sse += Math.pow(Y.get(i, 0) - fit.get(i, 0), 2);
                 }
@@ -160,21 +184,17 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
                     // System.out.print("Optimizer flagged as failing [" + itrmcd[1] + "]: ");
                     // pmUtility.prettyPrint(new Jama.Matrix(xpls, 1));
                     // System.out.println("f_failed: " + f_to_minimize(xpls));
-                    beta = null;
+                    beta = new Jama.Matrix(spec.getNumParams(), 1); // zero vector; never null so WaldTestWholeTree.computeParameters() doesn't NPE
                     goodnessOfFit = Double.POSITIVE_INFINITY;
                 }
 
             } catch (Exception e) {
                 e.printStackTrace();
-                System.exit(0);
-                if (allParametersHomogeneous) {
-                    e.printStackTrace();
-                }
                 if (debugVerbose) {
                     System.out.println("Matrix not invertible");
-                    //System.exit(0);
                 }
-                beta = null;
+                beta = new Jama.Matrix(spec.getNumParams(), 1); // zero vector; never null so WaldTestWholeTree.computeParameters() doesn't NPE
+                failedEstimation = true;
                 goodnessOfFit = Double.POSITIVE_INFINITY;
             }
         }
@@ -192,12 +212,14 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
      */
     public void addGi(Jama.Matrix g, double error_i, int i) {
         /**
-         * We are going to skip the first column of X as that is the endogenous
-         * regressor
+         * GMM moment conditions: Z'e = 0, where Z = [constant, near4].
+         * The constant is exogenous and included in Z; near4 is the excluded instrument.
+         * X col 0 (education, the endogenous regressor) is excluded from Z.
          */
-        for (int k = 1; k < X.getColumnDimension(); k++) {
-            g.set(k - 1, 0, g.get(k - 1, 0) + error_i * X.get(i, k));
-        }
+        double g0 = error_i * X.get(i, 1);
+        double g1 = error_i * instrumentColumn.get(i, 0);
+        g.set(0, 0, g.get(0, 0) + (Double.isFinite(g0) ? g0 : 0.0));
+        g.set(1, 0, g.get(1, 0) + (Double.isFinite(g1) ? g1 : 0.0));
     }
 
     /**
@@ -211,29 +233,29 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
      */
     @Override
     public Matrix getGi(Matrix beta, int i) {
-        double fit = (X.getMatrix(i, i, 0, X.getColumnDimension() - 2).times(beta)).get(0, 0);
+        double fit = (X.getMatrix(i, i, 0, X.getColumnDimension() - 1).times(beta)).get(0, 0);
         double error = fit - Y.get(i, 0);
 
-        Jama.Matrix gi = new Jama.Matrix(X.getColumnDimension() - 1, 1);
-
-        for (int k = 1; k < X.getColumnDimension(); k++) {
-            gi.set(k - 1, 0, error * X.get(i, k));
-        }
+        Jama.Matrix gi = new Jama.Matrix(2, 1); // two moment conditions: Z = [constant, near4]
+        double g0 = error * X.get(i, 1);
+        double g1 = error * instrumentColumn.get(i, 0);
+        gi.set(0, 0, Double.isFinite(g0) ? g0 : 0.0);
+        gi.set(1, 0, Double.isFinite(g1) ? g1 : 0.0);
 
         return gi;
     }
 
-    /**
-     *
-     * NOT IMPORTANT: only used in Wald test for forest, which is no longer used
-     * (should get rid of these, actually)
-     *
-     * @param beta
-     * @return
-     */
     @Override
     public Matrix getJacobianNoDivision(Matrix beta) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        // Jacobian of the IV moment conditions g(beta) = Z_iv'(X*beta - Y) w.r.t. beta
+        // dg/dbeta = Z_iv' * X, where Z_iv = [constant, near4]
+        int n = X.getRowDimension();
+        Jama.Matrix Ziv = new Jama.Matrix(n, 2);
+        for (int i = 0; i < n; i++) {
+            Ziv.set(i, 0, X.get(i, 1)); // constant column
+            Ziv.set(i, 1, instrumentColumn.get(i, 0)); // near4 instrument column
+        }
+        return Ziv.transpose().times(X);
     }
 
     @Override
@@ -245,7 +267,7 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
         int numMoments = spec.getNumMoments(); // Number of instruments (columns of instruments)
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
         // (X.getMatrix(i, i, 0, X.getColumnDimension() - 2).times(beta)).get(0, 0);
-        Jama.Matrix fittedY = (X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 2)).times(beta);
+        Jama.Matrix fittedY = (X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 1)).times(beta);
         Jama.Matrix e = fittedY.minus(Y);
 
         for (int i = 0; i < X.getRowDimension(); i++) {
@@ -261,7 +283,7 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
         // this isn't anything critical, so don't worry about it
 
         // actually, i think that it is better to use SSE
-        Jama.Matrix fittedY = (X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 2)).times(beta);
+        Jama.Matrix fittedY = (X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 1)).times(beta);
         Jama.Matrix e = fittedY.minus(Y);
 
         return e.normF();
@@ -273,7 +295,7 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
         Jama.Matrix g = new Jama.Matrix(numMoments, 1); // x'e, one row for each x
 
         // Jama.Matrix fittedY = X.times(beta);
-        Jama.Matrix fittedY = (X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 2)).times(beta);
+        Jama.Matrix fittedY = (X.getMatrix(0, X.getRowDimension() - 1, 0, X.getColumnDimension() - 1)).times(beta);
 
         Jama.Matrix e = fittedY.minus(Y);
         // Jama.Matrix omega = new Jama.Matrix(numMoments, numMoments);
@@ -292,11 +314,11 @@ public class ContainerCardIV extends ContainerMoment implements Uncmin_methods {
         // that appears to sometimes generate perverse decreases in fit when splitting (probably due to some numerical instability in inversion, and the confounding of fits versus variance)
         double q = ((g.transpose()).times(g)).get(0, 0); // this is gmm with identity weighting matrix
 
-        // pmUtility.prettyPrintVector(beta);
-        // pmUtility.prettyPrint(g);
-        // key point here is that we estimate the model using GMM
-        // but we report goodness-of-fit when searching over the splits
-//        System.exit(0);
+        // Guard against NaN/Inf propagating into the optimizer and causing NaN parameter estimates
+        if (Double.isNaN(q) || Double.isInfinite(q)) {
+            return Double.MAX_VALUE;
+        }
+
         return q;
     }
 
